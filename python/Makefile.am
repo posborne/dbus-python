@@ -11,6 +11,7 @@ dbus_bindings_la_LIBADD = $(top_builddir)/dbus/libdbus-1.la $(top_builddir)/glib
 dbus_bindings_la_SOURCES = dbus_bindings.c
 
 EXTRA_DIST = 			\
+	dbus_h_wrapper.h	\
 	dbus_bindings.pyx.in	\
 	extract.py
 
