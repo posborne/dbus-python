@@ -16,7 +16,7 @@ class GConfService(dbus.Service):
 
             self.client = gconf.client_get_default()
 
-        def object_method_called(self, object_path, method_name, argument_list):
+        def object_method_called(self, message, object_path, method_name, argument_list):
             print ("Method %s called on GConf key %s" % (method_name, object_path))
 
             if "getString" == method_name:

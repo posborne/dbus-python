@@ -16,19 +16,19 @@ class GConfService(dbus.Service):
 
             self.client = gconf.client_get_default()
 
-        def getString(self, object_path):
+        def getString(self, message, object_path):
             print ("getString called on GConf key %s" % (object_path))
             return self.client.get_string(object_path)
 
-        def setString(self, object_path, new_value):
+        def setString(self, message, object_path, new_value):
             print ("setString called on GConf key %s" % (object_path))            
             self.client.set_string(object_path, new_value)
 
-        def getInt(self, object_path):
+        def getInt(self, message, object_path):
             print ("getInt called on GConf key %s" % (object_path))
             return self.client.get_int(object_path)
 
-        def setInt(self, object_path, new_value):
+        def setInt(self, message, object_path, new_value):
             print ("setInt called on GConf key %s" % (object_path))
             self.client.set_int(object_path, new_value)
             

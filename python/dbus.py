@@ -63,42 +63,53 @@ class Bus:
         if (glib_mainloop):
             self._connection.setup_with_g_main()
 
+    def get_connection(self):
+        return self._connection
+
     def get_service(self, service_name="org.freedesktop.Broadcast"):
         """Get one of the RemoteServices connected to this Bus. service_name
         is just a string of the form 'com.widgetcorp.MyService'
         """
-        return RemoteService(self._connection, service_name)
+        return RemoteService(self, service_name)
 
-    def add_signal_receiver(self, receiver, interface=None, service=None, path=None):
-        match_rule = self._get_match_rule(interface, service, path)
+    def add_signal_receiver(self, handler_function, signal_name=None, interface=None, service=None, path=None):
+        match_rule = self._get_match_rule(signal_name, interface, service, path)
         
         if (not self._match_rule_to_receivers.has_key(match_rule)):
             self._match_rule_to_receivers[match_rule] = [ ]
-        self._match_rule_to_receivers[match_rule].append(receiver)
+        self._match_rule_to_receivers[match_rule].append(handler_function)
         
         dbus_bindings.bus_add_match(self._connection, match_rule)
 
-    def remove_signal_receiver(self, receiver, interface=None, service=None, path=None):
-        match_rule = self._get_match_rule(interface, service, path)
+    def remove_signal_receiver(self, handler_function, signal_name=None, interface=None, service=None, path=None):
+        match_rule = self._get_match_rule(signal_name, interface, service, path)
 
         if self._match_rule_to_receivers.has_key(match_rule):
-            if self._match_rule_to_receivers[match_rule].__contains__(receiver):
-                self._match_rule_to_receivers[match_rule].remove(receiver)
+            if self._match_rule_to_receivers[match_rule].__contains__(handler_function):
+                self._match_rule_to_receivers[match_rule].remove(handler_function)
                 dbus_bindings.bus_remove_match(self._connection, match_rule)
 
     def get_connection(self):
         """Get the dbus_bindings.Connection object associated with this Bus"""
         return self._connection
 
-    def _get_match_rule(self, interface, service, path):
-##        if (interface):
-##            match_rule = match_rule + ",interface='%s'" % (interface)
-##        if (service):
-##            match_rule = match_rule + ",service='%s'" % (service)
-##        if (path):
-##            match_rule = match_rule + ",path='%s'" % (path)
-        # FIXME: use the service here too!!!
-        return "type='signal',interface='%s',path='%s'" % (interface, path)
+    def _get_match_rule(self, signal_name, interface, service, path):
+        match_rule = "type='signal'"
+        if (interface):
+            match_rule = match_rule + ",interface='%s'" % (interface)
+        if (service):
+            if (service[0] != ':' and service != "org.freedesktop.DBus"):
+                bus_service = self.get_service("org.freedesktop.DBus")
+                bus_object = bus_service.get_object('/org/freedesktop/DBus',
+                                                     'org.freedesktop.DBus')
+                service = bus_object.GetServiceOwner(service)
+
+            match_rule = match_rule + ",sender='%s'" % (service)
+        if (path):
+            match_rule = match_rule + ",path='%s'" % (path)
+        if (signal_name):
+            match_rule = match_rule + ",member='%s'" % (signal_name)
+        return match_rule
     
     def _signal_func(self, connection, message):
         if (message.get_type() != dbus_bindings.MESSAGE_TYPE_SIGNAL):
@@ -109,7 +120,7 @@ class Bus:
         path      = message.get_path()
         member    = message.get_member()
 
-        match_rule = self._get_match_rule(interface, service, path)
+        match_rule = self._get_match_rule(member, interface, service, path)
 
         if (self._match_rule_to_receivers.has_key(match_rule)):
             receivers = self._match_rule_to_receivers[match_rule]
@@ -143,17 +154,24 @@ class RemoteObject:
     A RemoteObject is provided by a RemoteService on a particular Bus. RemoteObjects
     have member functions, and can be called like normal Python objects.
     """
-    def __init__(self, connection, service_name, object_path, interface):
-        self._connection   = connection
-        self._service_name = service_name
+    def __init__(self, service, object_path, interface):
+        self._service      = service
         self._object_path  = object_path
         self._interface    = interface
+
+    def connect_to_signal(self, signal_name, handler_function):
+        self._service.get_bus().add_signal_receiver(handler_function,
+                                                    signal_name=signal_name,
+                                                    interface=self._interface,
+                                                    service=self._service.get_service_name(),
+                                                    path=self._object_path)
 
     def __getattr__(self, member):
         if member == '__call__':
             return object.__call__
         else:
-            return RemoteMethod(self._connection, self._service_name,
+            return RemoteMethod(self._service.get_bus().get_connection(),
+                                self._service.get_service_name(),
                                 self._object_path, self._interface, member)
 
 
@@ -220,7 +238,7 @@ def _dispatch_dbus_method_call(target_method, argument_list, message):
     exceptions, etc, and generates a reply to the DBus Message message
     """
     try:
-        retval = target_method(*argument_list)
+        retval = target_method(message, *argument_list)
     except Exception, e:
         if e.__module__ == '__main__':
             # FIXME: is it right to use .__name__ here?
@@ -267,10 +285,8 @@ class Object:
         
         self._connection.register_object_path(object_path, self._unregister_cb, self._message_cb)
 
-    def broadcast_signal(self, interface, signal_name):
+    def emit_signal(self, interface, signal_name):
         message = dbus_bindings.Signal(self._object_path, interface, signal_name)
-        #FIXME: need to set_sender, but it always disconnects when we do this
-        #message.set_sender(self._service.get_service_name())
         self._connection.send(message)
 
     def _unregister_cb(self, connection):
@@ -312,8 +328,16 @@ class ObjectTree:
         self._method_name_to_method = _build_method_dictionary(dbus_methods)
         
         self._connection.register_fallback(base_path, self._unregister_cb, self._message_cb)
+
+    def relative_path_to_object_path(self, relative_path):
+        return self._base_path + relative_path
         
-    def object_method_called(self, object_path, method_name, argument_list):
+    def broadcast_signal(self, interface, signal_name, relative_path):
+        object_path = self.relative_path_to_object_path(relative_path)
+        message = dbus_bindings.Signal(object_path, interface, signal_name)
+        self._connection.send(message)
+        
+    def object_method_called(self, relative_path, method_name, argument_list):
         """Override this method. Called with, object_path, the relative path of the object
         under the base_path, the name of the method invoked, and a list of arguments
         """
@@ -348,9 +372,15 @@ class RemoteService:
     receives signals from all applications on the Bus.
     """
     
-    def __init__(self, connection, service_name):
-        self._connection     = connection
+    def __init__(self, bus, service_name):
+        self._bus            = bus
         self._service_name   = service_name
+
+    def get_bus(self):
+        return self._bus
+
+    def get_service_name(self):
+        return self._service_name
 
     def get_object(self, object_path, interface):
         """Get an object provided by this Service that implements a
@@ -360,5 +390,6 @@ class RemoteService:
         'com.widgetcorp.MyInterface', and mostly just defines the
         set of member functions that will be present in the object.
         """
-        return RemoteObject(self._connection, self._service_name, object_path, interface)
+        return RemoteObject(self, object_path, interface)
                              
+ObjectPath = dbus_bindings.ObjectPath
