@@ -1145,8 +1145,9 @@ def bus_get_unix_user(Connection connection, service_name):
         raise DBusException, error.message
     return retval
 
-ACTIVATION_REPLY_ACTIVATED = DBUS_ACTIVATION_REPLY_ACTIVATED
-ACTIVATION_REPLY_ALREADY_ACTIVE = DBUS_ACTIVATION_REPLY_ALREADY_ACTIVE
+#These are defines, not enums so they aren't auto generated
+ACTIVATION_REPLY_ACTIVATED = 0 
+ACTIVATION_REPLY_ALREADY_ACTIVE = 1 
     
 def bus_activate_service(Connection connection, service_name, flags=0):
     cdef DBusError error
