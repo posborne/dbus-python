@@ -1144,7 +1144,23 @@ def bus_get_unix_user(Connection connection, service_name):
     if dbus_error_is_set(&error):
         raise DBusException, error.message
     return retval
+
+ACTIVATION_REPLY_ACTIVATED = DBUS_ACTIVATION_REPLY_ACTIVATED
+ACTIVATION_REPLY_ALREADY_ACTIVE = DBUS_ACTIVATION_REPLY_ALREADY_ACTIVE
     
+def bus_activate_service(Connection connection, service_name, flags=0):
+    cdef DBusError error
+    dbus_error_init(&error)
+    cdef dbus_bool_t retval
+    cdef dbus_uint32_t results
+    cdef DBusConnection *conn
+
+    conn = connection._get_conn()
+
+    retval = dbus_bus_activate_service(conn, service_name, flags, &results, &error)
+
+    return (retval, results) 
+
 def bus_register(Connection connection):
     cdef DBusError error
     dbus_error_init(&error)

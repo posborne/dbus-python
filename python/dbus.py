@@ -62,6 +62,10 @@ class Bus:
 
     """bus_type=[Bus.TYPE_SESSION | Bus.TYPE_SYSTEM | Bus.TYPE_ACTIVATION]
     """
+
+    ACTIVATION_REPLY_ACTIVE = dbus_bindings.ACTIVATION_REPLY_ACTIVE
+    ACTIVATION_REPLY_ALREADY_ACTIVE = dbus_bindings.ACTIVATION_REPLY_ALREADY_ACTIVE 
+
     def __init__(self, bus_type=TYPE_SESSION, glib_mainloop=True):
         self._connection = dbus_bindings.bus_get(bus_type)
 
@@ -138,6 +142,9 @@ class Bus:
             args = [interface, member, service, path, message]
             for receiver in receivers:
                 receiver(*args)
+
+    def activate_service(self, service):
+        return dbus_bindings.bus_activate_service(self._connection, service)
 
 class SystemBus(Bus):
     """The system-wide message bus
