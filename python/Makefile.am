@@ -12,9 +12,7 @@ dbus_bindings_la_SOURCES = dbus_bindings.c
 
 EXTRA_DIST = 			\
 	dbus_bindings.pyx.in	\
-	extract.py		\
-	setup.py		\
-	test.py
+	extract.py
 
 CLEANFILES =			\
 	dbus_bindings.pyx	\
