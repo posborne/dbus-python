@@ -614,19 +614,23 @@ cdef class MessageIter:
         elif value_type == dict:
             retval = self.append_dict(value)
         elif value_type == list:
-            if (len(value) == 0):
-                raise TypeError, "Empty lists are currently not supported, return None instead"
-            list_type = type(value[0])
-            if list_type == str:
-                self.append_string_array(value)
-            elif list_type == int:
-                self.append_int32_array(value)
-            elif list_type == float:
-                self.append_double_array(value)
-            elif isinstance(value[0], ObjectPath):
-                self.append_object_path_array(value)
+            if len(value) == 0:
+                # Empty lists are currently not supported, returning None instead
+                retval = self.append(None)
             else:
-                raise TypeError, "List of unknown type '%s'" % (list_type)
+                list_type = type(value[0])
+                if list_type == str:
+                    self.append_string_array(value)
+                elif list_type == int:
+                    self.append_int32_array(value)
+                elif list_type == float:
+                    self.append_double_array(value)
+                elif isinstance(value[0], ObjectPath):
+                    self.append_object_path_array(value)
+                else:
+                    raise TypeError, "List of unknown type '%s'" % (list_type)
+        elif value_type == None.__class__:
+            retval = self.append_nil()
         elif isinstance(value, ObjectPath):
             retval = self.append_object_path(value)
         else:

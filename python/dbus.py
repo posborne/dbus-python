@@ -337,7 +337,7 @@ class ObjectTree:
         message = dbus_bindings.Signal(object_path, interface, signal_name)
         self._connection.send(message)
         
-    def object_method_called(self, relative_path, method_name, argument_list):
+    def object_method_called(self, message, relative_path, method_name, argument_list):
         """Override this method. Called with, object_path, the relative path of the object
         under the base_path, the name of the method invoked, and a list of arguments
         """
