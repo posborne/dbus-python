@@ -455,6 +455,10 @@ cdef class MessageIter:
             retval = self.get_int32()
         elif arg_type == TYPE_UINT32:
             retval = self.get_uint32()
+        elif arg_type == TYPE_INT64:
+            retval = self.get_int64()
+        elif arg_type == TYPE_UINT64:
+            retval = self.get_uint64()
         elif arg_type == TYPE_DOUBLE:
             retval = self.get_double()
         elif arg_type == TYPE_BYTE:
@@ -474,6 +478,10 @@ cdef class MessageIter:
                 retval = self.get_int32_array()
             elif array_type == TYPE_UINT32:
                 retval = self.get_uint32_array()
+            elif array_type == TYPE_INT64:
+                retval = self.get_int64_array()
+            elif array_type == TYPE_UINT64:
+                retval = self.get_uint64_array()
             elif array_type == TYPE_DOUBLE:
                 retval = self.get_double_array()
             else:
@@ -529,6 +537,12 @@ cdef class MessageIter:
     def get_uint32(self):
         return dbus_message_iter_get_uint32(self.iter)
 
+    def get_int64(self):
+        return dbus_message_iter_get_int64(self.iter)
+
+    def get_uint64(self):
+        return dbus_message_iter_get_uint64(self.iter)
+
     def get_double(self):
         return dbus_message_iter_get_double(self.iter)
 
@@ -569,6 +583,26 @@ cdef class MessageIter:
         cdef dbus_uint32_t *retval
         cdef int i
         dbus_message_iter_get_uint32_array(self.iter, &retval, <int*>&len)
+        python_list = []
+        for i from 0 <= i < len:
+            python_list.append(retval[i])
+        return python_list
+
+    def get_int64_array(self):
+        cdef int len
+        cdef dbus_int64_t *retval
+        cdef int i
+        dbus_message_iter_get_int64_array(self.iter, &retval, <int*>&len)
+        python_list = []
+        for i from 0 <= i < len:
+            python_list.append(retval[i])
+        return python_list
+
+    def get_uint64_array(self):
+        cdef int len
+        cdef dbus_uint64_t *retval
+        cdef int i
+        dbus_message_iter_get_uint64_array(self.iter, &retval, <int*>&len)
         python_list = []
         for i from 0 <= i < len:
             python_list.append(retval[i])
@@ -615,6 +649,8 @@ cdef class MessageIter:
             retval = self.append_boolean(value)
         elif value_type == int:
             retval = self.append_int32(value)
+        elif value_type == long:
+            retval = self.append_int64(value)
         elif value_type == str:
             retval = self.append_string(value)
         elif value_type == float:
@@ -631,6 +667,8 @@ cdef class MessageIter:
                     self.append_string_array(value)
                 elif list_type == int:
                     self.append_int32_array(value)
+                elif list_type == long:
+                    self.append_int64_array(value)
                 elif list_type == float:
                     self.append_double_array(value)
                 elif isinstance(value[0], ObjectPath):
@@ -665,6 +703,12 @@ cdef class MessageIter:
     def append_uint32(self, value):
         return dbus_message_iter_append_uint32(self.iter, value)
 
+    def append_int64(self, value):
+        return dbus_message_iter_append_int64(self.iter, value)
+
+    def append_uint64(self, value):
+        return dbus_message_iter_append_uint64(self.iter, value)
+
     def append_double(self, value):
         return dbus_message_iter_append_double(self.iter, value)
 
@@ -677,7 +721,8 @@ cdef class MessageIter:
     def append_object_path(self, value):
         return dbus_message_iter_append_object_path(self.iter, value)
 
-    # FIXME: append_array, append_boolean_array, append_uint32_array
+    # FIXME: append_array, append_boolean_array, append_uint32_array, 
+    # append_uint64_array
 
     def append_dict(self, python_dict):
         cdef DBusMessageIter c_dict_iter
@@ -719,6 +764,19 @@ cdef class MessageIter:
                 raise TypeError
             value[i] = item
         return dbus_message_iter_append_int32_array(self.iter, value, length)
+
+    def append_int64_array(self, python_list):
+        cdef dbus_int64_t *value
+        cdef int length
+        cdef int i
+        length = len(python_list)
+        value = <dbus_int64_t*>malloc(length * sizeof(dbus_int64_t))
+        for i from 0 <= i < length:
+            item = python_list[i]
+            if type(item) != int:
+                raise TypeError
+            value[i] = item
+        return dbus_message_iter_append_int64_array(self.iter, value, length)
 
     def append_double_array(self, python_list):
         cdef double *value
@@ -855,6 +913,12 @@ cdef class Message:
             elif type == TYPE_UINT32:
                 num = iter.get_uint32()
                 arg = 'uint32:%u\n' % (num)
+            elif type == TYPE_INT64:
+                num = iter.get_int64()
+                arg = 'int64:%d\n' % (num)
+            elif type == TYPE_UINT64:
+                num = iter.get_uint64()
+                arg = 'uint64:%u\n' % (num)
             elif type == TYPE_DOUBLE:
                 num = iter.get_double()
                 arg = 'double:%f\n' % (num)
