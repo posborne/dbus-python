@@ -240,7 +240,7 @@ class Object:
 
     def _unregister_cb(self, connection):
         print ("Unregister")
-        
+
     def _message_cb(self, connection, message):
         target_method_name = message.get_member()
         target_method = self._method_name_to_method[target_method_name]
@@ -272,6 +272,56 @@ class Object:
             method_dict[method.__name__] = method
         return method_dict
 
+class ObjectTree:
+    """An object tree allows you to register a handler for a tree of object paths.
+    This means that literal Python objects do not need to be created for each object
+    over the bus, but you can have a virtual tree of objects handled by a single
+    Python object.
+    """
+
+    def __init__(self, base_path, service):
+        self._base_path = base_path
+        self._service = service
+        self._bus = service.get_bus()
+        self._connection = self._bus.get_connection()
+        
+        self._connection.register_fallback(base_path, self._unregister_cb, self._message_cb)
+        
+    def object_method_called(self, object_path, method_name, argument_list):
+        """Override this method. Called with, object_path, the relative path of the object
+        under the base_path, the name of the method invoked, and a list of arguments
+        """
+        raise NotImplementedException, "object_method_called() must be overriden"
+
+    def _unregister_cb(self, connection):
+        print ("Unregister")
+
+    def _message_cb(self, connection, message):
+        target_object_full_path = message.get_path()
+        assert(self._base_path == target_object_full_path[:len(self._base_path)])
+        target_object_path = target_object_full_path[len(self._base_path):]
+        
+        target_method_name = message.get_member()        
+        args = message.get_args_list()
+
+        try:
+            retval = self.object_method_called(target_object_path, target_method_name, args)
+        except Exception, e:
+            if e.__module__ == '__main__':
+                # FIXME: is it right to use .__name__ here?
+                error_name = e.__class__.__name__
+            else:
+                error_name = e.__module__ + '.' + str(e.__class__.__name__)
+            error_contents = str(e)
+            reply = dbus_bindings.Error(message, error_name, error_contents)
+        else:
+            reply = dbus_bindings.MethodReturn(message)
+            if retval != None:
+                iter = reply.get_iter()
+                iter.append(retval)
+                
+        self._connection.send(reply)
+        
 class RemoteService:
     """A remote service providing objects.
 
