@@ -112,10 +112,6 @@ cdef DBusHandlerResult cmessage_function_handler (DBusConnection *connection,
 cdef class Connection:
     cdef DBusConnection *conn
     
-    # FIXME: this is a major major hack. We use this because casting values to
-    # python objects and returning seemed to be corrupting them. This is a "global variable" :-(
-    cdef char **_parsed_path
-
     def __init__(self, address=None, Connection _conn=None):
         cdef DBusConnection *c_conn
         cdef char *c_address
@@ -147,22 +143,6 @@ cdef class Connection:
     cdef DBusConnection *_get_conn(self):
         return self.conn
     
-    #FIXME: this is totally busted, don't use a class shared member like parsed_path
-    def _build_parsed_path(self, path_element_list):
-        cdef char **cpatharray
-        cdef int i
-        cdef int size
-        size = len(path_element_list)
-        cpatharray = <char **>malloc(sizeof(char*) * (size + 1))
-
-        for i from 0 <= i < size:
-            path_element = path_element_list[i]
-            cpatharray[i] = path_element
-            
-        cpatharray[size] = NULL
-
-        self._parsed_path = cpatharray
-
     def get_base_service(self):
         return bus_get_base_service(self)
 
@@ -342,10 +322,7 @@ cdef class Connection:
         global _user_data_references
         _user_data_references.append(user_data)
         
-        path_element_list = path[1:].split('/')
-        self._build_parsed_path(path_element_list)
-        
-        return dbus_connection_register_object_path(self.conn, self._parsed_path, &cvtable,
+        return dbus_connection_register_object_path(self.conn, path, &cvtable,
                                                     <void*>user_data) 
 
     def register_fallback(self, path, unregister_cb, message_cb):
@@ -358,10 +335,7 @@ cdef class Connection:
         global _user_data_references
         _user_data_references.append(user_data)        
         
-        path_element_list = path[1:].split('/')
-        self._build_parsed_path(path_element_list)
-        
-        return dbus_connection_register_fallback(self.conn, self._parsed_path, &cvtable,
+        return dbus_connection_register_fallback(self.conn, path, &cvtable,
                                                  <void*>user_data) 
 
     #FIXME: unregister_object_path , see problems with remove_filter
@@ -370,10 +344,7 @@ cdef class Connection:
         cdef char **cchild_entries
         cdef dbus_bool_t retval
         
-        path_element_list = parent_path[1:].split('/')
-        self._build_parsed_path(path_element_list)
-        
-        retval = dbus_connection_list_registered(self.conn, self._parsed_path, &cchild_entries)
+        retval = dbus_connection_list_registered(self.conn, parent_path, &cchild_entries)
 
         if (not retval):
             #FIXME: raise out of memory exception?
