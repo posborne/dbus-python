@@ -463,6 +463,8 @@ cdef class MessageIter:
 
         if arg_type == TYPE_INVALID:
             raise TypeError, 'Invalid arg type in MessageIter'
+        elif arg_type == TYPE_NIL:
+            retval = None
         elif arg_type == TYPE_STRING:
             retval = self.get_string()
         elif arg_type == TYPE_INT32:
@@ -522,8 +524,9 @@ cdef class MessageIter:
     def get_array_type(self):
         return dbus_message_iter_get_array_type(self.iter)
 
-    def get_byte(self):
-        return chr(dbus_message_iter_get_byte(self.iter))
+    # FIXME: implement get_byte
+    #def get_byte(self):
+    #    return dbus_message_iter_get_byte(self.iter)
 
     def get_boolean(self):
         return dbus_message_iter_get_boolean(self.iter)
@@ -598,13 +601,13 @@ cdef class MessageIter:
         elif value_type == str:
             retval = self.append_string(value)
         elif value_type == list:
-            if (len(list) == 0):
+            if (len(value) == 0):
                 raise TypeError, "Empty list"
-            list_type = type(list[0])
+            list_type = type(value[0])
             if list_type == str:
-                self.append_string_array(list)
-            elif isinstance(list[0], ObjectPath):
-                self.append_object_path_array(list)
+                self.append_string_array(value)
+            elif isinstance(value[0], ObjectPath):
+                self.append_object_path_array(value)
             else:
                 raise TypeError, "List of unknown type '%s'" % (list_type)
         elif isinstance(value, ObjectPath):
@@ -643,7 +646,7 @@ cdef class MessageIter:
         return dbus_message_iter_append_dict_key(self.iter, value)
 
     def append_object_path(self, value):
-        return dbus_message_iter_append_object_path(self.iter, str(value))
+        return dbus_message_iter_append_object_path(self.iter, value)
 
     # FIXME: append_array, append_dict_array, append_boolean_array, append_int32_array, append_uint32_array, append_double_array
 
@@ -668,17 +671,18 @@ cdef class MessageIter:
             item = list[i]
             if not isinstance(item, ObjectPath):
                 raise TypeError
-            value[i] = str(item)
+            value[i] = item
 
-        return dbus_message_iter_append_object_path_array(self,iter, value, length)
+        return dbus_message_iter_append_object_path_array(self.iter, value, length)
     
-    def append_string_array(self, list):
+    def append_string_array(self, python_list):
         cdef char **value
         cdef int length
-        length = len(list)
+        cdef dbus_bool_t return_code
+        length = len(python_list)
         value = <char**>malloc(length)
         for i from 0 <= i < length:
-            item = list[i]
+            item = python_list[i]
             if type(item) != str:
                 raise TypeError
             value[i] = item
@@ -764,6 +768,8 @@ cdef class Message:
 
             if type == TYPE_INVALID:
                 break
+            elif type == TYPE_NIL:
+                arg = 'nil:None\n'
             elif type == TYPE_STRING:
                 str = iter.get_string()
                 arg = 'string:%s\n' % (str)

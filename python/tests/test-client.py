@@ -1,20 +1,37 @@
 import dbus
 import dbus_bindings
 
+def ensure_same(expected, received):
+    if type(received) != type(expected):
+        raise Exception ("Sending %s, expected echo of type %s, but got %s" % (expected, type(expected), type(received)))
 
-def TestEcho(value, should_be_equal = True):
+    if received.__class__ != expected.__class__:
+        raise Exception ("Sending %s, expected echo to be of class %s, but got %s" % (expected, expected.__class__, received.__class__))
+
+    if received != expected:
+        raise Exception("Sending %s, expected echo to be the same, but was %s" % (expected, received))
+
+def TestEcho(value):
     global remote_object
     echoed = remote_object.Echo(value)
-    if type(echoed) != type(value):
-        raise Exception ("Sending %s, expected echo of type %s, but got %s" % (value, type(value), type(echoed)))
+    ensure_same(value, echoed)
 
-    if echoed.__class__ != value.__class__:
-        raise Exception ("Sending %s, expected echo to be of class %s, but got %s" % (value, value.__class__, echoed.__class__))
+def TestEchoList(sent_list):
+    assert(type(sent_list) == list)
 
-    if should_be_equal:
-        if echoed != value:
-            raise Exception("Sending %s, expected echo to be the same, but was %s" % (value, echoed))
+    global remote_object
 
+    reply_list = remote_object.Echo(sent_list)
+
+    if type(reply_list) != list:
+        raise Exception ("Sending list %s, expected echo to be a list, but it was %s" % (sent_list, type(reply_list)))
+
+    if len(reply_list) != len(sent_list):
+        raise Exception ("Sending list %s, expected echo of length %d, but length was %d" % (len(sent_list), len(reply_list)))
+
+    for i in range(len(sent_list)):
+        ensure_same(sent_list[i], reply_list[i])
+    
 session_bus = dbus.SessionBus()
 
 remote_service = session_bus.get_service("org.designfu.Test")
@@ -26,3 +43,5 @@ TestEcho(39.5)
 TestEcho("HelloWorld")
 TestEcho(dbus_bindings.ObjectPath("/test/path"))
 
+#FIXME!!! Crashes on lists ?!?
+#TestEchoList(["one", "two", "three", "four"])
