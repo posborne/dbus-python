@@ -8,7 +8,8 @@ dbusbindings_LTLIBRARIES = dbus_bindings.la
 
 dbus_bindings_la_LDFLAGS = -module -avoid-version -fPIC -export-symbols-regex initdbus_bindings
 dbus_bindings_la_LIBADD = $(top_builddir)/dbus/libdbus-1.la $(top_builddir)/glib/libdbus-glib-1.la
-dbus_bindings_la_SOURCES = dbus_bindings.c
+nodist_dbus_bindings_la_SOURCES = dbus_bindings.c
+
 
 EXTRA_DIST = 			\
 	dbus_h_wrapper.h	\
