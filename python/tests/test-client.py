@@ -31,6 +31,21 @@ def TestEchoList(sent_list):
 
     for i in range(len(sent_list)):
         ensure_same(sent_list[i], reply_list[i])
+
+def TestEchoDict(sent_dict):
+    assert(type(sent_dict) == dict)
+
+    global remote_object
+    
+    reply_dict = remote_object.Echo(sent_dict)
+
+
+    assert(type(reply_dict) == dict)
+
+    assert(len(reply_dict) == len(sent_dict))
+
+    for key in sent_dict.keys():
+        ensure_same(reply_dict[key], sent_dict[key])
     
 session_bus = dbus.SessionBus()
 
@@ -61,3 +76,26 @@ double_list = []
 for i in range(200):
     double_list.append(float(i) / 1000)
 TestEchoList(double_list)
+
+#FIXME: this currently fails!
+#empty_list = []
+#TestEchoList(empty_list)
+
+string_to_int_dict = {}
+for i in range(200):
+    string_to_int_dict["key" + str(i)] = i
+TestEchoDict(string_to_int_dict)
+
+string_to_double_dict = {}
+for i in range(200):
+    string_to_double_dict["key" + str(i)] = float(i) / 1000
+TestEchoDict(string_to_double_dict)
+
+string_to_string_dict = {}
+for i in range(200):
+    string_to_string_dict["key" + str(i)] = "value" + str(i)
+TestEchoDict(string_to_string_dict)
+
+#FIXME: this currently crashes dbus in c code
+#empty_dict = {}
+#TestEchoDict(empty_dict)
