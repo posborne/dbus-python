@@ -63,8 +63,8 @@ class Bus:
     """bus_type=[Bus.TYPE_SESSION | Bus.TYPE_SYSTEM | Bus.TYPE_ACTIVATION]
     """
 
-    ACTIVATION_REPLY_ACTIVATED = dbus_bindings.ACTIVATION_REPLY_ACTIVATED
-    ACTIVATION_REPLY_ALREADY_ACTIVE = dbus_bindings.ACTIVATION_REPLY_ALREADY_ACTIVE 
+    START_REPLY_SUCCESS = dbus_bindings.DBUS_START_REPLY_SUCCESS
+    START_REPLY_ALREADY_RUNNING = dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING 
 
     def __init__(self, bus_type=TYPE_SESSION, glib_mainloop=True):
         self._connection = dbus_bindings.bus_get(bus_type)
@@ -143,8 +143,8 @@ class Bus:
             for receiver in receivers:
                 receiver(*args)
 
-    def activate_service(self, service):
-        return dbus_bindings.bus_activate_service(self._connection, service)
+    def start_service_by_name(self, service):
+        return dbus_bindings.bus_start_service_by_name(self._connection, service)
 
 class SystemBus(Bus):
     """The system-wide message bus
@@ -241,7 +241,7 @@ class Service:
         else:
             self._bus = bus
 
-        dbus_bindings.bus_acquire_service(self._bus.get_connection(), service_name)
+        dbus_bindings.bus_request_name(self._bus.get_connection(), service_name)
 
     def get_bus(self):
         """Get the Bus this Service is on"""

@@ -153,8 +153,8 @@ cdef class Connection:
     cdef DBusConnection *_get_conn(self):
         return self.conn
     
-    def get_base_service(self):
-        return bus_get_base_service(self)
+    def get_unique_name(self):
+        return bus_get_unique_name(self)
 
     def setup_with_g_main(self):
         dbus_connection_setup_with_g_main(self.conn, NULL)
@@ -1127,10 +1127,10 @@ def bus_get (bus_type):
     conn.__cinit__(None, connection)
     return conn 
 
-def bus_get_base_service(Connection connection):
+def bus_get_unique_name(Connection connection):
     cdef DBusConnection *conn
     conn = connection._get_conn()
-    return dbus_bus_get_base_service(conn)
+    return dbus_bus_get_unique_name(conn)
 
 def bus_get_unix_user(Connection connection, service_name):
     cdef DBusError error
@@ -1146,10 +1146,10 @@ def bus_get_unix_user(Connection connection, service_name):
     return retval
 
 #These are defines, not enums so they aren't auto generated
-ACTIVATION_REPLY_ACTIVATED = 0 
-ACTIVATION_REPLY_ALREADY_ACTIVE = 1 
+DBUS_START_REPLY_SUCCESS = 0 
+DBUS_START_REPLY_ALREADY_RUNNING = 1 
     
-def bus_activate_service(Connection connection, service_name, flags=0):
+def bus_start_service_by_name(Connection connection, service_name, flags=0):
     cdef DBusError error
     dbus_error_init(&error)
     cdef dbus_bool_t retval
@@ -1158,7 +1158,7 @@ def bus_activate_service(Connection connection, service_name, flags=0):
 
     conn = connection._get_conn()
 
-    retval = dbus_bus_activate_service(conn, service_name, flags, &results, &error)
+    retval = dbus_bus_start_service_by_name(conn, service_name, flags, &results, &error)
 
     return (retval, results) 
 
@@ -1179,29 +1179,29 @@ def bus_register(Connection connection):
 SERVICE_FLAG_PROHIBIT_REPLACEMENT = 0x1
 SERVICE_FLAG_REPLACE_EXISTING     = 0x2
 
-def bus_acquire_service(Connection connection, service_name, flags=0):
+def bus_request_name(Connection connection, service_name, flags=0):
     cdef DBusError error
     dbus_error_init(&error)
     cdef int retval
     cdef DBusConnection *conn
 
     conn = connection._get_conn()
-    retval = dbus_bus_acquire_service(conn,
-                                      service_name,
-                                      flags,
-                                      &error)
+    retval = dbus_bus_request_name(conn,
+                                   service_name,
+                                   flags,
+                                   &error)
     if dbus_error_is_set(&error):
         raise DBusException, error.message
     return retval
     
-def bus_service_exists(Connection connection, service_name):
+def bus_name_has_owner(Connection connection, service_name):
     cdef DBusError error
     dbus_error_init(&error)
     cdef dbus_bool_t retval
     cdef DBusConnection *conn
 
     conn = connection._get_conn()
-    retval = dbus_bus_service_exists(conn,
+    retval = dbus_bus_name_has_owner(conn,
                                      service_name,
                                      &error)
     if dbus_error_is_set(&error):
