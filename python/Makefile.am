@@ -16,8 +16,7 @@ nodist_dbus_bindings_la_SOURCES = dbus_bindings.c
 EXTRA_DIST = 			\
 	dbus_h_wrapper.h	\
 	dbus_bindings.pyx.in	\
-	extract.py		\
-	lvalue_cast_post_process.py	
+	extract.py
 
 CLEANFILES =			\
 	dbus_bindings.pyx	\
@@ -27,7 +26,5 @@ CLEANFILES =			\
 dbus_bindings.pyx: dbus_bindings.pyx.in extract.py
 	-$(PYTHON) extract.py dbus_bindings.pyx.in -I$(top_builddir)  > dbus_bindings.pyx
 
-dbus_bindings.c: dbus_bindings.pyx lvalue_cast_post_process.py
+dbus_bindings.c: dbus_bindings.pyx
 	-pyrexc dbus_bindings.pyx
-	-$(PYTHON) lvalue_cast_post_process.py dbus_bindings.c
-	-mv dbus_bindings.c.gcc4fix dbus_bindings.c
