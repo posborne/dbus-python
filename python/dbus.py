@@ -99,6 +99,10 @@ class Bus:
     def get_connection(self):
         """Get the dbus_bindings.Connection object associated with this Bus"""
         return self._connection
+    
+    def get_unix_user(self, service_name):
+        """Get the unix user for the given service_name on this Bus"""
+        return dbus_bindings.bus_get_unix_user(self._connection, service_name)
 
     def _get_match_rule(self, signal_name, interface, service, path):
         match_rule = "type='signal'"

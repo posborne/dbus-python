@@ -108,7 +108,7 @@ def find_typedefs(buf):
     return typedefs
 
 proto_pat = re.compile(r"""
-(?P<ret>(-|\w|\&|\*)+\s*)      # return type
+(?P<ret>(-|\w|\&|\*|\s)+\s*)      # return type
 \s+                            # skip whitespace
 (?P<func>\w+)\s*[(]  # match the function name until the opening (
 (?P<args>.*?)[)]               # group the function arguments
@@ -123,7 +123,6 @@ def find_functions(buf):
     for p in buf:
         if len(p) == 0:
             continue
-        
         m = proto_pat.match(p)
         if m == None:
             continue

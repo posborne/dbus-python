@@ -1132,6 +1132,19 @@ def bus_get_base_service(Connection connection):
     conn = connection._get_conn()
     return dbus_bus_get_base_service(conn)
 
+def bus_get_unix_user(Connection connection, service_name):
+    cdef DBusError error
+    dbus_error_init(&error)
+    cdef int retval
+    cdef DBusConnection *conn
+
+    conn = connection._get_conn()
+    retval = dbus_bus_get_unix_user(conn, service_name, &error)
+
+    if dbus_error_is_set(&error):
+        raise DBusException, error.message
+    return retval
+    
 def bus_register(Connection connection):
     cdef DBusError error
     dbus_error_init(&error)
