@@ -1,3 +1,9 @@
 .deps
 Makefile.in
 Makefile
+dbus_bindings.pyx
+*.lo
+*.la
+dbus_bindings.c
+*.pyc
+.libs
