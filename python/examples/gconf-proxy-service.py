@@ -11,35 +11,27 @@ class GConfService(dbus.Service):
         gconf_object_tree = self.GConfObjectTree(self)
         
     class GConfObjectTree(dbus.ObjectTree):
-
         def __init__(self, service):
-            dbus.ObjectTree.__init__(self, "/org/gnome/GConf", service)
+            dbus.ObjectTree.__init__(self, "/org/gnome/GConf", service, dbus_methods=[ self.getString, self.setString, self.getInt, self.setInt ])
 
             self.client = gconf.client_get_default()
+
+        def getString(self, object_path):
+            print ("getString called on GConf key %s" % (object_path))
+            return self.client.get_string(object_path)
+
+        def setString(self, object_path, new_value):
+            print ("setString called on GConf key %s" % (object_path))            
+            self.client.set_string(object_path, new_value)
+
+        def getInt(self, object_path):
+            print ("getInt called on GConf key %s" % (object_path))
+            return self.client.get_int(object_path)
+
+        def setInt(self, object_path, new_value):
+            print ("setInt called on GConf key %s" % (object_path))
+            self.client.set_int(object_path, new_value)
             
-        def object_method_called(self, object_path, method_name, argument_list):
-            print ("Method %s called on GConf key %s" % (method_name, object_path))
-
-            return_value = None
-
-            if "getString" == method_name:
-                assert(len(argument_list) == 0)
-                return_value = self.client.get_string (object_path)
-                
-            elif "setString" == method_name:
-                assert(len(argument_list) == 1)
-                self.client.set_string(object_path, argument_list[0])
-                
-            elif "getInt" == method_name:
-                assert(len(argument_list) == 0)
-                return_value = self.client.get_int(object_path)
-                
-            elif "setInt" == method_name:
-                assert(len(argument_list) == 1)
-                self.client.set_int(object_path, argument_list[0])
-
-            return return_value
-
 gconf_service = GConfService()
 
 print ("GConf Proxy service started.")

@@ -4,7 +4,7 @@ import gtk
 class TestObject(dbus.Object):
     def __init__(self, service):
         method_list = [ self.Echo ]
-        dbus.Object.__init__(self, "/TestObject", method_list, service)
+        dbus.Object.__init__(self, "/TestObject", service, method_list)
 
     def Echo(self, variable):
         return variable

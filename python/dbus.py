@@ -237,6 +237,14 @@ def _dispatch_dbus_method_call(target_method, argument_list, message):
 
     return reply
 
+def _build_method_dictionary(methods):
+    method_dict = {}
+    for method in methods:
+        if method_dict.has_key(method.__name__):
+            print ('WARNING: registering DBus Object methods, already have a method named %s' % (method.__name__))
+        method_dict[method.__name__] = method
+    return method_dict
+
 class Object:
     """A base class for exporting your own Objects across the Bus.
 
@@ -244,13 +252,18 @@ class Object:
     across the Bus. These will appear as member functions of your
     ServiceObject.
     """
-    def __init__(self, object_path, methods_to_share, service):
+    def __init__(self, object_path, service, dbus_methods=[]):
+        # Reversed constructor argument order. Add a temporary
+        # check to help people get things straightened out with minimal pain.
+        if type(service) == list:
+            raise TypeError, "dbus.Object.__init__(): the order of the 'service' and 'dbus_methods' arguments has been reversed (for consistency with dbus.ObjectTree)."
+        
         self._object_path = object_path
         self._service = service
         self._bus = service.get_bus()
         self._connection = self._bus.get_connection()
 
-        self._method_name_to_method = self._build_method_dictionary(methods_to_share)
+        self._method_name_to_method = _build_method_dictionary(dbus_methods)
         
         self._connection.register_object_path(object_path, self._unregister_cb, self._message_cb)
 
@@ -267,31 +280,36 @@ class Object:
         target_method_name = message.get_member()
         target_method = self._method_name_to_method[target_method_name]
         args = message.get_args_list()
-        
+
         reply = _dispatch_dbus_method_call(target_method, args, message)
         
         self._connection.send(reply)
 
-    def _build_method_dictionary(self, methods):
-        method_dict = {}
-        for method in methods:
-            if method_dict.has_key(method.__name__):
-                print ('WARNING: registering DBus Object methods, already have a method named %s' % (method.__name__))
-            method_dict[method.__name__] = method
-        return method_dict
+
 
 class ObjectTree:
     """An object tree allows you to register a handler for a tree of object paths.
     This means that literal Python objects do not need to be created for each object
     over the bus, but you can have a virtual tree of objects handled by a single
-    Python object.
+    Python object. There are two ways to handle method calls on virtual objects:
+
+    1) Pass a list of dbus_methods in to __init__. This works just like dbus.Object,
+    except an object_path is passed as the first argument to each method, denoting which
+    virtual object the call was made on. If all the objects in the tree support the same
+    methods, this is the best approach.
+
+    2) Override object_method_called. This allows you to define the valid methods dynamically
+    on an object by object basis. For example, if providing an object tree that represented
+    a filesystem heirarchy, you'd only want an ls method on directory objects, not file objects.
     """
 
-    def __init__(self, base_path, service):
+    def __init__(self, base_path, service, dbus_methods=[]):
         self._base_path = base_path
         self._service = service
         self._bus = service.get_bus()
         self._connection = self._bus.get_connection()
+
+        self._method_name_to_method = _build_method_dictionary(dbus_methods)
         
         self._connection.register_fallback(base_path, self._unregister_cb, self._message_cb)
         
@@ -308,9 +326,15 @@ class ObjectTree:
         target_object_full_path = message.get_path()
         assert(self._base_path == target_object_full_path[:len(self._base_path)])
         target_object_path = target_object_full_path[len(self._base_path):]
-        
         target_method_name = message.get_member()        
-        args = message.get_args_list()
+        message_args = message.get_args_list()
+
+        try:
+            target_method = self._method_name_to_method[target_method_name]
+            args = [target_object_path] + message_args
+        except KeyError:
+            target_method = self.object_method_called
+            args = [target_object_path, target_method_name, message_args]
 
         reply = _dispatch_dbus_method_call(target_method, args, message)
 

@@ -5,7 +5,7 @@ import gtk
 
 class SomeObject(dbus.Object):
     def __init__(self, service):
-        dbus.Object.__init__(self, "/SomeObject", [self.HelloWorld], service)
+        dbus.Object.__init__(self, "/SomeObject", service, [self.HelloWorld])
 
     def HelloWorld(self, hello_message):
         print (hello_message)
