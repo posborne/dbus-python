@@ -53,6 +53,8 @@ class Bus:
     TYPE_SYSTEM     = dbus_bindings.BUS_SYSTEM
     TYPE_ACTIVATION = dbus_bindings.BUS_ACTIVATION
 
+    """bus_type=[Bus.TYPE_SESSION | Bus.TYPE_SYSTEM | Bus.TYPE_ACTIVATION]
+    """
     def __init__(self, bus_type=TYPE_SESSION, glib_mainloop=True):
         self._connection = dbus_bindings.bus_get(bus_type)
 
@@ -100,7 +102,7 @@ class Bus:
     
     def _signal_func(self, connection, message):
         if (message.get_type() != dbus_bindings.MESSAGE_TYPE_SIGNAL):
-            return
+            return dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
         
         interface = message.get_interface()
         service   = message.get_sender()
@@ -114,7 +116,7 @@ class Bus:
             args = [interface, member, service, path, message]
             for receiver in receivers:
                 receiver(*args)
-        
+
 
 class RemoteObject:
     """A remote Object.

@@ -100,6 +100,7 @@ cdef DBusHandlerResult cmessage_function_handler (DBusConnection *connection,
     retval = function(*args)
     if (retval == None):
         retval = DBUS_HANDLER_RESULT_HANDLED
+
     return retval
 
 cdef class Connection:
@@ -644,6 +645,7 @@ cdef class MessageIter:
     
 (MESSAGE_TYPE_INVALID, MESSAGE_TYPE_METHOD_CALL, MESSAGE_TYPE_METHOD_RETURN, MESSAGE_TYPE_ERROR, MESSAGE_TYPE_SIGNAL) = range(5)
 (TYPE_INVALID, TYPE_NIL, TYPE_BYTE, TYPE_BOOLEAN, TYPE_INT32, TYPE_UINT32, TYPE_INT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_STRING, TYPE_CUSTOM, TYPE_ARRAY, TYPE_DICT, TYPE_OBJECT_PATH) = (0, ord('v'), ord('y'), ord('b'), ord('i'), ord('u'), ord('x'), ord('t'), ord('d'), ord('s'), ord('c'), ord('a'), ord('m'), ord('o'))
+(HANDLER_RESULT_HANDLED, HANDLER_RESULT_NOT_YET_HANDLED, HANDLER_RESULT_NEED_MEMORY) = range(3)
     
 cdef class Message:
     cdef DBusMessage *msg
