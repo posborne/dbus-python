@@ -428,10 +428,33 @@ cdef class MessageIter:
                 retval = self.get_boolean_array()
             else:
                 raise TypeError, "Unknown array type %d in MessageIter" % (array_type)
+        elif arg_type == TYPE_DICT:
+            retval = self.get_dict()
         else:
             raise TypeError, 'Unknown arg type %d in MessageIter' % (arg_type)
 
         return retval
+
+    def get_dict(self):
+        cdef DBusMessageIter dict_iter
+        cdef DBusMessageIter* old_iter
+
+        dict = {}
+        dbus_message_iter_init_dict_iterator(self.iter, &dict_iter)
+        # FIXME: nasty hack so we can use existing self.get() method
+        old_iter = self.iter
+        self.iter = &dict_iter
+
+        while True:
+            key = self.get_dict_key()
+            value = self.get()
+            dict[key] = value
+            if not self.has_next():
+                break
+            self.next()
+
+        self.iter = old_iter
+        return dict
     
     def get_arg_type(self):
         return dbus_message_iter_get_arg_type(self.iter)
@@ -569,7 +592,7 @@ cdef class MessageIter:
 
     
 (MESSAGE_TYPE_INVALID, MESSAGE_TYPE_METHOD_CALL, MESSAGE_TYPE_METHOD_RETURN, MESSAGE_TYPE_ERROR, MESSAGE_TYPE_SIGNAL) = range(5)
-(TYPE_INVALID, TYPE_NIL, TYPE_BYTE, TYPE_BOOLEAN, TYPE_INT32, TYPE_UINT32, TYPE_INT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_STRING, TYPE_NAMED, TYPE_ARRAY, TYPE_DICT, TYPE_OBJECT_PATH) = (0, 118, 121, 98, 105, 117, 120, 116, 100, 115, 110, 97, 99, 111)
+(TYPE_INVALID, TYPE_NIL, TYPE_BYTE, TYPE_BOOLEAN, TYPE_INT32, TYPE_UINT32, TYPE_INT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_STRING, TYPE_CUSTOM, TYPE_ARRAY, TYPE_DICT, TYPE_OBJECT_PATH) = (0, ord('v'), ord('y'), ord('b'), ord('i'), ord('u'), ord('x'), ord('t'), ord('d'), ord('s'), ord('c'), ord('a'), ord('m'), ord('o'))
     
 cdef class Message:
     cdef DBusMessage *msg
