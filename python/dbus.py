@@ -43,6 +43,13 @@ print(dbus_object.ListServices())
 
 import dbus_bindings
 
+_threads_initialized = 0
+def init_gthreads ():
+    global _threads_initialized
+    if not _threads_initialized:
+        dbus_bindings.init_gthreads ()
+        _threads_initialized = 1
+    
 class Bus:
     """A connection to a DBus daemon.
 
@@ -285,8 +292,12 @@ class Object:
         
         self._connection.register_object_path(object_path, self._unregister_cb, self._message_cb)
 
-    def emit_signal(self, interface, signal_name):
+    def emit_signal(self, interface, signal_name, *args):
         message = dbus_bindings.Signal(self._object_path, interface, signal_name)
+        iter = message.get_iter()
+        for arg in args:
+            iter.append(arg)
+        
         self._connection.send(message)
 
     def _unregister_cb(self, connection):

@@ -18,6 +18,7 @@ cdef extern from "dbus-glib.h":
                                                  GMainContext   *context)
     cdef void dbus_server_setup_with_g_main     (DBusServer     *server,
                                                  GMainContext   *context)
+    cdef void dbus_g_thread_init ()
 
 cdef extern from "Python.h":
     void Py_XINCREF (object)
@@ -1136,3 +1137,6 @@ def bus_remove_match(Connection connection, rule):
     
     if dbus_error_is_set(&error):
         raise DBusException, error.message
+
+def init_gthreads ():
+        dbus_g_thread_init ()
