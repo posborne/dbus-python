@@ -3,7 +3,7 @@ NULL=
 EXTRA_DIST = 			\
 	example-service.py 	\
 	example-client.py	\
-	example-signal.py	\
+	example-signals.py	\
 	gconf-proxy-client.py	\
 	gconf-proxy-service.py	\
 	gconf-proxy-service2.py	\
