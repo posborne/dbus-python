@@ -49,7 +49,15 @@ def init_gthreads ():
     if not _threads_initialized:
         dbus_bindings.init_gthreads ()
         _threads_initialized = 1
-    
+
+class Sender:
+    def __init__(self, interface, signal_name, service, path, message):
+        self.interface = interface
+        self.signal_name = signal_name 
+        self.service = service
+        self.path = path
+        self.message = message
+
 class Bus:
     """A connection to a DBus daemon.
 
@@ -83,13 +91,14 @@ class Bus:
         """
         return RemoteService(self, service_name)
 
-    def add_signal_receiver(self, handler_function, signal_name=None, interface=None, service=None, path=None):
+    def add_signal_receiver(self, handler_function, signal_name=None, interface=None, service=None, path=None, expand_args=True):
         match_rule = self._get_match_rule(signal_name, interface, service, path)
-        
+
         if (not self._match_rule_to_receivers.has_key(match_rule)):
-            self._match_rule_to_receivers[match_rule] = [ ]
-        self._match_rule_to_receivers[match_rule].append(handler_function)
-        
+            self._match_rule_to_receivers[match_rule] = {handler_function: True}
+
+        self._match_rule_to_receivers[match_rule][handler_function] = expand_args
+
         dbus_bindings.bus_add_match(self._connection, match_rule)
 
     def remove_signal_receiver(self, handler_function, signal_name=None, interface=None, service=None, path=None):
@@ -97,7 +106,7 @@ class Bus:
 
         if self._match_rule_to_receivers.has_key(match_rule):
             if self._match_rule_to_receivers[match_rule].__contains__(handler_function):
-                self._match_rule_to_receivers[match_rule].remove(handler_function)
+                self._match_rule_to_receivers[match_rule].pop(handler_function)
                 dbus_bindings.bus_remove_match(self._connection, match_rule)
 
     def get_connection(self):
@@ -130,18 +139,25 @@ class Bus:
         if (message.get_type() != dbus_bindings.MESSAGE_TYPE_SIGNAL):
             return dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
         
-        interface = message.get_interface()
-        service   = message.get_sender()
-        path      = message.get_path()
-        member    = message.get_member()
+        interface      = message.get_interface()
+        service        = message.get_sender()
+        path           = message.get_path()
+        signal_name    = message.get_member()
 
-        match_rule = self._get_match_rule(member, interface, service, path)
+        match_rule = self._get_match_rule(signal_name, interface, service, path)
 
         if (self._match_rule_to_receivers.has_key(match_rule)):
             receivers = self._match_rule_to_receivers[match_rule]
-            args = [interface, member, service, path, message]
-            for receiver in receivers:
-                receiver(*args)
+
+            sender = Sender(interface, signal_name, service, path, message)
+            arg = [sender]
+            for receiver in receivers.iterkeys():
+	    	if receivers[receiver]:
+                    args = [sender]
+		    args.extend(message.get_args_list())
+		    receiver(*args)
+		else:
+                    receiver(*arg)
 
     def start_service_by_name(self, service):
         return dbus_bindings.bus_start_service_by_name(self._connection, service)
