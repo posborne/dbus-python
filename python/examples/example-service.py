@@ -9,7 +9,7 @@ class SomeObject(dbus.Object):
 
     def HelloWorld(self, hello_message):
         print (hello_message)
-        return "Hello from example-service.py"
+        return ["Hello", "from example-service.py"]
 
 session_bus = dbus.SessionBus()
 service = dbus.Service("org.designfu.SampleService", bus=session_bus)
