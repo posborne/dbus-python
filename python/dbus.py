@@ -117,6 +117,25 @@ class Bus:
             for receiver in receivers:
                 receiver(*args)
 
+class SystemBus(Bus):
+    """The system-wide message bus
+    """
+    def __init__(self):
+        Bus.__init__(self, Bus.TYPE_SYSTEM)
+
+class SessionBus(Bus):
+    """The session (current login) message bus
+    """
+    def __init__(self):
+        Bus.__init__(self, Bus.TYPE_SESSION)
+
+class ActivationBus(Bus):
+    """The bus that activated this process (if
+    this process was launched by DBus activation)
+    """
+    def __init__(self):
+        Bus.__init__(self, Bus.TYPE_ACTIVATION)
+
 
 class RemoteObject:
     """A remote Object.

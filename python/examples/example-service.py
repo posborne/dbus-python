@@ -11,8 +11,8 @@ class SomeObject(dbus.Object):
         print (hello_message)
         return "Hello from example-service.py"
 
-
-service = dbus.Service("org.designfu.SampleService")
+session_bus = dbus.SessionBus()
+service = dbus.Service("org.designfu.SampleService", bus=session_bus)
 object = SomeObject(service)
 
 gtk.main()

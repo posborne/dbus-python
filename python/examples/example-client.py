@@ -2,7 +2,7 @@
 
 import dbus
 
-bus = dbus.Bus()
+bus = dbus.SessionBus()
 remote_service = bus.get_service("org.designfu.SampleService")
 remote_object = remote_service.get_object("/SomeObject",
                                           "org.designfu.SampleInterface")

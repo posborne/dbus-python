@@ -3,7 +3,7 @@
 import dbus
 
 # Get a connection to the SYSTEM bus
-bus = dbus.Bus(dbus.Bus.TYPE_SYSTEM)
+bus = dbus.SystemBus()
 
 # Get the service provided by the dbus-daemon named org.freedesktop.DBus
 dbus_service = bus.get_service('org.freedesktop.DBus')
