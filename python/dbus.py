@@ -75,7 +75,15 @@ class Bus:
         self._match_rule_to_receivers[match_rule].append(receiver)
         
         dbus_bindings.bus_add_match(self._connection, match_rule)
-        
+
+    def remove_signal_receiver(self, receiver, interface=None, service=None, path=None):
+        match_rule = self._get_match_rule(interface, service, path)
+
+        if self._match_rule_to_receivers.has_key(match_rule):
+            if self._match_rule_to_receivers[match_rule].__contains__(receiver):
+                self._match_rule_to_receivers[match_rule].remove(receiver)
+                dbus_bindings.bus_remove_match(self._connection, match_rule)
+
     def get_connection(self):
         """Get the dbus_bindings.Connection object associated with this Bus"""
         return self._connection
@@ -103,7 +111,7 @@ class Bus:
 
         if (self._match_rule_to_receivers.has_key(match_rule)):
             receivers = self._match_rule_to_receivers[match_rule]
-            args = [interface, member, service, path]
+            args = [interface, member, service, path, message]
             for receiver in receivers:
                 receiver(*args)
         
