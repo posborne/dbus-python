@@ -5,6 +5,7 @@
 cdef extern from "stdlib.h":
     cdef void *malloc(size_t size)
     cdef void free(void *ptr)
+    cdef void *calloc(size_t nmemb, size_t size)
 
 cdef extern from "dbus-glib.h":
     ctypedef struct GMainContext
@@ -486,6 +487,12 @@ cdef class MessageIter:
                 retval = self.get_object_path_array()
             elif array_type == TYPE_BYTE:
                 retval = self.get_byte_array()
+            elif array_type == TYPE_INT32:
+                retval = self.get_int32_array()
+            elif array_type == TYPE_UINT32:
+                retval = self.get_uint32_array()
+            elif array_type == TYPE_DOUBLE:
+                retval = self.get_double_array()
             else:
                 raise TypeError, "Unknown array type %d in MessageIter" % (array_type)
         elif arg_type == TYPE_DICT:
@@ -562,9 +569,34 @@ cdef class MessageIter:
         return list
 
     # FIXME: implement dbus_message_iter_get_boolean_array
-    #                  dbus_message_iter_get_int32_array
-    #                  dbus_message_iter_get_uint32_array
-    #                  dbus_message_iter_get_double_array
+
+    def get_int32_array(self):
+        cdef int len
+        cdef dbus_int32_t *retval
+        dbus_message_iter_get_int32_array(self.iter, &retval, <int*>&len)
+        python_list = []
+        for i from 0 <= i < len:
+            python_list.append(retval[i])
+        return python_list
+
+    def get_uint32_array(self):
+        cdef int len
+        cdef dbus_uint32_t *retval
+        dbus_message_iter_get_uint32_array(self.iter, &retval, <int*>&len)
+        python_list = []
+        for i from 0 <= i < len:
+            python_list.append(retval[i])
+        return python_list
+
+    def get_double_array(self):
+        cdef int len
+        cdef double *retval
+        dbus_message_iter_get_double_array(self.iter, &retval, <int*>&len)
+        python_list = []
+        for i from 0 <= i < len:
+            python_list.append(retval[i])
+        return python_list
+
 
     def get_string_array(self):
         cdef int len
@@ -606,6 +638,10 @@ cdef class MessageIter:
             list_type = type(value[0])
             if list_type == str:
                 self.append_string_array(value)
+            elif list_type == int:
+                self.append_int32_array(value)
+            elif list_type == float:
+                self.append_double_array(value)
             elif isinstance(value[0], ObjectPath):
                 self.append_object_path_array(value)
             else:
@@ -640,33 +676,55 @@ cdef class MessageIter:
     def append_string(self, value):
         return dbus_message_iter_append_string(self.iter, value)    
 
-    # FIXME: dbus_message_iter_append_named
-
     def append_dict_key(self, value):
         return dbus_message_iter_append_dict_key(self.iter, value)
 
     def append_object_path(self, value):
         return dbus_message_iter_append_object_path(self.iter, value)
 
-    # FIXME: append_array, append_dict_array, append_boolean_array, append_int32_array, append_uint32_array, append_double_array
+    # FIXME: append_array, append_dict_array, append_boolean_array, append_uint32_array
 
-    def append_byte_array(self, list):
+    def append_byte_array(self, python_list):
         cdef unsigned char * value
         cdef int length
-        length = len(list)
-        value = <unsigned char*>malloc(length)
+        length = len(python_list)
+        value = <unsigned char*>malloc(length * sizeof(unsigned char))
         for i from 0 <= i < length:
-            item = list[i]
+            item = python_list[i]
             if type(item) != str or len(item) != 1:
                 raise TypeError
             value[i] = ord(item)
         return dbus_message_iter_append_byte_array(self.iter, value, length)
 
+    def append_int32_array(self, python_list):
+        cdef dbus_int32_t *value
+        cdef int length
+        length = len(python_list)
+        value = <dbus_int32_t*>malloc(length * sizeof(dbus_int32_t))
+        for i from 0 <= i < length:
+            item = python_list[i]
+            if type(item) != int:
+                raise TypeError
+            value[i] = item
+        return dbus_message_iter_append_int32_array(self.iter, value, length)
+
+    def append_double_array(self, python_list):
+        cdef double *value
+        cdef int length
+        length = len(python_list)
+        value = <double*>malloc(length * sizeof(double))
+        for i from 0 <= i < length:
+            item = python_list[i]
+            if type(item) != float:
+                raise TypeError
+            value[i] = item
+        return dbus_message_iter_append_double_array(self.iter, value, length)
+    
     def append_object_path_array(self, list):
         cdef char **value
         cdef int length
         length = len(list)
-        value = <char**>malloc(length)
+        value = <char**>malloc(length * sizeof(char *))
         for i from 0 <= i < length:
             item = list[i]
             if not isinstance(item, ObjectPath):
@@ -680,7 +738,7 @@ cdef class MessageIter:
         cdef int length
         cdef dbus_bool_t return_code
         length = len(python_list)
-        value = <char**>malloc(length)
+        value = <char**>malloc(length * sizeof(char *))
         for i from 0 <= i < length:
             item = python_list[i]
             if type(item) != str:

@@ -43,5 +43,21 @@ TestEcho(39.5)
 TestEcho("HelloWorld")
 TestEcho(dbus_bindings.ObjectPath("/test/path"))
 
-#FIXME!!! Crashes on lists ?!?
-#TestEchoList(["one", "two", "three", "four"])
+
+string_list = []
+for i in range(200):
+    string_list.append("List item " + str(i))
+TestEchoList(string_list)
+
+int_list = range(200)
+TestEchoList(int_list)
+
+path_list = []
+for i in range(200):
+    path_list.append(dbus_bindings.ObjectPath("/some/object/path" + str(i)))
+TestEchoList(path_list)
+
+double_list = []
+for i in range(200):
+    double_list.append(float(i) / 1000)
+TestEchoList(double_list)
