@@ -5,6 +5,8 @@
 # where python conditionals have a ( ) around them, thus violating
 # PEP-8 were written by the lame wannabe python programmer seth
 
+#FIXME: find memory leaks that I am sure exist
+
 #include "dbus_h_wrapper.h"
 
 cdef extern from "stdlib.h":
@@ -398,7 +400,7 @@ cdef class PendingCall:
     def get_reply(self):
         cdef Message message
         message = Message(_create=0)
-        message._set_msg(dbus_pending_call_get_reply(self.pending_call))
+        message._set_msg(dbus_pending_call_steal_reply(self.pending_call))
         return message
 
     def block(self):
