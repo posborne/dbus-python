@@ -17,8 +17,5 @@ dbus_object = dbus_service.get_object('/org/freedesktop/DBus',
 # One of the member functions in the org.freedesktop.DBus interface
 # is ListServices(), which provides a list of all the other services
 # registered on this bus. Call it, and print the list.
-system_service_list = dbus_object.ListServices()
-
-for service in system_service_list:
-    if service[0] != ':':
-        print (service)
+system_service_list = dbus_object.ListNames()
+print str(system_service_list)

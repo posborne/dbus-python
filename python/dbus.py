@@ -54,13 +54,13 @@ class Bus:
     """A connection to a DBus daemon.
 
     One of three possible standard buses, the SESSION, SYSTEM,
-    or ACTIVATION bus
+    or STARTER bus
     """
     TYPE_SESSION    = dbus_bindings.BUS_SESSION
     TYPE_SYSTEM     = dbus_bindings.BUS_SYSTEM
-    TYPE_ACTIVATION = dbus_bindings.BUS_ACTIVATION
+    TYPE_STARTER = dbus_bindings.BUS_STARTER
 
-    """bus_type=[Bus.TYPE_SESSION | Bus.TYPE_SYSTEM | Bus.TYPE_ACTIVATION]
+    """bus_type=[Bus.TYPE_SESSION | Bus.TYPE_SYSTEM | Bus.TYPE_STARTER]
     """
 
     START_REPLY_SUCCESS = dbus_bindings.DBUS_START_REPLY_SUCCESS
@@ -117,7 +117,7 @@ class Bus:
                 bus_service = self.get_service("org.freedesktop.DBus")
                 bus_object = bus_service.get_object('/org/freedesktop/DBus',
                                                      'org.freedesktop.DBus')
-                service = bus_object.GetServiceOwner(service)
+                service = bus_object.GetNameOwner(service)
 
             match_rule = match_rule + ",sender='%s'" % (service)
         if (path):
@@ -158,12 +158,12 @@ class SessionBus(Bus):
     def __init__(self):
         Bus.__init__(self, Bus.TYPE_SESSION)
 
-class ActivationBus(Bus):
+class StarterBus(Bus):
     """The bus that activated this process (if
     this process was launched by DBus activation)
     """
     def __init__(self):
-        Bus.__init__(self, Bus.TYPE_ACTIVATION)
+        Bus.__init__(self, Bus.TYPE_STARTER)
 
 
 class RemoteObject:
@@ -212,7 +212,7 @@ class RemoteMethod:
         message.set_destination(self._service_name)
         
         # Add the arguments to the function
-        iter = message.get_iter()
+        iter = message.get_iter(True)
         for arg in args:
             iter.append(arg)
 
@@ -268,9 +268,9 @@ def _dispatch_dbus_method_call(target_method, argument_list, message):
     else:
         reply = dbus_bindings.MethodReturn(message)
         if retval != None:
-            iter = reply.get_iter()
+            iter = reply.get_iter(append=True)
             iter.append(retval)
-
+	    
     return reply
 
 def _build_method_dictionary(methods):
@@ -305,7 +305,7 @@ class Object:
 
     def emit_signal(self, interface, signal_name, *args):
         message = dbus_bindings.Signal(self._object_path, interface, signal_name)
-        iter = message.get_iter()
+        iter = message.get_iter(True)
         for arg in args:
             iter.append(arg)
         
@@ -320,10 +320,8 @@ class Object:
         args = message.get_args_list()
 
         reply = _dispatch_dbus_method_call(target_method, args, message)
-        
+
         self._connection.send(reply)
-
-
 
 class ObjectTree:
     """An object tree allows you to register a handler for a tree of object paths.

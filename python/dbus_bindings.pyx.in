@@ -426,13 +426,19 @@ cdef class Watch:
 cdef class MessageIter:
     cdef DBusMessageIter *iter
     cdef DBusMessageIter real_iter
+    cdef dbus_uint32_t level
 
-    def __init__(self):
+    def __init__(self, level=0):
         self.iter = &self.real_iter
-        
+        self.level = level
+        #don't allow us to recurse forever
+        #FIXME: what is a sane limit?
+        if(self.level > 100):
+            raise TypeError, 'Type recurion is too deep' 
+
     cdef __cinit__(self, DBusMessageIter *iter):
         self.real_iter = iter[0]
-    
+
     cdef DBusMessageIter *_get_iter(self):
         return self.iter
 
@@ -442,13 +448,12 @@ cdef class MessageIter:
     def next(self):
         return dbus_message_iter_next(self.iter)
 
-    def get(self):
-        arg_type = self.get_arg_type()
+    def get(self, arg_type=None):
+        if(arg_type == None):
+            arg_type = self.get_arg_type()
 
         if arg_type == TYPE_INVALID:
             raise TypeError, 'Invalid arg type in MessageIter'
-        elif arg_type == TYPE_NIL:
-            retval = None
         elif arg_type == TYPE_STRING:
             retval = self.get_string()
         elif arg_type == TYPE_INT32:
@@ -465,186 +470,153 @@ cdef class MessageIter:
             retval = self.get_byte()
         elif arg_type == TYPE_BOOLEAN:
             retval = self.get_boolean()
-        elif arg_type == TYPE_ARRAY:
-            array_type = self.get_array_type()
+        elif arg_type == TYPE_SIGNATURE:
+            raise TypeError, 'Signitures not implemented yet!'
 
-            if array_type == TYPE_STRING:
-                retval = self.get_string_array()
-            elif array_type == TYPE_OBJECT_PATH:
-                retval = self.get_object_path_array()
-            elif array_type == TYPE_BYTE:
-                retval = self.get_byte_array()
-            elif array_type == TYPE_INT32:
-                retval = self.get_int32_array()
-            elif array_type == TYPE_UINT32:
-                retval = self.get_uint32_array()
-            elif array_type == TYPE_INT64:
-                retval = self.get_int64_array()
-            elif array_type == TYPE_UINT64:
-                retval = self.get_uint64_array()
-            elif array_type == TYPE_DOUBLE:
-                retval = self.get_double_array()
-            else:
-                raise TypeError, "Unknown array type %d in MessageIter" % (array_type)
-        elif arg_type == TYPE_DICT:
-            retval = self.get_dict()
+        elif arg_type == TYPE_ARRAY:
+            array_type = self.get_element_type()
+            retval = self.get_array(array_type)
+        #elif arg_type == TYPE_DICT:
+        #    retval = self.get_dict()
+        #    TODO: Implement DICT when new type system implements them
         elif arg_type == TYPE_OBJECT_PATH:
             retval = self.get_object_path()
+        elif arg_type == TYPE_STRUCT:
+            raise TypeError, 'Structs not implemented yet!'
+            #TODO: implement structs
+        elif arg_type == TYPE_VARIANT:
+            raise TypeError, 'Varients not implemented yet!'
+            #TODO: implement variants
         else:
             raise TypeError, 'Unknown arg type %d in MessageIter' % (arg_type)
 
         return retval
 
-    def get_dict(self):
-        cdef DBusMessageIter c_dict_iter
-        cdef MessageIter dict_iter
-        
-        dbus_message_iter_init_dict_iterator(self.iter, &c_dict_iter)
-
-        dict_iter = MessageIter()
-        dict_iter.__cinit__(&c_dict_iter)
-
-        dict = {}
-
-        end_of_dict = False
-
-        while True:
-            key = dict_iter.get_dict_key()
-            value = dict_iter.get()
-            dict[key] = value
-            if not dict_iter.has_next():
-                break
-            dict_iter.next()
-
-        return dict
-
+#    TODO: Implement get_dict when DBUS supports dicts again
+#    def get_dict(self):
+#        cdef DBusMessageIter c_dict_iter
+#        cdef MessageIter dict_iter
+#       
+#        dbus_message_iter_recurse(self.iter, &c_dict_iter)
+#
+#        dict_iter = MessageIter()
+#        dict_iter.__cinit__(&c_dict_iter)
+#
+#        dict = {}
+#
+#        end_of_dict = False
+#
+#        while True:
+#            key = dict_iter.get_dict_key()
+#            value = dict_iter.get()
+#            dict[key] = value
+#            if not dict_iter.has_next():
+#                break
+#            dict_iter.next()
+#
+#        return dict
     def get_arg_type(self):
         return dbus_message_iter_get_arg_type(self.iter)
 
-    def get_array_type(self):
-        return dbus_message_iter_get_array_type(self.iter)
+    def get_element_type(self):
+        return dbus_message_iter_get_element_type(self.iter)
 
-    # FIXME: implement get_byte
-    #def get_byte(self):
-    #    return dbus_message_iter_get_byte(self.iter)
-
+    def get_byte(self):
+        cdef char c_val
+        dbus_message_iter_get_basic(self.iter, <char *>&c_val)
+        return c_val
+        
     def get_boolean(self):
-        return dbus_message_iter_get_boolean(self.iter)
-    
+        cdef dbus_bool_t c_val
+        dbus_message_iter_get_basic(self.iter, <dbus_bool_t *>&c_val)
+        return c_val
+        
     def get_int32(self):
-        return dbus_message_iter_get_int32(self.iter)
-
+        cdef dbus_int32_t c_val
+        dbus_message_iter_get_basic(self.iter, <dbus_int32_t *>&c_val)
+        return c_val
+        
     def get_uint32(self):
-        return dbus_message_iter_get_uint32(self.iter)
-
+        cdef dbus_uint32_t c_val
+        dbus_message_iter_get_basic(self.iter, <dbus_uint32_t *>&c_val)
+        return c_val
+        
     def get_int64(self):
-        return dbus_message_iter_get_int64(self.iter)
+        cdef dbus_int64_t c_val
+        dbus_message_iter_get_basic(self.iter, <dbus_int64_t *>&c_val)
+        return c_val
 
     def get_uint64(self):
-        return dbus_message_iter_get_uint64(self.iter)
+        cdef dbus_uint64_t c_val
+        dbus_message_iter_get_basic(self.iter, <dbus_uint64_t *>&c_val)
+        return c_val
 
     def get_double(self):
-        return dbus_message_iter_get_double(self.iter)
+        cdef double c_val
+        dbus_message_iter_get_basic(self.iter, <double *>&c_val)
+        return c_val
 
     def get_string(self):
-        return dbus_message_iter_get_string(self.iter)
+        cdef char *c_str
+        dbus_message_iter_get_basic(self.iter, <char **>&c_str)
+        return c_str
 
     def get_object_path(self):
-        object_path_string = dbus_message_iter_get_object_path(self.iter)
+        object_path_string = self.get_string()
         return ObjectPath(object_path_string)
+
+# TODO: Implement dict when DBUS supports it again
+#    def get_dict_key(self):
+#        return dbus_message_iter_get_dict_key(self.iter)
+
+    def get_array(self, type):
+        cdef DBusMessageIter c_array_iter
+        cdef MessageIter array_iter
+        level = self.level + 1
+
+        dbus_message_iter_recurse(self.iter, <DBusMessageIter *>&c_array_iter)
+        array_iter = MessageIter(level)
+        array_iter.__cinit__(&c_array_iter)
+        
+        python_list = []
+        while True:
+            value = array_iter.get(type)
+            python_list.append(value)
+            if not array_iter.has_next():
+                break
+            array_iter.next()
+
+        return python_list
+
+    #FIXME: handle all the different types?
+    def python_value_to_dbus_sig(self, value):
+        ptype = type(value)
+        ret = ""
+        if ptype == bool:
+            ret =  TYPE_BOOL
+        elif ptype == int:
+            ret = TYPE_INT32
+        elif ptype == long:
+            ret = TYPE_INT64
+        elif ptype == str:
+            ret = TYPE_STRING
+        elif ptype == float:
+            ret = TYPE_FLOAT
+#        elif ptype == dict:
+#            TODO: Implement dict when DBUS supports it again
+        elif ptype == list:
+            ret = TYPE_ARRAY
+        elif isinstance(value, ObjectPath):
+            ret = TYPE_PATH
+        else:
+            raise TypeError, "Argument of unknown type '%s'" % (ptype)
+
+        return str(chr(ret))
+
     
-    def get_dict_key(self):
-        return dbus_message_iter_get_dict_key(self.iter)
-
-    # FIXME: implement dbus_message_iter_init_array_iterator
-    
-    def get_byte_array(self):
-        cdef int len
-        cdef unsigned char *bytearray
-        cdef int i
-        dbus_message_iter_get_byte_array(self.iter, &bytearray, <int*>&len)
-        python_string = PyString_FromStringAndSize(<char *>bytearray, len)        
-        return python_string
-
-    # FIXME: implement dbus_message_iter_get_boolean_array
-
-    def get_int32_array(self):
-        cdef int len
-        cdef dbus_int32_t *retval
-        cdef int i
-        dbus_message_iter_get_int32_array(self.iter, &retval, <int*>&len)
-        python_list = []
-        for i from 0 <= i < len:
-            python_list.append(retval[i])
-        return python_list
-
-    def get_uint32_array(self):
-        cdef int len
-        cdef dbus_uint32_t *retval
-        cdef int i
-        dbus_message_iter_get_uint32_array(self.iter, &retval, <int*>&len)
-        python_list = []
-        for i from 0 <= i < len:
-            python_list.append(retval[i])
-        return python_list
-
-    def get_int64_array(self):
-        cdef int len
-        cdef dbus_int64_t *retval
-        cdef int i
-        dbus_message_iter_get_int64_array(self.iter, &retval, <int*>&len)
-        python_list = []
-        for i from 0 <= i < len:
-            python_list.append(retval[i])
-        return python_list
-
-    def get_uint64_array(self):
-        cdef int len
-        cdef dbus_uint64_t *retval
-        cdef int i
-        dbus_message_iter_get_uint64_array(self.iter, &retval, <int*>&len)
-        python_list = []
-        for i from 0 <= i < len:
-            python_list.append(retval[i])
-        return python_list
-
-    def get_double_array(self):
-        cdef int len
-        cdef double *retval
-        cdef int i
-        dbus_message_iter_get_double_array(self.iter, &retval, <int*>&len)
-        python_list = []
-        for i from 0 <= i < len:
-            python_list.append(retval[i])
-        return python_list
-
-
-    def get_string_array(self):
-        cdef int len
-        cdef char **retval
-        cdef int i
-        dbus_message_iter_get_string_array(self.iter, &retval, <int*>&len)
-        list = []
-        for i from 0 <= i < len:
-            list.append(retval[i])
-        return list
-
-    def get_object_path_array(self):
-        cdef int len
-        cdef char **retval
-        cdef int i
-        dbus_message_iter_get_object_path_array(self.iter, &retval, <int*>&len)
-        list = []
-        for i from 0 <= i < len:
-            list.append(ObjectPath(retval[i]))
-        return list    
-
-    # dbus_message_append_iter_init included in class Message
-
     #FIXME: handle all the different types?
     def append(self, value):
         value_type = type(value)
-
         if value_type == bool:
             retval = self.append_boolean(value)
         elif value_type == int:
@@ -655,172 +627,170 @@ cdef class MessageIter:
             retval = self.append_string(value)
         elif value_type == float:
             retval = self.append_double(value)
-        elif value_type == dict:
-            retval = self.append_dict(value)
+#        elif value_type == dict:
+#            retval = self.append_dict(value)
+#            TODO: Implement dict when DBUS supports it again
         elif value_type == list:
-            if len(value) == 0:
-                # Empty lists are currently not supported, returning None instead
-                retval = self.append(None)
-            else:
-                list_type = type(value[0])
-                if list_type == str:
-                    self.append_string_array(value)
-                elif list_type == int:
-                    self.append_int32_array(value)
-                elif list_type == long:
-                    self.append_int64_array(value)
-                elif list_type == float:
-                    self.append_double_array(value)
-                elif isinstance(value[0], ObjectPath):
-                    self.append_object_path_array(value)
-                else:
-                    raise TypeError, "List of unknown type '%s'" % (list_type)
-        elif value_type == None.__class__:
-            retval = self.append_nil()
+             retval = self.append_array(value)
+        #elif value_type == None.__class__:
+        #    retval = self.append_nil()
         elif isinstance(value, ObjectPath):
             retval = self.append_object_path(value)
         elif isinstance(value, ByteArray):
-            retval = self.append_byte_array(value)
+            retval = self.append_array(value)
         else:
             raise TypeError, "Argument of unknown type '%s'" % (value_type)
 
         return retval
 
-    def append_nil(self):
-        return dbus_message_iter_append_nil(self.iter)
-    
     def append_boolean(self, value):
-        return dbus_message_iter_append_boolean(self.iter, value)
+        cdef dbus_bool_t c_value
+        c_value = value
+        return dbus_message_iter_append_basic(self.iter, TYPE_BOOLEAN, <dbus_bool_t *>&c_value)
 
     def append_byte(self, value):
+        cdef char b
         if type(value) != str or len(value) != 1:
             raise TypeError
-        return dbus_message_iter_append_byte(self.iter, ord(value))
+
+        b = ord(value)
+        return dbus_message_iter_append_basic(self.iter, TYPE_BYTE, <char *>&b)
     
     def append_int32(self, value):
-        return dbus_message_iter_append_int32(self.iter, value)
+        cdef dbus_int32_t c_value
+        c_value = value
+        return dbus_message_iter_append_basic(self.iter, TYPE_INT32, <dbus_int32_t *>&c_value)
 
     def append_uint32(self, value):
-        return dbus_message_iter_append_uint32(self.iter, value)
+        cdef dbus_uint32_t c_value
+        c_value = value
+        return dbus_message_iter_append_basic(self.iter, TYPE_UINT32, <dbus_uint32_t *>&c_value)
 
     def append_int64(self, value):
-        return dbus_message_iter_append_int64(self.iter, value)
+        cdef dbus_int64_t c_value
+        c_value = value
+        return dbus_message_iter_append_basic(self.iter, TYPE_INT64, <dbus_int64_t *>&c_value)
 
     def append_uint64(self, value):
-        return dbus_message_iter_append_uint64(self.iter, value)
+        cdef dbus_uint64_t c_value
+        c_value = value
+        return dbus_message_iter_append_basic(self.iter, TYPE_UINT64, <dbus_uint64_t *>&c_value)
 
     def append_double(self, value):
-        return dbus_message_iter_append_double(self.iter, value)
+        cdef double c_value
+        c_value = value
+        return dbus_message_iter_append_basic(self.iter, TYPE_DOUBLE, <double *>&c_value)
 
     def append_string(self, value):
-        return dbus_message_iter_append_string(self.iter, value)    
-
-    def append_dict_key(self, value):
-        return dbus_message_iter_append_dict_key(self.iter, value)
+        cdef char *c_value
+        c_value = value
+        return dbus_message_iter_append_basic(self.iter, TYPE_STRING, <char **>&c_value)    
+#    TODO: Implement dict when DBUS supports it again
+#    def append_dict_key(self, value):
+#        return dbus_message_iter_append_dict_key(self.iter, value)
 
     def append_object_path(self, value):
-        return dbus_message_iter_append_object_path(self.iter, value)
+        cdef char *c_value
+        c_value = value
+        return dbus_message_iter_append_basic(self.iter, TYPE_PATH, <char **>&c_value)
 
     # FIXME: append_array, append_boolean_array, append_uint32_array, 
     # append_uint64_array
+#TODO: Implement dict when DBUS supports it again
+#    def append_dict(self, python_dict):
+#        cdef DBusMessageIter c_dict_iter
+#        cdef MessageIter dict_iter
+#        
+#        dbus_message_iter_append_dict(self.iter, &c_dict_iter)
+#        
+#        dict_iter = MessageIter()
+#        dict_iter.__cinit__(&c_dict_iter)
+#
+#        for key, value in python_dict.iteritems():
+#            if type(key) != str:
+#                raise TypeError, "DBus dict keys must be strings"
+#            dict_iter.append_dict_key(key)
+#            dict_iter.append(value)
+    def append_array(self, python_list):
+        cdef DBusMessageIter c_array_iter
+        cdef MessageIter array_iter
 
-    def append_dict(self, python_dict):
-        cdef DBusMessageIter c_dict_iter
-        cdef MessageIter dict_iter
-        
-        dbus_message_iter_append_dict(self.iter, &c_dict_iter)
-        
-        dict_iter = MessageIter()
-        dict_iter.__cinit__(&c_dict_iter)
+        level = self.level + 1
+        sig = self.python_value_to_dbus_sig(python_list[0])
+        dbus_message_iter_open_container(self.iter, TYPE_ARRAY, sig, <DBusMessageIter *>&c_array_iter)
+        array_iter = MessageIter(level)
+        array_iter.__cinit__(&c_array_iter)
 
-        for key, value in python_dict.iteritems():
-            if type(key) != str:
-                raise TypeError, "DBus dict keys must be strings"
-            dict_iter.append_dict_key(key)
-            dict_iter.append(value)
-
-    def append_byte_array(self, python_list):
-        cdef unsigned char * value
-        cdef int length
-        cdef int i
         length = len(python_list)
-        value = <unsigned char*>malloc(length * sizeof(unsigned char))
-        for i from 0 <= i < length:
-            item = python_list[i]
-            if type(item) != str or len(item) != 1:
-                raise TypeError
-            value[i] = ord(item)
-        return dbus_message_iter_append_byte_array(self.iter, value, length)
+        for item in python_list:
+            if not array_iter.append(item):
+                dbus_message_iter_close_container(self.iter, array_iter.iter)
+                return False
 
-    def append_int32_array(self, python_list):
-        cdef dbus_int32_t *value
-        cdef int length
-        cdef int i
-        length = len(python_list)
-        value = <dbus_int32_t*>malloc(length * sizeof(dbus_int32_t))
-        for i from 0 <= i < length:
-            item = python_list[i]
-            if type(item) != int:
-                raise TypeError
-            value[i] = item
-        return dbus_message_iter_append_int32_array(self.iter, value, length)
+        dbus_message_iter_close_container(self.iter, array_iter.iter)
 
-    def append_int64_array(self, python_list):
-        cdef dbus_int64_t *value
-        cdef int length
-        cdef int i
-        length = len(python_list)
-        value = <dbus_int64_t*>malloc(length * sizeof(dbus_int64_t))
-        for i from 0 <= i < length:
-            item = python_list[i]
-            if type(item) != int:
-                raise TypeError
-            value[i] = item
-        return dbus_message_iter_append_int64_array(self.iter, value, length)
+        return True
 
-    def append_double_array(self, python_list):
-        cdef double *value
-        cdef int length
-        cdef int i
-        length = len(python_list)
-        value = <double*>malloc(length * sizeof(double))
-        for i from 0 <= i < length:
-            item = python_list[i]
-            if type(item) != float:
-                raise TypeError
-            value[i] = item
-        return dbus_message_iter_append_double_array(self.iter, value, length)
-    
-    def append_object_path_array(self, list):
-        cdef char **value
-        cdef int length
-        cdef int i
-        length = len(list)
-        value = <char**>malloc(length * sizeof(char *))
-        for i from 0 <= i < length:
-            item = list[i]
-            if not isinstance(item, ObjectPath):
-                raise TypeError
-            value[i] = item
+    def __str__(self):
+        cdef DBusMessageIter c_array_iter
+        cdef MessageIter array_iter
 
-        return dbus_message_iter_append_object_path_array(self.iter, value, length)
-    
-    def append_string_array(self, python_list):
-        cdef char **value
-        cdef int length
-        cdef dbus_bool_t return_code
-        cdef int i
-        length = len(python_list)
-        value = <char**>malloc(length * sizeof(char *))
-        for i from 0 <= i < length:
-            item = python_list[i]
-            if type(item) != str:
-                raise TypeError
-            value[i] = item
-        return dbus_message_iter_append_string_array(self.iter, value, length)
+        value_at_iter = True
+        retval = ""
+        while (value_at_iter):
+            type = self.get_arg_type()
+            if type == TYPE_INVALID:
+                break
+            elif type == TYPE_STRING:
+                str = iter.get_string()
+                arg = 'string:%s\n' % (str)
+            elif type == TYPE_OBJECT_PATH:
+                path = iter.get_object_path()
+                arg = 'object_path:%s\n' % (path)
+            elif type == TYPE_INT32:
+                num = iter.get_int32()
+                arg = 'int32:%d\n' % (num)
+            elif type == TYPE_UINT32:
+                num = iter.get_uint32()
+                arg = 'uint32:%u\n' % (num)
+            elif type == TYPE_INT64:
+                num = iter.get_int64()
+                arg = 'int64:%d\n' % (num)
+            elif type == TYPE_UINT64:
+                num = iter.get_uint64()
+                arg = 'uint64:%u\n' % (num)
+            elif type == TYPE_DOUBLE:
+                num = iter.get_double()
+                arg = 'double:%f\n' % (num)
+            elif type == TYPE_BYTE:
+                num = iter.get_byte()
+                arg = 'byte:%x(%s)\n' % (num, str(chr(num)))
+            elif type == TYPE_BOOLEAN:
+                bool = iter.get_boolean()
+                if (bool):
+                    str = "true"
+                else:
+                    str = "false"
+                arg = 'boolean:%s\n' % (str)
+            elif type == TYPE_ARRAY:
+                dbus_message_iter_recurse(self.iter, <DBusMessageIter *>&c_array_iter)
+                array_iter = MessageIter(self.level + 1)
+                array_iter.__cinit__(&c_array_iter)
+                if array_iter.has_next():
+                    arg = 'array [' + str(array_iter) + ']'
+                else:
+                    arg = 'array []'
+            else:
+                arg = '(unknown arg type %d)\n' % type
+
+            retval = retval + arg
+            value_at_iter = self.next()
+
+        return retval
+
 
 (MESSAGE_TYPE_INVALID, MESSAGE_TYPE_METHOD_CALL, MESSAGE_TYPE_METHOD_RETURN, MESSAGE_TYPE_ERROR, MESSAGE_TYPE_SIGNAL) = range(5)
-(TYPE_INVALID, TYPE_NIL, TYPE_BYTE, TYPE_BOOLEAN, TYPE_INT32, TYPE_UINT32, TYPE_INT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_STRING, TYPE_CUSTOM, TYPE_ARRAY, TYPE_DICT, TYPE_OBJECT_PATH) = (0, ord('v'), ord('y'), ord('b'), ord('i'), ord('u'), ord('x'), ord('t'), ord('d'), ord('s'), ord('c'), ord('a'), ord('m'), ord('o'))
+(TYPE_INVALID, TYPE_BYTE, TYPE_BOOLEAN, TYPE_INT32, TYPE_UINT32, TYPE_INT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_STRING, TYPE_OBJECT_PATH, TYPE_SIGNATURE, TYPE_ARRAY, TYPE_STRUCT, TYPE_STRUCT_START, TYPE_STRUCT_END, TYPE_VARIENT) = (0, ord('y'), ord('b'), ord('i'), ord('u'), ord('x'), ord('t'), ord('d'), ord('s'), ord('o'), ord('g'), ord('a'), ord('r'), ord('('), ord(')'), ord('v'))
 (HANDLER_RESULT_HANDLED, HANDLER_RESULT_NOT_YET_HANDLED, HANDLER_RESULT_NEED_MEMORY) = range(3)
     
 cdef class Message:
@@ -865,7 +835,7 @@ cdef class Message:
             return "error"
         else:
             return "(unknown message type)"
-        
+
     def __str__(self):
         message_type = self.get_type()
         sender = self.get_sender()
@@ -892,51 +862,8 @@ cdef class Message:
         # FIXME: should really use self.convert_to_tuple() here
         
         iter = self.get_iter()
-        value_at_iter = True
-        
-        while (value_at_iter):
-            type = iter.get_arg_type()
 
-            if type == TYPE_INVALID:
-                break
-            elif type == TYPE_NIL:
-                arg = 'nil:None\n'
-            elif type == TYPE_STRING:
-                str = iter.get_string()
-                arg = 'string:%s\n' % (str)
-            elif type == TYPE_OBJECT_PATH:
-                path = iter.get_object_path()
-                arg = 'object_path:%s\n' % (path)
-            elif type == TYPE_INT32:
-                num = iter.get_int32()
-                arg = 'int32:%d\n' % (num)
-            elif type == TYPE_UINT32:
-                num = iter.get_uint32()
-                arg = 'uint32:%u\n' % (num)
-            elif type == TYPE_INT64:
-                num = iter.get_int64()
-                arg = 'int64:%d\n' % (num)
-            elif type == TYPE_UINT64:
-                num = iter.get_uint64()
-                arg = 'uint64:%u\n' % (num)
-            elif type == TYPE_DOUBLE:
-                num = iter.get_double()
-                arg = 'double:%f\n' % (num)
-            elif type == TYPE_BYTE:
-                num = iter.get_byte()
-                arg = 'byte:%d\n' % (num)
-            elif type == TYPE_BOOLEAN:
-                bool = iter.get_boolean()
-                if (bool):
-                    str = "true"
-                else:
-                    str = "false"
-                arg = 'boolean:%s\n' % (str)
-            else:
-                arg = '(unknown arg type %d)\n' % type
-
-            retval = retval + arg
-            value_at_iter = iter.next()
+        retval = retval + "\n" + str(iter) 
 
         return retval
     
@@ -946,15 +873,19 @@ cdef class Message:
     cdef DBusMessage *_get_msg(self):
         return self.msg
 
-    def get_iter(self):
+    def get_iter(self, append=False):
         cdef DBusMessageIter iter
         cdef MessageIter message_iter
         cdef DBusMessage *msg
 
         msg = self._get_msg()
-        dbus_message_iter_init(msg, &iter)
 
-        message_iter =  MessageIter()
+        if append:
+            dbus_message_iter_init_append(msg, &iter)
+        else:
+            dbus_message_iter_init(msg, &iter)
+
+        message_iter = MessageIter(0)
         message_iter.__cinit__(&iter)
 
         return message_iter
@@ -1109,7 +1040,7 @@ cdef class Server:
 
 BUS_SESSION = DBUS_BUS_SESSION
 BUS_SYSTEM = DBUS_BUS_SYSTEM
-BUS_ACTIVATION = DBUS_BUS_ACTIVATION
+BUS_STARTER = DBUS_BUS_STARTER
 
 def bus_get (bus_type):
     cdef DBusError error
