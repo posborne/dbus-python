@@ -63,7 +63,7 @@ class Bus:
     """bus_type=[Bus.TYPE_SESSION | Bus.TYPE_SYSTEM | Bus.TYPE_ACTIVATION]
     """
 
-    ACTIVATION_REPLY_ACTIVE = dbus_bindings.ACTIVATION_REPLY_ACTIVE
+    ACTIVATION_REPLY_ACTIVATED = dbus_bindings.ACTIVATION_REPLY_ACTIVATED
     ACTIVATION_REPLY_ALREADY_ACTIVE = dbus_bindings.ACTIVATION_REPLY_ALREADY_ACTIVE 
 
     def __init__(self, bus_type=TYPE_SESSION, glib_mainloop=True):
