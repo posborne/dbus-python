@@ -61,6 +61,10 @@ class DBusException(Exception):
 class ConnectionError(Exception):
     pass
 
+class ObjectPath(str):
+    def __init__(self, value):
+        str.__init__(value)
+
 
 #forward delcerations
 cdef class Connection
@@ -476,12 +480,16 @@ cdef class MessageIter:
 
             if array_type == TYPE_STRING:
                 retval = self.get_string_array()
-            elif array_type == TYPE_BOOLEAN:
-                retval = self.get_boolean_array()
+            elif array_type == TYPE_OBJECT_PATH:
+                retval = self.get_object_path_array()
+            elif array_type == TYPE_BYTE:
+                retval = self.get_byte_array()
             else:
                 raise TypeError, "Unknown array type %d in MessageIter" % (array_type)
         elif arg_type == TYPE_DICT:
             retval = self.get_dict()
+        elif arg_type == TYPE_OBJECT_PATH:
+            retval = self.get_object_path()
         else:
             raise TypeError, 'Unknown arg type %d in MessageIter' % (arg_type)
 
@@ -507,16 +515,15 @@ cdef class MessageIter:
 
         self.iter = old_iter
         return dict
-    
+
     def get_arg_type(self):
         return dbus_message_iter_get_arg_type(self.iter)
 
     def get_array_type(self):
         return dbus_message_iter_get_array_type(self.iter)
 
-    #FIXME: implement get_byte
-    #def get_byte(self):
-    #    return dbus_message_iter_get_byte(self.iter)
+    def get_byte(self):
+        return chr(dbus_message_iter_get_byte(self.iter))
 
     def get_boolean(self):
         return dbus_message_iter_get_boolean(self.iter)
@@ -533,11 +540,14 @@ cdef class MessageIter:
     def get_string(self):
         return dbus_message_iter_get_string(self.iter)
 
+    def get_object_path(self):
+        object_path_string = dbus_message_iter_get_object_path(self.iter)
+        return ObjectPath(object_path_string)
+    
     def get_dict_key(self):
         return dbus_message_iter_get_dict_key(self.iter)
 
-    # FIXME: implement dbus_message_iter_get_named
-    #                  dbus_message_iter_init_array_iterator
+    # FIXME: implement dbus_message_iter_init_array_iterator
     
     def get_byte_array(self):
         cdef int len
@@ -563,6 +573,16 @@ cdef class MessageIter:
             list.append(retval[i])
         return list
 
+    def get_object_path_array(self):
+        cdef int len
+        cdef char **retval
+        
+        dbus_message_iter_get_object_path_array(self.iter, &retval, <int*>&len)
+        list = []
+        for i from 0 <= i < len:
+            list.append(ObjectPath(retval[i]))
+        return list    
+
     # dbus_message_append_iter_init included in class Message
 
     #FIXME: handle all the different types?
@@ -578,13 +598,17 @@ cdef class MessageIter:
         elif value_type == str:
             retval = self.append_string(value)
         elif value_type == list:
-            if (len(list) == 1):
+            if (len(list) == 0):
                 raise TypeError, "Empty list"
             list_type = type(list[0])
             if list_type == str:
                 self.append_string_array(list)
+            elif isinstance(list[0], ObjectPath):
+                self.append_object_path_array(list)
             else:
                 raise TypeError, "List of unknown type '%s'" % (list_type)
+        elif isinstance(value, ObjectPath):
+            retval = self.append_object_path(value)
         else:
             raise TypeError, "Argument of unknown type '%s'" % (value_type)
 
@@ -597,7 +621,9 @@ cdef class MessageIter:
         return dbus_message_iter_append_boolean(self.iter, value)
 
     def append_byte(self, value):
-        return dbus_message_iter_append_byte(self.iter, value)
+        if type(value) != str or len(value) != 1:
+            raise TypeError
+        return dbus_message_iter_append_byte(self.iter, ord(value))
     
     def append_int32(self, value):
         return dbus_message_iter_append_int32(self.iter, value)
@@ -616,6 +642,9 @@ cdef class MessageIter:
     def append_dict_key(self, value):
         return dbus_message_iter_append_dict_key(self.iter, value)
 
+    def append_object_path(self, value):
+        return dbus_message_iter_append_object_path(self.iter, str(value))
+
     # FIXME: append_array, append_dict_array, append_boolean_array, append_int32_array, append_uint32_array, append_double_array
 
     def append_byte_array(self, list):
@@ -629,6 +658,19 @@ cdef class MessageIter:
                 raise TypeError
             value[i] = ord(item)
         return dbus_message_iter_append_byte_array(self.iter, value, length)
+
+    def append_object_path_array(self, list):
+        cdef char **value
+        cdef int length
+        length = len(list)
+        value = <char**>malloc(length)
+        for i from 0 <= i < length:
+            item = list[i]
+            if not isinstance(item, ObjectPath):
+                raise TypeError
+            value[i] = str(item)
+
+        return dbus_message_iter_append_object_path_array(self,iter, value, length)
     
     def append_string_array(self, list):
         cdef char **value
@@ -642,7 +684,6 @@ cdef class MessageIter:
             value[i] = item
         return dbus_message_iter_append_string_array(self.iter, value, length)
 
-    
 (MESSAGE_TYPE_INVALID, MESSAGE_TYPE_METHOD_CALL, MESSAGE_TYPE_METHOD_RETURN, MESSAGE_TYPE_ERROR, MESSAGE_TYPE_SIGNAL) = range(5)
 (TYPE_INVALID, TYPE_NIL, TYPE_BYTE, TYPE_BOOLEAN, TYPE_INT32, TYPE_UINT32, TYPE_INT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_STRING, TYPE_CUSTOM, TYPE_ARRAY, TYPE_DICT, TYPE_OBJECT_PATH) = (0, ord('v'), ord('y'), ord('b'), ord('i'), ord('u'), ord('x'), ord('t'), ord('d'), ord('s'), ord('c'), ord('a'), ord('m'), ord('o'))
 (HANDLER_RESULT_HANDLED, HANDLER_RESULT_NOT_YET_HANDLED, HANDLER_RESULT_NEED_MEMORY) = range(3)
@@ -726,6 +767,9 @@ cdef class Message:
             elif type == TYPE_STRING:
                 str = iter.get_string()
                 arg = 'string:%s\n' % (str)
+            elif type == TYPE_OBJECT_PATH:
+                path = iter.get_object_path()
+                arg = 'object_path:%s\n' % (path)
             elif type == TYPE_INT32:
                 num = iter.get_int32()
                 arg = 'int32:%d\n' % (num)

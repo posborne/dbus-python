@@ -215,6 +215,28 @@ class Service:
         """Get the name of this service"""
         return self._service_name
 
+def _dispatch_dbus_method_call(target_method, argument_list, message):
+    """Calls method_to_call using argument_list, but handles
+    exceptions, etc, and generates a reply to the DBus Message message
+    """
+    try:
+        retval = target_method(*argument_list)
+    except Exception, e:
+        if e.__module__ == '__main__':
+            # FIXME: is it right to use .__name__ here?
+            error_name = e.__class__.__name__
+        else:
+            error_name = e.__module__ + '.' + str(e.__class__.__name__)
+            error_contents = str(e)
+            reply = dbus_bindings.Error(message, error_name, error_contents)
+    else:
+        reply = dbus_bindings.MethodReturn(message)
+        if retval != None:
+            iter = reply.get_iter()
+            iter.append(retval)
+
+    return reply
+
 class Object:
     """A base class for exporting your own Objects across the Bus.
 
@@ -246,22 +268,8 @@ class Object:
         target_method = self._method_name_to_method[target_method_name]
         args = message.get_args_list()
         
-        try:
-            retval = target_method(*args)
-        except Exception, e:
-            if e.__module__ == '__main__':
-                # FIXME: is it right to use .__name__ here?
-                error_name = e.__class__.__name__
-            else:
-                error_name = e.__module__ + '.' + str(e.__class__.__name__)
-            error_contents = str(e)
-            reply = dbus_bindings.Error(message, error_name, error_contents)
-        else:
-            reply = dbus_bindings.MethodReturn(message)
-            if retval != None:
-                iter = reply.get_iter()
-                iter.append(retval)
-                
+        reply = _dispatch_dbus_method_call(target_method, args, message)
+        
         self._connection.send(reply)
 
     def _build_method_dictionary(self, methods):
@@ -304,22 +312,8 @@ class ObjectTree:
         target_method_name = message.get_member()        
         args = message.get_args_list()
 
-        try:
-            retval = self.object_method_called(target_object_path, target_method_name, args)
-        except Exception, e:
-            if e.__module__ == '__main__':
-                # FIXME: is it right to use .__name__ here?
-                error_name = e.__class__.__name__
-            else:
-                error_name = e.__module__ + '.' + str(e.__class__.__name__)
-            error_contents = str(e)
-            reply = dbus_bindings.Error(message, error_name, error_contents)
-        else:
-            reply = dbus_bindings.MethodReturn(message)
-            if retval != None:
-                iter = reply.get_iter()
-                iter.append(retval)
-                
+        reply = _dispatch_dbus_method_call(target_method, args, message)
+
         self._connection.send(reply)
         
 class RemoteService:
