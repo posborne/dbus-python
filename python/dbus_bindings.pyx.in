@@ -429,7 +429,7 @@ cdef class MessageIter:
             else:
                 raise TypeError, "Unknown array type %d in MessageIter" % (array_type)
         else:
-            raise TypeError, 'Unknown arg type %d in MessageIter' % (argtype)
+            raise TypeError, 'Unknown arg type %d in MessageIter' % (arg_type)
 
         return retval
     
@@ -569,7 +569,7 @@ cdef class MessageIter:
 
     
 (MESSAGE_TYPE_INVALID, MESSAGE_TYPE_METHOD_CALL, MESSAGE_TYPE_METHOD_RETURN, MESSAGE_TYPE_ERROR, MESSAGE_TYPE_SIGNAL) = range(5)
-(TYPE_INVALID, TYPE_NIL, TYPE_BYTE, TYPE_BOOLEAN, TYPE_INT32, TYPE_UINT32, TYPE_INT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_STRING, TYPE_NAMED, TYPE_ARRAY, TYPE_DICT, TYPE_OBJECT_PATH) = range(14)
+(TYPE_INVALID, TYPE_NIL, TYPE_BYTE, TYPE_BOOLEAN, TYPE_INT32, TYPE_UINT32, TYPE_INT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_STRING, TYPE_NAMED, TYPE_ARRAY, TYPE_DICT, TYPE_OBJECT_PATH) = (0, 118, 121, 98, 105, 117, 120, 116, 100, 115, 110, 97, 99, 111)
     
 cdef class Message:
     cdef DBusMessage *msg
