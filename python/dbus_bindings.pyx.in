@@ -61,23 +61,41 @@ class DBusException(Exception):
 class ConnectionError(Exception):
     pass
 
+
+#forward delcerations
+cdef class Connection
+cdef class Message
+cdef class PendingCall
+cdef class Watch
+
 cdef void cunregister_function_handler (DBusConnection *connection,
                                         void *user_data):
+    cdef Connection conn
     tup = <object>user_data
     assert (type(tup) == list)    
     function = tup[1]
-    args = [Connection(_conn=<object>connection)]
+    conn = Connection()
+    conn.__cinit__(None, connection)
+
+    args = [conn]
     function(*args)
 
 cdef DBusHandlerResult cmessage_function_handler (DBusConnection *connection,
                                                   DBusMessage *msg,
                                                   void *user_data):
+    cdef Connection conn
+    cdef Message message
+
     tup = <object>user_data
     assert (type(tup) == list)
     function = tup[0]
     message = Message(_create=0)
-    message._set_msg(<object>msg)
-    args = [Connection(_conn=<object>connection),
+    message._set_msg(msg)
+  
+    conn = Connection()
+    conn.__cinit__(None, connection)  
+ 
+    args = [conn,
             message]
     retval = function(*args)
     if (retval == None):
@@ -91,25 +109,36 @@ cdef class Connection:
     # python objects and returning seemed to be corrupting them. This is a "global variable" :-(
     cdef char **_parsed_path
 
-    def __init__(self, address=None, _conn=None):
+    def __init__(self, address=None, Connection _conn=None):
+        cdef DBusConnection *c_conn
+        cdef char *c_address
+        c_conn=NULL
+        if (_conn != None):
+            c_conn = _conn.conn
+
+        if (address != None or _conn != None):
+            self.__cinit__(c_address, c_conn)
+
+    # hack to be able to pass in a c pointer to the constructor
+    # while still alowing python programs to create a Connection object
+    cdef __cinit__(self, address, DBusConnection *_conn):
         cdef DBusError error
         dbus_error_init(&error)
-        if <DBusConnection*>_conn != NULL:
-            self.conn = <DBusConnection*>_conn
+        if _conn != NULL:
+            self.conn = _conn
             dbus_connection_ref(self.conn)
         else:
             self.conn = dbus_connection_open(address,
-                                             &error)
+                                         &error)
             if dbus_error_is_set(&error):
                 raise DBusException, error.message
-            
-        dbus_connection_ref(self.conn)
 
-    def _set_conn(self, conn):
-        self.conn = <DBusConnection*>conn
-        
-    def _get_conn(self):
-        return <object>self.conn
+
+    cdef _set_conn(self, DBusConnection *conn):
+        self.conn = conn
+    
+    cdef DBusConnection *_get_conn(self):
+        return self.conn
     
     #FIXME: this is totally busted, don't use a class shared member like parsed_path
     def _build_parsed_path(self, path_element_list):
@@ -144,25 +173,30 @@ cdef class Connection:
         dbus_connection_flush(self.conn)
 
     def borrow_message(self):
+        cdef Message m
         m = Message(_create=0)
-        m._set_msg(<object>dbus_connection_borrow_message(self.conn))
+        m._set_msg(dbus_connection_borrow_message(self.conn))
         return m
     
-    def return_message(self, message):
+    def return_message(self, Message message):
+        cdef DBusMessage *msg
         msg = message._get_msg()
-        dbus_connection_return_message(self.conn, <DBusMessage*>msg)
+        dbus_connection_return_message(self.conn, msg)
 
-    def steal_borrowed_message(self, message):
+    def steal_borrowed_message(self, Message message):
+        cdef DBusMessage *msg
         msg = message._get_msg()
         dbus_connection_steal_borrowed_message(self.conn,
-                                               <DBusMessage*>msg)
+                                               msg)
     
     def pop_message(self):
         cdef DBusMessage *msg
+        cdef Message m
+ 
         msg = dbus_connection_pop_message(self.conn)
         if msg != NULL:
             m = Message(_create=0)
-            m._set_msg(<object>msg)
+            m._set_msg(msg)
         else:
             m = None
         return m        
@@ -173,21 +207,24 @@ cdef class Connection:
     def dispatch(self):
         return dbus_connection_dispatch(self.conn)
 
-    def send(self, message):
+    def send(self, Message message):
         #cdef dbus_uint32_t client_serial
         #if type(message) != Message:
         #    raise TypeError
-        
+        cdef DBusMessage *msg
         msg = message._get_msg()
         retval = dbus_connection_send(self.conn,
-                                      <DBusMessage*>msg,
+                                      msg,
                                       NULL)
         return retval
 
-    def send_with_reply(self, message, timeout_milliseconds):
+    def send_with_reply(self, Message message, timeout_milliseconds):
         cdef dbus_bool_t retval
         cdef DBusPendingCall *cpending_call
         cdef DBusError error
+        cdef DBusMessage *msg
+        cdef PendingCall pending_call
+
         dbus_error_init(&error)
 
         cpending_call = NULL
@@ -195,7 +232,7 @@ cdef class Connection:
         msg = message._get_msg()
 
         retval = dbus_connection_send_with_reply(self.conn,
-                                                 <DBusMessage*>msg,
+                                                 msg,
                                                  &cpending_call,
                                                  timeout_milliseconds)
 
@@ -203,24 +240,28 @@ cdef class Connection:
             raise DBusException, error.message
 
         if (cpending_call != NULL):
-            pending_call = PendingCall(<object>cpending_call)
+            pending_call = PendingCall()
+            pending_call.__cinit__(cpending_call)
         else:
             pending_call = None
 
         return (retval, pending_call)
                                 
-    def send_with_reply_and_block(self, message,
+    def send_with_reply_and_block(self, Message message,
                                   timeout_milliseconds=0):
         cdef DBusMessage * retval
         cdef DBusError error
+        cdef DBusMessage *msg
+        cdef Message m
+
         dbus_error_init(&error)
 
         msg = message._get_msg()
 
         retval = dbus_connection_send_with_reply_and_block(
-            <DBusConnection*>self.conn,
-            <DBusMessage*>msg,
-            <int>timeout_milliseconds,
+            self.conn,
+            msg,
+            timeout_milliseconds,
             &error)
 
         if dbus_error_is_set(&error):
@@ -230,7 +271,7 @@ cdef class Connection:
             raise AssertionError
         
         m = Message(_create=0)
-        m._set_msg(<object>retval)
+        m._set_msg(retval)
         return m
 
     def set_watch_functions(self, add_function, remove_function, data):
@@ -344,12 +385,16 @@ cdef class Connection:
 cdef class PendingCall:
     cdef DBusPendingCall *pending_call
 
-    def __init__(self, _pending_call):
-        self.pending_call = <DBusPendingCall*>_pending_call
+    def __init__(self, PendingCall _pending_call=None):
+        if (_pending_call != None):
+            self.__cinit__(_pending_call.pending_call)
+
+    cdef void __cinit__(self, DBusPendingCall *_pending_call):
+        self.pending_call = _pending_call
         dbus_pending_call_ref(self.pending_call)
-        
-    def _get_pending_call(self):
-        return <object>self.pending_call
+
+    cdef DBusPendingCall *_get_pending_call(self):
+        return self.pending_call
 
     def cancel(self):
         dbus_pending_call_cancel(self.pending_call)
@@ -358,8 +403,9 @@ cdef class PendingCall:
         return dbus_pending_call_get_completed(self.pending_call)
 
     def get_reply(self):
+        cdef Message message
         message = Message(_create=0)
-        message._set_msg(<object>dbus_pending_call_get_reply(self.pending_call))
+        message._set_msg(dbus_pending_call_get_reply(self.pending_call))
         return message
 
     def block(self):
@@ -367,8 +413,12 @@ cdef class PendingCall:
 
 cdef class Watch:
     cdef DBusWatch* watch
-    def __init__(self, cwatch):
-        self.watch = <DBusWatch*>cwatch
+
+    def __init__(self):
+        pass
+
+    cdef __cinit__(self, DBusWatch *cwatch):
+        self.watch = cwatch
 
     def get_fd(self):
         return dbus_watch_get_fd(self.watch)
@@ -388,13 +438,14 @@ cdef class MessageIter:
     cdef DBusMessageIter real_iter
 
 
-    def __init__(self, message):
+    def __init__(self, Message message):
+        cdef DBusMessage *msg
         self.iter = &self.real_iter
         msg = message._get_msg()
-        dbus_message_iter_init(<DBusMessage*>msg, self.iter)
+        dbus_message_iter_init(msg, self.iter)
     
-    def get_iter(self):
-        return <object>self.iter
+    cdef DBusMessageIter *_get_iter(self):
+        return self.iter
 
     def has_next(self):
         return dbus_message_iter_has_next(self.iter)
@@ -599,11 +650,13 @@ cdef class Message:
 
     def __init__(self, message_type=MESSAGE_TYPE_INVALID,
                  service=None, path=None, interface=None, method=None,
-                 method_call=None,
+                 Message method_call=None,
                  name=None,
-                 reply_to=None, error_name=None, error_message=None,
+                 Message reply_to=None, error_name=None, error_message=None,
                  _create=1):
         cdef char *cservice
+        cdef DBusMessage *cmsg
+
         if (service == None):
             cservice = NULL
         else:
@@ -616,12 +669,12 @@ cdef class Message:
             self.msg = dbus_message_new_method_call(cservice, path, interface, method)
         elif message_type == MESSAGE_TYPE_METHOD_RETURN:
             cmsg = method_call._get_msg()
-            self.msg = dbus_message_new_method_return(<DBusMessage*>cmsg)
+            self.msg = dbus_message_new_method_return(cmsg)
         elif message_type == MESSAGE_TYPE_SIGNAL:
             self.msg = dbus_message_new_signal(path, interface, name)
         elif message_type == MESSAGE_TYPE_ERROR:
             cmsg = reply_to._get_msg()
-            self.msg = dbus_message_new_error(<DBusMessage*>cmsg, error_name, error_message)
+            self.msg = dbus_message_new_error(cmsg, error_name, error_message)
             
     def type_to_name(self, type):
         if type == MESSAGE_TYPE_SIGNAL:
@@ -698,11 +751,11 @@ cdef class Message:
 
         return retval
     
-    def _set_msg(self, msg):
-        self.msg = <DBusMessage*>msg
+    cdef _set_msg(self, DBusMessage *msg):
+        self.msg = msg
 
-    def _get_msg(self):
-        return <object>self.msg
+    cdef DBusMessage *_get_msg(self):
+        return self.msg
 
     def get_iter(self):
         return MessageIter(self)
@@ -861,6 +914,7 @@ BUS_ACTIVATION = DBUS_BUS_ACTIVATION
 
 def bus_get (bus_type):
     cdef DBusError error
+    cdef Connection conn
     dbus_error_init(&error)
     cdef DBusConnection *connection
 
@@ -870,19 +924,23 @@ def bus_get (bus_type):
     if dbus_error_is_set(&error):
         raise DBusException, error.message
 
-    return Connection(_conn=<object>connection)
+    conn = Connection()
+    conn.__cinit__(None, connection)
+    return conn 
 
-def bus_get_base_service(connection):
+def bus_get_base_service(Connection connection):
+    cdef DBusConnection *conn
     conn = connection._get_conn()
-    return dbus_bus_get_base_service(<DBusConnection*>conn)
+    return dbus_bus_get_base_service(conn)
 
-def bus_register(connection):
+def bus_register(Connection connection):
     cdef DBusError error
     dbus_error_init(&error)
     cdef dbus_bool_t retval
+    cdef DBusConnection *conn
 
     conn = connection._get_conn()
-    retval = dbus_bus_register(<DBusConnection*>conn,
+    retval = dbus_bus_register(conn,
                                &error)
     if dbus_error_is_set(&error):
         raise DBusException, error.message
@@ -892,13 +950,14 @@ def bus_register(connection):
 SERVICE_FLAG_PROHIBIT_REPLACEMENT = 0x1
 SERVICE_FLAG_REPLACE_EXISTING     = 0x2
 
-def bus_acquire_service(connection, service_name, flags=0):
+def bus_acquire_service(Connection connection, service_name, flags=0):
     cdef DBusError error
     dbus_error_init(&error)
     cdef int retval
+    cdef DBusConnection *conn
 
     conn = connection._get_conn()
-    retval = dbus_bus_acquire_service(<DBusConnection*>conn,
+    retval = dbus_bus_acquire_service(conn,
                                       service_name,
                                       flags,
                                       &error)
@@ -906,35 +965,40 @@ def bus_acquire_service(connection, service_name, flags=0):
         raise DBusException, error.message
     return retval
     
-def bus_service_exists(connection, service_name):
+def bus_service_exists(Connection connection, service_name):
     cdef DBusError error
     dbus_error_init(&error)
     cdef dbus_bool_t retval
+    cdef DBusConnection *conn
 
     conn = connection._get_conn()
-    retval = dbus_bus_service_exists(<DBusConnection*>conn,
+    retval = dbus_bus_service_exists(conn,
                                      service_name,
                                      &error)
     if dbus_error_is_set(&error):
         raise DBusException, error.message
     return retval
 
-def bus_add_match(connection, rule):
+def bus_add_match(Connection connection, rule):
     cdef DBusError error
+    cdef DBusConnection *conn
+
     dbus_error_init(&error)
     
     conn = connection._get_conn()
-    dbus_bus_add_match (<DBusConnection*>conn, rule, &error)
+    dbus_bus_add_match (conn, rule, &error)
     
     if dbus_error_is_set(&error):
         raise DBusException, error.message
 
-def bus_remove_match(connection, rule):
+def bus_remove_match(Connection connection, rule):
     cdef DBusError error
+    cdef DBusConnection *conn
+
     dbus_error_init(&error)
 
     conn = connection._get_conn()
-    dbus_bus_remove_match (<DBusConnection*>conn, rule, &error)
+    dbus_bus_remove_match (conn, rule, &error)
     
     if dbus_error_is_set(&error):
         raise DBusException, error.message
