@@ -1,6 +1,6 @@
 SUBDIRS=examples
 
-INCLUDES=-I$(top_builddir) -I$(top_builddir)/glib $(DBUS_CLIENT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(DBUS_GLIB_TOOL_CFLAGS) $(PYTHON_INCLUDES)
+INCLUDES=-I$(top_builddir) -I$(top_builddir)/dbus $(DBUS_CLIENT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(DBUS_GLIB_TOOL_CFLAGS) $(PYTHON_INCLUDES)
 
 dbusdir = $(pythondir)
 dbus_PYTHON = dbus.py
