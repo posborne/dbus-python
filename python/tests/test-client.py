@@ -1,5 +1,4 @@
 import dbus
-import dbus_bindings
 
 def ensure_same(expected, received):
     if type(received) != type(expected):
@@ -56,8 +55,8 @@ TestEcho(chr(120))
 TestEcho(10)
 TestEcho(39.5)
 TestEcho("HelloWorld")
-TestEcho(dbus_bindings.ObjectPath("/test/path"))
-
+TestEcho(dbus.ObjectPath("/test/path"))
+TestEcho(dbus.ByteArray("blahblahblah"))
 
 string_list = []
 for i in range(200):
@@ -69,7 +68,7 @@ TestEchoList(int_list)
 
 path_list = []
 for i in range(200):
-    path_list.append(dbus_bindings.ObjectPath("/some/object/path" + str(i)))
+    path_list.append(dbus.ObjectPath("/some/object/path" + str(i)))
 TestEchoList(path_list)
 
 double_list = []

@@ -330,7 +330,7 @@ class ObjectTree:
         self._connection.register_fallback(base_path, self._unregister_cb, self._message_cb)
 
     def relative_path_to_object_path(self, relative_path):
-        return self._base_path + relative_path
+        return ObjectPath(self._base_path + relative_path)
         
     def broadcast_signal(self, interface, signal_name, relative_path):
         object_path = self.relative_path_to_object_path(relative_path)
@@ -393,3 +393,4 @@ class RemoteService:
         return RemoteObject(self, object_path, interface)
                              
 ObjectPath = dbus_bindings.ObjectPath
+ByteArray = dbus_bindings.ByteArray

@@ -1,5 +1,10 @@
 # -*- Mode: Python -*-
 
+# jdahlin is the most coolest and awesomest person in the world
+# and wrote all the good parts of this code. all the bad parts
+# where python conditionals have a ( ) around them, thus violating
+# PEP-8 were written by the lame wannabe python programmer seth
+
 #include "dbus_h_wrapper.h"
 
 cdef extern from "stdlib.h":
@@ -17,7 +22,7 @@ cdef extern from "dbus-glib.h":
 cdef extern from "Python.h":
     void Py_XINCREF (object)
     void Py_XDECREF (object)
-
+    object PyString_FromStringAndSize(char *, int)
 
 ctypedef struct DBusError:
     char *name
@@ -63,6 +68,10 @@ class ConnectionError(Exception):
     pass
 
 class ObjectPath(str):
+    def __init__(self, value):
+        str.__init__(value)
+
+class ByteArray(str):
     def __init__(self, value):
         str.__init__(value)
 
@@ -536,13 +545,11 @@ cdef class MessageIter:
     
     def get_byte_array(self):
         cdef int len
-        cdef unsigned char *retval
+        cdef unsigned char *bytearray
         cdef int i
-        dbus_message_iter_get_byte_array(self.iter, &retval, <int*>&len)
-        list = []
-        for i from 0 <= i < len:
-            list.append(chr(retval[i]))
-        return list
+        dbus_message_iter_get_byte_array(self.iter, &bytearray, <int*>&len)
+        python_string = PyString_FromStringAndSize(<char *>bytearray, len)        
+        return python_string
 
     # FIXME: implement dbus_message_iter_get_boolean_array
 
@@ -633,6 +640,8 @@ cdef class MessageIter:
             retval = self.append_nil()
         elif isinstance(value, ObjectPath):
             retval = self.append_object_path(value)
+        elif isinstance(value, ByteArray):
+            retval = self.append_byte_array(value)
         else:
             raise TypeError, "Argument of unknown type '%s'" % (value_type)
 
