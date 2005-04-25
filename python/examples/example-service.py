@@ -5,17 +5,19 @@ import gtk
 
 class SomeObject(dbus.Object):
     def __init__(self, service):
-        export = [self.HelloWorld, self.GetTuple, self.GetDict]
-        dbus.Object.__init__(self, "/SomeObject", service, export)
+        dbus.Object.__init__(self, "/SomeObject", service)
 
-    def HelloWorld(self, message, hello_message):
+    @dbus.method("org.designfu.SampleInterface")
+    def HelloWorld(self, hello_message):
         print (str(hello_message))
         return ["Hello", " from example-service.py"]
 
-    def GetTuple(self, message):
+    @dbus.method("org.designfu.SampleInterface")
+    def GetTuple(self):
         return ("Hello Tuple", " from example-service.py")
 
-    def GetDict(self, message):
+    @dbus.method("org.designfu.SampleInterface")
+    def GetDict(self):
         return {"first": "Hello Dict", "second": " from example-service.py"}
 
 session_bus = dbus.SessionBus()

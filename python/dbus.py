@@ -42,6 +42,11 @@ print(dbus_object.ListServices())
 """
 
 import dbus_bindings
+import re
+import inspect
+
+
+version = (0, 40, 0)
 
 _threads_initialized = 0
 def init_gthreads ():
@@ -50,13 +55,51 @@ def init_gthreads ():
         dbus_bindings.init_gthreads ()
         _threads_initialized = 1
 
-class Sender:
-    def __init__(self, interface, signal_name, service, path, message):
-        self.interface = interface
-        self.signal_name = signal_name 
-        self.service = service
-        self.path = path
-        self.message = message
+def _validate_interface_or_name(value):
+    elements = value.split('.')
+    if len(elements) <= 1:
+        raise ValidationException("%s must contain at least two elements seperated by a period ('.')"%(value))
+
+    validate = re.compile('[A-Za-z][\w_]*')
+    for element in elements:
+        if not validate.match(element):
+            raise ValidationException("Element %s of %s has invalid characters"%(element ,value))
+
+
+#Decorators
+def method(dbus_interface):
+    _validate_interface_or_name(dbus_interface)
+
+    def decorator(func):
+        func._dbus_is_method = True
+        func._dbus_interface = dbus_interface
+        func._dbus_args = inspect.getargspec(func)[0]
+        func._dbus_args.pop(0)
+        return func
+
+    return decorator
+
+def signal(dbus_interface):
+    _validate_interface_or_name(dbus_interface)
+    def decorator(func):
+        def emit_signal(self, *args, **keywords):
+	    func(self, *args, **keywords)
+	    message = dbus_bindings.Signal(self._object_path, dbus_interface, func.__name__)
+            iter = message.get_iter(True)
+            for arg in args:
+                iter.append(arg)
+        
+            self._connection.send(message)
+	
+        emit_signal._dbus_is_signal = True
+        emit_signal._dbus_interface = dbus_interface
+        emit_signal.__name__ = func.__name__
+        emit_signal._dbus_args = inspect.getargspec(func)[0]
+        emit_signal._dbus_args.pop(0)
+        return emit_signal
+
+    return decorator
+
 
 class Bus:
     """A connection to a DBus daemon.
@@ -85,50 +128,62 @@ class Bus:
     def get_connection(self):
         return self._connection
 
-    def get_service(self, service_name="org.freedesktop.Broadcast"):
-        """Get one of the RemoteServices connected to this Bus. service_name
-        is just a string of the form 'com.widgetcorp.MyService'
-        """
-        return RemoteService(self, service_name)
+    def get_session():
+        """Static method that returns the session bus"""
+        return SessionBus()
 
-    def add_signal_receiver(self, handler_function, signal_name=None, interface=None, service=None, path=None, expand_args=True):
-        match_rule = self._get_match_rule(signal_name, interface, service, path)
+    get_session = staticmethod(get_session)
+
+    def get_system():
+        """Static method that returns the system bus"""
+        return SystemBus()
+
+    get_system = staticmethod(get_system)
+
+
+    def get_starter():
+        """Static method that returns the starter bus"""
+        return StarterBus()
+
+    get_starter = staticmethod(get_starter)
+
+
+    def get_object(self, named_service, object_path):
+        """Get a proxy object to call over the bus"""
+        return ProxyObject(self, named_service, object_path)
+
+    def add_signal_receiver(self, handler_function, signal_name=None, dbus_interface=None, named_service=None, path=None):
+        match_rule = self._get_match_rule(signal_name, dbus_interface, named_service, path)
 
         if (not self._match_rule_to_receivers.has_key(match_rule)):
-            self._match_rule_to_receivers[match_rule] = {handler_function: True}
-
-        self._match_rule_to_receivers[match_rule][handler_function] = expand_args
+            self._match_rule_to_receivers[match_rule] = [handler_function]
+	else:
+	    self._match_rule_to_receivers[match_rule].append(handler_function)
 
         dbus_bindings.bus_add_match(self._connection, match_rule)
 
-    def remove_signal_receiver(self, handler_function, signal_name=None, interface=None, service=None, path=None):
-        match_rule = self._get_match_rule(signal_name, interface, service, path)
+    def remove_signal_receiver(self, handler_function, signal_name=None, dbus_interface=None, named_service=None, path=None):
+        match_rule = self._get_match_rule(signal_name, dbus_interface, named_service, path)
 
         if self._match_rule_to_receivers.has_key(match_rule):
             if self._match_rule_to_receivers[match_rule].__contains__(handler_function):
                 self._match_rule_to_receivers[match_rule].pop(handler_function)
                 dbus_bindings.bus_remove_match(self._connection, match_rule)
 
-    def get_connection(self):
-        """Get the dbus_bindings.Connection object associated with this Bus"""
-        return self._connection
-    
-    def get_unix_user(self, service_name):
-        """Get the unix user for the given service_name on this Bus"""
-        return dbus_bindings.bus_get_unix_user(self._connection, service_name)
+    def get_unix_user(self, named_service):
+        """Get the unix user for the given named_service on this Bus"""
+        return dbus_bindings.bus_get_unix_user(self._connection, named_service)
 
-    def _get_match_rule(self, signal_name, interface, service, path):
+    def _get_match_rule(self, signal_name, dbus_interface, named_service, path):
         match_rule = "type='signal'"
-        if (interface):
-            match_rule = match_rule + ",interface='%s'" % (interface)
-        if (service):
-            if (service[0] != ':' and service != "org.freedesktop.DBus"):
-                bus_service = self.get_service("org.freedesktop.DBus")
-                bus_object = bus_service.get_object('/org/freedesktop/DBus',
-                                                     'org.freedesktop.DBus')
-                service = bus_object.GetNameOwner(service)
+        if (dbus_interface):
+            match_rule = match_rule + ",interface='%s'" % (dbus_interface)
+        if (named_service):
+            if (named_service[0] != ':' and named_service != "org.freedesktop.DBus"):
+                bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
+                named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
 
-            match_rule = match_rule + ",sender='%s'" % (service)
+            match_rule = match_rule + ",sender='%s'" % (named_service)
         if (path):
             match_rule = match_rule + ",path='%s'" % (path)
         if (signal_name):
@@ -139,28 +194,22 @@ class Bus:
         if (message.get_type() != dbus_bindings.MESSAGE_TYPE_SIGNAL):
             return dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
         
-        interface      = message.get_interface()
-        service        = message.get_sender()
+        dbus_interface      = message.get_interface()
+        named_service  = message.get_sender()
         path           = message.get_path()
         signal_name    = message.get_member()
 
-        match_rule = self._get_match_rule(signal_name, interface, service, path)
+        match_rule = self._get_match_rule(signal_name, dbus_interface, named_service, path)
 
         if (self._match_rule_to_receivers.has_key(match_rule)):
             receivers = self._match_rule_to_receivers[match_rule]
 
-            sender = Sender(interface, signal_name, service, path, message)
-            arg = [sender]
-            for receiver in receivers.iterkeys():
-	    	if receivers[receiver]:
-                    args = [sender]
-		    args.extend(message.get_args_list())
-		    receiver(*args)
-		else:
-                    receiver(*arg)
+            for receiver in receivers:
+	        args = message.get_args_list()
+		receiver(*args)
 
-    def start_service_by_name(self, service):
-        return dbus_bindings.bus_start_service_by_name(self._connection, service)
+    def start_service_by_name(self, named_service):
+        return dbus_bindings.bus_start_service_by_name(self._connection, named_service)
 
 class SystemBus(Bus):
     """The system-wide message bus
@@ -182,59 +231,116 @@ class StarterBus(Bus):
         Bus.__init__(self, Bus.TYPE_STARTER)
 
 
-class RemoteObject:
-    """A remote Object.
+class Interface:
+    """An inteface into a remote object
 
-    A RemoteObject is provided by a RemoteService on a particular Bus. RemoteObjects
-    have member functions, and can be called like normal Python objects.
+    An Interface can be used to wrap ProxyObjects
+    so that calls can be routed to their correct
+    dbus interface
     """
-    def __init__(self, service, object_path, interface):
-        self._service      = service
-        self._object_path  = object_path
-        self._interface    = interface
 
-    def connect_to_signal(self, signal_name, handler_function):
-        self._service.get_bus().add_signal_receiver(handler_function,
-                                                    signal_name=signal_name,
-                                                    interface=self._interface,
-                                                    service=self._service.get_service_name(),
-                                                    path=self._object_path)
+    def __init__(self, object, dbus_interface):
+        self._obj = object
+        self._dbus_interface = dbus_interface
 
-    def __getattr__(self, member):
+    def connect_to_signal(self, signal_name, handler_function, dbus_interface = None):
+        if not dbus_interface:
+	    dbus_interface = self._dbus_interface
+		
+        self._obj.connect_to_signal(signal_name, handler_function, dbus_interface)
+
+    def __getattr__(self, member, **keywords):
+        if (keywords.has_key('dbus_interface')):
+            _dbus_interface = keywords['dbus_interface']
+        else:
+            _dbus_interface = self._dbus_interface
+
         if member == '__call__':
             return object.__call__
         else:
-            return RemoteMethod(self._service.get_bus().get_connection(),
-                                self._service.get_service_name(),
-                                self._object_path, self._interface, member)
+            return self._obj.__getattr__(member, dbus_interface=_dbus_interface)
 
+class ProxyObject:
+    """A proxy to the remote Object.
 
-class RemoteMethod:
-    """A remote Method.
-
-    Typically a member of a RemoteObject. Calls to the
-    method produce messages that travel over the Bus and are routed
-    to a specific Service.
+    A ProxyObject is provided by the Bus. ProxyObjects
+    have member functions, and can be called like normal Python objects.
     """
-    def __init__(self, connection, service_name, object_path, interface, method_name):
-        self._connection   = connection
-        self._service_name = service_name
+    def __init__(self, bus, named_service, object_path):
+        self._bus          = bus
+        self._named_service = named_service
         self._object_path  = object_path
-        self._interface    = interface
-        self._method_name  = method_name
 
-    def __call__(self, *args):
-        message = dbus_bindings.MethodCall(self._object_path, self._interface, self._method_name)
-        message.set_destination(self._service_name)
+    def connect_to_signal(self, signal_name, handler_function, dbus_interface=None):
+        self._bus.add_signal_receiver(handler_function,
+                                      signal_name=signal_name,
+                                      dbus_interface=dbus_interface,
+                                      named_service=self._named_service,
+                                      path=self._object_path)
+
+
+
+    def __getattr__(self, member, **keywords):
+        if member == '__call__':
+            return object.__call__
+        else:
+            iface = None
+            if (keywords.has_key('dbus_interface')):
+                iface = keywords['dbus_interface']
+
+            return ProxyMethod(self._bus.get_connection(),
+                                self._named_service,
+                                self._object_path, iface, member)
+
+
+class ProxyMethod:
+    """A proxy Method.
+
+    Typically a member of a ProxyObject. Calls to the
+    method produce messages that travel over the Bus and are routed
+    to a specific named Service.
+    """
+    def __init__(self, connection, named_service, object_path, dbus_interface, method_name):
+        self._connection   = connection
+        self._named_service = named_service
+        self._object_path  = object_path
+        self._method_name  = method_name
+        self._dbus_interface = dbus_interface
+
+    def __call__(self, *args, **keywords):
+        dbus_interface = self._dbus_interface
+        if (keywords.has_key('dbus_interface')):
+            dbus_interface = keywords['dbus_interface']
+
+        reply_handler = None
+        if (keywords.has_key('reply_handler')):
+            reply_handler = keywords['reply_handler']
+
+        error_handler = None
+        if (keywords.has_key('error_handler')):
+            error_handler = keywords['error_handler']            
+
+        if not(reply_handler and error_handler):
+            if reply_handler:
+                raise MissingErrorself, HandlerException()
+            elif error_handler:
+                raise MissingReplyHandlerException()
+
+        message = dbus_bindings.MethodCall(self._object_path, dbus_interface, self._method_name)
+        message.set_destination(self._named_service)
         
         # Add the arguments to the function
         iter = message.get_iter(True)
         for arg in args:
             iter.append(arg)
 
-        reply_message = self._connection.send_with_reply_and_block(message, 5000)
-
-        args_tuple = reply_message.get_args_list()
+        if reply_handler:
+            result = self._connection.send_with_reply_handlers(message, -1, reply_handler, error_handler)
+            args_tuple = (result,)
+        else:
+            reply_message = self._connection.send_with_reply_and_block(message, -1)
+            args_tuple = reply_message.get_args_list()
+            
         if len(args_tuple) == 0:
             return
         elif len(args_tuple) == 1:
@@ -248,8 +354,8 @@ class Service:
     Just inherit from Service, providing the name of your service
     (e.g. org.designfu.SampleService).
     """
-    def __init__(self, service_name, bus=None):
-        self._service_name = service_name
+    def __init__(self, named_service, bus=None):
+        self._named_service = named_service
                              
         if bus == None:
             # Get the default bus
@@ -257,22 +363,40 @@ class Service:
         else:
             self._bus = bus
 
-        dbus_bindings.bus_request_name(self._bus.get_connection(), service_name)
+        dbus_bindings.bus_request_name(self._bus.get_connection(), named_service)
 
     def get_bus(self):
         """Get the Bus this Service is on"""
         return self._bus
 
-    def get_service_name(self):
+    def get_name(self):
         """Get the name of this service"""
-        return self._service_name
+        return self._named_service
 
-def _dispatch_dbus_method_call(target_method, argument_list, message):
+def _dispatch_dbus_method_call(target_methods, self, argument_list, message):
     """Calls method_to_call using argument_list, but handles
     exceptions, etc, and generates a reply to the DBus Message message
     """
     try:
-        retval = target_method(message, *argument_list)
+        target_method = None
+        
+        dbus_interface = message.get_interface()
+        if dbus_interface == None:
+            if target_methods:
+                target_method = target_methods[0]
+        else:
+            for dbus_method in target_methods:
+                if dbus_method._dbus_interface == dbus_interface:
+                    target_method = dbus_method
+                    break
+        
+        if target_method:
+            retval = target_method(self, *argument_list)
+        else:
+            if not dbus_interface:
+                raise UnknownMethodException('%s is not a valid method'%(message.get_member()))
+            else:
+                raise UnknownMethodException('%s is not a valid method of interface %s'%(message.get_member(), dbus_interface))
     except Exception, e:
         if e.__module__ == '__main__':
             # FIXME: is it right to use .__name__ here?
@@ -289,13 +413,77 @@ def _dispatch_dbus_method_call(target_method, argument_list, message):
 	    
     return reply
 
-def _build_method_dictionary(methods):
-    method_dict = {}
-    for method in methods:
-        if method_dict.has_key(method.__name__):
-            print ('WARNING: registering DBus Object methods, already have a method named %s' % (method.__name__))
-        method_dict[method.__name__] = method
-    return method_dict
+class ObjectType(type):
+    def __init__(cls, name, bases, dct):
+
+        #generate out vtable
+        method_vtable = getattr(cls, '_dbus_method_vtable', {})
+        reflection_data = getattr(cls, '_dbus_reflection_data', "")
+
+        reflection_interface_method_hash = {}
+        reflection_interface_signal_hash = {}
+
+        for func in dct.values():
+            if getattr(func, '_dbus_is_method', False):
+                if method_vtable.has_key(func.__name__):
+                    method_vtable[func.__name__].append(func)
+                else:
+	            method_vtable[func.__name__] = [func]
+                
+                #generate a hash of interfaces so we can group
+                #methods in the xml data
+                if reflection_interface_method_hash.has_key(func._dbus_interface):
+                    reflection_interface_method_hash[func._dbus_interface].append(func)
+                else:
+                    reflection_interface_method_hash[func._dbus_interface] = [func]
+
+            elif getattr(func, '_dbus_is_signal', False):
+                if reflection_interface_signal_hash.has_key(func._dbus_interface):
+                    reflection_interface_signal_hash[func._dbus_interface].append(func)
+                else:
+                    reflection_interface_signal_hash[func._dbus_interface] = [func]
+
+	for interface in reflection_interface_method_hash.keys():
+            reflection_data = reflection_data + '  <interface name="%s">\n'%(interface)
+            for func in reflection_interface_method_hash[interface]:
+                reflection_data = reflection_data + '    <method name="%s">\n'%(func.__name__)
+                for arg in func._dbus_args:
+                    reflection_data = reflection_data + '      <arg name="%s" type="v" />\n'%(arg)
+
+                #reclaim some memory
+                func._dbus_args = None
+                reflection_data = reflection_data + '    </method>\n'
+            if reflection_interface_signal_hash.has_key(interface):
+                for func in reflection_interface_signal_hash[interface]:
+                    reflection_data = reflection_data + '    <signal name="%s">\n'%(func.__name__)
+                    for arg in func._dbus_args:
+                        reflection_data = reflection_data + '      <arg name="%s" type="v" />\n'%(arg)
+                    #reclaim some memory
+                    func._dbus_args = None
+                    reflection_data = reflection_data + '    </signal>\n'
+
+                del reflection_interface_signal_hash[interface]
+            reflection_data = reflection_data + '  </interface>\n'
+
+	for interface in reflection_interface_signal_hash.keys():
+            reflection_data = reflection_data + '  <interface name="%s">\n'%(interface)
+            
+            for func in reflection_interface_signal_hash[interface]:
+                reflection_data = reflection_data + '    <signal name="%s">\n'%(func.__name__)
+                for arg in func._dbus_args:
+                    reflection_data = reflection_data + '      <arg name="%s" type="v" />\n'%(arg)
+
+                #reclaim some memory
+                func._dbus_args = None
+                reflection_data = reflection_data + '    </signal>\n'
+
+            reflection_data = reflection_data + '  </interface>\n'
+
+        cls._dbus_reflection_data = reflection_data  
+	cls._dbus_method_vtable = method_vtable
+        
+        super(ObjectType, cls).__init__(name, bases, dct)
+
 
 class Object:
     """A base class for exporting your own Objects across the Bus.
@@ -304,129 +492,71 @@ class Object:
     across the Bus. These will appear as member functions of your
     ServiceObject.
     """
-    def __init__(self, object_path, service, dbus_methods=[]):
-        # Reversed constructor argument order. Add a temporary
-        # check to help people get things straightened out with minimal pain.
-        if type(service) == list:
-            raise TypeError, "dbus.Object.__init__(): the order of the 'service' and 'dbus_methods' arguments has been reversed (for consistency with dbus.ObjectTree)."
-        
+    __metaclass__ = ObjectType
+    
+    def __init__(self, object_path, service):
         self._object_path = object_path
         self._service = service
         self._bus = service.get_bus()
+            
         self._connection = self._bus.get_connection()
 
-        self._method_name_to_method = _build_method_dictionary(dbus_methods)
-        
         self._connection.register_object_path(object_path, self._unregister_cb, self._message_cb)
-
-    def emit_signal(self, interface, signal_name, *args):
-        message = dbus_bindings.Signal(self._object_path, interface, signal_name)
-        iter = message.get_iter(True)
-        for arg in args:
-            iter.append(arg)
-        
-        self._connection.send(message)
 
     def _unregister_cb(self, connection):
         print ("Unregister")
 
     def _message_cb(self, connection, message):
         target_method_name = message.get_member()
-        target_method = self._method_name_to_method[target_method_name]
+        target_methods = self._dbus_method_vtable[target_method_name]
         args = message.get_args_list()
-
-        reply = _dispatch_dbus_method_call(target_method, args, message)
+        
+        reply = _dispatch_dbus_method_call(target_methods, self, args, message)
 
         self._connection.send(reply)
 
-class ObjectTree:
-    """An object tree allows you to register a handler for a tree of object paths.
-    This means that literal Python objects do not need to be created for each object
-    over the bus, but you can have a virtual tree of objects handled by a single
-    Python object. There are two ways to handle method calls on virtual objects:
+    @method('org.freedesktop.DBus.Introspectable')
+    def Introspect(self):
+        reflection_data = '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n'
+        reflection_data = reflection_data + '<node name="%s">\n'%(self._object_path)
+        reflection_data = reflection_data + self._dbus_reflection_data
+        reflection_data = reflection_data + '</node>\n'
 
-    1) Pass a list of dbus_methods in to __init__. This works just like dbus.Object,
-    except an object_path is passed as the first argument to each method, denoting which
-    virtual object the call was made on. If all the objects in the tree support the same
-    methods, this is the best approach.
+        return reflection_data
 
-    2) Override object_method_called. This allows you to define the valid methods dynamically
-    on an object by object basis. For example, if providing an object tree that represented
-    a filesystem heirarchy, you'd only want an ls method on directory objects, not file objects.
-    """
+#Exceptions
+class MissingErrorHandlerException(Exception):
+    def __init__(self):
+        Exception.__init__(self)
 
-    def __init__(self, base_path, service, dbus_methods=[]):
-        self._base_path = base_path
-        self._service = service
-        self._bus = service.get_bus()
-        self._connection = self._bus.get_connection()
 
-        self._method_name_to_method = _build_method_dictionary(dbus_methods)
-        
-        self._connection.register_fallback(base_path, self._unregister_cb, self._message_cb)
+    def __str__(self):
+        return "error_handler not defined: if you define a reply_handler you must also define an error_handler"
 
-    def relative_path_to_object_path(self, relative_path):
-        return ObjectPath(self._base_path + relative_path)
-        
-    def broadcast_signal(self, interface, signal_name, relative_path):
-        object_path = self.relative_path_to_object_path(relative_path)
-        message = dbus_bindings.Signal(object_path, interface, signal_name)
-        self._connection.send(message)
-        
-    def object_method_called(self, message, relative_path, method_name, argument_list):
-        """Override this method. Called with, object_path, the relative path of the object
-        under the base_path, the name of the method invoked, and a list of arguments
-        """
-        raise NotImplementedException, "object_method_called() must be overriden"
 
-    def _unregister_cb(self, connection):
-        print ("Unregister")
+class MissingReplyHandlerException(Exception):
+    def __init__(self):
+        Exception.__init__(self)
 
-    def _message_cb(self, connection, message):
-        target_object_full_path = message.get_path()
-        assert(self._base_path == target_object_full_path[:len(self._base_path)])
-        target_object_path = target_object_full_path[len(self._base_path):]
-        target_method_name = message.get_member()        
-        message_args = message.get_args_list()
+    def __str__(self):
+        return "reply_handler not defined: if you define an error_handler you must also define a reply_handler"
 
-        try:
-            target_method = self._method_name_to_method[target_method_name]
-            args = [target_object_path] + message_args
-        except KeyError:
-            target_method = self.object_method_called
-            args = [target_object_path, target_method_name, message_args]
+class ValidationException(Exception):
+    def __init__(self, msg=''):
+        self.msg = msg
+        Exception.__init__(self)
 
-        reply = _dispatch_dbus_method_call(target_method, args, message)
+    def __str__(self):
+        return "Error validating string: %s" % self.msg
 
-        self._connection.send(reply)
-        
-class RemoteService:
-    """A remote service providing objects.
+class UnknownMethodException(Exception):
+    def __init__(self, msg=''):
+        self.msg = msg
+        Exception.__init__(self)
 
-    A service is typically a process or application that provides
-    remote objects, but can also be the broadcast service that
-    receives signals from all applications on the Bus.
-    """
-    
-    def __init__(self, bus, service_name):
-        self._bus            = bus
-        self._service_name   = service_name
+    def __str__(self):
+        return "Unknown method: %s" % self.msg
 
-    def get_bus(self):
-        return self._bus
-
-    def get_service_name(self):
-        return self._service_name
-
-    def get_object(self, object_path, interface):
-        """Get an object provided by this Service that implements a
-        particular interface. object_path is a string of the form
-        '/com/widgetcorp/MyService/MyObject1'. interface looks a lot
-        like a service_name (they're often the same) and is of the form,
-        'com.widgetcorp.MyInterface', and mostly just defines the
-        set of member functions that will be present in the object.
-        """
-        return RemoteObject(self, object_path, interface)
-                             
 ObjectPath = dbus_bindings.ObjectPath
 ByteArray = dbus_bindings.ByteArray
+

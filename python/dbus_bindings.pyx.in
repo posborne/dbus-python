@@ -222,6 +222,17 @@ cdef class Connection:
                                       NULL)
         return retval
 
+    def send_with_reply_handlers(self, Message message, timeout_milliseconds, reply_handler, error_handler):
+        retval = False
+        try:
+            (retval, pending_call) = self.send_with_reply(message, timeout_milliseconds)
+            if pending_call:
+                pending_call.set_notify(reply_handler, error_handler)
+        except Exception, e:
+            error_handler(e)
+            
+        return retval
+
     def send_with_reply(self, Message message, timeout_milliseconds):
         cdef dbus_bool_t retval
         cdef DBusPendingCall *cpending_call
@@ -376,7 +387,34 @@ cdef class Connection:
 
         return child_entries
 
-    
+cdef void _pending_call_notification(DBusPendingCall *pending_call, void *user_data):
+    cdef DBusMessage *dbus_message
+    cdef Message message
+   
+    (reply_handler, error_handler) = <object>user_data
+   
+    dbus_message = dbus_pending_call_steal_reply(pending_call)
+    message = Message(_create=0)
+    message._set_msg(dbus_message)
+
+    type = message.get_type()
+
+    if type == MESSAGE_TYPE_METHOD_RETURN:
+        args = message.get_args_list()
+        reply_handler(*args)
+    elif type == MESSAGE_TYPE_ERROR:
+        args = message.get_args_list()
+        error_handler(DBusException(args[0]))
+    else:
+        error_handler(DBusException('Unexpected Message Type: ' + message.type_to_name(type)))
+
+    dbus_message_unref(dbus_message)
+    dbus_pending_call_unref(pending_call)
+
+cdef void _pending_call_free_user_data(void *data):
+    call_tuple = <object>data
+    Py_XDECREF(call_tuple)
+
 cdef class PendingCall:
     cdef DBusPendingCall *pending_call
 
@@ -405,6 +443,13 @@ cdef class PendingCall:
 
     def block(self):
         dbus_pending_call_block(self.pending_call)
+
+    def set_notify(self, reply_handler, error_handler):
+        user_data = (reply_handler, error_handler)
+        Py_XINCREF(user_data)
+        dbus_pending_call_set_notify(self.pending_call, _pending_call_notification, 
+                                     <void *>user_data, _pending_call_free_user_data)
+        
 
 cdef class Watch:
     cdef DBusWatch* watch
@@ -914,29 +959,34 @@ cdef class Message:
     cdef DBusMessage *msg
 
     def __init__(self, message_type=MESSAGE_TYPE_INVALID,
-                 service=None, path=None, interface=None, method=None,
+                 service=None, path=None, dbus_interface=None, method=None,
                  Message method_call=None,
                  name=None,
                  Message reply_to=None, error_name=None, error_message=None,
                  _create=1):
+
         cdef char *cservice
+        cdef char *ciface
         cdef DBusMessage *cmsg
 
-        if (service == None):
-            cservice = NULL
-        else:
+        ciface = NULL
+        if (dbus_interface != None):
+            ciface = dbus_interface
+
+        cservice = NULL
+        if (service != None):
             cservice = service
             
         if not _create:
             return
 
         if message_type == MESSAGE_TYPE_METHOD_CALL:
-            self.msg = dbus_message_new_method_call(cservice, path, interface, method)
+            self.msg = dbus_message_new_method_call(cservice, path, ciface, method)
         elif message_type == MESSAGE_TYPE_METHOD_RETURN:
             cmsg = method_call._get_msg()
             self.msg = dbus_message_new_method_return(cmsg)
         elif message_type == MESSAGE_TYPE_SIGNAL:
-            self.msg = dbus_message_new_signal(path, interface, name)
+            self.msg = dbus_message_new_signal(path, ciface, name)
         elif message_type == MESSAGE_TYPE_ERROR:
             cmsg = reply_to._get_msg()
             self.msg = dbus_message_new_error(cmsg, error_name, error_message)
@@ -1105,11 +1155,11 @@ cdef class Message:
 
 class Signal(Message):
     def __init__(self, spath, sinterface, sname):
-        Message.__init__(self, MESSAGE_TYPE_SIGNAL, path=spath, interface=sinterface, name=sname)
+        Message.__init__(self, MESSAGE_TYPE_SIGNAL, path=spath, dbus_interface=sinterface, name=sname)
 
 class MethodCall(Message):
     def __init__(self, mpath, minterface, mmethod):
-        Message.__init__(self, MESSAGE_TYPE_METHOD_CALL, path=mpath, interface=minterface, method=mmethod)
+        Message.__init__(self, MESSAGE_TYPE_METHOD_CALL, path=mpath, dbus_interface=minterface, method=mmethod)
 
 class MethodReturn(Message):
     def __init__(self, method_call):

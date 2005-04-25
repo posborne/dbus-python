@@ -1,19 +1,30 @@
 import gtk
 import dbus
+import gobject
+
+def handle_reply(msg):
+    print msg
+
+def handle_error(e):
+    print str(e)
+
+def emit_signal():
+   #call the emitHelloSignal method async
+   object.emitHelloSignal(dbus_interface="org.designfu.TestService", 
+                          reply_handler = handle_reply, error_handler = handle_error)
+   return True
 
 bus = dbus.SessionBus()
-service = bus.get_service("org.designfu.TestService")
-object  = service.get_object("/org/designfu/TestService/object", "org.designfu.TestService")
+object  = bus.get_object("org.designfu.TestService","/org/designfu/TestService/object")
 
-def hello_signal_handler(sender):
-        print ("Received signal '%s.%s' from object '%s%s'"
-               % (sender.interface, sender.signal_name, sender.service, sender.path))
+def hello_signal_handler(hello_string):
+        print ("Received signal and it says: " + hello_string)
 
+object.connect_to_signal("HelloSignal", hello_signal_handler, dbus_interface="org.designfu.TestService")
 
-object.connect_to_signal("hello", hello_signal_handler)
+gobject.timeout_add(2000, emit_signal)
 
 # Tell the remote object to emit the signal
-object.emitHelloSignal()
 
 gtk.main()
 
