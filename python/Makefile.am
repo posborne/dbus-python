@@ -2,10 +2,10 @@ SUBDIRS=examples
 
 INCLUDES=-I$(top_builddir) -I$(top_builddir)/dbus $(DBUS_CLIENT_CFLAGS) $(DBUS_GLIB_CFLAGS) $(DBUS_GLIB_TOOL_CFLAGS) $(PYTHON_INCLUDES)
 
-dbusdir = $(pythondir)
-dbus_PYTHON = dbus.py
+dbusdir = $(pythondir)/dbus
+dbus_PYTHON = __init__.py _dbus.py decorators.py exceptions.py services.py proxies.py _util.py types.py
 
-dbusbindingsdir = $(pythondir)
+dbusbindingsdir = $(pythondir)/dbus
 dbusbindings_LTLIBRARIES = dbus_bindings.la
 
 dbus_bindings_la_LDFLAGS = -module -avoid-version -fPIC -export-symbols-regex initdbus_bindings

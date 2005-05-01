@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import dbus
 
 gconf_key = "/desktop/gnome/file_views/icon_theme"

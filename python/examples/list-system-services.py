@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """Lists services on the system bus
 """
 import dbus

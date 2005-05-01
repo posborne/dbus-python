@@ -82,6 +82,64 @@ class Signature(str):
     def __init__(self, value):
         str.__init__(value)
 
+class Byte(int):
+    def __init__(self, value):
+        int.__init__(value)
+
+class Boolean(int):
+    def __init__(self, value):
+        int.__init__(value)
+
+class Int16(int):
+    def __init__(self, value):
+        int.__init__(value)
+
+class UInt16(int):
+    def __init__(self, value):
+        if value < 0:
+            raise TypeError('Unsigned integers must not have a negitive value') 
+        int.__init__(value)
+
+class Int32(int):
+    def __init__(self, value):
+        int.__init__(value)
+
+class UInt32(long):
+    def __init__(self, value):
+        if value < 0:
+            raise TypeError('Unsigned integers must not have a negitive value') 
+        long.__init__(value)
+
+class Int64(long):
+    def __init__(self, value):
+        long.__init__(value)
+
+class UInt64(long):
+    def __init__(self, value):
+        if value < 0:
+            raise TypeError('Unsigned integers must not have a negitive value') 
+        long.__init__(value)
+
+class Double(float):
+    def __init__(self, value):
+        float.__init__(self, value)
+
+class String(str):
+    def __init__(self, value):
+        str.__init__(value)
+
+class Array(list):
+    def __init__(self, value):
+        list.__init__(value)
+
+class Struct(tuple):
+    def __init__(self, value):
+        tuple.__init__(value)
+
+class Dictionary(dict):
+    def __init__(self, value):
+        dict.__init__(value)
+
 #forward delcerations
 cdef class Connection
 cdef class Message
@@ -707,7 +765,7 @@ cdef class MessageIter:
             ret = TYPE_STRING
             ret = str(chr(ret))
         elif ptype == float:
-            ret = TYPE_FLOAT
+            ret = TYPE_DOUBLE
             ret = str(chr(ret))
         elif ptype == dict:
             dict_list = value.items()
@@ -734,6 +792,52 @@ cdef class MessageIter:
         elif isinstance(Signature):
             ret = TYPE_SIGNATURE
             ret = str(chr(ret))
+        elif isinstance(value, Byte):
+            ret = TYPE_BYTE
+            ret = str(chr(ret))
+        elif isinstance(value, Boolean):
+            ret = TYPE_BOOL
+            ret = str(chr(ret))
+        elif isinstance(value, Int16):
+            ret = TYPE_INT16
+            ret = str(chr(ret))
+        elif isinstance(value, UInt16):
+            ret = TYPE_UINT16
+            ret = str(chr(ret))
+        elif isinstance(value, Int32):
+            ret = TYPE_INT32
+            ret = str(chr(ret))
+        elif isinstance(value, UInt32):
+            ret = TYPE_UINT32
+            ret = str(chr(ret))
+        elif isinstance(value, Int64):
+            ret = TYPE_INT64
+            ret = str(chr(ret))
+        elif isinstance(value, UInt64):
+            ret = TYPE_UINT64
+            ret = str(chr(ret))
+        elif isinstance(value, Double):
+            ret = TYPE_DOUBLE
+            ret = str(chr(ret))
+        elif isinstance(value, String):
+            ret = TYPE_STRING
+            ret = str(chr(ret))
+        elif isinstance(value, Array):
+            ret = str(chr(TYPE_ARRAY))
+            ret = ret + self.python_value_to_dbus_sig(value[0], level)
+        elif isinstance(value, Struct):
+            ret = str(chr(STRUCT_BEGIN))
+            for item in value:
+                ret = ret + self.python_value_to_dbus_sig(item, level)
+            ret = ret + str(chr(STRUCT_END))
+        elif isinstance(value, Dictionary):
+            dict_list = value.items()
+            key, value = dict_list[0]
+
+            ret = str(chr(TYPE_ARRAY)) + str(chr(DICT_ENTRY_BEGIN))
+            ret = ret + self.python_value_to_dbus_sig(key, level)
+            ret = ret + self.python_value_to_dbus_sig(value, level)
+            ret = ret + str(chr(DICT_ENTRY_END))
         else:
             raise TypeError, "Argument of unknown type '%s'" % (ptype)
 
@@ -767,6 +871,32 @@ cdef class MessageIter:
             retval = self.append_array(value)
         elif isinstance(value, Signature):
             retval = self.append_signature(value)
+        elif isinstance(value, Byte):
+            retval = self.append_byte(value)
+        elif isinstance(value, Boolean):
+            retval = self.append_boolean(value)
+        elif isinstance(value, Int16):
+            retval = self.append_int16(value)
+        elif isinstance(value, UInt16):
+            retval = self.append_uint16(value)
+        elif isinstance(value, Int32):
+            retval = self.append_int32(value)
+        elif isinstance(value, UInt32):
+            retval = self.append_uint32(value)
+        elif isinstance(value, Int64):
+            retval = self.append_int64(value)
+        elif isinstance(value, UInt64):
+            retval = self.append_uint64(value)
+        elif isinstance(value, Double):
+            retval = self.append_double(value)
+        elif isinstance(value, String):
+            retval = self.append_string(value)
+        elif isinstance(value, Array):
+            retval = self.append_array(value)
+        elif isinstance(value, Struct):
+            retval = self.append_struct(value)
+        elif isinstance(value, Dictionary):
+            retval = self.append_dict(value)
         else:
             raise TypeError, "Argument of unknown type '%s'" % (value_type)
 
@@ -784,7 +914,17 @@ cdef class MessageIter:
 
         b = ord(value)
         return dbus_message_iter_append_basic(self.iter, TYPE_BYTE, <char *>&b)
-    
+
+    def append_int16(self, value):
+        cdef dbus_int32_t c_value
+        c_value = value
+        return dbus_message_iter_append_basic(self.iter, TYPE_INT16, <dbus_int32_t *>&c_value)
+
+    def append_uint16(self, value):
+        cdef dbus_uint32_t c_value
+        c_value = value
+        return dbus_message_iter_append_basic(self.iter, TYPE_UINT16, <dbus_uint32_t *>&c_value)
+
     def append_int32(self, value):
         cdef dbus_int32_t c_value
         c_value = value
@@ -952,7 +1092,7 @@ cdef class MessageIter:
 
 
 (MESSAGE_TYPE_INVALID, MESSAGE_TYPE_METHOD_CALL, MESSAGE_TYPE_METHOD_RETURN, MESSAGE_TYPE_ERROR, MESSAGE_TYPE_SIGNAL) = range(5)
-(TYPE_INVALID, TYPE_BYTE, TYPE_BOOLEAN, TYPE_INT16, TYPE_UINT16, TYPE_INT32, TYPE_UINT32, TYPE_INT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_STRING, TYPE_OBJECT_PATH, TYPE_SIGNATURE, TYPE_ARRAY, TYPE_STRUCT, STRUCT_BEGIN, STRUCT_END, TYPE_VARIANT, TYPE_DICT_ENTRY, DICT_ENTRY_BEGIN, DICT_ENTRY_END) = (0, ord('y'), ord('b'), ord('n'), ord('i'), ord('u'), ord('q'), ord('x'), ord('t'), ord('d'), ord('s'), ord('o'), ord('g'), ord('a'), ord('r'), ord('('), ord(')'), ord('v'), ord('e'), ord('{'), ord('}'))
+(TYPE_INVALID, TYPE_BYTE, TYPE_BOOLEAN, TYPE_INT16, TYPE_UINT16, TYPE_INT32, TYPE_UINT32, TYPE_INT64, TYPE_UINT64, TYPE_DOUBLE, TYPE_STRING, TYPE_OBJECT_PATH, TYPE_SIGNATURE, TYPE_ARRAY, TYPE_STRUCT, STRUCT_BEGIN, STRUCT_END, TYPE_VARIANT, TYPE_DICT_ENTRY, DICT_ENTRY_BEGIN, DICT_ENTRY_END) = (0, ord('y'), ord('b'), ord('n'), ord('q'), ord('i'), ord('u'), ord('x'), ord('t'), ord('d'), ord('s'), ord('o'), ord('g'), ord('a'), ord('r'), ord('('), ord(')'), ord('v'), ord('e'), ord('{'), ord('}'))
 (HANDLER_RESULT_HANDLED, HANDLER_RESULT_NOT_YET_HANDLED, HANDLER_RESULT_NEED_MEMORY) = range(3)
     
 cdef class Message:
