@@ -1,32 +1,21 @@
-class MissingErrorHandlerException(Exception):
+import dbus_bindings
+
+DBusException = dbus_bindings.DBusException
+ConnectionError = dbus_bindings.ConnectionError
+
+class MissingErrorHandlerException(DBusException):
     def __init__(self):
-        Exception.__init__(self)
+        DBusException.__init__(self, "error_handler not defined: if you define a reply_handler you must also define an error_handler")
 
-
-    def __str__(self):
-        return "error_handler not defined: if you define a reply_handler you must also define an error_handler"
-
-
-class MissingReplyHandlerException(Exception):
+class MissingReplyHandlerException(DBusException):
     def __init__(self):
-        Exception.__init__(self)
+        DBusException.__init__(self, "reply_handler not defined: if you define an error_handler you must also define a reply_handler")
 
-    def __str__(self):
-        return "reply_handler not defined: if you define an error_handler you must also define a reply_handler"
-
-class ValidationException(Exception):
+class ValidationException(DBusException):
     def __init__(self, msg=''):
-        self.msg = msg
-        Exception.__init__(self)
+        DBusException.__init__(self, "Error validating string: %s"%msg)
 
-    def __str__(self):
-        return "Error validating string: %s" % self.msg
-
-class UnknownMethodException(Exception):
+class UnknownMethodException(DBusException):
     def __init__(self, msg=''):
-        self.msg = msg
-        Exception.__init__(self)
-
-    def __str__(self):
-        return "Unknown method: %s" % self.msg
+        DBusException.__init__("Unknown method: %s"%msg)
 

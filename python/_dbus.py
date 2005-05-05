@@ -187,7 +187,6 @@ class StarterBus(Bus):
     def __init__(self):
         Bus.__init__(self, Bus.TYPE_STARTER)
 
-
 class Interface:
     """An inteface into a remote object
 
@@ -216,4 +215,8 @@ class Interface:
             return object.__call__
         else:
             return self._obj.__getattr__(member, dbus_interface=_dbus_interface)
-
+    
+    def __repr__(self):
+        return '<Interface %r implementing %r at %x>'%(
+        self._obj, self._dbus_interface, id(self))
+    __str__ = __repr__

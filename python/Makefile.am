@@ -5,7 +5,7 @@ INCLUDES=-I$(top_builddir) -I$(top_builddir)/dbus $(DBUS_CLIENT_CFLAGS) $(DBUS_G
 dbusdir = $(pythondir)/dbus
 dbus_PYTHON = __init__.py _dbus.py decorators.py exceptions.py services.py proxies.py _util.py types.py
 
-dbusbindingsdir = $(pythondir)/dbus
+dbusbindingsdir = $(pyexecdir)/dbus
 dbusbindings_LTLIBRARIES = dbus_bindings.la
 
 dbus_bindings_la_LDFLAGS = -module -avoid-version -fPIC -export-symbols-regex initdbus_bindings
