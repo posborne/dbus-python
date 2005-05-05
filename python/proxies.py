@@ -23,6 +23,8 @@ class ProxyObject:
     def __getattr__(self, member, **keywords):
         if member == '__call__':
             return object.__call__
+        elif member.startswith('__') and member.endswith('__'):
+            raise AttributeError(member)
         else:
             iface = None
             if (keywords.has_key('dbus_interface')):
