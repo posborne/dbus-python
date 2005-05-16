@@ -1,45 +1,5 @@
 import dbus_bindings
 
-class ProxyObject:
-    """A proxy to the remote Object.
-
-    A ProxyObject is provided by the Bus. ProxyObjects
-    have member functions, and can be called like normal Python objects.
-    """
-    def __init__(self, bus, named_service, object_path):
-        self._bus          = bus
-        self._named_service = named_service
-        self._object_path  = object_path
-
-    def connect_to_signal(self, signal_name, handler_function, dbus_interface=None):
-        self._bus.add_signal_receiver(handler_function,
-                                      signal_name=signal_name,
-                                      dbus_interface=dbus_interface,
-                                      named_service=self._named_service,
-                                      path=self._object_path)
-
-
-
-    def __getattr__(self, member, **keywords):
-        if member == '__call__':
-            return object.__call__
-        elif member.startswith('__') and member.endswith('__'):
-            raise AttributeError(member)
-        else:
-            iface = None
-            if (keywords.has_key('dbus_interface')):
-                iface = keywords['dbus_interface']
-
-            return ProxyMethod(self._bus.get_connection(),
-                                self._named_service,
-                                self._object_path, iface, member)
-
-    def __repr__(self):
-        return '<ProxyObject wrapping %s %s %s at %x>'%( 
-            self._bus, self._named_service, self._object_path , id(self))
-    __str__ = __repr__
-
-
 class ProxyMethod:
     """A proxy Method.
 
@@ -94,4 +54,46 @@ class ProxyMethod:
             return args_tuple[0]
         else:
             return args_tuple
+
+
+class ProxyObject:
+    """A proxy to the remote Object.
+
+    A ProxyObject is provided by the Bus. ProxyObjects
+    have member functions, and can be called like normal Python objects.
+    """
+    ProxyMethodClass = ProxyMethod
+
+    def __init__(self, bus, named_service, object_path):
+        self._bus          = bus
+        self._named_service = named_service
+        self._object_path  = object_path
+
+    def connect_to_signal(self, signal_name, handler_function, dbus_interface=None):
+        self._bus.add_signal_receiver(handler_function,
+                                      signal_name=signal_name,
+                                      dbus_interface=dbus_interface,
+                                      named_service=self._named_service,
+                                      path=self._object_path)
+
+
+
+    def __getattr__(self, member, **keywords):
+        if member == '__call__':
+            return object.__call__
+        elif member.startswith('__') and member.endswith('__'):
+            raise AttributeError(member)
+        else:
+            iface = None
+            if (keywords.has_key('dbus_interface')):
+                iface = keywords['dbus_interface']
+
+            return self.ProxyMethodClass(self._bus.get_connection(),
+                                self._named_service,
+                                self._object_path, iface, member)
+
+    def __repr__(self):
+        return '<ProxyObject wrapping %s %s %s at %x>'%( 
+            self._bus, self._named_service, self._object_path , id(self))
+    __str__ = __repr__
 

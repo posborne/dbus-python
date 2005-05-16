@@ -70,6 +70,8 @@ class Bus:
     """bus_type=[Bus.TYPE_SESSION | Bus.TYPE_SYSTEM | Bus.TYPE_STARTER]
     """
 
+    ProxyObjectClass = ProxyObject
+
     START_REPLY_SUCCESS = dbus_bindings.DBUS_START_REPLY_SUCCESS
     START_REPLY_ALREADY_RUNNING = dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING 
 
@@ -106,7 +108,7 @@ class Bus:
 
     def get_object(self, named_service, object_path):
         """Get a proxy object to call over the bus"""
-        return ProxyObject(self, named_service, object_path)
+        return self.ProxyObjectClass(self, named_service, object_path)
 
     def add_signal_receiver(self, handler_function, signal_name=None, dbus_interface=None, named_service=None, path=None):
         match_rule = self._get_match_rule(signal_name, dbus_interface, named_service, path)
