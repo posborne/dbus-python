@@ -785,7 +785,7 @@ cdef class MessageIter:
             ret = str(chr(TYPE_ARRAY))
             ret = ret + self.python_value_to_dbus_sig(value[0], level)
         elif isinstance(value, ObjectPath):
-            ret = TYPE_PATH
+            ret = TYPE_OBJECT_PATH
             ret = str(chr(ret))
         elif isinstance(ByteArray):
             ret = str(chr(TYPE_ARRAY)) + str(chr(TYPE_BYTE))
@@ -958,7 +958,7 @@ cdef class MessageIter:
     def append_object_path(self, value):
         cdef char *c_value
         c_value = value
-        return dbus_message_iter_append_basic(self.iter, TYPE_PATH, <char **>&c_value)
+        return dbus_message_iter_append_basic(self.iter, TYPE_OBJECT_PATH, <char **>&c_value)
 
     def append_signature(self, value):
         cdef char *c_value
