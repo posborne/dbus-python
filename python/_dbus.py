@@ -150,9 +150,7 @@ class Bus:
 
         match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
 
-        args = message.get_args_list()
-
-        self._match_rule_tree.exec_matches(match_rule, *args)
+        self._match_rule_tree.exec_matches(match_rule, message)
 
     def start_service_by_name(self, named_service):
         return dbus_bindings.bus_start_service_by_name(self._connection, named_service)

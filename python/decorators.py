@@ -1,7 +1,7 @@
 import _util 
 import inspect
 import dbus_bindings
-
+import new
 
 def method(dbus_interface):
     _util._validate_interface_or_name(dbus_interface)
@@ -37,3 +37,6 @@ def signal(dbus_interface):
 
     return decorator
 
+def explicitly_pass_message(func):
+    func._dbus_pass_message = True
+    return func

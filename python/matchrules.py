@@ -69,7 +69,7 @@ class SignalMatchTree:
         path = signal.add(rule.signal_name)
         path.add(rule.path, leaf=rule)
        
-    def exec_matches(self, match_rule, *args):
+    def exec_matches(self, match_rule, message):
         sender_matches = self._tree.get_matches(match_rule.sender)
         for sender_node in sender_matches:
             interface_matches = sender_node.get_matches(match_rule.dbus_interface)
@@ -80,7 +80,7 @@ class SignalMatchTree:
                     for path_node in path_matches:
                         if(path_node.rules):
                             for rule in path_node.rules:
-                                rule.execute(*args)
+                                rule.execute(message)
             
     def remove(self, rule):
         try:
@@ -122,9 +122,14 @@ class SignalMatchRule:
         self.sender = sender
         self.path = path
 
-    def execute(self, *args):
+    def execute(self, message):
+        args = message.get_args_list()
         for handler in self.handler_functions:
-            handler(*args)
+            if getattr(handler, "_dbus_pass_message", False):
+                keywords = {"dbus_message": message}
+                handler(*args, **keywords)
+            else:
+                handler(*args)
 
     def add_handler(self, handler):
         self.handler_functions.append(handler)
@@ -149,22 +154,14 @@ class SignalMatchRule:
         repr = "type='signal'"
         if (self.dbus_interface):
             repr = repr + ",interface='%s'" % (self.dbus_interface)
-        else:
-            repr = repr + ",interface='*'"
 
         if (self.sender):     
             repr = repr + ",sender='%s'" % (self.sender)
-        else:
-            repr = repr + ",sender='*'"
     
         if (self.path):
             repr = repr + ",path='%s'" % (self.path)
-        else:
-            repr = repr + ",path='*'" 
             
         if (self.signal_name):
             repr = repr + ",member='%s'" % (self.signal_name)
-        else:
-            repr = repr + ",member='*'"
     
         return repr
