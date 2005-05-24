@@ -12,8 +12,8 @@ def handle_error(e):
 
 def emit_signal():
    #call the emitHelloSignal method async
-   object.emitHelloSignal(dbus_interface="org.designfu.TestService", 
-                          reply_handler = handle_reply, error_handler = handle_error)
+   object.emitHelloSignal(dbus_interface="org.designfu.TestService")
+                          #reply_handler = handle_reply, error_handler = handle_error)
    return True
 
 bus = dbus.SessionBus()

@@ -46,6 +46,7 @@ from decorators import *
 from proxies import *
 from exceptions import *
 from services import *
+from matchrules import *
 
 import re
 import inspect
@@ -79,7 +80,7 @@ class Bus:
         self._connection = dbus_bindings.bus_get(bus_type)
 
         self._connection.add_filter(self._signal_func)
-        self._match_rule_to_receivers = { }
+        self._match_rule_tree = SignalMatchTree()
         if (glib_mainloop):
             self._connection.setup_with_g_main()
 
@@ -111,61 +112,47 @@ class Bus:
         return self.ProxyObjectClass(self, named_service, object_path)
 
     def add_signal_receiver(self, handler_function, signal_name=None, dbus_interface=None, named_service=None, path=None):
-        match_rule = self._get_match_rule(signal_name, dbus_interface, named_service, path)
+        if (named_service and named_service[0] != ':'):
+            bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
+            named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
+        
+        match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
+        match_rule.add_handler(handler_function)
 
-        if (not self._match_rule_to_receivers.has_key(match_rule)):
-            self._match_rule_to_receivers[match_rule] = [handler_function]
-	else:
-	    self._match_rule_to_receivers[match_rule].append(handler_function)
+        self._match_rule_tree.add(match_rule)
 
-        dbus_bindings.bus_add_match(self._connection, match_rule)
+        dbus_bindings.bus_add_match(self._connection, str(match_rule))
 
     def remove_signal_receiver(self, handler_function, signal_name=None, dbus_interface=None, named_service=None, path=None):
-        match_rule = self._get_match_rule(signal_name, dbus_interface, named_service, path)
-
-        if self._match_rule_to_receivers.has_key(match_rule):
-            if self._match_rule_to_receivers[match_rule].__contains__(handler_function):
-                self._match_rule_to_receivers[match_rule].pop(handler_function)
-                dbus_bindings.bus_remove_match(self._connection, match_rule)
+        if (named_service and named_service[0] != ':'):
+            bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
+            named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
+        
+        match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
+        match_rule.add_handler(handler_function)
+        
+        self._match_rule_tree.remove(match_rule)
+        
+        #TODO we leak match rules in the lower level bindings.  We need to ref count them
 
     def get_unix_user(self, named_service):
         """Get the unix user for the given named_service on this Bus"""
         return dbus_bindings.bus_get_unix_user(self._connection, named_service)
-
-    #TODO: Rethink match rules.  Right now matches have to be exact.
-    def _get_match_rule(self, signal_name, dbus_interface, named_service, path):
-        match_rule = "type='signal'"
-        if (dbus_interface):
-            match_rule = match_rule + ",interface='%s'" % (dbus_interface)
-        if (named_service):
-            if (named_service[0] != ':' and named_service != "org.freedesktop.DBus"):
-                bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
-                named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
-
-            match_rule = match_rule + ",sender='%s'" % (named_service)
-        if (path):
-            match_rule = match_rule + ",path='%s'" % (path)
-        if (signal_name):
-            match_rule = match_rule + ",member='%s'" % (signal_name)
-        return match_rule
     
     def _signal_func(self, connection, message):
         if (message.get_type() != dbus_bindings.MESSAGE_TYPE_SIGNAL):
             return dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
         
         dbus_interface      = message.get_interface()
-        named_service  = message.get_sender()
-        path           = message.get_path()
-        signal_name    = message.get_member()
+        named_service     = message.get_sender()
+        path                      = message.get_path()
+        signal_name         = message.get_member()
 
-        match_rule = self._get_match_rule(signal_name, dbus_interface, named_service, path)
+        match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
 
-        if (self._match_rule_to_receivers.has_key(match_rule)):
-            receivers = self._match_rule_to_receivers[match_rule]
+        args = message.get_args_list()
 
-            for receiver in receivers:
-	        args = message.get_args_list()
-		receiver(*args)
+        self._match_rule_tree.exec_matches(match_rule, *args)
 
     def start_service_by_name(self, named_service):
         return dbus_bindings.bus_start_service_by_name(self._connection, named_service)
@@ -203,8 +190,8 @@ class Interface:
 
     def connect_to_signal(self, signal_name, handler_function, dbus_interface = None):
         if not dbus_interface:
-	    dbus_interface = self._dbus_interface
-		
+            dbus_interface = self._dbus_interface
+            
         self._obj.connect_to_signal(signal_name, handler_function, dbus_interface)
 
     def __getattr__(self, member, **keywords):
