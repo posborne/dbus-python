@@ -7,6 +7,14 @@
 
 #FIXME: find memory leaks that I am sure exist
 
+cdef extern from "sys/types.h":
+    ctypedef size_t
+    ctypedef __int64_t
+    ctypedef __uint64_t
+
+cdef extern from "sys/cdefs.h":
+    ctypedef __signed
+
 #include "dbus_h_wrapper.h"
 
 cdef extern from "stdlib.h":
