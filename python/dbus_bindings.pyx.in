@@ -34,6 +34,10 @@ cdef extern from "Python.h":
     void Py_XINCREF (object)
     void Py_XDECREF (object)
     object PyString_FromStringAndSize(char *, int)
+    ctypedef void *PyGILState_STATE
+    void PyErr_Clear()
+    PyGILState_STATE PyGILState_Ensure()
+    void PyGILState_Release(PyGILState_STATE)
 
 ctypedef struct DBusError:
     char *name
@@ -158,38 +162,46 @@ cdef class MessageIter
 cdef void cunregister_function_handler (DBusConnection *connection,
                                         void *user_data):
     cdef Connection conn
-    tup = <object>user_data
-    assert (type(tup) == list)    
-    function = tup[1]
-    conn = Connection()
-    conn.__cinit__(None, connection)
+    cdef PyGILState_STATE gil
 
-    args = [conn]
-    function(*args)
+    gil = PyGILState_Ensure()
+    try:
+        itup = <object>user_data
+        assert (type(tup) == list)    
+        function = tup[1]
+        conn = Connection()
+        conn.__cinit__(None, connection)
+
+        args = [conn]
+        function(*args)
+    finally:
+        PyGILState_Release(gil)
 
 cdef DBusHandlerResult cmessage_function_handler (DBusConnection *connection,
                                                   DBusMessage *msg,
                                                   void *user_data):
     cdef Connection conn
     cdef Message message
+    cdef PyGILState_STATE gil
 
-    tup = <object>user_data
-    assert (type(tup) == list)
-    function = tup[0]
-    message = Message(_create=0)
-    message._set_msg(msg)
-  
-    conn = Connection()
-    conn.__cinit__(None, connection)  
- 
-    args = [conn,
-            message]
-    retval = function(*args)
-    if (retval == None):
-        retval = DBUS_HANDLER_RESULT_HANDLED
-
-    return retval
-
+    gil = PyGILState_Ensure()
+    try:
+        tup = <object>user_data
+        assert (type(tup) == list)
+        function = tup[0]
+        message = Message(_create=0)
+        message._set_msg(msg)
+        conn = Connection()
+        conn.__cinit__(None, connection)  
+        args = [conn,
+                message]
+        retval = function(*args)
+        if (retval == None):
+            retval = DBUS_HANDLER_RESULT_HANDLED
+        return retval
+    finally:
+        PyGILState_Release(gil)
+	
 cdef class Connection:
     cdef DBusConnection *conn
     
