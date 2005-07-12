@@ -42,7 +42,8 @@ print(dbus_object.ListServices())
 """
 
 import dbus_bindings
-from decorators import *
+
+import dbus
 from proxies import *
 from exceptions import *
 from services import *
@@ -50,13 +51,6 @@ from matchrules import *
 
 import re
 import inspect
-
-_threads_initialized = 0
-def init_gthreads ():
-    global _threads_initialized
-    if not _threads_initialized:
-        dbus_bindings.init_gthreads ()
-        _threads_initialized = 1
 
 class Bus:
     """A connection to a DBus daemon.
@@ -76,13 +70,16 @@ class Bus:
     START_REPLY_SUCCESS = dbus_bindings.DBUS_START_REPLY_SUCCESS
     START_REPLY_ALREADY_RUNNING = dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING 
 
-    def __init__(self, bus_type=TYPE_SESSION, glib_mainloop=True):
+    def __init__(self, bus_type=TYPE_SESSION, use_default_mainloop=True):
         self._connection = dbus_bindings.bus_get(bus_type)
 
         self._connection.add_filter(self._signal_func)
         self._match_rule_tree = SignalMatchTree()
-        if (glib_mainloop):
-            self._connection.setup_with_g_main()
+
+        if use_default_mainloop:
+            func = getattr(dbus, "_dbus_mainloop_setup_function", None)
+            if func != None:
+                func(self)
 
     def get_connection(self):
         return self._connection

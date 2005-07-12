@@ -1,6 +1,5 @@
 from _dbus import *
-from decorators import *
-from services import *
 from types import *
 
-version = (0, 40, 2)
+version = (0, 41, 0)
+_dbus_main_loop_setup_function = None

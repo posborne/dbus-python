@@ -1,0 +1,8 @@
+#include "dbus_h_wrapper.h"
+
+cdef class Connection:
+    cdef DBusConnection *conn
+
+    cdef __cinit__(self, address, DBusConnection *_conn)
+    cdef _set_conn(self, DBusConnection *conn)
+    cdef DBusConnection *_get_conn(self)

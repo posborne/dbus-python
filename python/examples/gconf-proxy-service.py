@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+#FIXME: Doesn't work with the new bindings
 import dbus
 
 import gtk

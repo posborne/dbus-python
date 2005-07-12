@@ -15,20 +15,10 @@ cdef extern from "sys/types.h":
 cdef extern from "sys/cdefs.h":
     ctypedef __signed
 
-#include "dbus_h_wrapper.h"
-
 cdef extern from "stdlib.h":
     cdef void *malloc(size_t size)
     cdef void free(void *ptr)
     cdef void *calloc(size_t nmemb, size_t size)
-
-cdef extern from "dbus-glib.h":
-    ctypedef struct GMainContext
-    cdef void dbus_connection_setup_with_g_main (DBusConnection *connection,
-                                                 GMainContext   *context)
-    cdef void dbus_server_setup_with_g_main     (DBusServer     *server,
-                                                 GMainContext   *context)
-    cdef void dbus_g_thread_init ()
 
 cdef extern from "Python.h":
     void Py_XINCREF (object)
@@ -153,7 +143,6 @@ class Dictionary(dict):
         dict.__init__(value)
 
 #forward delcerations
-cdef class Connection
 cdef class Message
 cdef class PendingCall
 cdef class Watch
@@ -203,12 +192,11 @@ cdef DBusHandlerResult cmessage_function_handler (DBusConnection *connection,
         PyGILState_Release(gil)
 	
 cdef class Connection:
-    cdef DBusConnection *conn
-    
     def __init__(self, address=None, Connection _conn=None):
         cdef DBusConnection *c_conn
         cdef char *c_address
         c_conn=NULL
+        self.conn = NULL
         if (_conn != None):
             c_conn = _conn.conn
 
@@ -229,6 +217,9 @@ cdef class Connection:
             if dbus_error_is_set(&error):
                 raise DBusException, error.message
 
+    def __del__(self):
+        if self.conn != NULL:
+            dbus_connection_unref(self.conn)
 
     cdef _set_conn(self, DBusConnection *conn):
         self.conn = conn
@@ -238,9 +229,6 @@ cdef class Connection:
     
     def get_unique_name(self):
         return bus_get_unique_name(self)
-
-    def setup_with_g_main(self):
-        dbus_connection_setup_with_g_main(self.conn, NULL)
 
     def disconnect(self):
         dbus_connection_disconnect(self.conn)
@@ -497,12 +485,17 @@ cdef class PendingCall:
     cdef DBusPendingCall *pending_call
 
     def __init__(self, PendingCall _pending_call=None):
+        self.pending_call = NULL
         if (_pending_call != None):
             self.__cinit__(_pending_call.pending_call)
 
     cdef void __cinit__(self, DBusPendingCall *_pending_call):
         self.pending_call = _pending_call
         dbus_pending_call_ref(self.pending_call)
+
+    def __del__(self):
+        if self.pending_call != NULL:
+            dbus_pending_call_unref(self.pending_call)
 
     cdef DBusPendingCall *_get_pending_call(self):
         return self.pending_call
@@ -1125,6 +1118,8 @@ cdef class Message:
                  Message reply_to=None, error_name=None, error_message=None,
                  _create=1):
 
+        self.msg = NULL
+
         cdef char *cservice
         cdef char *ciface
         cdef DBusMessage *cmsg
@@ -1150,6 +1145,10 @@ cdef class Message:
         elif message_type == MESSAGE_TYPE_ERROR:
             cmsg = reply_to._get_msg()
             self.msg = dbus_message_new_error(cmsg, error_name, error_message)
+
+    def __del__(self):
+        if self.msg != NULL:
+            dbus_message_unref(self.msg)
             
     def type_to_name(self, type):
         if type == MESSAGE_TYPE_SIGNAL:
@@ -1339,9 +1338,6 @@ cdef class Server:
         if dbus_error_is_set(&error):
             raise DBusException, error.message
 
-    def setup_with_g_main (self):
-        dbus_server_setup_with_g_main(self.server, NULL)
-
     def disconnect(self):
         dbus_server_disconnect(self.server)
 
@@ -1490,5 +1486,3 @@ def bus_remove_match(Connection connection, rule):
     if dbus_error_is_set(&error):
         raise DBusException, error.message
 
-def init_gthreads ():
-        dbus_g_thread_init ()

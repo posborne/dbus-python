@@ -2,10 +2,10 @@ from decorators import *
 
 import dbus_bindings 
 
-class Service:
-    """A base class for exporting your own Services across the Bus
+class Name:
+    """A base class for exporting your own Named Services across the Bus
 
-    Just inherit from Service, providing the name of your service
+    Just inherit from Name, providing the name of your service
     (e.g. org.designfu.SampleService).
     """
     def __init__(self, named_service, bus=None):
@@ -155,10 +155,10 @@ class Object:
     """
     __metaclass__ = ObjectType
     
-    def __init__(self, object_path, service):
+    def __init__(self, object_path, name):
         self._object_path = object_path
-        self._service = service
-        self._bus = service.get_bus()
+        self._name = name 
+        self._bus = name.get_bus()
             
         self._connection = self._bus.get_connection()
 
