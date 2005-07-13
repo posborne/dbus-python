@@ -1,7 +1,7 @@
 .deps
 Makefile.in
 Makefile
-dbus_bindings.pyx
+dbus_bindings.pxd
 *.lo
 *.la
 dbus_bindings.c

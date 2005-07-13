@@ -2,8 +2,6 @@
 
 import dbus
 import dbus.service
-
-
 import dbus.glib
 import pygtk
 import gtk
@@ -26,7 +24,7 @@ class SomeObject(dbus.service.Object):
         return {"first": "Hello Dict", "second": " from example-service.py"}
 
 session_bus = dbus.SessionBus()
-name = dbus.service.Name("org.designfu.SampleService", bus=session_bus)
+name = dbus.service.BusName("org.designfu.SampleService", bus=session_bus)
 object = SomeObject(name)
 
 gtk.main()

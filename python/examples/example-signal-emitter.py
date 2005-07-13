@@ -21,7 +21,7 @@ class TestObject(dbus.service.Object):
         return "Signal emitted"
 
 session_bus = dbus.SessionBus()
-name = dbus.service.Name("org.designfu.TestService", bus=session_bus)
+name = dbus.service.BusName("org.designfu.TestService", bus=session_bus)
 object = TestObject(name)
 
 gtk.main()
