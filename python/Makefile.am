@@ -31,12 +31,12 @@ CLEANFILES =			\
 	dbus_glib_bindings.c	
 
 
-dbus_bindings.pxd: dbus_bindings.pxd.in extract.py
-	-$(PYTHON) extract.py dbus_bindings.pxd.in -I$(top_builddir)  > dbus_bindings.pxd
+dbus_bindings.pxd: $(srcdir)/dbus_bindings.pxd.in $(srcdir)/extract.py
+	-$(PYTHON) $(srcdir)/extract.py $(srcdir)/dbus_bindings.pxd.in -I$(top_builddir)  > $@.tmp && mv $@.tmp $@
 
-dbus_bindings.c: dbus_bindings.pyx dbus_bindings.pxd 
-	-pyrexc dbus_bindings.pyx 
+dbus_bindings.c: $(srcdir)/dbus_bindings.pyx dbus_bindings.pxd 
+	-pyrexc $(srcdir)/dbus_bindings.pyx
 
-dbus_glib_bindings.c: dbus_glib_bindings.pyx dbus_bindings.pxd 
-	-pyrexc dbus_glib_bindings.pyx 
-		
+dbus_glib_bindings.c: $(srcdir)/dbus_glib_bindings.pyx dbus_bindings.pxd 
+	-pyrexc $(srcdir)/dbus_glib_bindings.pyx 
+
