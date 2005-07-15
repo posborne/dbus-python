@@ -7,8 +7,8 @@ import pygtk
 import gtk
 
 class SomeObject(dbus.service.Object):
-    def __init__(self, name):
-        dbus.service.Object.__init__(self, "/SomeObject", name)
+    def __init__(self, bus_name, object_path="/SomeObject"):
+        dbus.service.Object.__init__(self, bus_name, object_path)
 
     @dbus.service.method("org.designfu.SampleInterface")
     def HelloWorld(self, hello_message):

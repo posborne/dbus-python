@@ -5,8 +5,8 @@ import dbus.service
 import gtk
 
 class TestObject(dbus.service.Object):
-    def __init__(self, name):
-        dbus.service.Object.__init__(self, "/org/designfu/TestService/object", name)
+    def __init__(self, bus_name, object_path='/org/designfu/TestService/object'):
+        dbus.service.Object.__init__(self, bus_name, object_path)
 
     @dbus.service.signal('org.designfu.TestService')
     def HelloSignal(self, message):
@@ -17,11 +17,11 @@ class TestObject(dbus.service.Object):
     @dbus.service.method('org.designfu.TestService')
     def emitHelloSignal(self):
         #you emit signals by calling the signal's skeleton method
-        self.HelloSignal("Hello")
-        return "Signal emitted"
+        self.HelloSignal('Hello')
+        return 'Signal emitted'
 
 session_bus = dbus.SessionBus()
-name = dbus.service.BusName("org.designfu.TestService", bus=session_bus)
+name = dbus.service.BusName('org.designfu.TestService', bus=session_bus)
 object = TestObject(name)
 
 gtk.main()
