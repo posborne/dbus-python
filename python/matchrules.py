@@ -52,7 +52,7 @@ class SignalMatchNode:
     def remove_child(self, child, key=None):
         if self.wildcard == child:
             self.wildcard = None
-        elif self.finite.had_key(key):
+        elif self.finite.has_key(key):
             del self.finite[key]
 
 class SignalMatchTree:
@@ -139,11 +139,15 @@ class SignalMatchRule:
             self.dbus_interface == rule.dbus_interface and
             self.sender == rule.sender and
             self.path == rule.path):
-                _funcs_copy_a = self.dbus.handler_functions[0:]
-                _funcs_copy_b = rule.dbus.handler_functions[0:]
+                if rule.handler_functions == []:
+                    return True
+            
+                _funcs_copy_a = self.handler_functions[0:]
+                _funcs_copy_b = rule.handler_functions[0:]
                 _funcs_copy_a.sort()
                 _funcs_copy_b.sort()
-                return a == b
+
+                return _funcs_copy_a == _funcs_copy_b
  
         return False
 

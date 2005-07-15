@@ -126,7 +126,9 @@ class Bus:
             named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
         
         match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
-        match_rule.add_handler(handler_function)
+
+	if (handler_function):
+	    match_rule.add_handler(handler_function)
         
         self._match_rule_tree.remove(match_rule)
         
