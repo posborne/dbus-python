@@ -151,9 +151,9 @@ class Object:
     """
     __metaclass__ = ObjectType
     
-    def __init__(self, object_path, name):
+    def __init__(self, bus_name, object_path):
         self._object_path = object_path
-        self._name = name 
+        self._name = bus_name 
         self._bus = name.get_bus()
             
         self._connection = self._bus.get_connection()
