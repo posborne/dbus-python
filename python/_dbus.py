@@ -46,7 +46,6 @@ import dbus_bindings
 import dbus
 from proxies import *
 from exceptions import *
-from services import *
 from matchrules import *
 
 import re

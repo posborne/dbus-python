@@ -2,7 +2,8 @@
 
 import dbus
 import dbus.service
-import gtk
+import dbus.glib
+import gobject
 
 class TestObject(dbus.service.Object):
     def __init__(self, bus_name, object_path='/org/designfu/TestService/object'):
@@ -24,4 +25,5 @@ session_bus = dbus.SessionBus()
 name = dbus.service.BusName('org.designfu.TestService', bus=session_bus)
 object = TestObject(name)
 
-gtk.main()
+loop = gobject.MainLoop()
+loop.run()

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import gtk
 import dbus
+import dbus.decorators
+import dbus.glib
 import gobject
 
 def handle_reply(msg):
@@ -11,7 +12,7 @@ def handle_error(e):
     print str(e)
 
 def emit_signal():
-   #call the emitHelloSignal method async
+   #call the emitHelloSignal method 
    object.emitHelloSignal(dbus_interface="org.designfu.TestService")
                           #reply_handler = handle_reply, error_handler = handle_error)
    return True
@@ -22,7 +23,7 @@ object  = bus.get_object("org.designfu.TestService","/org/designfu/TestService/o
 def hello_signal_handler(hello_string):
     print ("Received signal and it says: " + hello_string)
 
-@dbus.explicitly_pass_message
+@dbus.decorators.explicitly_pass_message
 def catchall_signal_handler(*args, **keywords):
     #The dbus.handler directive passes in the special __dbus_message__ variable
     dbus_message = keywords["dbus_message"]
@@ -33,7 +34,7 @@ def catchall_signal_handler(*args, **keywords):
 def catchall_hello_signals_handler(hello_string):
     print ("Received a hello signal and it says ") + hello_string
     
-@dbus.explicitly_pass_message
+@dbus.decorators.explicitly_pass_message
 def catchall_testservice_interface_handler(hello_string, dbus_message):
     print "org.designfu.TestService interface says " + hello_string + " when it sent signal " + dbus_message.get_member()
 
@@ -48,5 +49,5 @@ gobject.timeout_add(2000, emit_signal)
 
 # Tell the remote object to emit the signal
 
-gtk.main()
-
+loop = gobject.MainLoop()
+loop.run()
