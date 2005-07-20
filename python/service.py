@@ -1,6 +1,7 @@
-from decorators import *
 
 import dbus_bindings 
+import _dbus
+from exceptions import UnknownMethodException
 
 class BusName:
     """A base class for exporting your own Named Services across the Bus
@@ -10,7 +11,7 @@ class BusName:
                              
         if bus == None:
             # Get the default bus
-            self._bus = Bus()
+            self._bus = _dbus.Bus()
         else:
             self._bus = bus
 

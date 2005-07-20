@@ -1,7 +1,6 @@
 import _util 
 import inspect
 import dbus_bindings
-import new
 
 def method(dbus_interface):
     _util._validate_interface_or_name(dbus_interface)

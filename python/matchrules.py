@@ -1,4 +1,4 @@
-from exceptions import *
+from exceptions import DBusException
 
 class SignalMatchNode:
     def __init__(self):

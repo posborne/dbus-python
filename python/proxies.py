@@ -1,4 +1,5 @@
 import dbus_bindings
+from exceptions import MissingReplyHandlerException, MissingErrorHandlerException
 
 class ProxyMethod:
     """A proxy Method.
@@ -29,7 +30,7 @@ class ProxyMethod:
 
         if not(reply_handler and error_handler):
             if reply_handler:
-                raise MissingErrorself, HandlerException()
+                raise MissingErrorHandlerException()
             elif error_handler:
                 raise MissingReplyHandlerException()
 

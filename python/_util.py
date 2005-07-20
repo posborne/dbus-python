@@ -1,4 +1,5 @@
 import re
+from exceptions import ValidationException
 
 def _validate_interface_or_name(value):
     elements = value.split('.')

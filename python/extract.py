@@ -1,7 +1,5 @@
 import commands
-import glob
 import re
-import os
 import string
 import sys
 

@@ -48,9 +48,6 @@ from proxies import *
 from exceptions import *
 from matchrules import *
 
-import re
-import inspect
-
 class Bus:
     """A connection to a DBus daemon.
 
