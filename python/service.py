@@ -2,6 +2,8 @@
 import dbus_bindings 
 import _dbus
 from exceptions import UnknownMethodException
+from decorators import method
+from decorators import signal
 
 class BusName:
     """A base class for exporting your own Named Services across the Bus

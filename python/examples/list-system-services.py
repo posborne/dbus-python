@@ -2,6 +2,7 @@
 
 """Lists services on the system bus
 """
+
 import dbus
 
 # Get a connection to the SYSTEM bus
@@ -18,5 +19,4 @@ dbus_iface = dbus.Interface(dbus_object, 'org.freedesktop.DBus')
 # One of the member functions in the org.freedesktop.DBus interface
 # is ListServices(), which provides a list of all the other services
 # registered on this bus. Call it, and print the list.
-system_service_list = dbus_object.ListNames()
-print str(system_service_list)
+print dbus_object.ListNames()

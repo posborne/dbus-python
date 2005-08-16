@@ -16,3 +16,4 @@ String = dbus_bindings.String
 Array = dbus_bindings.Array
 Struct = dbus_bindings.Struct
 Dictionary = dbus_bindings.Dictionary
+Variant = dbus_bindings.Variant

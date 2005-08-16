@@ -1,6 +1,17 @@
 import dbus_bindings
 from exceptions import MissingReplyHandlerException, MissingErrorHandlerException
 
+class DeferedMethod:
+    """A DeferedMethod
+    
+    This is returned instead of ProxyMethod when we are defering DBus calls
+    while waiting for introspection data to be returned
+    
+    This class can be used for debugging purposes
+    """
+    def __call__(self, *args, **keywords):
+        return None
+
 class ProxyMethod:
     """A proxy Method.
 
@@ -17,15 +28,19 @@ class ProxyMethod:
 
     def __call__(self, *args, **keywords):
         dbus_interface = self._dbus_interface
-        if (keywords.has_key('dbus_interface')):
+        if keywords.has_key('dbus_interface'):
             dbus_interface = keywords['dbus_interface']
 
+        timeout = -1
+        if keywords.has_key('timeout'):
+            timeout = keywords['timeout']
+
         reply_handler = None
-        if (keywords.has_key('reply_handler')):
+        if keywords.has_key('reply_handler'):
             reply_handler = keywords['reply_handler']
 
         error_handler = None
-        if (keywords.has_key('error_handler')):
+        if keywords.has_key('error_handler'):
             error_handler = keywords['error_handler']            
 
         if not(reply_handler and error_handler):
@@ -43,10 +58,10 @@ class ProxyMethod:
             iter.append(arg)
 
         if reply_handler:
-            result = self._connection.send_with_reply_handlers(message, -1, reply_handler, error_handler)
-            args_tuple = (result,)
+            result = self._connection.send_with_reply_handlers(message, timeout, reply_handler, error_handler)
+            args_tuple = result
         else:
-            reply_message = self._connection.send_with_reply_and_block(message, -1)
+            reply_message = self._connection.send_with_reply_and_block(message, timeout)
             args_tuple = reply_message.get_args_list()
             
         if len(args_tuple) == 0:
@@ -64,11 +79,31 @@ class ProxyObject:
     have member functions, and can be called like normal Python objects.
     """
     ProxyMethodClass = ProxyMethod
+    DeferedMethodClass = DeferedMethod
 
-    def __init__(self, bus, named_service, object_path):
-        self._bus          = bus
+    INTROSPECT_STATE_DONT_INTROSPECT = 0
+    INTROSPECT_STATE_INTROSPECT_IN_PROGRESS = 1
+    INTROSPECT_STATE_INTROSPECT_DONE = 2
+
+    #TODO: default introspect to False right now because it is not done yet
+    #      make sure to default to True later
+    def __init__(self, bus, named_service, object_path, introspect=False):
+        self._bus           = bus
         self._named_service = named_service
-        self._object_path  = object_path
+        self._object_path   = object_path
+        
+        #PendingCall object for Introspect call
+        self._pending_introspect = None
+        #queue of async calls waiting on the Introspect to return 
+        self._pending_introspect_queue = []
+ 
+        if not introspect:
+            self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
+        else:
+            self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS
+            
+            (result, self._pending_introspect) = self._Introspect()
+            
 
     def connect_to_signal(self, signal_name, handler_function, dbus_interface=None):
         self._bus.add_signal_receiver(handler_function,
@@ -77,7 +112,28 @@ class ProxyObject:
                                       named_service=self._named_service,
                                       path=self._object_path)
 
+    def _Introspect(self):
+        message = dbus_bindings.MethodCall(self._object_path, 'org.freedesktop.DBus.Introspectable', 'Introspect')
+        message.set_destination(self._named_service)
+        
+        result = self._bus.get_connection().send_with_reply_handlers(message, -1, 
+                                                                                           self._introspect_reply_handler, 
+                                                                                           self._introspect_error_handler)
+        return result   
+            
+    def _introspect_reply_handler(self, data):
+        self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_DONE
+        
+        for call in self._pending_introspect_queue:
+            (member, iface, args, keywords) = call
+            call_object = self.ProxyMethodClass(self._bus.get_connection(),
+                                                                       self._named_service,
+                                                                       self._object_path, iface, member)
+                                                                       
+            call_object(args, keywords)
 
+    def _introspect_error_handler(self, error):
+        self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
 
     def __getattr__(self, member, **keywords):
         if member == '__call__':
@@ -86,12 +142,31 @@ class ProxyObject:
             raise AttributeError(member)
         else:
             iface = None
-            if (keywords.has_key('dbus_interface')):
+            if keywords.has_key('dbus_interface'):
                 iface = keywords['dbus_interface']
 
-            return self.ProxyMethodClass(self._bus.get_connection(),
+            if self._introspect_state == self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS:
+                reply_handler = None
+                if keywords.has_key('reply_handler'):
+                    reply_handler = keywords['reply_handler']
+
+                error_handler = None
+                if keywords.has_key('error_handler'):
+                    error_handler = keywords['error_handler']
+
+                if not reply_handler:
+                    self._pending_introspect.block()
+                else:
+                    call = (memeber, iface, args, keywords)
+                    self._pending_introspect_queue.append(call)
+                    
+                    ret = self.DeferedMethodClass()
+                    return ret
+                   
+            ret = self.ProxyMethodClass(self._bus.get_connection(),
                                 self._named_service,
                                 self._object_path, iface, member)
+            return ret
 
     def __repr__(self):
         return '<ProxyObject wrapping %s %s %s at %x>'%( 

@@ -196,8 +196,9 @@ class Interface:
         if member == '__call__':
             return object.__call__
         else:
-            return self._obj.__getattr__(member, dbus_interface=_dbus_interface)
-    
+            ret = self._obj.__getattr__(member, dbus_interface=_dbus_interface)
+            return ret
+
     def __repr__(self):
         return '<Interface %r implementing %r at %x>'%(
         self._obj, self._dbus_interface, id(self))

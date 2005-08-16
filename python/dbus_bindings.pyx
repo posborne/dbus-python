@@ -74,53 +74,53 @@ class ConnectionError(Exception):
 
 class ObjectPath(str):
     def __init__(self, value):
-        str.__init__(value)
+        str.__init__(self, value)
 
 class ByteArray(str):
     def __init__(self, value):
-        str.__init__(value)
+        str.__init__(self, value)
 
 class Signature(str):
     def __init__(self, value):
-        str.__init__(value)
+        str.__init__(self, value)
 
 class Byte(int):
     def __init__(self, value):
-        int.__init__(value)
+        int.__init__(self, value)
 
 class Boolean(int):
     def __init__(self, value):
-        int.__init__(value)
+        int.__init__(self, value)
 
 class Int16(int):
     def __init__(self, value):
-        int.__init__(value)
+        int.__init__(self, value)
 
 class UInt16(int):
     def __init__(self, value):
         if value < 0:
             raise TypeError('Unsigned integers must not have a negitive value') 
-        int.__init__(value)
+        int.__init__(self, value)
 
 class Int32(int):
     def __init__(self, value):
-        int.__init__(value)
+        int.__init__(self, value)
 
 class UInt32(long):
     def __init__(self, value):
         if value < 0:
             raise TypeError('Unsigned integers must not have a negitive value') 
-        long.__init__(value)
+        long.__init__(self, value)
 
 class Int64(long):
     def __init__(self, value):
-        long.__init__(value)
+        long.__init__(self, value)
 
 class UInt64(long):
     def __init__(self, value):
         if value < 0:
             raise TypeError('Unsigned integers must not have a negitive value') 
-        long.__init__(value)
+        long.__init__(self, value)
 
 class Double(float):
     def __init__(self, value):
@@ -128,19 +128,49 @@ class Double(float):
 
 class String(str):
     def __init__(self, value):
-        str.__init__(value)
+        str.__init__(self, value)
 
 class Array(list):
-    def __init__(self, value):
-        list.__init__(value)
+    def __init__(self, value, type=None, signature=None):
+        if signature and type:
+            raise TypeError('Can not mix type and signature arguments in a D-BUS Array')
+    
+        self.type = type
+        self.signature = signature
+        list.__init__(self, value)
+
+class Variant:
+    def __init__(self, value, type=None, signature=None):
+        self.value = value
+        if signature and type:
+            raise TypeError('Can not mix type and signature arguments in a D-BUS Variant')
+
+        self.type = type
+        self.signature = signature
+
+    def __repr__(self):
+        return repr(self.value)
+
+    def __str__(self):
+        return str(self.value)
 
 class Struct(tuple):
     def __init__(self, value):
-        tuple.__init__(value)
+        tuple.__init__(self, value)
 
 class Dictionary(dict):
-    def __init__(self, value):
-        dict.__init__(value)
+    def __init__(self, value, key_type=None, value_type=None, signature=None):
+        if key_type and not value_type:
+             raise TypeError('When specifying a key_type you must also have a value_type in a D-BUS Dictionary')
+        elif value_type and not key_type:
+             raise TypeError('When specifying a value_type you must also have a key_type in a D-BUS Dictionary')
+        elif key_type and signature:
+              raise TypeError('Can not mix type arguments with signature arguments in a D-BUS Dictionary')
+              
+        self.key_type = key_type
+        self.value_type = value_type
+        self.signature = signature
+        dict.__init__(self, value)
 
 #forward delcerations
 cdef class Message
@@ -190,7 +220,7 @@ cdef DBusHandlerResult cmessage_function_handler (DBusConnection *connection,
         return retval
     finally:
         PyGILState_Release(gil)
-	
+
 cdef class Connection:
     def __init__(self, address=None, Connection _conn=None):
         cdef DBusConnection *c_conn
@@ -297,7 +327,7 @@ cdef class Connection:
         except Exception, e:
             error_handler(e)
             
-        return retval
+        return (retval, pending_call)
 
     def send_with_reply(self, Message message, timeout_milliseconds):
         cdef dbus_bool_t retval
@@ -470,7 +500,10 @@ cdef void _pending_call_notification(DBusPendingCall *pending_call, void *user_d
         reply_handler(*args)
     elif type == MESSAGE_TYPE_ERROR:
         args = message.get_args_list()
-        error_handler(DBusException(args[0]))
+        if len(args) > 0:
+            error_handler(DBusException(args[0]))
+        else:
+            error_handler(DBusException(""))
     else:
         error_handler(DBusException('Unexpected Message Type: ' + message.type_to_name(type)))
 
@@ -628,7 +661,11 @@ cdef class MessageIter:
     def get_boolean(self):
         cdef dbus_bool_t c_val
         dbus_message_iter_get_basic(self.iter, <dbus_bool_t *>&c_val)
-        return c_val
+
+        if c_val:
+            return True
+        else:
+            return False 
 
     def get_signature(self):
         signature_string = self.get_string()
@@ -637,6 +674,7 @@ cdef class MessageIter:
     def get_int16(self):
         cdef dbus_int16_t c_val
         dbus_message_iter_get_basic(self.iter, <dbus_int16_t *>&c_val)
+
         return c_val
 
     def get_uint16(self):
@@ -672,6 +710,7 @@ cdef class MessageIter:
     def get_string(self):
         cdef char *c_str
         dbus_message_iter_get_basic(self.iter, <char **>&c_str)
+
         return c_str
 
     def get_object_path(self):
@@ -797,60 +836,78 @@ cdef class MessageIter:
         elif ptype == list:
             ret = str(chr(TYPE_ARRAY))
             ret = ret + self.python_value_to_dbus_sig(value[0], level)
-        elif isinstance(value, ObjectPath):
+        elif isinstance(value, ObjectPath) or value == ObjectPath:
+
             ret = TYPE_OBJECT_PATH
             ret = str(chr(ret))
-        elif isinstance(ByteArray):
+        elif isinstance(value, ByteArray) or value == ByteArray:
             ret = str(chr(TYPE_ARRAY)) + str(chr(TYPE_BYTE))
-        elif isinstance(Signature):
+        elif isinstance(value, Signature) or value == Signature:
             ret = TYPE_SIGNATURE
             ret = str(chr(ret))
-        elif isinstance(value, Byte):
+        elif isinstance(value, Byte) or value == Byte:
             ret = TYPE_BYTE
             ret = str(chr(ret))
-        elif isinstance(value, Boolean):
+        elif isinstance(value, Boolean) or value == Boolean:
             ret = TYPE_BOOL
             ret = str(chr(ret))
-        elif isinstance(value, Int16):
+        elif isinstance(value, Int16) or value == Int16:
             ret = TYPE_INT16
             ret = str(chr(ret))
-        elif isinstance(value, UInt16):
+        elif isinstance(value, UInt16) or value == UInt16:
             ret = TYPE_UINT16
             ret = str(chr(ret))
-        elif isinstance(value, Int32):
+        elif isinstance(value, Int32) or value == Int32:
             ret = TYPE_INT32
             ret = str(chr(ret))
-        elif isinstance(value, UInt32):
+        elif isinstance(value, UInt32) or value == UInt32:
             ret = TYPE_UINT32
             ret = str(chr(ret))
-        elif isinstance(value, Int64):
+        elif isinstance(value, Int64) or value == Int64:
             ret = TYPE_INT64
             ret = str(chr(ret))
-        elif isinstance(value, UInt64):
+        elif isinstance(value, UInt64) or value == UInt64:
             ret = TYPE_UINT64
             ret = str(chr(ret))
-        elif isinstance(value, Double):
+        elif isinstance(value, Double) or value == Double:
             ret = TYPE_DOUBLE
             ret = str(chr(ret))
-        elif isinstance(value, String):
+        elif isinstance(value, String) or value == String:
             ret = TYPE_STRING
             ret = str(chr(ret))
         elif isinstance(value, Array):
             ret = str(chr(TYPE_ARRAY))
-            ret = ret + self.python_value_to_dbus_sig(value[0], level)
-        elif isinstance(value, Struct):
+            if value.type == None:
+                if value.signature:
+                    ret = ret + value.signature
+                else:
+                    ret = ret + self.python_value_to_dbus_sig(value[0], level)
+            else:
+                ret = ret + self.python_value_to_dbus_sig(value.type, level)
+
+        elif isinstance(value, Struct) or value == Struct:
             ret = str(chr(STRUCT_BEGIN))
             for item in value:
                 ret = ret + self.python_value_to_dbus_sig(item, level)
             ret = ret + str(chr(STRUCT_END))
         elif isinstance(value, Dictionary):
-            dict_list = value.items()
-            key, value = dict_list[0]
-
             ret = str(chr(TYPE_ARRAY)) + str(chr(DICT_ENTRY_BEGIN))
-            ret = ret + self.python_value_to_dbus_sig(key, level)
-            ret = ret + self.python_value_to_dbus_sig(value, level)
+            
+            if value.key_type and value.value_type:
+                ret = ret + self.python_value_to_dbus_sig(value.key_type, level)
+                ret = ret + self.python_value_to_dbus_sig(value.value_type, level)
+            elif value.signature:
+                ret = ret + value.signature
+            else:
+                dict_list = value.items()
+
+                key, val = dict_list[0]
+                ret = ret + self.python_value_to_dbus_sig(key, level)
+                ret = ret + self.python_value_to_dbus_sig(val, level)
+                
             ret = ret + str(chr(DICT_ENTRY_END))
+        elif isinstance(value, Variant) or value == Variant:
+            ret = ret + str(chr(TYPE_VARIANT))
         else:
             raise TypeError, "Argument of unknown type '%s'" % (ptype)
 
@@ -910,6 +967,8 @@ cdef class MessageIter:
             retval = self.append_struct(value)
         elif isinstance(value, Dictionary):
             retval = self.append_dict(value)
+        elif isinstance(value, Variant):
+            retval = self.append_variant(value)
         else:
             raise TypeError, "Argument of unknown type '%s'" % (value_type)
 
@@ -922,10 +981,13 @@ cdef class MessageIter:
 
     def append_byte(self, value):
         cdef char b
-        if type(value) != str or len(value) != 1:
+        if type(value) == str and len(value) == 1:
+                b = ord(value)
+        elif type(value) == Byte:
+                b = value
+        else:
             raise TypeError
 
-        b = ord(value)
         return dbus_message_iter_append_basic(self.iter, TYPE_BYTE, <char *>&b)
 
     def append_int16(self, value):
@@ -985,12 +1047,27 @@ cdef class MessageIter:
         
         level = self.level + 1
 
-        dict_list = python_dict.items()
-        key, value = dict_list[0]
+        key = None
+        value = None
 
         sig = str(chr(DICT_ENTRY_BEGIN))
-        sig = sig + self.python_value_to_dbus_sig(key)
-        sig = sig + self.python_value_to_dbus_sig(value)
+
+        if isinstance(python_dict, Dictionary):
+            key = python_dict.key_type
+            value = python_dict.value_type
+            signature = python_dict.signature
+
+        dict_list = python_dict.items()
+
+        if signature:
+            sig = sig + signature
+        else: 
+            if not (key and value):
+                key, value = dict_list[0]
+
+            sig = sig + self.python_value_to_dbus_sig(key)
+            sig = sig + self.python_value_to_dbus_sig(value)
+
         sig = sig + str(chr(DICT_ENTRY_END))
 
         dbus_message_iter_open_container(self.iter, TYPE_ARRAY, sig, <DBusMessageIter *>&c_dict_iter)
@@ -1002,12 +1079,21 @@ cdef class MessageIter:
             dict_entry_iter = MessageIter(level)
             dict_entry_iter.__cinit__(&c_dict_entry_iter)
 
-            dict_entry_iter.append(key)
-            dict_entry_iter.append(value)
+            if not dict_entry_iter.append(key):
+                dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
+                dbus_message_iter_close_container(self.iter, dict_iter.iter)
+                return False
+                
+            if not dict_entry_iter.append(value):
+                dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
+                dbus_message_iter_close_container(self.iter, dict_iter.iter)
+                return False
 
             dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
 
         dbus_message_iter_close_container(self.iter, dict_iter.iter)
+
+        return True
 
     def append_struct(self, python_struct):
         cdef DBusMessageIter c_struct_iter
@@ -1025,12 +1111,24 @@ cdef class MessageIter:
 
         dbus_message_iter_close_container(self.iter, struct_iter.iter)
 
+        return True
+
     def append_array(self, python_list):
         cdef DBusMessageIter c_array_iter
         cdef MessageIter array_iter
 
         level = self.level + 1
-        sig = self.python_value_to_dbus_sig(python_list[0])
+
+        sig = None
+        if isinstance(python_list, Array):
+            if python_list.type:
+                sig = self.python_value_to_dbus_sig(python_list.type)
+            elif python_list.signature:
+                sig = python_list.signature
+            else:
+                sig = self.python_value_to_dbus_sig(python_list[0])
+        else:
+            sig = self.python_value_to_dbus_sig(python_list[0])
 
         dbus_message_iter_open_container(self.iter, TYPE_ARRAY, sig, <DBusMessageIter *>&c_array_iter)
         array_iter = MessageIter(level)
@@ -1044,6 +1142,31 @@ cdef class MessageIter:
 
         dbus_message_iter_close_container(self.iter, array_iter.iter)
 
+        return True
+
+    def append_variant(self, value):
+        cdef DBusMessageIter c_variant_iter
+        cdef MessageIter variant_iter
+
+        level = self.level + 1
+    
+        if value.signature:
+            sig = value.signature
+        elif value.type:
+            sig = self.python_value_to_dbus_sig(value.type)
+        else:
+            sig = self.python_value_to_dbus_sig(value.value)
+    
+        dbus_message_iter_open_container(self.iter, TYPE_VARIANT, sig, <DBusMessageIter *>&c_variant_iter)
+        
+        variant_iter = MessageIter(level)
+        variant_iter.__cinit__(&c_variant_iter)
+
+        if not variant_iter.append(value.value):
+            dbus_message_iter_close_container(self.iter, variant_iter.iter)
+            return False
+
+        dbus_message_iter_close_container(self.iter, variant_iter.iter)
         return True
 
     def __str__(self):
