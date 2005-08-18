@@ -38,12 +38,13 @@ def catchall_hello_signals_handler(hello_string):
 def catchall_testservice_interface_handler(hello_string, dbus_message):
     print "org.designfu.TestService interface says " + hello_string + " when it sent signal " + dbus_message.get_member()
 
-object.connect_to_signal("HelloSignal", hello_signal_handler, dbus_interface="org.designfu.TestService")
+object.connect_to_signal("HelloSignal", hello_signal_handler, dbus_interface="org.designfu.TestService", arg0="Hello")
 
 #lets make a catchall
 bus.add_signal_receiver(catchall_signal_handler)
 bus.add_signal_receiver(catchall_hello_signals_handler, dbus_interface = "org.designfu.TestService", signal_name = "HelloSignal")
 bus.add_signal_receiver(catchall_testservice_interface_handler, dbus_interface = "org.designfu.TestService")
+
 
 gobject.timeout_add(2000, emit_signal)
 

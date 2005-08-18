@@ -70,6 +70,8 @@ class SignalMatchTree:
         path.add(rule.path, leaf=rule)
        
     def exec_matches(self, match_rule, message):
+        args = message.get_args_list()
+    
         sender_matches = self._tree.get_matches(match_rule.sender)
         for sender_node in sender_matches:
             interface_matches = sender_node.get_matches(match_rule.dbus_interface)
@@ -80,7 +82,8 @@ class SignalMatchTree:
                     for path_node in path_matches:
                         if(path_node.rules):
                             for rule in path_node.rules:
-                                rule.execute(message)
+                                if (rule.match_args_from_list(args)):
+                                    rule.execute(message, args)
             
     def remove(self, rule):
         try:
@@ -121,9 +124,16 @@ class SignalMatchRule:
         self.dbus_interface = dbus_interface
         self.sender = sender
         self.path = path
+        self.args = None
 
-    def execute(self, message):
-        args = message.get_args_list()
+    def add_args_match(self, args):
+        self.args = args
+
+    def execute(self, message, args=None):
+        #optimization just in case we already extarcted the args
+        if not args:
+           args = message.get_args_list()
+           
         for handler in self.handler_functions:
             if getattr(handler, "_dbus_pass_message", False):
                 keywords = {"dbus_message": message}
@@ -133,12 +143,48 @@ class SignalMatchRule:
 
     def add_handler(self, handler):
         self.handler_functions.append(handler)
-        
+    
+    #matches only those arguments listed by self
+    def match_args_from_list(self, args_list):
+        if not self.args:
+            return True
+
+        last_index = len(args_list) - 1
+        for (index, value) in self.args.iteritems():
+            if index > last_index:
+                return False
+                
+            if not (args_list[index] == value):
+                return False
+
+        return True
+    
+    #does exact matching
+    def match_args_from_rule(self, rule):
+        if self.args == rule.args:
+            return True
+
+        if self.args == None or rule.args == None:
+            return False
+
+        my_args_list = self.args.items()
+        match_args_list = rule.args.iterms()
+
+        if len(my_args_list) != len(match_args_list):
+            return False
+
+        for (key, value) in my_args_list:
+            if rule.args.get(key) != value:
+                return False
+
+        return True
+
     def is_match(self, rule):
         if (self.signal_name == rule.signal_name and
             self.dbus_interface == rule.dbus_interface and
             self.sender == rule.sender and
-            self.path == rule.path):
+            self.path == rule.path and
+            self.match_args_from_rule(rule)):
                 if rule.handler_functions == []:
                     return True
             
@@ -167,5 +213,11 @@ class SignalMatchRule:
             
         if (self.signal_name):
             repr = repr + ",member='%s'" % (self.signal_name)
-    
+   
+        if (self.args):
+            my_args_list = self.args.items()
+            my_args_list.sort()
+            for (index, value) in my_args_list:
+                repr = repr + ",arg%i='%s'" % (index, value)
+
         return repr

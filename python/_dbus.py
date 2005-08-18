@@ -41,9 +41,10 @@ dbus_object = dbus_service.get_object('/org/freedesktop/DBus',
 print(dbus_object.ListServices())
 """
 
+import dbus
+
 import dbus_bindings
 
-import dbus
 from proxies import *
 from exceptions import *
 from matchrules import *
@@ -104,24 +105,66 @@ class Bus:
         """Get a proxy object to call over the bus"""
         return self.ProxyObjectClass(self, named_service, object_path)
 
-    def add_signal_receiver(self, handler_function, signal_name=None, dbus_interface=None, named_service=None, path=None):
+    def _create_args_dict(self, keywords):
+        args_dict = None 
+        for (key, value) in keywords.iteritems():
+            if key.startswith('arg'):
+                try:
+                    snum = key[3:]
+                    num = int(snum)
+
+                    if not args_dict:
+                        args_dict = {}
+
+                    args_dict[num] = value
+                except ValueError:
+                    raise TypeError("Invalid arg index %s"%snum)
+            else:
+                raise TypeError("Unknown keyword %s"%(key)) 
+
+        return args_dict    
+
+    def add_signal_receiver(self, handler_function, 
+                                  signal_name=None,
+                                  dbus_inteface=None,
+                                  named_service=None,
+                                  path=None,
+                                  **keywords):
+
+        args_dict = self._create_args_dict(keywords)
+
         if (named_service and named_service[0] != ':'):
             bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
             named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
         
         match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
+
+        if args_dict:
+            match_rule.add_args_match(args_dict)
+
         match_rule.add_handler(handler_function)
 
         self._match_rule_tree.add(match_rule)
 
-        dbus_bindings.bus_add_match(self._connection, str(match_rule))
+        dbus_bindings.bus_add_match(self._connection, repr(match_rule))
 
-    def remove_signal_receiver(self, handler_function, signal_name=None, dbus_interface=None, named_service=None, path=None):
+    def remove_signal_receiver(self, handler_function, 
+                      	       signal_name=None,
+                               dbus_interface=None,
+                               named_service=None,
+                               path=None,
+                               **keywords):
+
+        args_dict = self._create_args_dict(keywords)
+    
         if (named_service and named_service[0] != ':'):
             bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
             named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
         
         match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
+
+        if (args_dict):
+            match_rule.add_args_match(args_dict)
 
 	if (handler_function):
 	    match_rule.add_handler(handler_function)
@@ -139,8 +182,8 @@ class Bus:
             return dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
         
         dbus_interface      = message.get_interface()
-        named_service     = message.get_sender()
-        path                      = message.get_path()
+        named_service       = message.get_sender()
+        path                = message.get_path()
         signal_name         = message.get_member()
 
         match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
