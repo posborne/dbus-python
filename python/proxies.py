@@ -105,12 +105,13 @@ class ProxyObject:
             (result, self._pending_introspect) = self._Introspect()
             
 
-    def connect_to_signal(self, signal_name, handler_function, dbus_interface=None):
+    def connect_to_signal(self, signal_name, handler_function, dbus_interface=None, **keywords):
         self._bus.add_signal_receiver(handler_function,
                                       signal_name=signal_name,
                                       dbus_interface=dbus_interface,
                                       named_service=self._named_service,
-                                      path=self._object_path)
+                                      path=self._object_path,
+                                      **keywords)
 
     def _Introspect(self):
         message = dbus_bindings.MethodCall(self._object_path, 'org.freedesktop.DBus.Introspectable', 'Introspect')

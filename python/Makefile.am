@@ -5,7 +5,7 @@ INCLUDES=-I$(srcdir)/$(top_builddir) -I$(srcdir)/$(top_builddir)/dbus $(DBUS_CLI
 dbusmoduledir = $(pyexecdir)
 dbusmodule_PYTHON = dbus.pth
 
-dbusdir = $(pythondir)/dbus
+dbusdir = $(pyexecdir)/dbus
 dbus_PYTHON = __init__.py _dbus.py decorators.py exceptions.py service.py proxies.py _util.py types.py matchrules.py glib.py
 
 dbusbindingsdir = $(pyexecdir)/dbus

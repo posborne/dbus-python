@@ -126,7 +126,7 @@ class Bus:
 
     def add_signal_receiver(self, handler_function, 
                                   signal_name=None,
-                                  dbus_inteface=None,
+                                  dbus_interface=None,
                                   named_service=None,
                                   path=None,
                                   **keywords):
@@ -149,7 +149,7 @@ class Bus:
         dbus_bindings.bus_add_match(self._connection, repr(match_rule))
 
     def remove_signal_receiver(self, handler_function, 
-                      	       signal_name=None,
+                               signal_name=None,
                                dbus_interface=None,
                                named_service=None,
                                path=None,
@@ -166,8 +166,8 @@ class Bus:
         if (args_dict):
             match_rule.add_args_match(args_dict)
 
-	if (handler_function):
-	    match_rule.add_handler(handler_function)
+        if (handler_function):
+            match_rule.add_handler(handler_function)
         
         self._match_rule_tree.remove(match_rule)
         
@@ -224,11 +224,11 @@ class Interface:
         self._obj = object
         self._dbus_interface = dbus_interface
 
-    def connect_to_signal(self, signal_name, handler_function, dbus_interface = None):
+    def connect_to_signal(self, signal_name, handler_function, dbus_interface = None, **keywords):
         if not dbus_interface:
             dbus_interface = self._dbus_interface
             
-        self._obj.connect_to_signal(signal_name, handler_function, dbus_interface)
+        self._obj.connect_to_signal(signal_name, handler_function, dbus_interface, **keywords)
 
     def __getattr__(self, member, **keywords):
         if (keywords.has_key('dbus_interface')):
