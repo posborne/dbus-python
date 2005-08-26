@@ -359,7 +359,7 @@ cdef class Connection:
         return (retval, pending_call)
                                 
     def send_with_reply_and_block(self, Message message,
-                                  timeout_milliseconds=0):
+                                  timeout_milliseconds=-1):
         cdef DBusMessage * retval
         cdef DBusError error
         cdef DBusMessage *msg
@@ -381,9 +381,10 @@ cdef class Connection:
         if retval == NULL:
             raise AssertionError
         
-        m = Message(_create=0)
+        m = EmptyMessage()
         m._set_msg(retval)
-        return m
+
+        return m 
 
     def set_watch_functions(self, add_function, remove_function, data):
         pass
@@ -1255,19 +1256,18 @@ cdef class Message:
         if (service != None):
             cservice = service
             
-        if not _create:
-            return
-
-        if message_type == MESSAGE_TYPE_METHOD_CALL:
-            self.msg = dbus_message_new_method_call(cservice, path, ciface, method)
-        elif message_type == MESSAGE_TYPE_METHOD_RETURN:
-            cmsg = method_call._get_msg()
-            self.msg = dbus_message_new_method_return(cmsg)
-        elif message_type == MESSAGE_TYPE_SIGNAL:
-            self.msg = dbus_message_new_signal(path, ciface, name)
-        elif message_type == MESSAGE_TYPE_ERROR:
-            cmsg = reply_to._get_msg()
-            self.msg = dbus_message_new_error(cmsg, error_name, error_message)
+        if _create:
+            if message_type == MESSAGE_TYPE_METHOD_CALL:
+                self.msg = dbus_message_new_method_call(cservice, path, ciface, method)
+            elif message_type == MESSAGE_TYPE_METHOD_RETURN:
+                cmsg = method_call._get_msg()
+                self.msg = dbus_message_new_method_return(cmsg)
+            elif message_type == MESSAGE_TYPE_SIGNAL:
+                self.msg = dbus_message_new_signal(path, ciface, name)
+            elif message_type == MESSAGE_TYPE_ERROR:
+                cmsg = reply_to._get_msg()
+                self.msg = dbus_message_new_error(cmsg, error_name, error_message)
+ 
 
     def __del__(self):
         if self.msg != NULL:
@@ -1438,6 +1438,10 @@ cdef class Message:
 class Signal(Message):
     def __init__(self, spath, sinterface, sname):
         Message.__init__(self, MESSAGE_TYPE_SIGNAL, path=spath, dbus_interface=sinterface, name=sname)
+
+class EmptyMessage(Message):
+    def __init__(self):
+        Message.__init__(self, _create=False)
 
 class MethodCall(Message):
     def __init__(self, mpath, minterface, mmethod):

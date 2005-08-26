@@ -63,7 +63,7 @@ class ProxyMethod:
         else:
             reply_message = self._connection.send_with_reply_and_block(message, timeout)
             args_tuple = reply_message.get_args_list()
-            
+
         if len(args_tuple) == 0:
             return
         elif len(args_tuple) == 1:
