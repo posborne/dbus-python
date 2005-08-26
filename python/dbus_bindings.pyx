@@ -208,7 +208,10 @@ cdef DBusHandlerResult cmessage_function_handler (DBusConnection *connection,
         tup = <object>user_data
         assert (type(tup) == list)
         function = tup[0]
-        message = Message(_create=0)
+        message = EmptyMessage()
+
+	#we don't own the message so we need to ref it
+        dbus_message_ref(msg)
         message._set_msg(msg)
         conn = Connection()
         conn.__cinit__(None, connection)  
@@ -274,7 +277,7 @@ cdef class Connection:
 
     def borrow_message(self):
         cdef Message m
-        m = Message(_create=0)
+        m = EmptyMessage()
         m._set_msg(dbus_connection_borrow_message(self.conn))
         return m
     
@@ -295,7 +298,7 @@ cdef class Connection:
  
         msg = dbus_connection_pop_message(self.conn)
         if msg != NULL:
-            m = Message(_create=0)
+            m = EmptyMessage()
             m._set_msg(msg)
         else:
             m = None
@@ -491,7 +494,7 @@ cdef void _pending_call_notification(DBusPendingCall *pending_call, void *user_d
     (reply_handler, error_handler) = <object>user_data
    
     dbus_message = dbus_pending_call_steal_reply(pending_call)
-    message = Message(_create=0)
+    message = EmptyMessage()
     message._set_msg(dbus_message)
 
     type = message.get_type()
@@ -542,7 +545,7 @@ cdef class PendingCall:
 
     def get_reply(self):
         cdef Message message
-        message = Message(_create=0)
+        message = EmptyMessage()
         message._set_msg(dbus_pending_call_steal_reply(self.pending_call))
         return message
 
