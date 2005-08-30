@@ -490,6 +490,7 @@ cdef class Connection:
 cdef void _pending_call_notification(DBusPendingCall *pending_call, void *user_data):
     cdef DBusMessage *dbus_message
     cdef Message message
+    cdef PyGILState_STATE gil
    
     (reply_handler, error_handler) = <object>user_data
    
@@ -499,17 +500,21 @@ cdef void _pending_call_notification(DBusPendingCall *pending_call, void *user_d
 
     type = message.get_type()
 
-    if type == MESSAGE_TYPE_METHOD_RETURN:
-        args = message.get_args_list()
-        reply_handler(*args)
-    elif type == MESSAGE_TYPE_ERROR:
-        args = message.get_args_list()
-        if len(args) > 0:
-            error_handler(DBusException(args[0]))
+    gil = PyGILState_Ensure()
+    try:
+        if type == MESSAGE_TYPE_METHOD_RETURN:
+            args = message.get_args_list()
+            reply_handler(*args)
+        elif type == MESSAGE_TYPE_ERROR:
+            args = message.get_args_list()
+            if len(args) > 0:
+                error_handler(DBusException(args[0]))
+            else:
+                error_handler(DBusException(""))
         else:
-            error_handler(DBusException(""))
-    else:
-        error_handler(DBusException('Unexpected Message Type: ' + message.type_to_name(type)))
+            error_handler(DBusException('Unexpected Message Type: ' + message.type_to_name(type)))
+    finally:
+        PyGILState_Release(gil)
 
     dbus_message_unref(dbus_message)
     dbus_pending_call_unref(pending_call)
