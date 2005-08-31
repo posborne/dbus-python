@@ -178,51 +178,66 @@ cdef class PendingCall
 cdef class Watch
 cdef class MessageIter
 
+cdef void _GIL_safe_cunregister_function_handler (DBusConnection *connection,
+                                                  void *user_data):
+    cdef Connection conn
+
+    itup = <object>user_data
+    assert (type(tup) == list)    
+    function = tup[1]
+    conn = Connection()
+    conn.__cinit__(None, connection)
+
+    args = (conn)
+    function(*args)
+
 cdef void cunregister_function_handler (DBusConnection *connection,
                                         void *user_data):
-    cdef Connection conn
     cdef PyGILState_STATE gil
-
     gil = PyGILState_Ensure()
     try:
-        itup = <object>user_data
-        assert (type(tup) == list)    
-        function = tup[1]
-        conn = Connection()
-        conn.__cinit__(None, connection)
-
-        args = [conn]
-        function(*args)
+        _GIL_safe_cunregister_function_handler (connection, user_data);
     finally:
         PyGILState_Release(gil)
 
-cdef DBusHandlerResult cmessage_function_handler (DBusConnection *connection,
+
+
+cdef DBusHandlerResult _GIL_safe_cmessage_function_handler ( 
+                                                  DBusConnection *connection,
                                                   DBusMessage *msg,
                                                   void *user_data):
     cdef Connection conn
     cdef Message message
-    cdef PyGILState_STATE gil
 
+    tup = <object>user_data
+    assert (type(tup) == list)
+    function = tup[0]
+    message = EmptyMessage()
+
+    #we don't own the message so we need to ref it
+    dbus_message_ref(msg)
+    message._set_msg(msg)
+    conn = Connection()
+    conn.__cinit__(None, connection)
+    args = (conn,
+            message)
+
+    retval = function(*args)
+
+    if (retval == None):
+        retval = DBUS_HANDLER_RESULT_HANDLED
+    return retval
+
+cdef DBusHandlerResult cmessage_function_handler (DBusConnection *connection,
+                                                  DBusMessage *msg,
+                                                  void *user_data):
+    cdef PyGILState_STATE gil
     gil = PyGILState_Ensure()
     try:
-        tup = <object>user_data
-        assert (type(tup) == list)
-        function = tup[0]
-        message = EmptyMessage()
-
-	#we don't own the message so we need to ref it
-        dbus_message_ref(msg)
-        message._set_msg(msg)
-        conn = Connection()
-        conn.__cinit__(None, connection)  
-        args = [conn,
-                message]
-        retval = function(*args)
-        if (retval == None):
-            retval = DBUS_HANDLER_RESULT_HANDLED
-        return retval
+        return _GIL_safe_cmessage_function_handler (connection, msg, user_data);
     finally:
         PyGILState_Release(gil)
+
 
 cdef class Connection:
     def __init__(self, address=None, Connection _conn=None):
@@ -487,11 +502,11 @@ cdef class Connection:
 
         return child_entries
 
-cdef void _pending_call_notification(DBusPendingCall *pending_call, void *user_data):
+cdef void _GIL_safe_pending_call_notification (DBusPendingCall *pending_call, 
+                                               void *user_data):
     cdef DBusMessage *dbus_message
     cdef Message message
-    cdef PyGILState_STATE gil
-   
+  
     (reply_handler, error_handler) = <object>user_data
    
     dbus_message = dbus_pending_call_steal_reply(pending_call)
@@ -500,24 +515,29 @@ cdef void _pending_call_notification(DBusPendingCall *pending_call, void *user_d
 
     type = message.get_type()
 
-    gil = PyGILState_Ensure()
-    try:
-        if type == MESSAGE_TYPE_METHOD_RETURN:
-            args = message.get_args_list()
-            reply_handler(*args)
-        elif type == MESSAGE_TYPE_ERROR:
-            args = message.get_args_list()
-            if len(args) > 0:
-                error_handler(DBusException(args[0]))
-            else:
-                error_handler(DBusException(""))
+    if type == MESSAGE_TYPE_METHOD_RETURN:
+        args = message.get_args_list()
+        reply_handler(*args)
+    elif type == MESSAGE_TYPE_ERROR:
+        args = message.get_args_list()
+        if len(args) > 0:
+            error_handler(DBusException(args[0]))
         else:
-            error_handler(DBusException('Unexpected Message Type: ' + message.type_to_name(type)))
-    finally:
-        PyGILState_Release(gil)
+            error_handler(DBusException(""))
+    else:
+        error_handler(DBusException('Unexpected Message Type: ' + message.type_to_name(type)))
 
     dbus_message_unref(dbus_message)
     dbus_pending_call_unref(pending_call)
+
+cdef void _pending_call_notification(DBusPendingCall *pending_call, 
+                                     void *user_data):
+    cdef PyGILState_STATE gil
+    gil = PyGILState_Ensure()
+    try:
+        _GIL_safe_pending_call_notification (pending_call, user_data);
+    finally:
+        PyGILState_Release(gil)
 
 cdef void _pending_call_free_user_data(void *data):
     call_tuple = <object>data
