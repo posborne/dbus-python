@@ -63,9 +63,6 @@ ctypedef struct DBusObjectPathVTable:
   void (* dbus_internal_pad3) (void *)
   void (* dbus_internal_pad4) (void *)
 
-
-_user_data_references = [ ]
-
 class DBusException(Exception):
     pass
 
@@ -182,14 +179,15 @@ cdef void _GIL_safe_cunregister_function_handler (DBusConnection *connection,
                                                   void *user_data):
     cdef Connection conn
 
-    itup = <object>user_data
-    assert (type(tup) == list)    
+    tup = <object>user_data
+    assert (type(tup) == tuple)    
     function = tup[1]
     conn = Connection()
     conn.__cinit__(None, connection)
 
     args = (conn)
     function(*args)
+    Py_XDECREF(tup) 
 
 cdef void cunregister_function_handler (DBusConnection *connection,
                                         void *user_data):
@@ -210,7 +208,7 @@ cdef DBusHandlerResult _GIL_safe_cmessage_function_handler (
     cdef Message message
 
     tup = <object>user_data
-    assert (type(tup) == list)
+    assert (type(tup) == tuple)
     function = tup[0]
     message = EmptyMessage()
 
@@ -221,7 +219,7 @@ cdef DBusHandlerResult _GIL_safe_cmessage_function_handler (
     conn.__cinit__(None, connection)
     args = (conn,
             message)
-
+ 
     retval = function(*args)
 
     if (retval == None):
@@ -265,7 +263,7 @@ cdef class Connection:
             if dbus_error_is_set(&error):
                 raise DBusException, error.message
 
-    def __del__(self):
+    def __dealloc__(self):
         if self.conn != NULL:
             dbus_connection_unref(self.conn)
 
@@ -416,10 +414,9 @@ cdef class Connection:
     # FIXME: set_dispatch_status_function, get_unix_user, set_unix_user_function
 
     def add_filter(self, filter_function):
-        user_data = [ filter_function ]
-        global _user_data_references
-        _user_data_references.append(user_data)
-        
+        user_data = (filter_function,)
+        Py_XINCREF(user_data)
+       
         return dbus_connection_add_filter(self.conn,
                                           cmessage_function_handler,
                                           <void*>user_data,
@@ -459,9 +456,8 @@ cdef class Connection:
         cvtable.unregister_function = cunregister_function_handler 
         cvtable.message_function    = cmessage_function_handler
 
-        user_data = [message_cb, unregister_cb]
-        global _user_data_references
-        _user_data_references.append(user_data)
+        user_data = (message_cb, unregister_cb)
+        Py_XINCREF(user_data)
         
         return dbus_connection_register_object_path(self.conn, path, &cvtable,
                                                     <void*>user_data) 
@@ -472,10 +468,9 @@ cdef class Connection:
         cvtable.unregister_function = cunregister_function_handler 
         cvtable.message_function    = cmessage_function_handler
 
-        user_data = [message_cb, unregister_cb]
-        global _user_data_references
-        _user_data_references.append(user_data)        
-        
+        user_data = (message_cb, unregister_cb)
+        Py_XINCREF(user_data)
+       
         return dbus_connection_register_fallback(self.conn, path, &cvtable,
                                                  <void*>user_data) 
 
@@ -527,8 +522,8 @@ cdef void _GIL_safe_pending_call_notification (DBusPendingCall *pending_call,
     else:
         error_handler(DBusException('Unexpected Message Type: ' + message.type_to_name(type)))
 
-    dbus_message_unref(dbus_message)
     dbus_pending_call_unref(pending_call)
+    Py_XDECREF(<object>user_data)
 
 cdef void _pending_call_notification(DBusPendingCall *pending_call, 
                                      void *user_data):
@@ -555,7 +550,7 @@ cdef class PendingCall:
         self.pending_call = _pending_call
         dbus_pending_call_ref(self.pending_call)
 
-    def __del__(self):
+    def __dealloc__(self):
         if self.pending_call != NULL:
             dbus_pending_call_unref(self.pending_call)
 
@@ -580,6 +575,7 @@ cdef class PendingCall:
     def set_notify(self, reply_handler, error_handler):
         user_data = (reply_handler, error_handler)
         Py_XINCREF(user_data)
+        dbus_pending_call_ref(self.pending_call)
         dbus_pending_call_set_notify(self.pending_call, _pending_call_notification, 
                                      <void *>user_data, _pending_call_free_user_data)
         
@@ -1297,7 +1293,7 @@ cdef class Message:
                 self.msg = dbus_message_new_error(cmsg, error_name, error_message)
  
 
-    def __del__(self):
+    def __dealloc__(self):
         if self.msg != NULL:
             dbus_message_unref(self.msg)
             

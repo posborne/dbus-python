@@ -38,8 +38,8 @@ dbus_bindings.pxd: $(srcdir)/dbus_bindings.pxd.in $(srcdir)/extract.py
 	-$(PYTHON) $(srcdir)/extract.py $(srcdir)/dbus_bindings.pxd.in -I$(srcdir)/$(top_builddir)  -I$(srcdir) > $@.tmp && mv $@.tmp $@
 
 dbus_bindings.c: $(srcdir)/dbus_bindings.pyx dbus_bindings.pxd 
-	-pyrexc $(srcdir)/dbus_bindings.pyx -I. -o ./dbus_bindings.c
+	pyrexc $(srcdir)/dbus_bindings.pyx -I. -o ./dbus_bindings.c
 
 dbus_glib_bindings.c: $(srcdir)/dbus_glib_bindings.pyx dbus_bindings.pxd 
-	-pyrexc $(srcdir)/dbus_glib_bindings.pyx  -I. -o ./dbus_glib_bindings.c
+	pyrexc $(srcdir)/dbus_glib_bindings.pyx  -I. -o ./dbus_glib_bindings.c
 

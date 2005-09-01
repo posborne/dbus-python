@@ -13,5 +13,5 @@ def setup_with_g_main(conn):
    connection = conn
    dbus_connection_setup_with_g_main(connection._get_conn(), NULL)
 
-def init_gthreads ():
+def gthreads_init ():
     dbus_g_thread_init ()
