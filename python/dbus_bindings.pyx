@@ -261,7 +261,9 @@ cdef class Connection:
             self.conn = dbus_connection_open(address,
                                          &error)
             if dbus_error_is_set(&error):
-                raise DBusException, error.message
+                message = error.message
+                dbus_error_free (&error)
+                raise DBusException, message
 
     def __dealloc__(self):
         if self.conn != NULL:
@@ -348,11 +350,8 @@ cdef class Connection:
     def send_with_reply(self, Message message, timeout_milliseconds):
         cdef dbus_bool_t retval
         cdef DBusPendingCall *cpending_call
-        cdef DBusError error
         cdef DBusMessage *msg
         cdef PendingCall pending_call
-
-        dbus_error_init(&error)
 
         cpending_call = NULL
         
@@ -362,9 +361,6 @@ cdef class Connection:
                                                  msg,
                                                  &cpending_call,
                                                  timeout_milliseconds)
-
-        if dbus_error_is_set(&error):
-            raise DBusException, error.message
 
         if (cpending_call != NULL):
             pending_call = PendingCall()
@@ -392,7 +388,9 @@ cdef class Connection:
             &error)
 
         if dbus_error_is_set(&error):
-            raise DBusException, error.message
+            message = error.message
+            dbus_error_free (&error)
+            raise DBusException, message
 
         if retval == NULL:
             raise AssertionError
@@ -1487,7 +1485,9 @@ cdef class Server:
         self.server = dbus_server_listen(address,
                                          &error)
         if dbus_error_is_set(&error):
-            raise DBusException, error.message
+            message = error.message
+            dbus_error_free (&error)
+            raise DBusException, message
 
     def disconnect(self):
         dbus_server_disconnect(self.server)
@@ -1526,7 +1526,9 @@ def bus_get (bus_type):
                               &error)
 
     if dbus_error_is_set(&error):
-        raise DBusException, error.message
+        message = error.message
+        dbus_error_free(&error)
+        raise DBusException, message
 
     conn = Connection()
     conn.__cinit__(None, connection)
@@ -1547,7 +1549,10 @@ def bus_get_unix_user(Connection connection, service_name):
     retval = dbus_bus_get_unix_user(conn, service_name, &error)
 
     if dbus_error_is_set(&error):
-        raise DBusException, error.message
+        message = error.message
+        dbus_error_free(&error)
+        raise DBusException, message
+
     return retval
 
 #These are defines, not enums so they aren't auto generated
@@ -1565,6 +1570,11 @@ def bus_start_service_by_name(Connection connection, service_name, flags=0):
 
     retval = dbus_bus_start_service_by_name(conn, service_name, flags, &results, &error)
 
+    if dbus_error_is_set(&error):
+        message = error.message
+        dbus_error_free(&error)
+        raise DBusException, message
+
     return (retval, results) 
 
 def bus_register(Connection connection):
@@ -1577,7 +1587,9 @@ def bus_register(Connection connection):
     retval = dbus_bus_register(conn,
                                &error)
     if dbus_error_is_set(&error):
-        raise DBusException, error.message
+        message = error.message
+        dbus_error_free(&error)
+        raise DBusException, message
 
     return retval
 
@@ -1596,7 +1608,10 @@ def bus_request_name(Connection connection, service_name, flags=0):
                                    flags,
                                    &error)
     if dbus_error_is_set(&error):
-        raise DBusException, error.message
+        message = error.message
+        dbus_error_free(&error)
+        raise DBusException, message
+        
     return retval
     
 def bus_name_has_owner(Connection connection, service_name):
@@ -1610,7 +1625,10 @@ def bus_name_has_owner(Connection connection, service_name):
                                      service_name,
                                      &error)
     if dbus_error_is_set(&error):
-        raise DBusException, error.message
+        message = error.message
+        dbus_error_free(&error)
+        raise DBusException, message
+        
     return retval
 
 def bus_add_match(Connection connection, rule):
@@ -1623,7 +1641,9 @@ def bus_add_match(Connection connection, rule):
     dbus_bus_add_match (conn, rule, &error)
     
     if dbus_error_is_set(&error):
-        raise DBusException, error.message
+        message = error.message
+        dbus_error_free(&error)
+        raise DBusException, message
 
 def bus_remove_match(Connection connection, rule):
     cdef DBusError error
@@ -1635,5 +1655,7 @@ def bus_remove_match(Connection connection, rule):
     dbus_bus_remove_match (conn, rule, &error)
     
     if dbus_error_is_set(&error):
-        raise DBusException, error.message
+        message = error.message
+        dbus_error_free(&error)
+        raise DBusException, message
 
