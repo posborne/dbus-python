@@ -132,7 +132,8 @@ class ObjectType(type):
 
             #reclaim some memory
             func._dbus_args = None
-            reflection_data = reflection_data + '    </method>\n'
+	    
+        reflection_data = reflection_data + '    </method>\n'
 
         return reflection_data  
              

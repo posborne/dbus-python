@@ -261,9 +261,9 @@ cdef class Connection:
             self.conn = dbus_connection_open(address,
                                          &error)
             if dbus_error_is_set(&error):
-                message = error.message
+                errormsg = error.message
                 dbus_error_free (&error)
-                raise DBusException, message
+                raise DBusException, errormsg
 
     def __dealloc__(self):
         if self.conn != NULL:
@@ -388,9 +388,9 @@ cdef class Connection:
             &error)
 
         if dbus_error_is_set(&error):
-            message = error.message
+            errormsg = error.message
             dbus_error_free (&error)
-            raise DBusException, message
+            raise DBusException, errormsg
 
         if retval == NULL:
             raise AssertionError
@@ -936,8 +936,105 @@ cdef class MessageIter:
 
         return ret
 
+    def parse_signature_block(self, signature):
+        remainder = ''
+        sig = ''
+        block_depth = 0
+        block_type = None
+       
+        for marker in range(0, len(signature)):
+            cur_sig = ord(signature[marker])
+
+            if cur_sig == TYPE_ARRAY:
+                pass
+            elif cur_sig == DICT_ENTRY_BEGIN or cur_sig == STRUCT_BEGIN:
+                if block_type == None:
+                    block_type = cur_sig
+
+                if block_type == cur_sig:
+                    block_depth = block_depth + 1
+
+            elif cur_sig == DICT_ENTRY_END:
+                if block_type == DICT_ENTRY_BEGIN:
+                    block_depth = block_depth - 1
+
+                if block_depth == 0:
+                    break
+
+            elif cur_sig == STRUCT_END:
+                if block_type == STRUCT_BEGIN:
+                    block_depth = block_depth - 1
+
+                if block_depth == 0:
+                    break
+
+            else:
+                if block_depth == 0:
+                    break
+        
+        marker = marker + 1
+        sig = signature[0:marker]
+        remainder = signature[marker:]
+        return (sig, remainder)
+  
+    def append_strict(self, value, sig):
+        
     
-    #FIXME: handle all the different types?
+        if sig == TYPE_INVALID or sig == None:
+            raise TypeError, 'Invalid arg type sent to append_strict'
+
+        sig_type = ord(sig[0])
+	    
+        if sig_type == TYPE_STRING:
+            retval = self.append(value)
+        elif sig_type == TYPE_INT16:
+            retval = self.append_int16(value)
+        elif sig_type == TYPE_UINT16:
+            retval = self.append_uint16(value)
+        elif sig_type == TYPE_INT32:
+            retval = self.append_int32(value)
+        elif sig_type == TYPE_UINT32:
+            retval = self.append_uint32(value)
+        elif sig_type == TYPE_INT64:
+            retval = self.append_int64(value)
+        elif sig_type == TYPE_UINT64:
+            retval = self.append_uint64(value)
+        elif sig_type == TYPE_DOUBLE:
+            retval = self.append_double(value)
+        elif sig_type == TYPE_BYTE:
+            retval = self.append_byte(value)
+        elif sig_type == TYPE_BOOLEAN:
+            retval = self.append_boolean(value)
+        elif sig_type == TYPE_SIGNATURE:
+            retval = self.append_signature(value)
+        elif sig_type == TYPE_ARRAY:
+            if len(sig) < 2:
+                raise TypeError, "Invalid array signature in append_strict.  Arrays must be followed by a type."
+
+            array_type = ord(sig[1])            
+            if array_type == DICT_ENTRY_BEGIN:
+                if ord(sig[-1]) != DICT_ENTRY_END:
+                    raise TypeError, "Invalid dict entry in append_strict.  No termination in signature %s."%(sig)
+
+                tmp_sig = sig[2:-1]
+                retval = self.append_dict(Dictionary(value, signature=tmp_sig))
+            else:
+                tmp_sig = sig[1:]
+                retval = self.append_array(Array(value, signature=tmp_sig))
+        elif sig_type == TYPE_OBJECT_PATH:
+            retval = self.append_object_path(value)
+        elif sig_type == TYPE_STRUCT:
+            tmp_sig = sig[1:-1]
+            retval = self.append_struct(value, signature = tmp_sig)
+        elif sig_type == TYPE_VARIANT:
+            retval = self.append_variant(Variant(value))
+        elif sig_type == DICT_ENTRY_BEGIN:
+            raise TypeError, "Signiture is invalid in append_strict. A dict entry must be part of an array." 
+        else:
+            raise TypeError, "Argument of unknown type '%s' in append_strict" % (sig)
+
+        return retval
+
     def append(self, value):
         value_type = type(value)
         if value_type == bool:
@@ -1102,15 +1199,29 @@ cdef class MessageIter:
             dict_entry_iter = MessageIter(level)
             dict_entry_iter.__cinit__(&c_dict_entry_iter)
 
-            if not dict_entry_iter.append(key):
-                dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
-                dbus_message_iter_close_container(self.iter, dict_iter.iter)
-                return False
+            if signature:
+                (tmp_sig, remainder) = self.parse_signature_block(signature)
+                if not dict_entry_iter.append_strict(key, tmp_sig):
+                    dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
+                    dbus_message_iter_close_container(self.iter, dict_iter.iter)
+                    return False
+
+                (tmp_sig, remainder) = self.parse_signature_block(remainder)
+                if not dict_entry_iter.append_strict(value, tmp_sig):
+                    dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
+                    dbus_message_iter_close_container(self.iter, dict_iter.iter)
+                    return False
+
+            else:
+                if not dict_entry_iter.append(key):
+                    dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
+                    dbus_message_iter_close_container(self.iter, dict_iter.iter)
+                    return False
                 
-            if not dict_entry_iter.append(value):
-                dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
-                dbus_message_iter_close_container(self.iter, dict_iter.iter)
-                return False
+                if not dict_entry_iter.append(value):
+                    dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
+                    dbus_message_iter_close_container(self.iter, dict_iter.iter)
+                    return False
 
             dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
 
@@ -1118,7 +1229,7 @@ cdef class MessageIter:
 
         return True
 
-    def append_struct(self, python_struct):
+    def append_struct(self, python_struct, signature = None):
         cdef DBusMessageIter c_struct_iter
         cdef MessageIter struct_iter
 
@@ -1126,11 +1237,23 @@ cdef class MessageIter:
         dbus_message_iter_open_container(self.iter, TYPE_STRUCT, NULL, <DBusMessageIter *>&c_struct_iter)
         struct_iter = MessageIter(level)
         struct_iter.__cinit__(&c_struct_iter)
-        
+
+        remainder = signature
         for item in python_struct:
-            if not struct_iter.append(item):
-                dbus_message_iter_close_container(self.iter, struct_iter.iter)
-                return False
+            if signature:
+                (sig, remainder) = self.parse_signature_block(remainder)
+
+                if sig == '':
+                    dbus_message_iter_close_container(self.iter, struct_iter.iter)
+                    return False
+
+                if not struct_iter.append_strict(item, sig):
+                    dbus_message_iter_close_container(self.iter, struct_iter.iter)
+                    return False
+            else:
+                if not struct_iter.append(item):
+                    dbus_message_iter_close_container(self.iter, struct_iter.iter)
+                    return False
 
         dbus_message_iter_close_container(self.iter, struct_iter.iter)
 
@@ -1159,7 +1282,7 @@ cdef class MessageIter:
 
         length = len(python_list)
         for item in python_list:
-            if not array_iter.append(item):
+            if not array_iter.append_strict(item, sig):
                 dbus_message_iter_close_container(self.iter, array_iter.iter)
                 return False
 
@@ -1485,9 +1608,9 @@ cdef class Server:
         self.server = dbus_server_listen(address,
                                          &error)
         if dbus_error_is_set(&error):
-            message = error.message
+            errormsg = error.message
             dbus_error_free (&error)
-            raise DBusException, message
+            raise DBusException, errormsg
 
     def disconnect(self):
         dbus_server_disconnect(self.server)
@@ -1526,9 +1649,9 @@ def bus_get (bus_type):
                               &error)
 
     if dbus_error_is_set(&error):
-        message = error.message
+        errormsg = error.message
         dbus_error_free(&error)
-        raise DBusException, message
+        raise DBusException, errormsg 
 
     conn = Connection()
     conn.__cinit__(None, connection)
@@ -1549,9 +1672,9 @@ def bus_get_unix_user(Connection connection, service_name):
     retval = dbus_bus_get_unix_user(conn, service_name, &error)
 
     if dbus_error_is_set(&error):
-        message = error.message
+        errormsg = error.message
         dbus_error_free(&error)
-        raise DBusException, message
+        raise DBusException, errormsg 
 
     return retval
 
@@ -1571,9 +1694,9 @@ def bus_start_service_by_name(Connection connection, service_name, flags=0):
     retval = dbus_bus_start_service_by_name(conn, service_name, flags, &results, &error)
 
     if dbus_error_is_set(&error):
-        message = error.message
+        errormsg = error.message
         dbus_error_free(&error)
-        raise DBusException, message
+        raise DBusException, errormsg
 
     return (retval, results) 
 
@@ -1587,9 +1710,9 @@ def bus_register(Connection connection):
     retval = dbus_bus_register(conn,
                                &error)
     if dbus_error_is_set(&error):
-        message = error.message
+        msg = error.message
         dbus_error_free(&error)
-        raise DBusException, message
+        raise DBusException, errormsg 
 
     return retval
 
@@ -1608,9 +1731,9 @@ def bus_request_name(Connection connection, service_name, flags=0):
                                    flags,
                                    &error)
     if dbus_error_is_set(&error):
-        message = error.message
+        errormsg = error.message
         dbus_error_free(&error)
-        raise DBusException, message
+        raise DBusException, errormsg
         
     return retval
     
@@ -1625,9 +1748,9 @@ def bus_name_has_owner(Connection connection, service_name):
                                      service_name,
                                      &error)
     if dbus_error_is_set(&error):
-        message = error.message
+        errormsg = error.message
         dbus_error_free(&error)
-        raise DBusException, message
+        raise DBusException, errormsg
         
     return retval
 
@@ -1641,9 +1764,9 @@ def bus_add_match(Connection connection, rule):
     dbus_bus_add_match (conn, rule, &error)
     
     if dbus_error_is_set(&error):
-        message = error.message
+        errormsg = error.message
         dbus_error_free(&error)
-        raise DBusException, message
+        raise DBusException, errormsg
 
 def bus_remove_match(Connection connection, rule):
     cdef DBusError error
@@ -1655,7 +1778,7 @@ def bus_remove_match(Connection connection, rule):
     dbus_bus_remove_match (conn, rule, &error)
     
     if dbus_error_is_set(&error):
-        message = error.message
+        errormsg = error.message
         dbus_error_free(&error)
-        raise DBusException, message
+        raise DBusException, errormsg
 

@@ -15,6 +15,10 @@ class ValidationException(DBusException):
     def __init__(self, msg=''):
         DBusException.__init__(self, "Error validating string: %s"%msg)
 
+class IntrospectionParserException(DBusException):
+    def __init__(self, msg=''):
+            DBusException.__init__(self, "Error parsing introspect data: %s"%msg)
+
 class UnknownMethodException(DBusException):
     def __init__(self, msg=''):
         DBusException.__init__("Unknown method: %s"%msg)

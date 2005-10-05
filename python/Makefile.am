@@ -6,7 +6,18 @@ dbusmoduledir = $(pyexecdir)
 dbusmodule_PYTHON = dbus.pth
 
 dbusdir = $(pyexecdir)/dbus
-dbus_PYTHON = __init__.py _dbus.py decorators.py exceptions.py service.py proxies.py _util.py types.py matchrules.py glib.py
+dbus_PYTHON =		\
+	__init__.py 	\
+	_dbus.py 	\
+	decorators.py 	\
+	exceptions.py 	\
+	service.py 	\
+	proxies.py 	\
+	_util.py 	\
+	types.py 	\
+	matchrules.py 	\
+	glib.py 	\
+	introspect_parser.py
 
 dbusbindingsdir = $(pyexecdir)/dbus
 dbusbindings_LTLIBRARIES = dbus_bindings.la dbus_glib_bindings.la

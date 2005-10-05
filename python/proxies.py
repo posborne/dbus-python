@@ -1,5 +1,7 @@
 import dbus_bindings
-from exceptions import MissingReplyHandlerException, MissingErrorHandlerException
+import introspect_parser
+import sys
+from exceptions import MissingReplyHandlerException, MissingErrorHandlerException, IntrospectionParserException
 
 class DeferedMethod:
     """A DeferedMethod
@@ -19,12 +21,13 @@ class ProxyMethod:
     method produce messages that travel over the Bus and are routed
     to a specific named Service.
     """
-    def __init__(self, connection, named_service, object_path, dbus_interface, method_name):
+    def __init__(self, connection, named_service, object_path, dbus_interface, method_name, introspect_sig):
         self._connection   = connection
         self._named_service = named_service
         self._object_path  = object_path
         self._method_name  = method_name
         self._dbus_interface = dbus_interface
+        self._introspect_sig = introspect_sig
 
     def __call__(self, *args, **keywords):
         dbus_interface = self._dbus_interface
@@ -54,8 +57,14 @@ class ProxyMethod:
         
         # Add the arguments to the function
         iter = message.get_iter(True)
+
+	remainder = self._introspect_sig
         for arg in args:
-            iter.append(arg)
+            if self._introspect_sig:
+                (sig, remainder) = iter.parse_signature_block(remainder)
+                iter.append_strict(arg, sig)
+            else:
+                iter.append(arg)
 
         if reply_handler:
             result = self._connection.send_with_reply_handlers(message, timeout, reply_handler, error_handler)
@@ -87,16 +96,18 @@ class ProxyObject:
 
     #TODO: default introspect to False right now because it is not done yet
     #      make sure to default to True later
-    def __init__(self, bus, named_service, object_path, introspect=False):
+    def __init__(self, bus, named_service, object_path, introspect=True):
         self._bus           = bus
         self._named_service = named_service
         self._object_path   = object_path
-        
+
         #PendingCall object for Introspect call
         self._pending_introspect = None
         #queue of async calls waiting on the Introspect to return 
         self._pending_introspect_queue = []
- 
+        #dictionary mapping method names to their input signatures
+        self._introspect_method_map = {}
+
         if not introspect:
             self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
         else:
@@ -118,23 +129,47 @@ class ProxyObject:
         message.set_destination(self._named_service)
         
         result = self._bus.get_connection().send_with_reply_handlers(message, -1, 
-                                                                                           self._introspect_reply_handler, 
-                                                                                           self._introspect_error_handler)
+                                                                     self._introspect_reply_handler, 
+                                                                     self._introspect_error_handler)
         return result   
-            
+
+    
+    
+
     def _introspect_reply_handler(self, data):
-        self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_DONE
+        try:
+            self._introspect_method_map = introspect_parser.process_introspection_data(data)
+        except IntrospectionParserException, e:
+            self._introspect_error_handler(e)
+            return
         
+        self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_DONE
+
+        #TODO: we should actually call these even if introspection fails
         for call in self._pending_introspect_queue:
             (member, iface, args, keywords) = call
+
+            introspect_sig = None
+
+            tmp_iface = ''
+            if iface:
+                tmp_iface = iface + '.'
+                    
+            key = tmp_iface + '.' + member
+            if self._introspect_method_map.has_key (key):
+                introspect_sig = self._introspect_method_map[key]
+
+            
             call_object = self.ProxyMethodClass(self._bus.get_connection(),
-                                                                       self._named_service,
-                                                                       self._object_path, iface, member)
+                                                self._named_service,
+                                                self._object_path, iface, member,
+                                                introspect_sig)
                                                                        
             call_object(args, keywords)
 
     def _introspect_error_handler(self, error):
         self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
+        sys.stderr.write(str(error))
 
     def __getattr__(self, member, **keywords):
         if member == '__call__':
@@ -142,6 +177,8 @@ class ProxyObject:
         elif member.startswith('__') and member.endswith('__'):
             raise AttributeError(member)
         else:
+            introspect_sig = None
+        
             iface = None
             if keywords.has_key('dbus_interface'):
                 iface = keywords['dbus_interface']
@@ -163,10 +200,20 @@ class ProxyObject:
                     
                     ret = self.DeferedMethodClass()
                     return ret
-                   
+                    
+            if self._introspect_state == self.INTROSPECT_STATE_INTROSPECT_DONE:
+                tmp_iface = ''
+                if iface:
+                    tmp_iface = iface + '.'
+
+                key = tmp_iface + member
+                if self._introspect_method_map.has_key (key):
+                    introspect_sig = self._introspect_method_map[key]
+            
             ret = self.ProxyMethodClass(self._bus.get_connection(),
                                 self._named_service,
-                                self._object_path, iface, member)
+                                self._object_path, iface, member,
+                                introspect_sig)
             return ret
 
     def __repr__(self):
