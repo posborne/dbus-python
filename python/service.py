@@ -130,9 +130,8 @@ class ObjectType(type):
         for arg in func._dbus_args:
             reflection_data = reflection_data + '      <arg name="%s" type="v" />\n'%(arg)
 
-            #reclaim some memory
-            func._dbus_args = None
-	    
+        #reclaim some memory
+        del func._dbus_args
         reflection_data = reflection_data + '    </method>\n'
 
         return reflection_data  
@@ -141,8 +140,9 @@ class ObjectType(type):
         reflection_data = '    <signal name="%s">\n'%(func.__name__)
         for arg in func._dbus_args:
             reflection_data = reflection_data + '      <arg name="%s" type="v" />\n'%(arg)
-            #reclaim some memory
-            func._dbus_args = None
+	    
+        #reclaim some memory
+        del func._dbus_args
         reflection_data = reflection_data + '    </signal>\n'
 
         return reflection_data
