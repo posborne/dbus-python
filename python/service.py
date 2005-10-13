@@ -143,7 +143,7 @@ class ObjectType(type):
             reflection_data = reflection_data + '      <arg name="%s" type="v" />\n'%(arg)
             #reclaim some memory
             func._dbus_args = None
-            reflection_data = reflection_data + '    </signal>\n'
+        reflection_data = reflection_data + '    </signal>\n'
 
         return reflection_data
 
