@@ -168,13 +168,19 @@ class Object:
         print ("Unregister")
 
     def _message_cb(self, connection, message):
-        target_method_name = message.get_member()
-        target_methods = self._dbus_method_vtable[target_method_name]
-        args = message.get_args_list()
+        try:
+            target_method_name = message.get_member()
+            target_methods = self._dbus_method_vtable[target_method_name]
+            args = message.get_args_list()
         
-        reply = _dispatch_dbus_method_call(target_methods, self, args, message)
+            reply = _dispatch_dbus_method_call(target_methods, self, args, message)
 
-        self._connection.send(reply)
+            self._connection.send(reply)
+        except Exception, e:
+            error_reply = dbus_bindings.Error(message, 
+	                                      "org.freedesktop.DBus.Python.%s" % e.__class__.__name__, 
+                                              str(e))
+            self._connection.send(error_reply)
 
     @method('org.freedesktop.DBus.Introspectable')
     def Introspect(self):

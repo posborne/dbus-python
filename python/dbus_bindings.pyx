@@ -978,7 +978,6 @@ cdef class MessageIter:
         return (sig, remainder)
   
     def append_strict(self, value, sig):
-        
     
         if sig == TYPE_INVALID or sig == None:
             raise TypeError, 'Invalid arg type sent to append_strict'
@@ -1023,7 +1022,7 @@ cdef class MessageIter:
                 retval = self.append_array(Array(value, signature=tmp_sig))
         elif sig_type == TYPE_OBJECT_PATH:
             retval = self.append_object_path(value)
-        elif sig_type == TYPE_STRUCT:
+        elif sig_type == STRUCT_BEGIN:
             tmp_sig = sig[1:-1]
             retval = self.append_struct(value, signature = tmp_sig)
         elif sig_type == TYPE_VARIANT:
