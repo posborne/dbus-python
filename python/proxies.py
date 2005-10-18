@@ -46,6 +46,10 @@ class ProxyMethod:
         if keywords.has_key('error_handler'):
             error_handler = keywords['error_handler']            
 
+        ignore_reply = False
+        if keywords.has_key('ignore_reply'):
+            ignore_reply = keywords['ignore_reply']
+
         if not(reply_handler and error_handler):
             if reply_handler:
                 raise MissingErrorHandlerException()
@@ -65,8 +69,11 @@ class ProxyMethod:
                 iter.append_strict(arg, sig)
             else:
                 iter.append(arg)
-
-        if reply_handler:
+       
+        if ignore_reply:
+            result = self._connection.send(message)
+            args_tuple = (result,)
+        elif reply_handler:
             result = self._connection.send_with_reply_handlers(message, timeout, reply_handler, error_handler)
             args_tuple = result
         else:
@@ -94,8 +101,6 @@ class ProxyObject:
     INTROSPECT_STATE_INTROSPECT_IN_PROGRESS = 1
     INTROSPECT_STATE_INTROSPECT_DONE = 2
 
-    #TODO: default introspect to False right now because it is not done yet
-    #      make sure to default to True later
     def __init__(self, bus, named_service, object_path, introspect=True):
         self._bus           = bus
         self._named_service = named_service
@@ -132,20 +137,8 @@ class ProxyObject:
                                                                      self._introspect_reply_handler, 
                                                                      self._introspect_error_handler)
         return result   
-
     
-    
-
-    def _introspect_reply_handler(self, data):
-        try:
-            self._introspect_method_map = introspect_parser.process_introspection_data(data)
-        except IntrospectionParserException, e:
-            self._introspect_error_handler(e)
-            return
-        
-        self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_DONE
-
-        #TODO: we should actually call these even if introspection fails
+    def _introspect_execute_queue(self): 
         for call in self._pending_introspect_queue:
             (member, iface, args, keywords) = call
 
@@ -162,14 +155,27 @@ class ProxyObject:
             
             call_object = self.ProxyMethodClass(self._bus.get_connection(),
                                                 self._named_service,
-                                                self._object_path, iface, member,
+                                                self._object_path, 
+                                                iface, 
+                                                member,
                                                 introspect_sig)
                                                                        
             call_object(args, keywords)
 
+    def _introspect_reply_handler(self, data):
+        try:
+            self._introspect_method_map = introspect_parser.process_introspection_data(data)
+        except IntrospectionParserException, e:
+            self._introspect_error_handler(e)
+            return
+        
+        self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_DONE
+        #self._introspect_execute_queue()
+
     def _introspect_error_handler(self, error):
         self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
-        sys.stderr.write(str(error))
+        self._introspect_execute_queue()
+        sys.stderr.write("Introspect error: " + str(error) + "\n")
 
     def __getattr__(self, member, **keywords):
         if member == '__call__':

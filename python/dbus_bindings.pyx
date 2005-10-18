@@ -278,8 +278,8 @@ cdef class Connection:
     def get_unique_name(self):
         return bus_get_unique_name(self)
 
-    def disconnect(self):
-        dbus_connection_disconnect(self.conn)
+    def close(self):
+        dbus_connection_close(self.conn)
 
     def get_is_connected(self):
         return dbus_connection_get_is_connected(self.conn)
@@ -1638,14 +1638,18 @@ BUS_SESSION = DBUS_BUS_SESSION
 BUS_SYSTEM = DBUS_BUS_SYSTEM
 BUS_STARTER = DBUS_BUS_STARTER
 
-def bus_get (bus_type):
+def bus_get (bus_type, private=False):
     cdef DBusError error
     cdef Connection conn
-    dbus_error_init(&error)
     cdef DBusConnection *connection
 
-    connection = dbus_bus_get(bus_type,
-                              &error)
+    dbus_error_init(&error)
+    if private:
+        connection = dbus_bus_get_private(bus_type,
+                                          &error)
+    else:
+        connection = dbus_bus_get(bus_type,
+                                  &error)
 
     if dbus_error_is_set(&error):
         errormsg = error.message

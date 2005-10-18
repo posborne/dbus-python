@@ -67,8 +67,8 @@ class Bus:
     START_REPLY_SUCCESS = dbus_bindings.DBUS_START_REPLY_SUCCESS
     START_REPLY_ALREADY_RUNNING = dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING 
 
-    def __init__(self, bus_type=TYPE_SESSION, use_default_mainloop=True):
-        self._connection = dbus_bindings.bus_get(bus_type)
+    def __init__(self, bus_type=TYPE_SESSION, use_default_mainloop=True, private=False):
+        self._connection = dbus_bindings.bus_get(bus_type, private)
 
         self._connection.add_filter(self._signal_func)
         self._match_rule_tree = SignalMatchTree()
@@ -78,25 +78,28 @@ class Bus:
             if func != None:
                 func(self)
 
+    def close(self):
+        self._connection.close()
+
     def get_connection(self):
         return self._connection
 
-    def get_session():
+    def get_session(private=False):
         """Static method that returns the session bus"""
-        return SessionBus()
+        return SessionBus(private)
 
     get_session = staticmethod(get_session)
 
-    def get_system():
+    def get_system(private=False):
         """Static method that returns the system bus"""
-        return SystemBus()
+        return SystemBus(private)
 
     get_system = staticmethod(get_system)
 
 
-    def get_starter():
+    def get_starter(private=False):
         """Static method that returns the starter bus"""
-        return StarterBus()
+        return StarterBus(private)
 
     get_starter = staticmethod(get_starter)
 
@@ -196,21 +199,21 @@ class Bus:
 class SystemBus(Bus):
     """The system-wide message bus
     """
-    def __init__(self):
-        Bus.__init__(self, Bus.TYPE_SYSTEM)
+    def __init__(self, use_default_mainloop=True, private=False):
+        Bus.__init__(self, Bus.TYPE_SYSTEM, use_default_mainloop, private)
 
 class SessionBus(Bus):
     """The session (current login) message bus
     """
-    def __init__(self):
-        Bus.__init__(self, Bus.TYPE_SESSION)
+    def __init__(self, use_default_mainloop=True, private=False):
+        Bus.__init__(self, Bus.TYPE_SESSION, use_default_mainloop, private)
 
 class StarterBus(Bus):
     """The bus that activated this process (if
     this process was launched by DBus activation)
     """
-    def __init__(self):
-        Bus.__init__(self, Bus.TYPE_STARTER)
+    def __init__(self, use_default_mainloop=True, private=False):
+        Bus.__init__(self, Bus.TYPE_STARTER, use_default_mainloop, private)
 
 class Interface:
     """An inteface into a remote object
