@@ -8,7 +8,7 @@ def process_introspection_data(data):
     XMLREADER_START_ELEMENT_NODE_TYPE = 1
     XMLREADER_END_ELEMENT_NODE_TYPE = 15
 
-    stream = cStringIO.StringIO(data)
+    stream = cStringIO.StringIO(data.encode('utf-8'))
     input_source = libxml2.inputBuffer(stream)
     reader = input_source.newTextReader("urn:introspect")
 

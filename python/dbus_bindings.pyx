@@ -123,9 +123,9 @@ class Double(float):
     def __init__(self, value):
         float.__init__(self, value)
 
-class String(str):
+class String(unicode):
     def __init__(self, value):
-        str.__init__(self, value)
+        unicode.__init__(self, value)
 
 class Array(list):
     def __init__(self, value, type=None, signature=None):
@@ -733,8 +733,9 @@ cdef class MessageIter:
     def get_string(self):
         cdef char *c_str
         dbus_message_iter_get_basic(self.iter, <char **>&c_str)
+        ret = c_str.decode('utf8')
 
-        return c_str
+        return ret
 
     def get_object_path(self):
         object_path_string = self.get_string()
@@ -836,7 +837,7 @@ cdef class MessageIter:
         elif ptype == long:
             ret = TYPE_INT64
             ret = str(chr(ret))
-        elif ptype == str:
+        elif (ptype == str or ptype == unicode):
             ret = TYPE_STRING
             ret = str(chr(ret))
         elif ptype == float:
@@ -1042,7 +1043,7 @@ cdef class MessageIter:
             retval = self.append_int32(value)
         elif value_type == long:
             retval = self.append_int64(value)
-        elif value_type == str:
+        elif (value_type == str or value_type == unicode):
             retval = self.append_string(value)
         elif value_type == float:
             retval = self.append_double(value)
@@ -1146,8 +1147,9 @@ cdef class MessageIter:
 
     def append_string(self, value):
         cdef char *c_value
-        c_value = value
-        return dbus_message_iter_append_basic(self.iter, TYPE_STRING, <char **>&c_value)    
+        tmp = value.encode('utf8')
+        c_value = tmp
+        return dbus_message_iter_append_basic(self.iter, TYPE_STRING, <char **>&c_value)
 
     def append_object_path(self, value):
         cdef char *c_value
