@@ -457,13 +457,12 @@ cdef class Connection:
             dbus_error_free (&error)
             raise DBusException, errormsg
 
-        if retval == NULL:
-            raise AssertionError
-        
+        assert(retval != NULL)
+
         m = EmptyMessage()
         m._set_msg(retval)
 
-        return m 
+        return m
 
     def set_watch_functions(self, add_function, remove_function, data):
         pass
@@ -1048,6 +1047,9 @@ cdef class MessageIter:
         elif sig_type == TYPE_OBJECT_PATH:
             retval = self.append_object_path(value)
         elif sig_type == STRUCT_BEGIN:
+            if ord(sig[-1]) != STRUCT_END:
+                raise TypeError, "Invalid struct entry in append_strict. No termination in signature %s." % (sig)
+
             tmp_sig = sig[1:-1]
             retval = self.append_struct(value, signature = tmp_sig)
         elif sig_type == TYPE_VARIANT:

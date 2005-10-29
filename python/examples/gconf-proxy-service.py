@@ -2,7 +2,7 @@
 #FIXME: Doesn't work with the new bindings
 import dbus
 
-import gtk
+import gobject
 import gconf
 
 class GConfService(dbus.Service):
@@ -39,4 +39,5 @@ gconf_service = GConfService()
 print ("GConf Proxy service started.")
 print ("Run 'gconf-proxy-client.py' to fetch a GConf key through the proxy...")
 
-gtk.main()
+mainloop = gobject.MainLoop()
+mainloop.run()
