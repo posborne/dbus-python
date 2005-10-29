@@ -28,30 +28,72 @@ class BusName:
         """Get the name of this service"""
         return self._named_service
 
-def _dispatch_dbus_method_call(target_methods, self, argument_list, message):
+def _dispatch_dbus_method_call(self, argument_list, message):
     """Calls method_to_call using argument_list, but handles
     exceptions, etc, and generates a reply to the DBus Message message
     """
     try:
-        target_method = None
-        
+        method_name = message.get_member()
         dbus_interface = message.get_interface()
-        if dbus_interface == None:
-            if target_methods:
-                target_method = target_methods[0]
-        else:
-            for dbus_method in target_methods:
-                if dbus_method._dbus_interface == dbus_interface:
-                    target_method = dbus_method
+        candidate = None
+        successful = False
+
+        # split up the cases when we do and don't have an interface because the
+        # latter is much simpler
+        if dbus_interface:
+            # search through the class hierarchy in python MRO order
+            for cls in self.__class__.__mro__:
+                # if we haven't got a candidate yet, and we find a class with a
+                # suitably named member, save this as a candidate
+                if (not candidate and method_name in cls.__dict__):
+                    if ("_dbus_is_method" in cls.__dict__[method_name].__dict__
+                        and "_dbus_interface" in cls.__dict__[method_name].__dict__):
+                        # however if it is annotated for a different interface
+                        # than we are looking for, it cannot be a candidate
+                        if cls.__dict__[method_name]._dbus_interface == dbus_interface:
+                            candidate = cls
+                            sucessful = True
+                            target_parent = cls.__dict__[method_name]
+                            break
+                        else:
+                            pass
+                    else:
+                        candidate = cls
+
+                # if we have a candidate, carry on checking this and all
+                # superclasses for a method annoated as a dbus method
+                # on the correct interface
+                if (candidate and method_name in cls.__dict__
+                    and "_dbus_is_method" in cls.__dict__[method_name].__dict__
+                    and "_dbus_interface" in cls.__dict__[method_name].__dict__
+                    and cls.__dict__[method_name]._dbus_interface == dbus_interface):
+                    # the candidate is a dbus method on the correct interface,
+                    # or overrides a method that is, success!
+                    target_parent = cls.__dict__[method_name]
+                    sucessful = True
                     break
-        
-        if target_method:
-            retval = target_method(self, *argument_list)
+
         else:
+            # simpler version of above
+            for cls in self.__class__.__mro__:
+                if (not candidate and method_name in cls.__dict__):
+                    candidate = cls
+
+                if (candidate and method_name in cls.__dict__
+                    and "_dbus_is_method" in cls.__dict__[method_name].__dict__):
+                    target_parent = cls.__dict__[method_name]
+                    sucessful = True
+                    break
+
+        retval = candidate.__dict__[method_name](self, *argument_list)
+        target_name = str(candidate.__module__) + '.' + candidate.__name__ + '.' + method_name
+
+        if not sucessful:
             if not dbus_interface:
                 raise UnknownMethodException('%s is not a valid method'%(message.get_member()))
             else:
                 raise UnknownMethodException('%s is not a valid method of interface %s'%(message.get_member(), dbus_interface))
+
     except Exception, e:
         if e.__module__ == '__main__':
             # FIXME: is it right to use .__name__ here?
@@ -63,10 +105,6 @@ def _dispatch_dbus_method_call(target_methods, self, argument_list, message):
         reply = dbus_bindings.Error(message, error_name, error_contents)
     else:
         reply = dbus_bindings.MethodReturn(message)
-
-        # temporary - about to replace the method lookup code...
-        target_parent = target_method
-        target_name = str(target_method)
 
         # do strict adding if an output signature was provided
         if target_parent._dbus_out_signature != None:
@@ -100,96 +138,101 @@ def _dispatch_dbus_method_call(target_methods, self, argument_list, message):
         elif retval != None:
             iter = reply.get_iter(append=True)
             iter.append(retval)
+
     return reply
 
-class ObjectType(type):
+class InterfaceType(type):
     def __init__(cls, name, bases, dct):
+        # these attributes are shared between all instances of the Interface
+        # object, so this has to be a dictionary that maps class names to
+        # the per-class introspection/interface data
+        class_table = getattr(cls, '_dbus_class_table', {})
+        cls._dbus_class_table = class_table
+        interface_table = class_table[cls.__module__ + '.' + name] = {}
 
-        #generate out vtable
-        method_vtable = getattr(cls, '_dbus_method_vtable', {})
-        reflection_data = getattr(cls, '_dbus_reflection_data', "")
+        # merge all the name -> method tables for all the interfaces
+        # implemented by our base classes into our own
+        for b in bases:
+            base_name = b.__module__ + '.' + b.__name__
+            if getattr(b, '_dbus_class_table', False):
+                for (interface, method_table) in class_table[base_name].iteritems():
+                    our_method_table = interface_table.setdefault(interface, {})
+                    our_method_table.update(method_table)
 
-        reflection_interface_method_hash = {}
-        reflection_interface_signal_hash = {}
-
+        # add in all the name -> method entries for our own methods/signals
         for func in dct.values():
-            if getattr(func, '_dbus_is_method', False):
-                if method_vtable.has_key(func.__name__):
-                    method_vtable[func.__name__].append(func)
-                else:
-	            method_vtable[func.__name__] = [func]
-                
-                #generate a hash of interfaces so we can group
-                #methods in the xml data
-                if reflection_interface_method_hash.has_key(func._dbus_interface):
-                    reflection_interface_method_hash[func._dbus_interface].append(func)
-                else:
-                    reflection_interface_method_hash[func._dbus_interface] = [func]
+            if getattr(func, '_dbus_interface', False):
+                method_table = interface_table.setdefault(func._dbus_interface, {})
+                method_table[func.__name__] = func
 
-            elif getattr(func, '_dbus_is_signal', False):
-                if reflection_interface_signal_hash.has_key(func._dbus_interface):
-                    reflection_interface_signal_hash[func._dbus_interface].append(func)
-                else:
-                    reflection_interface_signal_hash[func._dbus_interface] = [func]
+        super(InterfaceType, cls).__init__(name, bases, dct)
 
-	for interface in reflection_interface_method_hash.keys():
-            reflection_data = reflection_data + '  <interface name="%s">\n'%(interface)
-            for func in reflection_interface_method_hash[interface]:
-                reflection_data = reflection_data + cls._reflect_on_method(func)
-
-            if reflection_interface_signal_hash.has_key(interface):
-                for func in reflection_interface_signal_hash[interface]:
-                    reflection_data = reflection_data + cls._reflect_on_signal(func)
-
-                del reflection_interface_signal_hash[interface]
-                
-            reflection_data = reflection_data + '  </interface>\n'
-
-	for interface in reflection_interface_signal_hash.keys():
-            reflection_data = reflection_data + '  <interface name="%s">\n'%(interface)
-            
-            for func in reflection_interface_signal_hash[interface]:
-                reflection_data = reflection_data + cls._reflect_on_signal(func)
-
-            reflection_data = reflection_data + '  </interface>\n'
-
-        cls._dbus_reflection_data = reflection_data  
-	cls._dbus_method_vtable = method_vtable
-        
-        super(ObjectType, cls).__init__(name, bases, dct)
-
-    #reflections on methods and signals may look like similar code but may in fact
-    #diverge in the future so keep them seperate
+    # methods are different to signals, so we have two functions... :)
     def _reflect_on_method(cls, func):
-        reflection_data = '    <method name="%s">\n'%(func.__name__)
-        for arg in func._dbus_args:
-            reflection_data = reflection_data + '      <arg name="%s" type="v" />\n'%(arg)
+        args = func._dbus_args
 
-        #reclaim some memory
-        del func._dbus_args
-        reflection_data = reflection_data + '    </method>\n'
+        if func._dbus_in_signature:
+            # convert signature into a tuple so length refers to number of
+            # types, not number of characters
+            in_sig = tuple(dbus_bindings.Signature(func._dbus_in_signature))
 
-        return reflection_data  
-             
+            if len(in_sig) > len(args):
+                raise ValueError, 'input signature is longer than the number of arguments taken'
+            elif len(in_sig) < len(args):
+                raise ValueError, 'input signature is shorter than the number of arguments taken'
+        else:
+            # magic iterator which returns as many v's as we need
+            in_sig = dbus_bindings.VariantSignature()
+
+        if func._dbus_out_signature:
+            out_sig = dbus_bindings.Signature(func._dbus_out_signature)
+        else:
+            # its tempting to default to dbus_bindings.Signature('v'), but
+            # for methods that return nothing, providing incorrect
+            # introspection data is worse than providing none at all
+            out_sig = []
+
+        reflection_data = '    <method name="%s">\n' % (func.__name__)
+        for pair in zip(in_sig, args):
+            reflection_data += '      <arg direction="in"  type="%s" name="%s" />\n' % pair
+        for type in out_sig:
+            reflection_data += '      <arg direction="out" type="%s" />\n' % type
+        reflection_data += '    </method>\n'
+
+        return reflection_data
+
     def _reflect_on_signal(cls, func):
-        reflection_data = '    <signal name="%s">\n'%(func.__name__)
-        for arg in func._dbus_args:
-            reflection_data = reflection_data + '      <arg name="%s" type="v" />\n'%(arg)
-	    
-        #reclaim some memory
-        del func._dbus_args
+        args = func._dbus_args
+
+        if func._dbus_signature:
+            # convert signature into a tuple so length refers to number of
+            # types, not number of characters
+            sig = tuple(dbus_bindings.Signature(func._dbus_signature))
+
+            if len(sig) > len(args):
+                raise ValueError, 'signal signature is longer than the number of arguments provided'
+            elif len(sig) < len(args):
+                raise ValueError, 'signal signature is shorter than the number of arguments provided'
+        else:
+            # magic iterator which returns as many v's as we need
+            sig = dbus_bindings.VariantSignature()
+
+        reflection_data = '    <signal name="%s">\n' % (func.__name__)
+        for pair in zip(sig, args):
+            reflection_data = reflection_data + '      <arg type="%s" name="%s" />\n' % pair
         reflection_data = reflection_data + '    </signal>\n'
 
         return reflection_data
 
-class Object:
+class Interface(object):
+    __metaclass__ = InterfaceType
+
+class Object(Interface):
     """A base class for exporting your own Objects across the Bus.
 
     Just inherit from Object and provide a list of methods to share
     across the Bus
     """
-    __metaclass__ = ObjectType
-    
     def __init__(self, bus_name, object_path):
         self._object_path = object_path
         self._name = bus_name 
@@ -205,10 +248,9 @@ class Object:
     def _message_cb(self, connection, message):
         try:
             target_method_name = message.get_member()
-            target_methods = self._dbus_method_vtable[target_method_name]
             args = message.get_args_list()
         
-            reply = _dispatch_dbus_method_call(target_methods, self, args, message)
+            reply = _dispatch_dbus_method_call(self, args, message)
 
             self._connection.send(reply)
         except Exception, e:
@@ -217,12 +259,24 @@ class Object:
                                               str(e))
             self._connection.send(error_reply)
 
-    @method('org.freedesktop.DBus.Introspectable')
+    @method('org.freedesktop.DBus.Introspectable', in_signature='', out_signature='s')
     def Introspect(self):
         reflection_data = '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n'
-        reflection_data = reflection_data + '<node name="%s">\n'%(self._object_path)
-        reflection_data = reflection_data + self._dbus_reflection_data
-        reflection_data = reflection_data + '</node>\n'
+        reflection_data += '<node name="%s">\n' % (self._object_path)
+
+        interfaces = self._dbus_class_table[self.__class__.__module__ + '.' + self.__class__.__name__]
+        for (name, funcs) in interfaces.iteritems():
+            reflection_data += '  <interface name="%s">\n' % (name)
+
+            for func in funcs.values():
+                if getattr(func, '_dbus_is_method', False):
+                    reflection_data += self.__class__._reflect_on_method(func)
+                elif getattr(func, '_dbus_is_signal', False):
+                    reflection_data += self.__class__._reflect_on_signal(func)
+
+            reflection_data += '  </interface>\n'
+
+        reflection_data += '</node>\n'
 
         return reflection_data
 
