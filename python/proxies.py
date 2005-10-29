@@ -62,14 +62,13 @@ class ProxyMethod:
         # Add the arguments to the function
         iter = message.get_iter(True)
 
-	remainder = self._introspect_sig
-        for arg in args:
-            if self._introspect_sig:
-                (sig, remainder) = iter.parse_signature_block(remainder)
+        if self._introspect_sig:
+            for (arg, sig) in zip(args, dbus_bindings.Signature(self._introspect_sig)):
                 iter.append_strict(arg, sig)
-            else:
+        else:
+            for arg in args:
                 iter.append(arg)
-       
+
         if ignore_reply:
             result = self._connection.send(message)
             args_tuple = (result,)

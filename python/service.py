@@ -1,6 +1,7 @@
 
 import dbus_bindings 
 import _dbus
+import operator
 from exceptions import UnknownMethodException
 from decorators import method
 from decorators import signal
@@ -57,14 +58,48 @@ def _dispatch_dbus_method_call(target_methods, self, argument_list, message):
             error_name = e.__class__.__name__
         else:
             error_name = e.__module__ + '.' + str(e.__class__.__name__)
-            error_contents = str(e)
-            reply = dbus_bindings.Error(message, error_name, error_contents)
+
+        error_contents = str(e)
+        reply = dbus_bindings.Error(message, error_name, error_contents)
     else:
         reply = dbus_bindings.MethodReturn(message)
-        if retval != None:
+
+        # temporary - about to replace the method lookup code...
+        target_parent = target_method
+        target_name = str(target_method)
+
+        # do strict adding if an output signature was provided
+        if target_parent._dbus_out_signature != None:
+            # iterate signature into list of complete types
+            signature = tuple(dbus_bindings.Signature(target_parent._dbus_out_signature))
+
+            if retval == None:
+                if len(signature) != 0:
+                    raise TypeError('%s returned nothing but output signature is %s' %
+                        (target_name, target_parent._dbus_out_signature))
+            elif len(signature) == 1:
+                iter = reply.get_iter(append=True)
+                iter.append_strict(retval, signature[0])
+            elif len(signature) > 1:
+                if operator.isSequenceType(retval):
+                    if len(signature) > len(retval):
+                        raise TypeError('output signature %s is longer than the number of values returned by %s' %
+                            (target_parent._dbus_out_signature, target_name))
+                    elif len(retval) > len(signature):
+                        raise TypeError('output signature %s is shorter than the number of values returned by %s' %
+                            (target_parent._dbus_out_signature, target_name))
+                    else:
+                        iter = reply.get_iter(append=True)
+                        for (value, sig) in zip(retval, signature):
+                            iter.append_strict(value, sig)
+                else:
+                    raise TypeError('output signature %s has multiple values but %s didn\'t return a sequence type' %
+                        (target_parent._dbus_out_signature, target_name))
+
+        # try and guess the return type
+        elif retval != None:
             iter = reply.get_iter(append=True)
             iter.append(retval)
-	    
     return reply
 
 class ObjectType(type):

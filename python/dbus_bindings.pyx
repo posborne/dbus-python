@@ -77,9 +77,74 @@ class ByteArray(str):
     def __init__(self, value):
         str.__init__(self, value)
 
+class SignatureIter(object):
+    def __init__(self, string):
+        object.__init__(self)
+        self.remaining = string
+
+    def next(self):
+        if self.remaining == '':
+            raise StopIteration
+
+        signature = self.remaining
+        block_depth = 0
+        block_type = None
+        end = len(signature)
+
+        for marker in range(0, end):
+            cur_sig = ord(signature[marker])
+
+            if cur_sig == TYPE_ARRAY:
+                pass
+            elif cur_sig == DICT_ENTRY_BEGIN or cur_sig == STRUCT_BEGIN:
+                if block_type == None:
+                    block_type = cur_sig
+
+                if block_type == cur_sig:
+                    block_depth = block_depth + 1
+
+            elif cur_sig == DICT_ENTRY_END:
+                if block_type == DICT_ENTRY_BEGIN:
+                    block_depth = block_depth - 1
+
+                if block_depth == 0:
+                    end = marker
+                    break
+
+            elif cur_sig == STRUCT_END:
+                if block_type == STRUCT_BEGIN:
+                    block_depth = block_depth - 1
+
+                if block_depth == 0:
+                    end = marker
+                    break
+
+            else:
+                if block_depth == 0:
+                    end = marker
+                    break
+
+        end = end + 1
+        self.remaining = signature[end:]
+        return Signature(signature[0:end])
+
 class Signature(str):
+    """An iterable method signature. Iterating gives the signature of each
+    argument in turn."""
     def __init__(self, value):
-        str.__init__(self, value)
+        return str.__init__(self, value)
+
+    def __iter__(self):
+        return SignatureIter(self)
+
+class VariantSignature(object):
+    """A fake method signature which when iterated, is an endless stream
+    of variants (handy with zip()). It has no string representation."""
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return 'v'
 
 class Byte(int):
     def __init__(self, value):
@@ -937,47 +1002,6 @@ cdef class MessageIter:
 
         return ret
 
-    def parse_signature_block(self, signature):
-        remainder = ''
-        sig = ''
-        block_depth = 0
-        block_type = None
-       
-        for marker in range(0, len(signature)):
-            cur_sig = ord(signature[marker])
-
-            if cur_sig == TYPE_ARRAY:
-                pass
-            elif cur_sig == DICT_ENTRY_BEGIN or cur_sig == STRUCT_BEGIN:
-                if block_type == None:
-                    block_type = cur_sig
-
-                if block_type == cur_sig:
-                    block_depth = block_depth + 1
-
-            elif cur_sig == DICT_ENTRY_END:
-                if block_type == DICT_ENTRY_BEGIN:
-                    block_depth = block_depth - 1
-
-                if block_depth == 0:
-                    break
-
-            elif cur_sig == STRUCT_END:
-                if block_type == STRUCT_BEGIN:
-                    block_depth = block_depth - 1
-
-                if block_depth == 0:
-                    break
-
-            else:
-                if block_depth == 0:
-                    break
-        
-        marker = marker + 1
-        sig = signature[0:marker]
-        remainder = signature[marker:]
-        return (sig, remainder)
-  
     def append_strict(self, value, sig):
     
         if sig == TYPE_INVALID or sig == None:
@@ -986,7 +1010,7 @@ cdef class MessageIter:
         sig_type = ord(sig[0])
 	    
         if sig_type == TYPE_STRING:
-            retval = self.append(value)
+            retval = self.append_string(value)
         elif sig_type == TYPE_INT16:
             retval = self.append_int16(value)
         elif sig_type == TYPE_UINT16:
@@ -1201,13 +1225,14 @@ cdef class MessageIter:
             dict_entry_iter.__cinit__(&c_dict_entry_iter)
 
             if signature:
-                (tmp_sig, remainder) = self.parse_signature_block(signature)
+                signature_iter = iter(Signature(signature))
+                tmp_sig = signature_iter.next()
                 if not dict_entry_iter.append_strict(key, tmp_sig):
                     dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
                     dbus_message_iter_close_container(self.iter, dict_iter.iter)
                     return False
 
-                (tmp_sig, remainder) = self.parse_signature_block(remainder)
+                tmp_sig = signature_iter.next()
                 if not dict_entry_iter.append_strict(value, tmp_sig):
                     dbus_message_iter_close_container(dict_iter.iter, dict_entry_iter.iter)
                     dbus_message_iter_close_container(self.iter, dict_iter.iter)
@@ -1239,10 +1264,10 @@ cdef class MessageIter:
         struct_iter = MessageIter(level)
         struct_iter.__cinit__(&c_struct_iter)
 
-        remainder = signature
+        signature_iter = iter(Signature(signature))
         for item in python_struct:
             if signature:
-                (sig, remainder) = self.parse_signature_block(remainder)
+                sig = signature_iter.next()
 
                 if sig == '':
                     dbus_message_iter_close_container(self.iter, struct_iter.iter)

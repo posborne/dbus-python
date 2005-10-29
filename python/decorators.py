@@ -1,20 +1,22 @@
-import _util 
+import _util
 import inspect
 import dbus_bindings
 
-def method(dbus_interface):
+def method(dbus_interface, in_signature=None, out_signature=None):
     _util._validate_interface_or_name(dbus_interface)
 
     def decorator(func):
         func._dbus_is_method = True
         func._dbus_interface = dbus_interface
+        func._dbus_in_signature = in_signature
+        func._dbus_out_signature = out_signature
         func._dbus_args = inspect.getargspec(func)[0]
         func._dbus_args.pop(0)
         return func
 
     return decorator
 
-def signal(dbus_interface):
+def signal(dbus_interface, signature=None):
     _util._validate_interface_or_name(dbus_interface)
     def decorator(func):
         def emit_signal(self, *args, **keywords):
@@ -27,9 +29,11 @@ def signal(dbus_interface):
       
             self._connection.send(message)
 
+        emit_signal.__name__ = func.__name__
+        emit_signal.__doc__ = func.__doc__
         emit_signal._dbus_is_signal = True
         emit_signal._dbus_interface = dbus_interface
-        emit_signal.__name__ = func.__name__
+        emit_signal._dbus_signature = signature
         emit_signal._dbus_args = inspect.getargspec(func)[0]
         emit_signal._dbus_args.pop(0)
         return emit_signal
