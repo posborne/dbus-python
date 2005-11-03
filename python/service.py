@@ -32,118 +32,110 @@ class BusName:
         return '<dbus.service.BusName %s on %r at %#x>' % (self._named_service, self._bus, id(self))
     __str__ = __repr__
 
-def _dispatch_dbus_method_call(self, argument_list, message):
-    """Calls method_to_call using argument_list, but handles
-    exceptions, etc, and generates a reply to the DBus Message message
+
+def _method_lookup(self, method_name, dbus_interface):
+    """Walks the Python MRO of the given class to find the method to invoke.
+
+    Returns two methods, the one to call, and the one it inherits from which
+    defines its D-Bus interface name, signature, and attributes.
     """
-    try:
-        method_name = message.get_member()
-        dbus_interface = message.get_interface()
-        candidate = None
-        successful = False
+    parent_method = None
+    candidate_class = None
+    successful = False
 
-        # split up the cases when we do and don't have an interface because the
-        # latter is much simpler
-        if dbus_interface:
-            # search through the class hierarchy in python MRO order
-            for cls in self.__class__.__mro__:
-                # if we haven't got a candidate yet, and we find a class with a
-                # suitably named member, save this as a candidate
-                if (not candidate and method_name in cls.__dict__):
-                    if ("_dbus_is_method" in cls.__dict__[method_name].__dict__
-                        and "_dbus_interface" in cls.__dict__[method_name].__dict__):
-                        # however if it is annotated for a different interface
-                        # than we are looking for, it cannot be a candidate
-                        if cls.__dict__[method_name]._dbus_interface == dbus_interface:
-                            candidate = cls
-                            sucessful = True
-                            target_parent = cls.__dict__[method_name]
-                            break
-                        else:
-                            pass
+    # split up the cases when we do and don't have an interface because the
+    # latter is much simpler
+    if dbus_interface:
+        # search through the class hierarchy in python MRO order
+        for cls in self.__class__.__mro__:
+            # if we haven't got a candidate class yet, and we find a class with a
+            # suitably named member, save this as a candidate class
+            if (not candidate_class and method_name in cls.__dict__):
+                if ("_dbus_is_method" in cls.__dict__[method_name].__dict__
+                    and "_dbus_interface" in cls.__dict__[method_name].__dict__):
+                    # however if it is annotated for a different interface
+                    # than we are looking for, it cannot be a candidate
+                    if cls.__dict__[method_name]._dbus_interface == dbus_interface:
+                        candidate_class = cls
+                        parent_method = cls.__dict__[method_name]
+                        sucessful = True
+                        break
                     else:
-                        candidate = cls
-
-                # if we have a candidate, carry on checking this and all
-                # superclasses for a method annoated as a dbus method
-                # on the correct interface
-                if (candidate and method_name in cls.__dict__
-                    and "_dbus_is_method" in cls.__dict__[method_name].__dict__
-                    and "_dbus_interface" in cls.__dict__[method_name].__dict__
-                    and cls.__dict__[method_name]._dbus_interface == dbus_interface):
-                    # the candidate is a dbus method on the correct interface,
-                    # or overrides a method that is, success!
-                    target_parent = cls.__dict__[method_name]
-                    sucessful = True
-                    break
-
-        else:
-            # simpler version of above
-            for cls in self.__class__.__mro__:
-                if (not candidate and method_name in cls.__dict__):
-                    candidate = cls
-
-                if (candidate and method_name in cls.__dict__
-                    and "_dbus_is_method" in cls.__dict__[method_name].__dict__):
-                    target_parent = cls.__dict__[method_name]
-                    sucessful = True
-                    break
-
-        retval = candidate.__dict__[method_name](self, *argument_list)
-        target_name = str(candidate.__module__) + '.' + candidate.__name__ + '.' + method_name
-
-        if not sucessful:
-            if not dbus_interface:
-                raise UnknownMethodException('%s is not a valid method'%(message.get_member()))
-            else:
-                raise UnknownMethodException('%s is not a valid method of interface %s'%(message.get_member(), dbus_interface))
-
-    except Exception, e:
-        if e.__module__ == '__main__':
-            # FIXME: is it right to use .__name__ here?
-            error_name = e.__class__.__name__
-        else:
-            error_name = e.__module__ + '.' + str(e.__class__.__name__)
-
-        error_contents = str(e)
-        reply = dbus_bindings.Error(message, error_name, error_contents)
-    else:
-        reply = dbus_bindings.MethodReturn(message)
-
-        # do strict adding if an output signature was provided
-        if target_parent._dbus_out_signature != None:
-            # iterate signature into list of complete types
-            signature = tuple(dbus_bindings.Signature(target_parent._dbus_out_signature))
-
-            if retval == None:
-                if len(signature) != 0:
-                    raise TypeError('%s returned nothing but output signature is %s' %
-                        (target_name, target_parent._dbus_out_signature))
-            elif len(signature) == 1:
-                iter = reply.get_iter(append=True)
-                iter.append_strict(retval, signature[0])
-            elif len(signature) > 1:
-                if operator.isSequenceType(retval):
-                    if len(signature) > len(retval):
-                        raise TypeError('output signature %s is longer than the number of values returned by %s' %
-                            (target_parent._dbus_out_signature, target_name))
-                    elif len(retval) > len(signature):
-                        raise TypeError('output signature %s is shorter than the number of values returned by %s' %
-                            (target_parent._dbus_out_signature, target_name))
-                    else:
-                        iter = reply.get_iter(append=True)
-                        for (value, sig) in zip(retval, signature):
-                            iter.append_strict(value, sig)
+                        pass
                 else:
-                    raise TypeError('output signature %s has multiple values but %s didn\'t return a sequence type' %
-                        (target_parent._dbus_out_signature, target_name))
+                    candidate_class = cls
 
-        # try and guess the return type
-        elif retval != None:
-            iter = reply.get_iter(append=True)
-            iter.append(retval)
+            # if we have a candidate class, carry on checking this and all
+            # superclasses for a method annoated as a dbus method
+            # on the correct interface
+            if (candidate_class and method_name in cls.__dict__
+                and "_dbus_is_method" in cls.__dict__[method_name].__dict__
+                and "_dbus_interface" in cls.__dict__[method_name].__dict__
+                and cls.__dict__[method_name]._dbus_interface == dbus_interface):
+                # the candidate class has a dbus method on the correct interface,
+                # or overrides a method that is, success!
+                parent_method = cls.__dict__[method_name]
+                sucessful = True
+                break
 
-    return reply
+    else:
+        # simpler version of above
+        for cls in self.__class__.__mro__:
+            if (not candidate_class and method_name in cls.__dict__):
+                candidate_class = cls
+
+            if (candidate_class and method_name in cls.__dict__
+                and "_dbus_is_method" in cls.__dict__[method_name].__dict__):
+                parent_method = cls.__dict__[method_name]
+                sucessful = True
+                break
+
+    if sucessful:
+        return (candidate_class.__dict__[method_name], parent_method)
+    else:
+        if dbus_interface:
+            raise UnknownMethodException('%s is not a valid method of interface %s' % (method_name, dbus_interface))
+        else:
+            raise UnknownMethodException('%s is not a valid method' % method_name)
+
+
+def _method_reply_return(connection, message, method_name, signature, *retval):
+    reply = dbus_bindings.MethodReturn(message)
+    iter = reply.get_iter(append=True)
+
+    # do strict adding if an output signature was provided
+    if signature:
+        if len(signature) > len(retval):
+            raise TypeError('output signature %s is longer than the number of values returned by %s' %
+                (signature, method_name))
+        elif len(retval) > len(signature):
+            raise TypeError('output signature %s is shorter than the number of values returned by %s' %
+                (signature, method_name))
+        else:
+            for (value, sig) in zip(retval, signature):
+                iter.append_strict(value, sig)
+
+    # no signature, try and guess the return type by inspection
+    else:
+        for value in retval:
+            iter.append(value)
+
+    connection.send(reply)
+
+
+def _method_reply_error(connection, message, exception):
+    if '_dbus_error_name' in exception.__dict__:
+        name = exception._dbus_error_name
+    elif exception.__module__ == '__main__':
+        name = 'org.freedesktop.DBus.Python.%s' % exception.__class__.__name__
+    else:
+        name = 'org.freedesktop.DBus.Python.%s.%s' % (exception.__module__, exception.__class__.__name__)
+
+    contents = str(exception)
+    reply = dbus_bindings.Error(message, name, contents)
+
+    connection.send(reply)
+
 
 class InterfaceType(type):
     def __init__(cls, name, bases, dct):
@@ -251,17 +243,53 @@ class Object(Interface):
 
     def _message_cb(self, connection, message):
         try:
-            target_method_name = message.get_member()
-            args = message.get_args_list()
-        
-            reply = _dispatch_dbus_method_call(self, args, message)
+            # lookup candidate method and parent method
+            method_name = message.get_member()
+            interface_name = message.get_interface()
+            (candidate_method, parent_method) = _method_lookup(self, method_name, interface_name)
 
-            self._connection.send(reply)
-        except Exception, e:
-            error_reply = dbus_bindings.Error(message, 
-	                                      "org.freedesktop.DBus.Python.%s" % e.__class__.__name__, 
-                                              str(e))
-            self._connection.send(error_reply)
+            # call method
+            args = message.get_args_list()
+            retval = candidate_method(self, *args)
+
+            # send return reply if it's not an asynchronous function
+            # if we have a signature, use it to turn the return value into a tuple as appropriate
+            if parent_method._dbus_out_signature:
+                # iterate signature into list of complete types
+                signature = tuple(dbus_bindings.Signature(parent_method._dbus_out_signature))
+
+                # if we have zero or one return values we want make a tuple
+                # for the _method_reply_return function, otherwise we need
+                # to check we're passing it a sequence
+                if len(signature) == 0:
+                    if retval == None:
+                        retval = ()
+                    else:
+                        raise TypeError('%s has an empty output signature but did not return None' %
+                            method_name)
+                elif len(signature) == 1:
+                    retval = (retval,)
+                else:
+                    if operator.isSequenceType(retval):
+                        # multi-value signature, multi-value return... proceed unchanged
+                        pass
+                    else:
+                        raise TypeError('%s has multiple output values in signature %s but did not return a sequence' %
+                            (method_name, signature))
+
+            # no signature, so just turn the return into a tuple and send it as normal
+            else:
+                signature = None
+                if retval == None:
+                    retval = ()
+                else:
+                    retval = (retval,)
+
+            print retval, signature
+            _method_reply_return(connection, message, method_name, signature, *retval)
+        except Exception, exception:
+            # send error reply
+            _method_reply_error(connection, message, exception)
 
     @method('org.freedesktop.DBus.Introspectable', in_signature='', out_signature='s')
     def Introspect(self):
