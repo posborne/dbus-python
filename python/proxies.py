@@ -222,7 +222,7 @@ class ProxyObject:
             return ret
 
     def __repr__(self):
-        return '<ProxyObject wrapping %s %s %s at %x>'%( 
+        return '<ProxyObject wrapping %s %s %s at %#x>'%(
             self._bus, self._named_service, self._object_path , id(self))
     __str__ = __repr__
 

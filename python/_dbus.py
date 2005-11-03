@@ -68,6 +68,7 @@ class Bus:
     START_REPLY_ALREADY_RUNNING = dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING 
 
     def __init__(self, bus_type=TYPE_SESSION, use_default_mainloop=True, private=False):
+        self._bus_type = bus_type
         self._connection = dbus_bindings.bus_get(bus_type, private)
 
         self._connection.add_filter(self._signal_func)
@@ -196,6 +197,19 @@ class Bus:
     def start_service_by_name(self, named_service):
         return dbus_bindings.bus_start_service_by_name(self._connection, named_service)
 
+    def __repr__(self):
+        if self._bus_type == self.TYPE_SESSION:
+            name = 'SESSION'
+        elif self._bus_type == self.TYPE_SYSTEM:
+            name = 'SYSTEM'
+        elif self._bus_type == self.TYPE_STARTER:
+            name = 'STARTER'
+        else:
+            assert False, 'Unable to represent unknown bus type.'
+
+        return '<dbus.Bus on %s at %#x>' % (name, id(self))
+    __str__ = __repr__
+
 class SystemBus(Bus):
     """The system-wide message bus
     """
@@ -246,6 +260,6 @@ class Interface:
             return ret
 
     def __repr__(self):
-        return '<Interface %r implementing %r at %x>'%(
+        return '<Interface %r implementing %r at %#x>'%(
         self._obj, self._dbus_interface, id(self))
     __str__ = __repr__

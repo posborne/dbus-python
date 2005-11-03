@@ -28,6 +28,10 @@ class BusName:
         """Get the name of this service"""
         return self._named_service
 
+    def __repr__(self):
+        return '<dbus.service.BusName %s on %r at %#x>' % (self._named_service, self._bus, id(self))
+    __str__ = __repr__
+
 def _dispatch_dbus_method_call(self, argument_list, message):
     """Calls method_to_call using argument_list, but handles
     exceptions, etc, and generates a reply to the DBus Message message
@@ -280,3 +284,6 @@ class Object(Interface):
 
         return reflection_data
 
+    def __repr__(self):
+        return '<dbus.service.Object %s on %r at %#x>' % (self._object_path, self._name, id(self))
+    __str__ = __repr__
