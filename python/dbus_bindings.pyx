@@ -893,7 +893,7 @@ cdef class MessageIter:
         ptype = type(value)
         ret = ""
         if ptype == bool:
-            ret = TYPE_BOOL
+            ret = TYPE_BOOLEAN
             ret = str(chr(ret))
         elif ptype == int:
             ret = TYPE_INT32
@@ -937,7 +937,7 @@ cdef class MessageIter:
             ret = TYPE_BYTE
             ret = str(chr(ret))
         elif isinstance(value, Boolean) or value == Boolean:
-            ret = TYPE_BOOL
+            ret = TYPE_BOOLEAN
             ret = str(chr(ret))
         elif isinstance(value, Int16) or value == Int16:
             ret = TYPE_INT16

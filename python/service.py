@@ -169,13 +169,9 @@ class InterfaceType(type):
 
         if func._dbus_in_signature:
             # convert signature into a tuple so length refers to number of
-            # types, not number of characters
+            # types, not number of characters. the length is checked by
+            # the decorator to make sure it matches the length of args.
             in_sig = tuple(dbus_bindings.Signature(func._dbus_in_signature))
-
-            if len(in_sig) > len(args):
-                raise ValueError, 'input signature is longer than the number of arguments taken'
-            elif len(in_sig) < len(args):
-                raise ValueError, 'input signature is shorter than the number of arguments taken'
         else:
             # magic iterator which returns as many v's as we need
             in_sig = dbus_bindings.VariantSignature()
@@ -204,11 +200,6 @@ class InterfaceType(type):
             # convert signature into a tuple so length refers to number of
             # types, not number of characters
             sig = tuple(dbus_bindings.Signature(func._dbus_signature))
-
-            if len(sig) > len(args):
-                raise ValueError, 'signal signature is longer than the number of arguments provided'
-            elif len(sig) < len(args):
-                raise ValueError, 'signal signature is shorter than the number of arguments provided'
         else:
             # magic iterator which returns as many v's as we need
             sig = dbus_bindings.VariantSignature()
@@ -248,16 +239,33 @@ class Object(Interface):
             interface_name = message.get_interface()
             (candidate_method, parent_method) = _method_lookup(self, method_name, interface_name)
 
-            # call method
+            # set up method call parameters
             args = message.get_args_list()
-            retval = candidate_method(self, *args)
+            keywords = {}
 
-            # send return reply if it's not an asynchronous function
-            # if we have a signature, use it to turn the return value into a tuple as appropriate
+            # iterate signature into list of complete types
             if parent_method._dbus_out_signature:
-                # iterate signature into list of complete types
                 signature = tuple(dbus_bindings.Signature(parent_method._dbus_out_signature))
+            else:
+                signature = None
 
+            # set up async callback functions
+            if parent_method._dbus_async_callbacks:
+                (return_callback, error_callback) = parent_method._dbus_async_callbacks
+                keywords[return_callback] = lambda *retval: _method_reply_return(connection, message, method_name, signature, *retval)
+                keywords[error_callback] = lambda exception: _method_reply_error(connection, message, exception)
+
+            # call method
+            retval = candidate_method(self, *args, **keywords)
+
+            # we're done - the method has got callback functions to reply with
+            if parent_method._dbus_async_callbacks:
+                return
+
+            # otherwise we send the return values in a reply. if we have a
+            # signature, use it to turn the return value into a tuple as
+            # appropriate
+            if parent_method._dbus_out_signature:
                 # if we have zero or one return values we want make a tuple
                 # for the _method_reply_return function, otherwise we need
                 # to check we're passing it a sequence
@@ -285,7 +293,6 @@ class Object(Interface):
                 else:
                     retval = (retval,)
 
-            print retval, signature
             _method_reply_return(connection, message, method_name, signature, *retval)
         except Exception, exception:
             # send error reply

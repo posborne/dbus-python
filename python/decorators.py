@@ -2,16 +2,35 @@ import _util
 import inspect
 import dbus_bindings
 
-def method(dbus_interface, in_signature=None, out_signature=None):
+def method(dbus_interface, in_signature=None, out_signature=None, async_callbacks=None):
     _util._validate_interface_or_name(dbus_interface)
 
     def decorator(func):
+        args = inspect.getargspec(func)[0]
+        args.pop(0)
+
+        if async_callbacks:
+            if type(async_callbacks) != tuple:
+                raise TypeError('async_callbacks must be a tuple of (keyword for return callback, keyword for error callback)')
+            if len(async_callbacks) != 2:
+                raise ValueError('async_callbacks must be a tuple of (keyword for return callback, keyword for error callback)')
+            args.remove(async_callbacks[0])
+            args.remove(async_callbacks[1])
+
+        if in_signature:
+            in_sig = tuple(dbus_bindings.Signature(in_signature))
+
+            if len(in_sig) > len(args):
+                raise ValueError, 'input signature is longer than the number of arguments taken'
+            elif len(in_sig) < len(args):
+                raise ValueError, 'input signature is shorter than the number of arguments taken'
+
         func._dbus_is_method = True
+        func._dbus_async_callbacks = async_callbacks
         func._dbus_interface = dbus_interface
         func._dbus_in_signature = in_signature
         func._dbus_out_signature = out_signature
-        func._dbus_args = inspect.getargspec(func)[0]
-        func._dbus_args.pop(0)
+        func._dbus_args = args
         return func
 
     return decorator
@@ -29,13 +48,23 @@ def signal(dbus_interface, signature=None):
       
             self._connection.send(message)
 
+        args = inspect.getargspec(func)[0]
+        args.pop(0)
+
+        if signature:
+            sig = tuple(dbus_bindings.Signature(func._dbus_signature))
+
+            if len(sig) > len(args):
+                raise ValueError, 'signal signature is longer than the number of arguments provided'
+            elif len(sig) < len(args):
+                raise ValueError, 'signal signature is shorter than the number of arguments provided'
+
         emit_signal.__name__ = func.__name__
         emit_signal.__doc__ = func.__doc__
         emit_signal._dbus_is_signal = True
         emit_signal._dbus_interface = dbus_interface
         emit_signal._dbus_signature = signature
-        emit_signal._dbus_args = inspect.getargspec(func)[0]
-        emit_signal._dbus_args.pop(0)
+        emit_signal._dbus_args = args
         return emit_signal
 
     return decorator
