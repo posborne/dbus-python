@@ -20,21 +20,19 @@ class BusName(object):
 
         # otherwise register the name
         retval = dbus_bindings.bus_request_name(bus.get_connection(), name)
-        print retval
+
         # TODO: more intelligent tracking of bus name states?
         if retval == dbus_bindings.REQUEST_NAME_REPLY_PRIMARY_OWNER:
             pass
         elif retval == dbus_bindings.REQUEST_NAME_REPLY_IN_QUEUE:
             # you can't arrive at this state via the high-level bindings
             # because you can't put flags in, but... who knows?
-            print "joined queue for %s" % name
             pass
         elif retval == dbus_bindings.REQUEST_NAME_REPLY_EXISTS:
             raise dbus_bindings.DBusException('requested name %s already exists' % name)
         elif retval == dbus_bindings.REQUEST_NAME_REPLY_ALREADY_OWNER:
             # if this is a shared bus which is being used by someone
             # else in this process, this can happen legitimately
-            print "already owner of %s" % name
             pass
         else:
             raise dbus_bindings.DBusException('requesting name %s returned unexpected value %s' % (name, retval))

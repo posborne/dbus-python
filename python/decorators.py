@@ -39,20 +39,25 @@ def signal(dbus_interface, signature=None):
     _util._validate_interface_or_name(dbus_interface)
     def decorator(func):
         def emit_signal(self, *args, **keywords):
-            func(self, *args, **keywords)           
+            func(self, *args, **keywords)
             message = dbus_bindings.Signal(self._object_path, dbus_interface, func.__name__)
             iter = message.get_iter(True)
-           
-            for arg in args:
-                iter.append(arg)
-      
+
+            if emit_signal._dbus_signature:
+                signature = tuple(dbus_bindings.Signature(emit_signal._dbus_signature))
+                for (arg, sig) in zip(args, signature):
+                    iter.append_strict(arg, sig)
+            else:
+                for arg in args:
+                    iter.append(arg)
+
             self._connection.send(message)
 
         args = inspect.getargspec(func)[0]
         args.pop(0)
 
         if signature:
-            sig = tuple(dbus_bindings.Signature(func._dbus_signature))
+            sig = tuple(dbus_bindings.Signature(signature))
 
             if len(sig) > len(args):
                 raise ValueError, 'signal signature is longer than the number of arguments provided'
