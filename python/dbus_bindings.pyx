@@ -1748,8 +1748,13 @@ def bus_register(Connection connection):
 
     return retval
 
-SERVICE_FLAG_PROHIBIT_REPLACEMENT = 0x1
-SERVICE_FLAG_REPLACE_EXISTING     = 0x2
+NAME_FLAG_PROHIBIT_REPLACEMENT = 0x1
+NAME_FLAG_REPLACE_EXISTING     = 0x2
+
+REQUEST_NAME_REPLY_PRIMARY_OWNER = 1
+REQUEST_NAME_REPLY_IN_QUEUE      = 2
+REQUEST_NAME_REPLY_EXISTS        = 3
+REQUEST_NAME_REPLY_ALREADY_OWNER = 4
 
 def bus_request_name(Connection connection, service_name, flags=0):
     cdef DBusError error

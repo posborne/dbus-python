@@ -42,14 +42,14 @@ print(dbus_object.ListServices())
 """
 
 import dbus
-
 import dbus_bindings
+import weakref
 
 from proxies import *
 from exceptions import *
 from matchrules import *
 
-class Bus:
+class Bus(object):
     """A connection to a DBus daemon.
 
     One of three possible standard buses, the SESSION, SYSTEM,
@@ -65,19 +65,54 @@ class Bus:
     ProxyObjectClass = ProxyObject
 
     START_REPLY_SUCCESS = dbus_bindings.DBUS_START_REPLY_SUCCESS
-    START_REPLY_ALREADY_RUNNING = dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING 
+    START_REPLY_ALREADY_RUNNING = dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING
 
-    def __init__(self, bus_type=TYPE_SESSION, use_default_mainloop=True, private=False):
-        self._bus_type = bus_type
-        self._connection = dbus_bindings.bus_get(bus_type, private)
+    _shared_instances = weakref.WeakValueDictionary()
 
-        self._connection.add_filter(self._signal_func)
-        self._match_rule_tree = SignalMatchTree()
+    def __new__(cls, bus_type=TYPE_SESSION, use_default_mainloop=True, private=False):
+        if (not private and bus_type in cls._shared_instances):
+            return cls._shared_instances[bus_type]
+
+        # this is a bit odd, but we create instances of the subtypes
+        # so we can return the shared instances if someone tries to
+        # construct one of them (otherwise we'd eg try and return an
+        # instance of Bus from __new__ in SessionBus). why are there
+        # three ways to construct this class? we just don't know.
+        if bus_type == cls.TYPE_SESSION:
+            subclass = SessionBus
+        elif bus_type == cls.TYPE_SYSTEM:
+            subclass = SystemBus
+        elif bus_type == cls.TYPE_STARTER:
+            subclass = StarterBus
+        else:
+            raise ValueError('invalid bus_type %s' % bus_type)
+
+        bus = object.__new__(subclass)
+
+        bus._bus_type = bus_type
+        bus._bus_names = weakref.WeakValueDictionary()
+        bus._match_rule_tree = SignalMatchTree()
+
+        # FIXME: if you get a starter and a system/session bus connection
+        # in the same process, it's the same underlying connection that
+        # is returned by bus_get, but we initialise it twice
+        bus._connection = dbus_bindings.bus_get(bus_type, private)
+        bus._connection.add_filter(bus._signal_func)
 
         if use_default_mainloop:
             func = getattr(dbus, "_dbus_mainloop_setup_function", None)
-            if func != None:
-                func(self)
+            if func:
+                func(bus)
+
+        if not private:
+            cls._shared_instances[bus_type] = bus
+
+        return bus
+
+    def __init__(self, *args, **keywords):
+        # do nothing here because this can get called multiple times on the
+        # same object if __new__ returns a shared instance
+        pass
 
     def close(self):
         self._connection.close()
@@ -87,20 +122,20 @@ class Bus:
 
     def get_session(private=False):
         """Static method that returns the session bus"""
-        return SessionBus(private)
+        return SessionBus(private=private)
 
     get_session = staticmethod(get_session)
 
     def get_system(private=False):
         """Static method that returns the system bus"""
-        return SystemBus(private)
+        return SystemBus(private=private)
 
     get_system = staticmethod(get_system)
 
 
     def get_starter(private=False):
         """Static method that returns the starter bus"""
-        return StarterBus(private)
+        return StarterBus(private=private)
 
     get_starter = staticmethod(get_starter)
 
@@ -213,24 +248,24 @@ class Bus:
 class SystemBus(Bus):
     """The system-wide message bus
     """
-    def __init__(self, use_default_mainloop=True, private=False):
-        Bus.__init__(self, Bus.TYPE_SYSTEM, use_default_mainloop, private)
+    def __new__(cls, use_default_mainloop=True, private=False):
+        return Bus.__new__(cls, Bus.TYPE_SYSTEM, use_default_mainloop, private)
 
 class SessionBus(Bus):
     """The session (current login) message bus
     """
-    def __init__(self, use_default_mainloop=True, private=False):
-        Bus.__init__(self, Bus.TYPE_SESSION, use_default_mainloop, private)
+    def __new__(cls, use_default_mainloop=True, private=False):
+        return Bus.__new__(cls, Bus.TYPE_SESSION, use_default_mainloop, private)
 
 class StarterBus(Bus):
     """The bus that activated this process (if
     this process was launched by DBus activation)
     """
-    def __init__(self, use_default_mainloop=True, private=False):
-        Bus.__init__(self, Bus.TYPE_STARTER, use_default_mainloop, private)
+    def __new__(cls, use_default_mainloop=True, private=False):
+        return Bus.__new__(cls, Bus.TYPE_STARTER, use_default_mainloop, private)
 
 class Interface:
-    """An inteface into a remote object
+    """An interface into a remote object
 
     An Interface can be used to wrap ProxyObjects
     so that calls can be routed to their correct

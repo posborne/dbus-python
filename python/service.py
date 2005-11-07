@@ -6,19 +6,60 @@ from exceptions import UnknownMethodException
 from decorators import method
 from decorators import signal
 
-class BusName:
+class BusName(object):
     """A base class for exporting your own Named Services across the Bus
     """
-    def __init__(self, named_service, bus=None):
-        self._named_service = named_service
-                             
+    def __new__(cls, name, bus=None):
+        # get default bus
         if bus == None:
-            # Get the default bus
-            self._bus = _dbus.Bus()
-        else:
-            self._bus = bus
+            bus = _dbus.Bus()
 
-        dbus_bindings.bus_request_name(self._bus.get_connection(), named_service)
+        # see if this name is already defined, return it if so
+        if name in bus._bus_names:
+            return bus._bus_names[name]
+
+        # otherwise register the name
+        retval = dbus_bindings.bus_request_name(bus.get_connection(), name)
+        print retval
+        # TODO: more intelligent tracking of bus name states?
+        if retval == dbus_bindings.REQUEST_NAME_REPLY_PRIMARY_OWNER:
+            pass
+        elif retval == dbus_bindings.REQUEST_NAME_REPLY_IN_QUEUE:
+            # you can't arrive at this state via the high-level bindings
+            # because you can't put flags in, but... who knows?
+            print "joined queue for %s" % name
+            pass
+        elif retval == dbus_bindings.REQUEST_NAME_REPLY_EXISTS:
+            raise dbus_bindings.DBusException('requested name %s already exists' % name)
+        elif retval == dbus_bindings.REQUEST_NAME_REPLY_ALREADY_OWNER:
+            # if this is a shared bus which is being used by someone
+            # else in this process, this can happen legitimately
+            print "already owner of %s" % name
+            pass
+        else:
+            raise dbus_bindings.DBusException('requesting name %s returned unexpected value %s' % (name, retval))
+
+        # and create the object
+        bus_name = object.__new__(cls)
+        bus_name._bus = bus
+        bus_name._name = name
+
+        # cache instance
+        bus._bus_names[name] = bus_name
+
+        return bus_name
+
+    # do nothing because this is called whether or not the bus name
+    # object was retrieved from the cache or created new
+    def __init__(self, *args, **keywords):
+        pass
+
+    # we can delete the low-level name here because these objects
+    # are guaranteed to exist only once for each bus name
+    def __del__(self):
+        # FIXME: we don't have this function yet :)
+        #dbus_bindings.bus_release_name(self._bus.get_connection(), self._named_service)
+        pass
 
     def get_bus(self):
         """Get the Bus this Service is on"""
@@ -26,10 +67,10 @@ class BusName:
 
     def get_name(self):
         """Get the name of this service"""
-        return self._named_service
+        return self._name
 
     def __repr__(self):
-        return '<dbus.service.BusName %s on %r at %#x>' % (self._named_service, self._bus, id(self))
+        return '<dbus.service.BusName %s on %r at %#x>' % (self._name, self._bus, id(self))
     __str__ = __repr__
 
 
@@ -322,3 +363,4 @@ class Object(Interface):
     def __repr__(self):
         return '<dbus.service.Object %s on %r at %#x>' % (self._object_path, self._name, id(self))
     __str__ = __repr__
+
