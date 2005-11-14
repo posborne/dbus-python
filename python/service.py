@@ -294,6 +294,10 @@ class Object(Interface):
                 keywords[return_callback] = lambda *retval: _method_reply_return(connection, message, method_name, signature, *retval)
                 keywords[error_callback] = lambda exception: _method_reply_error(connection, message, exception)
 
+            # include the sender if desired
+            if parent_method._dbus_sender_keyword:
+                keywords[parent_method._dbus_sender_keyword] = message.get_sender()
+
             # call method
             retval = candidate_method(self, *args, **keywords)
 

@@ -2,7 +2,7 @@ import _util
 import inspect
 import dbus_bindings
 
-def method(dbus_interface, in_signature=None, out_signature=None, async_callbacks=None):
+def method(dbus_interface, in_signature=None, out_signature=None, async_callbacks=None, sender_keyword=None):
     _util._validate_interface_or_name(dbus_interface)
 
     def decorator(func):
@@ -17,6 +17,9 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
             args.remove(async_callbacks[0])
             args.remove(async_callbacks[1])
 
+        if sender_keyword:
+            args.remove(sender_keyword)
+
         if in_signature:
             in_sig = tuple(dbus_bindings.Signature(in_signature))
 
@@ -30,6 +33,7 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
         func._dbus_interface = dbus_interface
         func._dbus_in_signature = in_signature
         func._dbus_out_signature = out_signature
+        func._dbus_sender_keyword = sender_keyword
         func._dbus_args = args
         return func
 
