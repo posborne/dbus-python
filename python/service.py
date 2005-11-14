@@ -2,6 +2,8 @@
 import dbus_bindings 
 import _dbus
 import operator
+import traceback
+
 from exceptions import UnknownMethodException
 from decorators import method
 from decorators import signal
@@ -170,7 +172,7 @@ def _method_reply_error(connection, message, exception):
     else:
         name = 'org.freedesktop.DBus.Python.%s.%s' % (exception.__module__, exception.__class__.__name__)
 
-    contents = str(exception)
+    contents = traceback.format_exc()
     reply = dbus_bindings.Error(message, name, contents)
 
     connection.send(reply)
