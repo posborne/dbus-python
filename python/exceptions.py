@@ -17,9 +17,13 @@ class ValidationException(DBusException):
 
 class IntrospectionParserException(DBusException):
     def __init__(self, msg=''):
-            DBusException.__init__(self, "Error parsing introspect data: %s"%msg)
+        DBusException.__init__(self, "Error parsing introspect data: %s"%msg)
 
 class UnknownMethodException(DBusException):
-    def __init__(self, msg=''):
-        DBusException.__init__("Unknown method: %s"%msg)
+    def __init__(self, method):
+        DBusException.__init__(self, "Unknown method: %s"%method)
+
+class NameExistsException(DBusException):
+    def __init__(self, name):
+        DBusException.__init__(self, "Bus name already exists: %s"%name)
 

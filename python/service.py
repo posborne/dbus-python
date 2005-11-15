@@ -1,9 +1,9 @@
-
-import dbus_bindings 
+import dbus_bindings
 import _dbus
 import operator
 import traceback
 
+from exceptions import NameExistsException
 from exceptions import UnknownMethodException
 from decorators import method
 from decorators import signal
@@ -31,13 +31,13 @@ class BusName(object):
             # because you can't put flags in, but... who knows?
             pass
         elif retval == dbus_bindings.REQUEST_NAME_REPLY_EXISTS:
-            raise dbus_bindings.DBusException('requested name %s already exists' % name)
+            raise NameExistsException(name)
         elif retval == dbus_bindings.REQUEST_NAME_REPLY_ALREADY_OWNER:
             # if this is a shared bus which is being used by someone
             # else in this process, this can happen legitimately
             pass
         else:
-            raise dbus_bindings.DBusException('requesting name %s returned unexpected value %s' % (name, retval))
+            raise RuntimeError('requesting bus name %s returned unexpected value %s' % (name, retval))
 
         # and create the object
         bus_name = object.__new__(cls)
@@ -57,8 +57,7 @@ class BusName(object):
     # we can delete the low-level name here because these objects
     # are guaranteed to exist only once for each bus name
     def __del__(self):
-        # FIXME: we don't have this function yet :)
-        #dbus_bindings.bus_release_name(self._bus.get_connection(), self._named_service)
+        dbus_bindings.bus_release_name(self._bus.get_connection(), self._name)
         pass
 
     def get_bus(self):

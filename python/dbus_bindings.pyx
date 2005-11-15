@@ -1710,10 +1710,10 @@ def bus_get_unix_user(Connection connection, service_name):
 
     return retval
 
-#These are defines, not enums so they aren't auto generated
-DBUS_START_REPLY_SUCCESS = 0 
-DBUS_START_REPLY_ALREADY_RUNNING = 1 
-    
+# these are defines, not enums, so they aren't auto generated
+DBUS_START_REPLY_SUCCESS = 0
+DBUS_START_REPLY_ALREADY_RUNNING = 1
+
 def bus_start_service_by_name(Connection connection, service_name, flags=0):
     cdef DBusError error
     dbus_error_init(&error)
@@ -1771,9 +1771,30 @@ def bus_request_name(Connection connection, service_name, flags=0):
         errormsg = error.message
         dbus_error_free(&error)
         raise DBusException, errormsg
-        
+
     return retval
-    
+
+RELEASE_NAME_REPLY_RELEASED = 1
+RELEASE_NAME_REPLY_NON_EXISTENT = 2
+RELEASE_NAME_REPLY_NOT_OWNER = 3
+
+def bus_release_name(Connection connection, service_name):
+    cdef DBusError error
+    dbus_error_init(&error)
+    cdef int retval
+    cdef DBusConnection *conn
+
+    conn = connection._get_conn()
+    retval = dbus_bus_release_name(conn,
+                                   service_name,
+                                   &error)
+    if dbus_error_is_set(&error):
+        errormsg = error.message
+        dbus_error_free(&error)
+        raise DBusException, errormsg
+
+    return retval
+
 def bus_name_has_owner(Connection connection, service_name):
     cdef DBusError error
     dbus_error_init(&error)
