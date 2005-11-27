@@ -27,8 +27,9 @@ class BusName(object):
         if retval == dbus_bindings.REQUEST_NAME_REPLY_PRIMARY_OWNER:
             pass
         elif retval == dbus_bindings.REQUEST_NAME_REPLY_IN_QUEUE:
-            # you can't arrive at this state via the high-level bindings
-            # because you can't put flags in, but... who knows?
+            # queueing can happen by default, maybe we should
+            # track this better or let the user know if they're
+            # queued or not?
             pass
         elif retval == dbus_bindings.REQUEST_NAME_REPLY_EXISTS:
             raise NameExistsException(name)

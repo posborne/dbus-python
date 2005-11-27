@@ -1053,7 +1053,10 @@ cdef class MessageIter:
             tmp_sig = sig[1:-1]
             retval = self.append_struct(value, signature = tmp_sig)
         elif sig_type == TYPE_VARIANT:
-            retval = self.append_variant(Variant(value))
+            if isinstance(value, Variant):
+                retval = self.append_variant(value)
+            else:
+                retval = self.append_variant(Variant(value))
         elif sig_type == DICT_ENTRY_BEGIN:
             raise TypeError, "Signiture is invalid in append_strict. A dict entry must be part of an array." 
         else:
@@ -1748,8 +1751,9 @@ def bus_register(Connection connection):
 
     return retval
 
-NAME_FLAG_PROHIBIT_REPLACEMENT = 0x1
+NAME_FLAG_ALLOW_REPLACEMENT    = 0x1
 NAME_FLAG_REPLACE_EXISTING     = 0x2
+NAME_FLAG_DO_NOT_QUEUE         = 0x4
 
 REQUEST_NAME_REPLY_PRIMARY_OWNER = 1
 REQUEST_NAME_REPLY_IN_QUEUE      = 2
