@@ -1053,7 +1053,10 @@ cdef class MessageIter:
             tmp_sig = sig[1:-1]
             retval = self.append_struct(value, signature = tmp_sig)
         elif sig_type == TYPE_VARIANT:
-            retval = self.append_variant(Variant(value))
+            if isinstance(value, Variant):
+                retval = self.append_variant(value)
+            else:
+                retval = self.append_variant(Variant(value))
         elif sig_type == DICT_ENTRY_BEGIN:
             raise TypeError, "Signiture is invalid in append_strict. A dict entry must be part of an array." 
         else:
@@ -1137,14 +1140,14 @@ cdef class MessageIter:
         return dbus_message_iter_append_basic(self.iter, TYPE_BYTE, <char *>&b)
 
     def append_int16(self, value):
-        cdef dbus_int32_t c_value
+        cdef dbus_int16_t c_value
         c_value = value
-        return dbus_message_iter_append_basic(self.iter, TYPE_INT16, <dbus_int32_t *>&c_value)
+        return dbus_message_iter_append_basic(self.iter, TYPE_INT16, <dbus_int16_t *>&c_value)
 
     def append_uint16(self, value):
-        cdef dbus_uint32_t c_value
+        cdef dbus_uint16_t c_value
         c_value = value
-        return dbus_message_iter_append_basic(self.iter, TYPE_UINT16, <dbus_uint32_t *>&c_value)
+        return dbus_message_iter_append_basic(self.iter, TYPE_UINT16, <dbus_uint16_t *>&c_value)
 
     def append_int32(self, value):
         cdef dbus_int32_t c_value
@@ -1359,6 +1362,12 @@ cdef class MessageIter:
             elif type == TYPE_OBJECT_PATH:
                 path = iter.get_object_path()
                 arg = 'object_path:%s\n' % (path)
+            elif type == TYPE_INT16:
+                num = iter.get_int16()
+                arg = 'int16:%d\n' % (num)
+            elif type == TYPE_UINT16:
+                num = iter.get_uint16()
+                arg = 'uint16:%u\n' % (num)
             elif type == TYPE_INT32:
                 num = iter.get_int32()
                 arg = 'int32:%d\n' % (num)
@@ -1748,8 +1757,9 @@ def bus_register(Connection connection):
 
     return retval
 
-NAME_FLAG_PROHIBIT_REPLACEMENT = 0x1
+NAME_FLAG_ALLOW_REPLACEMENT    = 0x1
 NAME_FLAG_REPLACE_EXISTING     = 0x2
+NAME_FLAG_DO_NOT_QUEUE         = 0x4
 
 REQUEST_NAME_REPLY_PRIMARY_OWNER = 1
 REQUEST_NAME_REPLY_IN_QUEUE      = 2
