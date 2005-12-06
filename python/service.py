@@ -99,7 +99,7 @@ def _method_lookup(self, method_name, dbus_interface):
                     if cls.__dict__[method_name]._dbus_interface == dbus_interface:
                         candidate_class = cls
                         parent_method = cls.__dict__[method_name]
-                        sucessful = True
+                        successful = True
                         break
                     else:
                         pass
@@ -116,7 +116,7 @@ def _method_lookup(self, method_name, dbus_interface):
                 # the candidate class has a dbus method on the correct interface,
                 # or overrides a method that is, success!
                 parent_method = cls.__dict__[method_name]
-                sucessful = True
+                successful = True
                 break
 
     else:
@@ -128,10 +128,10 @@ def _method_lookup(self, method_name, dbus_interface):
             if (candidate_class and method_name in cls.__dict__
                 and "_dbus_is_method" in cls.__dict__[method_name].__dict__):
                 parent_method = cls.__dict__[method_name]
-                sucessful = True
+                successful = True
                 break
 
-    if sucessful:
+    if successful:
         return (candidate_class.__dict__[method_name], parent_method)
     else:
         if dbus_interface:
