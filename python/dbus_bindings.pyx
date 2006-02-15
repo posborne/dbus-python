@@ -741,10 +741,10 @@ cdef class MessageIter:
         return dbus_message_iter_get_element_type(self.iter)
 
     def get_byte(self):
-        cdef char c_val
-        dbus_message_iter_get_basic(self.iter, <char *>&c_val)
+        cdef unsigned char c_val
+        dbus_message_iter_get_basic(self.iter, <unsigned char *>&c_val)
         return c_val
-        
+
     def get_boolean(self):
         cdef dbus_bool_t c_val
         dbus_message_iter_get_basic(self.iter, <dbus_bool_t *>&c_val)

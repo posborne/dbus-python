@@ -158,6 +158,8 @@ class Bus(object):
                     args_dict[num] = value
                 except ValueError:
                     raise TypeError("Invalid arg index %s"%snum)
+            elif key in ("sender_keyword", "path_keyword"):
+                pass
             else:
                 raise TypeError("Unknown keyword %s"%(key)) 
 
@@ -177,6 +179,12 @@ class Bus(object):
             named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
         
         match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
+
+        for kw in ("sender_keyword", "path_keyword"):
+            if kw in keywords:
+                setattr(match_rule, kw, keywords[kw])
+            else:
+                setattr(match_rule, kw, None)
 
         if args_dict:
             match_rule.add_args_match(args_dict)

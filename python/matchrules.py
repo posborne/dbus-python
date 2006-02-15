@@ -130,16 +130,25 @@ class SignalMatchRule:
         self.args = args
 
     def execute(self, message, args=None):
-        #optimization just in case we already extarcted the args
+        keywords = {}
+
+        if self.sender_keyword is not None:
+            keywords[self.sender_keyword] = message.get_sender()
+        if self.path_keyword is not None:
+            keywords[self.path_keyword] = message.get_path()
+
+        # optimization just in case we already extracted the args
         if not args:
            args = message.get_args_list()
            
         for handler in self.handler_functions:
             if getattr(handler, "_dbus_pass_message", False):
-                keywords = {"dbus_message": message}
-                handler(*args, **keywords)
-            else:
+                keywords["dbus_message"] = message
+
+            if len(keywords) == 0:
                 handler(*args)
+            else:
+                handler(*args, **keywords)
 
     def add_handler(self, handler):
         self.handler_functions.append(handler)
