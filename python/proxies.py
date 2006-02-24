@@ -8,11 +8,23 @@ class DeferedMethod:
     
     This is returned instead of ProxyMethod when we are defering DBus calls
     while waiting for introspection data to be returned
-    
-    This class can be used for debugging purposes
     """
+    def __init__(self, proxy_method):
+        self._proxy_method = proxy_method
+        self._method_name  = proxy_method._method_name
+    
     def __call__(self, *args, **keywords):
-        return None
+        reply_handler = None
+        if keywords.has_key('reply_handler'):
+            reply_handler = keywords['reply_handler']
+
+        #block for now even on async
+        # FIXME: put ret in async queue in future if we have a reply handler
+
+        self._proxy_method._proxy._pending_introspect.block()
+        ret = self._proxy_method (*args, **keywords)
+        
+        return ret
 
 class ProxyMethod:
     """A proxy Method.
@@ -21,19 +33,15 @@ class ProxyMethod:
     method produce messages that travel over the Bus and are routed
     to a specific named Service.
     """
-    def __init__(self, connection, named_service, object_path, dbus_interface, method_name, introspect_sig):
-        self._connection   = connection
-        self._named_service = named_service
-        self._object_path  = object_path
-        self._method_name  = method_name
-        self._dbus_interface = dbus_interface
-        self._introspect_sig = introspect_sig
+    def __init__(self, proxy, connection, named_service, object_path, method_name, iface):
+        self._proxy          = proxy
+        self._connection     = connection
+        self._named_service  = named_service
+        self._object_path    = object_path
+        self._method_name    = method_name
+        self._dbus_interface = iface
 
     def __call__(self, *args, **keywords):
-        dbus_interface = self._dbus_interface
-        if keywords.has_key('dbus_interface'):
-            dbus_interface = keywords['dbus_interface']
-
         timeout = -1
         if keywords.has_key('timeout'):
             timeout = keywords['timeout']
@@ -50,11 +58,26 @@ class ProxyMethod:
         if keywords.has_key('ignore_reply'):
             ignore_reply = keywords['ignore_reply']
 
+
         if not(reply_handler and error_handler):
             if reply_handler:
                 raise MissingErrorHandlerException()
             elif error_handler:
                 raise MissingReplyHandlerException()
+
+        dbus_interface = self._dbus_interface 
+        if keywords.has_key('dbus_interface'):
+            dbus_interface = keywords['dbus_interface']
+
+        tmp_iface = ''
+        if dbus_interface:
+	    tmp_iface = dbus_interface + '.'
+
+        key = tmp_iface + self._method_name
+
+        introspect_sig = None
+        if self._proxy._introspect_method_map.has_key (key):
+            introspect_sig = self._proxy._introspect_method_map[key]
 
         message = dbus_bindings.MethodCall(self._object_path, dbus_interface, self._method_name)
         message.set_destination(self._named_service)
@@ -62,8 +85,8 @@ class ProxyMethod:
         # Add the arguments to the function
         iter = message.get_iter(True)
 
-        if self._introspect_sig:
-            for (arg, sig) in zip(args, dbus_bindings.Signature(self._introspect_sig)):
+        if introspect_sig:
+            for (arg, sig) in zip(args, dbus_bindings.Signature(introspect_sig)):
                 iter.append_strict(arg, sig)
         else:
             for arg in args:
@@ -176,49 +199,20 @@ class ProxyObject:
         self._introspect_execute_queue()
         sys.stderr.write("Introspect error: " + str(error) + "\n")
 
-    def __getattr__(self, member, **keywords):
+    def __getattr__(self, member, dbus_interface=None):
         if member == '__call__':
             return object.__call__
         elif member.startswith('__') and member.endswith('__'):
             raise AttributeError(member)
         else:
-            introspect_sig = None
+            ret = self.ProxyMethodClass(self, self._bus.get_connection(),
+                                        self._named_service,
+                                        self._object_path, member, 
+                                        dbus_interface)
         
-            iface = None
-            if keywords.has_key('dbus_interface'):
-                iface = keywords['dbus_interface']
-
             if self._introspect_state == self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS:
-                reply_handler = None
-                if keywords.has_key('reply_handler'):
-                    reply_handler = keywords['reply_handler']
-
-                error_handler = None
-                if keywords.has_key('error_handler'):
-                    error_handler = keywords['error_handler']
-
-                if not reply_handler:
-                    self._pending_introspect.block()
-                else:
-                    call = (memeber, iface, args, keywords)
-                    self._pending_introspect_queue.append(call)
+                ret = self.DeferedMethodClass(ret)
                     
-                    ret = self.DeferedMethodClass()
-                    return ret
-                    
-            if self._introspect_state == self.INTROSPECT_STATE_INTROSPECT_DONE:
-                tmp_iface = ''
-                if iface:
-                    tmp_iface = iface + '.'
-
-                key = tmp_iface + member
-                if self._introspect_method_map.has_key (key):
-                    introspect_sig = self._introspect_method_map[key]
-            
-            ret = self.ProxyMethodClass(self._bus.get_connection(),
-                                self._named_service,
-                                self._object_path, iface, member,
-                                introspect_sig)
             return ret
 
     def __repr__(self):
