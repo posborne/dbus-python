@@ -12,9 +12,6 @@ cdef extern from "sys/types.h":
     ctypedef __int64_t
     ctypedef __uint64_t
 
-cdef extern from "sys/cdefs.h":
-    ctypedef __signed
-
 cdef extern from "stdlib.h":
     cdef void *malloc(size_t size)
     cdef void free(void *ptr)
