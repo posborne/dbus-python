@@ -65,7 +65,7 @@ Currently the communicating applications are on one computer, but TCP/IP option
 is available and remote support planned.'''
 
 setup(
-    name='dbus',
+    name='dbus-python',
     version='0.70',
     description='D-Bus Python bindings',
     long_description=long_desc,

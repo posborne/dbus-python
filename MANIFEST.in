@@ -1,0 +1,11 @@
+include COPYING
+include AUTHORS
+include README
+include setup.py
+recursive-include dbus *.py *.c *.h
+include dbus/dbus_bindings.pyx
+include dbus/dbus_glib_bindings.pyx
+include dbus/dbus_bindings.pxd.in
+include dbus/dbus_bindings.pxd
+
+
