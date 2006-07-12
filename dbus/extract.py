@@ -210,25 +210,36 @@ def do_header(filename, name=None):
     print '# -- %s -- ' % filename
     do_buffer(name, buffer)
     
-filename = sys.argv[1]
+def main(filename, flags, output=None):
+    old_stdout = None
+    if output is not None:
+        old_stdout = sys.stdout
+        sys.stdout = output
 
-if filename.endswith('.h'):
-    do_header(filename)
-    raise SystemExit
+    if filename.endswith('.h'):
+        do_header(filename)
+        return
 
-cppflags = ""
+    cppflags = ' '.join(flags)
 
-for flag in sys.argv[2:]:
-    cppflags = cppflags + " " + flag
+    fd = open(filename)
+    for line in fd:
+        match = re.match('#include [<"]([^">]+)[">]$', line)
 
-fd = open(filename)
+        if match:
+            filename = match.group(1)
+            print >>sys.stderr, "matched %s" % (filename)
+            command = "echo '%s'|cpp %s" % (line, cppflags)
+            output = commands.getoutput(command)
+            print >>sys.stderr, "output %s" % (output)
+            do_buffer(filename, output)
+        else:
+            print line[:-1]
+    fd.close()
 
-for line in fd.readlines():
-    if line.startswith('#include'):
-        filename = line.split(' ')[1][1:-2]
-        command = "echo '%s'|cpp %s" % (line, cppflags)
-        sys.stderr.write('running %s' % (command))
-        output = commands.getoutput(command)
-        do_buffer(filename, output)
-    else:
-        print line[:-1]
+    if old_stdout is not None:
+         sys.stdout = old_stdout
+
+if __name__ == '__main__':
+    main(sys.argv[1], sys.argv[2:])
+
