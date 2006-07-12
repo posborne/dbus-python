@@ -49,7 +49,7 @@ includedirs_flag.extend(output.split())
 dbus_glib_includes.extend([ x.replace("-I", "") for x in output.split() ])
 
 output = open("dbus/dbus_bindings.pxd", 'w')
-includedirs_flag.append('dbus')
+includedirs_flag.append('-Idbus/')
 extract.main("dbus/dbus_bindings.pxd.in", includedirs_flag, output)
 output.close()
 
@@ -72,8 +72,8 @@ setup(
     url='http://dbus.freedesktop.org/',
     author='John (J5) Palmieri',
     author_email='johnp@redhat.com',
-    maintainer='Osvaldo Santana Neto',
-    maintainer_email='osvaldo.santana@indt.org.br',
+    maintainer='John (J5) Palmieri',
+    maintainer_email='johnp@redhat.com',
     package_dir={'':'dbus'},
     py_modules=[
         "_dbus",
