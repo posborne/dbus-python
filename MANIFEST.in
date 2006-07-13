@@ -8,4 +8,5 @@ include dbus/dbus_glib_bindings.pyx
 include dbus/dbus_bindings.pxd.in
 include dbus/dbus_bindings.pxd
 recursive-include test *.py *.sh
+recursive-include tools *.sh *.conf 
 
