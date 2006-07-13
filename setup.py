@@ -10,6 +10,9 @@ from Pyrex.Distutils import build_ext
 
 import extract
 
+sys.path.append("test")
+from dbus_python_check import dbus_python_check
+
 def remove(filename):
     if os.path.exists(filename):
         os.remove(filename)
@@ -74,19 +77,19 @@ setup(
     author_email='johnp@redhat.com',
     maintainer='John (J5) Palmieri',
     maintainer_email='johnp@redhat.com',
-    package_dir={'':'dbus'},
+    package_dir={'dbus':'dbus'},
     py_modules=[
-        "_dbus",
-        "exceptions",
-        "glib",
-        "__init__",
-        "matchrules",
-        "service",
-        "types",
-        "decorators",
-        "introspect_parser",
-        "proxies",
-        "_util",
+        "dbus/_dbus",
+        "dbus/exceptions",
+        "dbus/glib",
+        "dbus/__init__",
+        "dbus/matchrules",
+        "dbus/service",
+        "dbus/types",
+        "dbus/decorators",
+        "dbus/introspect_parser",
+        "dbus/proxies",
+        "dbus/_util",
     ],
     ext_modules=[
         Extension("dbus_bindings", ["dbus/dbus_bindings.pyx"],
@@ -102,7 +105,7 @@ setup(
             ],
         ),
     ],
-    cmdclass={'build_ext': build_ext, 'clean': full_clean}
+    cmdclass={'build_ext': build_ext, 'clean': full_clean, 'check': dbus_python_check}
 )
 
 # vim:ts=4:sw=4:tw=80:si:ai:showmatch:et
