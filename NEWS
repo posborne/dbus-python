@@ -1,0 +1,6 @@
+D-Bus Python Bindings 0.70 (17 July 2006)
+===
+- First release of bindings split
+- Move to a distutils build enviornment
+- It is possible to now specify sender_keyword="foo", path_keyword="bar" when 
+  adding a signal listener

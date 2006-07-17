@@ -2,6 +2,8 @@ include COPYING
 include AUTHORS
 include README
 include setup.py
+include NEWS
+include ChangeLog
 recursive-include dbus *.py *.c *.h
 include dbus/dbus_bindings.pyx
 include dbus/dbus_glib_bindings.pyx
