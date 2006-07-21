@@ -92,12 +92,12 @@ setup(
         "dbus/_util",
     ],
     ext_modules=[
-        Extension("dbus_bindings", ["dbus/dbus_bindings.pyx"],
+        Extension("dbus/dbus_bindings", ["dbus/dbus_bindings.pyx"],
             include_dirs=dbus_includes,
             libraries=["dbus-1"],
 
         ),
-        Extension("dbus_glib_bindings", ["dbus/dbus_glib_bindings.pyx"],
+        Extension("dbus/dbus_glib_bindings", ["dbus/dbus_glib_bindings.pyx"],
             include_dirs=dbus_glib_includes,
             libraries=["dbus-glib-1", "dbus-1", "glib-2.0"],
             define_macros=[
