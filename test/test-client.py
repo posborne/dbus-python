@@ -11,7 +11,7 @@ sys.path.insert(0, pydir)
 sys.path.insert(0, pydir + 'dbus')
 
 import dbus
-import dbus_bindings
+import dbus.dbus_bindings 
 import gobject
 import dbus.glib
 import dbus.service
@@ -20,8 +20,8 @@ pkg = dbus.__file__
 if not pkg.startswith(pydir):
     raise Exception("DBus modules (%s) are not being picked up from the package"%pkg)
 
-if not dbus_bindings.__file__.startswith(pydir):
-    raise Exception("DBus modules (%s) are not being picked up from the package"%dbus_bindings.__file__)
+if not dbus.dbus_bindings.__file__.startswith(pydir):
+    raise Exception("DBus modules (%s) are not being picked up from the package"%dbus.dbus_bindings.__file__)
 
 test_types_vals = [1, 12323231, 3.14159265, 99999999.99,
                  "dude", "123", "What is all the fuss about?", "gob@gob.com",
