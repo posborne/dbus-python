@@ -24,6 +24,7 @@ class full_clean(clean):
         remove("dbus/dbus_bindings.pxd")
         remove("dbus/dbus_bindings.c")
         remove("dbus/dbus_glib_bindings.c")
+        remove("ChangeLog")
 
 includedirs_flag = ['-I.']
 dbus_includes = ['.']
@@ -50,6 +51,23 @@ if error:
     raise SystemExit
 includedirs_flag.extend(output.split())
 dbus_glib_includes.extend([ x.replace("-I", "") for x in output.split() ])
+
+#create ChangeLog only if this is a git repo
+if os.path.exists(".git"):
+    pipe = os.popen3("git-log --stat")
+    output = pipe[1].read().strip()
+    error = pipe[2].read().strip()
+
+    for p in pipe:
+        p.close()
+
+    if error:
+        print "ERROR: running git-log (%s)" % (error)
+        raise SystemExit
+
+    file = open("ChangeLog", "w")
+    file.writelines(output)
+    file.close()
 
 output = open("dbus/dbus_bindings.pxd", 'w')
 includedirs_flag.append('-Idbus/')
