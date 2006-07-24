@@ -110,7 +110,7 @@ is available and remote support planned.'''
 
 setup(
     name='dbus-python',
-    version='0.70',
+    version='0.71',
     description='D-Bus Python bindings',
     long_description=long_desc,
     url='http://dbus.freedesktop.org/',
