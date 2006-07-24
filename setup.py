@@ -69,6 +69,29 @@ if os.path.exists(".git"):
     file.writelines(output)
     file.close()
 
+dbus_libs = []
+dbus_glib_libs = []
+
+pipe = os.popen3("pkg-config --libs-only-L dbus-1")
+output = pipe[1].read().strip()
+error = pipe[2].read().strip()
+for p in pipe:
+    p.close()
+if error:
+    print "ERROR: running pkg-config (%s)" % (error)
+    raise SystemExit
+dbus_libs.extend([ x.replace("-L", "") for x in output.split() ])
+
+pipe = os.popen3("pkg-config --libs-only-L dbus-glib-1")
+output = pipe[1].read().strip()
+error = pipe[2].read().strip()
+for p in pipe:
+    p.close()
+if error:
+    print "ERROR: running pkg-config (%s)" % (error)
+    raise SystemExit
+dbus_glib_libs.extend([ x.replace("-L", "") for x in output.split() ])
+
 output = open("dbus/dbus_bindings.pxd", 'w')
 includedirs_flag.append('-Idbus/')
 extract.main("dbus/dbus_bindings.pxd.in", includedirs_flag, output)
@@ -112,11 +135,13 @@ setup(
     ext_modules=[
         Extension("dbus/dbus_bindings", ["dbus/dbus_bindings.pyx"],
             include_dirs=dbus_includes,
+            library_dirs=dbus_libs,
             libraries=["dbus-1"],
 
         ),
         Extension("dbus/dbus_glib_bindings", ["dbus/dbus_glib_bindings.pyx"],
             include_dirs=dbus_glib_includes,
+            library_dirs=dbus_glib_libs,
             libraries=["dbus-glib-1", "dbus-1", "glib-2.0"],
             define_macros=[
                 ('DBUS_API_SUBJECT_TO_CHANGE', '1')
