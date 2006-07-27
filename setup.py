@@ -54,16 +54,26 @@ dbus_glib_includes.extend([ x.replace("-I", "") for x in output.split() ])
 
 #create ChangeLog only if this is a git repo
 if os.path.exists(".git"):
+    pipe = ""
     pipe = os.popen3("git-log --stat")
-    output = pipe[1].read().strip()
+   
     error = pipe[2].read().strip()
+
+    if error:
+        for p in pipe:
+            p.close()
+
+        pipe = os.popen3("git-log")
+        error = pipe[2].read().strip()
+
+        if error:
+            print "ERROR: running git-log (%s)" % (error)
+            raise SystemExit
+
+    output = pipe[1].read().strip()
 
     for p in pipe:
         p.close()
-
-    if error:
-        print "ERROR: running git-log (%s)" % (error)
-        raise SystemExit
 
     file = open("ChangeLog", "w")
     file.writelines(output)
