@@ -11,7 +11,7 @@ from decorators import signal
 class BusName(object):
     """A base class for exporting your own Named Services across the Bus
     """
-    def __new__(cls, name, bus=None):
+    def __new__(cls, name, bus=None, allow_replacement=False , replace_existing=False, do_not_queue=False):
         # get default bus
         if bus == None:
             bus = _dbus.Bus()
@@ -21,7 +21,12 @@ class BusName(object):
             return bus._bus_names[name]
 
         # otherwise register the name
-        retval = dbus_bindings.bus_request_name(bus.get_connection(), name)
+	name_flags = \
+	    dbus_bindings.NAME_FLAG_ALLOW_REPLACEMENT * allow_replacement + \
+	    dbus_bindings.NAME_FLAG_REPLACE_EXISTING * replace_existing +  \
+	    dbus_bindings.NAME_FLAG_DO_NOT_QUEUE * do_not_queue 
+	 
+        retval = dbus_bindings.bus_request_name(bus.get_connection(), name, name_flags)
 
         # TODO: more intelligent tracking of bus name states?
         if retval == dbus_bindings.REQUEST_NAME_REPLY_PRIMARY_OWNER:
