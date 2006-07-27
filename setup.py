@@ -56,7 +56,8 @@ dbus_glib_includes.extend([ x.replace("-I", "") for x in output.split() ])
 if os.path.exists(".git"):
     pipe = ""
     pipe = os.popen3("git-log --stat")
-   
+
+    output = pipe[1].read().strip()
     error = pipe[2].read().strip()
 
     if error:
@@ -64,13 +65,12 @@ if os.path.exists(".git"):
             p.close()
 
         pipe = os.popen3("git-log")
+        output = pipe[1].read().strip()
         error = pipe[2].read().strip()
 
         if error:
             print "ERROR: running git-log (%s)" % (error)
             raise SystemExit
-
-    output = pipe[1].read().strip()
 
     for p in pipe:
         p.close()
