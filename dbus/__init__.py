@@ -1,3 +1,12 @@
+"""\
+Implements the public API for a D-Bus client. See the dbus.service module
+to implement services.
+
+FIXME
+-----
+Which of the imported symbols constitute public API?
+"""
+
 from _dbus import *
 from types import *
 

@@ -1,3 +1,10 @@
+"""D-Bus exceptions."""
+
+__all__ = ('DBusException', 'ConnectionError', 'MissingErrorHandlerException',
+           'MissingReplyHandlerException', 'ValidationException',
+           'IntrospectionParserException', 'UnknownMethodException',
+           'NameExistsException')
+
 import dbus_bindings
 
 DBusException = dbus_bindings.DBusException

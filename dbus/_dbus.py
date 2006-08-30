@@ -1,4 +1,3 @@
-
 """Module for high-level communication over the FreeDesktop.org Bus (DBus)
 
 DBus allows you to share and access remote objects between processes
@@ -13,33 +12,35 @@ have a RemoteService you can get a RemoteObject that implements a specific inter
 (an interface is just a standard group of member functions). Then you can call
 those member functions directly.
 
-You can think of a complete method call as looking something like:
+You can think of a complete method call as looking something like::
 
-Bus:SESSION -> Service:org.gnome.Evolution -> Object:/org/gnome/Evolution/Inbox -> Interface: org.gnome.Evolution.MailFolder -> Method: Forward('message1', 'seth@gnome.org')
+    Bus:SESSION -> Service:org.gnome.Evolution -> Object:/org/gnome/Evolution/Inbox -> Interface: org.gnome.Evolution.MailFolder -> Method: Forward('message1', 'seth@gnome.org')
 
 This communicates over the SESSION Bus to the org.gnome.Evolution process to call the
 Forward method of the /org/gnome/Evolution/Inbox object (which provides the
 org.gnome.Evolution.MailFolder interface) with two string arguments.
 
-For example, the dbus-daemon itself provides a service and some objects:
+For example, the dbus-daemon itself provides a service and some objects::
 
-# Get a connection to the desktop-wide SESSION bus
-bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
+    # Get a connection to the desktop-wide SESSION bus
+    bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
 
-# Get the service provided by the dbus-daemon named org.freedesktop.DBus
-dbus_service = bus.get_service('org.freedesktop.DBus')
+    # Get the service provided by the dbus-daemon named org.freedesktop.DBus
+    dbus_service = bus.get_service('org.freedesktop.DBus')
 
-# Get a reference to the desktop bus' standard object, denoted
-# by the path /org/freedesktop/DBus. The object /org/freedesktop/DBus
-# implements the 'org.freedesktop.DBus' interface
-dbus_object = dbus_service.get_object('/org/freedesktop/DBus',
-                                       'org.freedesktop.DBus')
+    # Get a reference to the desktop bus' standard object, denoted
+    # by the path /org/freedesktop/DBus. The object /org/freedesktop/DBus
+    # implements the 'org.freedesktop.DBus' interface
+    dbus_object = dbus_service.get_object('/org/freedesktop/DBus',
+                                           'org.freedesktop.DBus')
 
-# One of the member functions in the org.freedesktop.DBus interface
-# is ListServices(), which provides a list of all the other services
-# registered on this bus. Call it, and print the list.
-print(dbus_object.ListServices())
+    # One of the member functions in the org.freedesktop.DBus interface
+    # is ListServices(), which provides a list of all the other services
+    # registered on this bus. Call it, and print the list.
+    print(dbus_object.ListServices())
 """
+
+__docformat__ = 'reStructuredText'
 
 import dbus
 import dbus_bindings

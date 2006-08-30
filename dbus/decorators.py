@@ -1,8 +1,52 @@
+"""Service-side D-Bus decorators."""
+
+__all__ = ('explicitly_pass_message', 'method', 'signal')
+__docformat__ = 'restructuredtext'
+
 import _util
 import inspect
 import dbus_bindings
 
 def method(dbus_interface, in_signature=None, out_signature=None, async_callbacks=None, sender_keyword=None):
+    """Factory for decorators used to mark methods of a `dbus.service.Object`
+    to be exported on the D-Bus.
+
+    :Parameters:
+        `dbus_interface` : str
+            Name of a D-Bus interface
+        `in_signature` : str or None
+            If not None, the signature of the method parameters in the usual
+            D-Bus notation
+        `out_signature` : str or None
+            If not None, the signature of the return value in the usual
+            D-Bus notation
+        `async_callbacks` : tuple containing (str,str), or None
+            If None (default) the decorated method is expected to return
+            values matching the `out_signature` as usual, or raise
+            an exception on error. If not None, the following applies:
+
+            `async_callbacks` contains the names of two keyword arguments to
+            the decorated function, which will be used to provide a success
+            callback and an error callback (in that order).
+
+            When the decorated method is called via the D-Bus, its normal
+            return value will be ignored; instead, a pair of callbacks are
+            passed as keyword arguments, and the decorated method is
+            expected to arrange for one of them to be called.
+            
+            On success the success callback must be called, passing the
+            results of this method as positional parameters in the format
+            given by the `out_signature`.
+
+            On error the decorated method may either raise an exception
+            before it returns, or arrange for the error callback to be
+            called with an Exception instance as parameter.
+
+        `sender_keyword` : str or None
+            If not None, contains the name of a keyword argument to the
+            decorated function. When the method is called, the sender's
+            unique name will be passed as this keyword argument.
+    """
     _util._validate_interface_or_name(dbus_interface)
 
     def decorator(func):

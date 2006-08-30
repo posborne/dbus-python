@@ -1,3 +1,6 @@
+__all__ = ('BusName', 'Object', 'method', 'signal')
+__docformat__ = 'restructuredtext'
+
 import dbus_bindings
 import _dbus
 import operator
@@ -9,14 +12,48 @@ from decorators import method
 from decorators import signal
 
 class BusName(object):
-    """A base class for exporting your own Named Services across the Bus
+    """A base class for exporting your own Named Services across the Bus.
+
+    When instantiated, objects of this class attempt to claim the given
+    well-known name on the given bus for the current process. The name is
+    released when the BusName object becomes unreferenced.
+
+    If a well-known name is requested multiple times, multiple references
+    to the same BusName object will be returned.
+
+    Caveats
+    -------
+    - Assumes that named services are only ever requested using this class -
+      if you request names from the bus directly, confusion may occur.
+    - Does not handle queueing.
     """
     def __new__(cls, name, bus=None, allow_replacement=False , replace_existing=False, do_not_queue=False):
+        """Constructor, which may either return an existing cached object
+        or a new object.
+
+        :Parameters:
+            `name` : str
+                The well-known name to be advertised
+            `bus` : dbus.Bus
+                A Bus on which this service will be advertised; if None
+                (default) a default bus will be used
+            `allow_replacement` : bool
+                If True, other processes trying to claim the same well-known
+                name will take precedence over this one.
+            `replace_existing` : bool
+                If True, this process can take over the well-known name
+                from other processes already holding it.
+            `do_not_queue` : bool
+                If True, this service will not be placed in the queue of
+                services waiting for the requested name if another service
+                already holds it.
+        """
         # get default bus
         if bus == None:
             bus = _dbus.Bus()
 
         # see if this name is already defined, return it if so
+        # FIXME: accessing internals of Bus
         if name in bus._bus_names:
             return bus._bus_names[name]
 
@@ -50,7 +87,8 @@ class BusName(object):
         bus_name._bus = bus
         bus_name._name = name
 
-        # cache instance
+        # cache instance (weak ref only)
+        # FIXME: accessing Bus internals again
         bus._bus_names[name] = bus_name
 
         return bus_name
@@ -264,9 +302,26 @@ class Object(Interface):
     """A base class for exporting your own Objects across the Bus.
 
     Just inherit from Object and provide a list of methods to share
-    across the Bus
+    across the Bus.
+
+    Issues
+    ------
+    - The constructor takes a well-known name: this is wrong. There should be
+      no requirement to register a well-known name in order to export bus
+      objects.
     """
     def __init__(self, bus_name, object_path):
+        """Constructor.
+
+        :Parameters:
+            `bus_name` : BusName
+                Represents a well-known name claimed by this process. A
+                reference to the BusName object will be held by this
+                Object, preventing the name from being released during this
+                Object's lifetime (subject to status).
+            `object_path` : str
+                The D-Bus object path at which to export this Object.
+        """
         self._object_path = object_path
         self._name = bus_name 
         self._bus = bus_name.get_bus()
@@ -350,6 +405,9 @@ class Object(Interface):
 
     @method('org.freedesktop.DBus.Introspectable', in_signature='', out_signature='s')
     def Introspect(self):
+        """Return a string of XML encoding this object's supported interfaces,
+        methods and signals.
+        """
         reflection_data = '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n'
         reflection_data += '<node name="%s">\n' % (self._object_path)
 
