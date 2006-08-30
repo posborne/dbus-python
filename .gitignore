@@ -1,0 +1,8 @@
+dbus_bindings.c
+dbus_glib_bindings.c
+dbus_bindings.pxd
+ChangeLog
+build
+*.pyc
+*.pyo
+.*.sw?
