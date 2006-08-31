@@ -1,3 +1,7 @@
+__all__ = ('ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
+           'Int16', 'UInt16', 'Int32', 'UInt32', 'Int64', 'UInt64',
+           'Double', 'String', 'Array', 'Struct', 'Dictionary', 'Variant')
+
 import _dbus_bindings
 
 ObjectPath = _dbus_bindings.ObjectPath
