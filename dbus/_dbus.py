@@ -40,6 +40,7 @@ For example, the dbus-daemon itself provides a service and some objects::
     print(dbus_object.ListServices())
 """
 
+__all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus', 'Interface')
 __docformat__ = 'reStructuredText'
 
 import dbus
