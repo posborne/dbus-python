@@ -1,15 +1,15 @@
-cimport dbus_bindings
-import dbus_bindings
+cimport _dbus_bindings
+import _dbus_bindings
 
 cdef extern from "dbus/dbus-glib.h":
     ctypedef struct GMainContext
     cdef void dbus_g_thread_init ()
 
 cdef extern from "dbus/dbus-glib-lowlevel.h":
-    cdef void dbus_connection_setup_with_g_main (dbus_bindings.DBusConnection *connection,
+    cdef void dbus_connection_setup_with_g_main (_dbus_bindings.DBusConnection *connection,
                                                  GMainContext   *context)
 def setup_with_g_main(conn):
-   cdef dbus_bindings.Connection connection
+   cdef _dbus_bindings.Connection connection
    connection = conn
    dbus_connection_setup_with_g_main(connection._get_conn(), NULL)
 

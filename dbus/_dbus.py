@@ -43,7 +43,7 @@ For example, the dbus-daemon itself provides a service and some objects::
 __docformat__ = 'reStructuredText'
 
 import dbus
-import dbus_bindings
+import _dbus_bindings
 import weakref
 
 from proxies import *
@@ -56,17 +56,17 @@ class Bus(object):
     One of three possible standard buses, the SESSION, SYSTEM,
     or STARTER bus
     """
-    TYPE_SESSION    = dbus_bindings.BUS_SESSION
-    TYPE_SYSTEM     = dbus_bindings.BUS_SYSTEM
-    TYPE_STARTER = dbus_bindings.BUS_STARTER
+    TYPE_SESSION    = _dbus_bindings.BUS_SESSION
+    TYPE_SYSTEM     = _dbus_bindings.BUS_SYSTEM
+    TYPE_STARTER = _dbus_bindings.BUS_STARTER
 
     """bus_type=[Bus.TYPE_SESSION | Bus.TYPE_SYSTEM | Bus.TYPE_STARTER]
     """
 
     ProxyObjectClass = ProxyObject
 
-    START_REPLY_SUCCESS = dbus_bindings.DBUS_START_REPLY_SUCCESS
-    START_REPLY_ALREADY_RUNNING = dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING
+    START_REPLY_SUCCESS = _dbus_bindings.DBUS_START_REPLY_SUCCESS
+    START_REPLY_ALREADY_RUNNING = _dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING
 
     _shared_instances = weakref.WeakValueDictionary()
 
@@ -97,7 +97,7 @@ class Bus(object):
         # FIXME: if you get a starter and a system/session bus connection
         # in the same process, it's the same underlying connection that
         # is returned by bus_get, but we initialise it twice
-        bus._connection = dbus_bindings.bus_get(bus_type, private)
+        bus._connection = _dbus_bindings.bus_get(bus_type, private)
         bus._connection.add_filter(bus._signal_func)
 
         if use_default_mainloop:
@@ -194,7 +194,7 @@ class Bus(object):
 
         self._match_rule_tree.add(match_rule)
 
-        dbus_bindings.bus_add_match(self._connection, repr(match_rule))
+        _dbus_bindings.bus_add_match(self._connection, repr(match_rule))
 
     def remove_signal_receiver(self, handler_function, 
                                signal_name=None,
@@ -223,11 +223,11 @@ class Bus(object):
 
     def get_unix_user(self, named_service):
         """Get the unix user for the given named_service on this Bus"""
-        return dbus_bindings.bus_get_unix_user(self._connection, named_service)
+        return _dbus_bindings.bus_get_unix_user(self._connection, named_service)
     
     def _signal_func(self, connection, message):
-        if (message.get_type() != dbus_bindings.MESSAGE_TYPE_SIGNAL):
-            return dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
+        if (message.get_type() != _dbus_bindings.MESSAGE_TYPE_SIGNAL):
+            return _dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
         
         dbus_interface      = message.get_interface()
         named_service       = message.get_sender()
@@ -239,7 +239,7 @@ class Bus(object):
         self._match_rule_tree.exec_matches(match_rule, message)
 
     def start_service_by_name(self, named_service):
-        return dbus_bindings.bus_start_service_by_name(self._connection, named_service)
+        return _dbus_bindings.bus_start_service_by_name(self._connection, named_service)
 
     def __repr__(self):
         if self._bus_type == self.TYPE_SESSION:

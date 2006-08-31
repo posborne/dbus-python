@@ -1,4 +1,4 @@
-import dbus_bindings
+import _dbus_bindings
 import introspect_parser
 import sys
 from exceptions import MissingReplyHandlerException, MissingErrorHandlerException, IntrospectionParserException
@@ -79,14 +79,14 @@ class ProxyMethod:
         if self._proxy._introspect_method_map.has_key (key):
             introspect_sig = self._proxy._introspect_method_map[key]
 
-        message = dbus_bindings.MethodCall(self._object_path, dbus_interface, self._method_name)
+        message = _dbus_bindings.MethodCall(self._object_path, dbus_interface, self._method_name)
         message.set_destination(self._named_service)
         
         # Add the arguments to the function
         iter = message.get_iter(True)
 
         if introspect_sig:
-            for (arg, sig) in zip(args, dbus_bindings.Signature(introspect_sig)):
+            for (arg, sig) in zip(args, _dbus_bindings.Signature(introspect_sig)):
                 iter.append_strict(arg, sig)
         else:
             for arg in args:
@@ -152,7 +152,7 @@ class ProxyObject:
                                       **keywords)
 
     def _Introspect(self):
-        message = dbus_bindings.MethodCall(self._object_path, 'org.freedesktop.DBus.Introspectable', 'Introspect')
+        message = _dbus_bindings.MethodCall(self._object_path, 'org.freedesktop.DBus.Introspectable', 'Introspect')
         message.set_destination(self._named_service)
         
         result = self._bus.get_connection().send_with_reply_handlers(message, -1, 

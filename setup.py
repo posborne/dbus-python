@@ -21,9 +21,9 @@ class full_clean(clean):
     def run(self):
         clean.run(self)
         remove("dbus/extract.pyo")
-        remove("dbus/dbus_bindings.pxd")
-        remove("dbus/dbus_bindings.c")
-        remove("dbus/dbus_glib_bindings.c")
+        remove("dbus/_dbus_bindings.pxd")
+        remove("dbus/_dbus_bindings.c")
+        remove("dbus/_dbus_glib_bindings.c")
         remove("ChangeLog")
 
 includedirs_flag = ['-I.']
@@ -102,9 +102,9 @@ if error:
     raise SystemExit
 dbus_glib_libs.extend([ x.replace("-L", "") for x in output.split() ])
 
-output = open("dbus/dbus_bindings.pxd", 'w')
+output = open("dbus/_dbus_bindings.pxd", 'w')
 includedirs_flag.append('-Idbus/')
-extract.main("dbus/dbus_bindings.pxd.in", includedirs_flag, output)
+extract.main("dbus/_dbus_bindings.pxd.in", includedirs_flag, output)
 output.close()
 
 long_desc = '''D-BUS is a message bus system, a simple way for applications to
@@ -143,13 +143,13 @@ setup(
         "dbus/_util",
     ],
     ext_modules=[
-        Extension("dbus/dbus_bindings", ["dbus/dbus_bindings.pyx"],
+        Extension("_dbus_bindings", ["dbus/_dbus_bindings.pyx"],
             include_dirs=dbus_includes,
             library_dirs=dbus_libs,
             libraries=["dbus-1"],
 
         ),
-        Extension("dbus/dbus_glib_bindings", ["dbus/dbus_glib_bindings.pyx"],
+        Extension("_dbus_glib_bindings", ["dbus/_dbus_glib_bindings.pyx"],
             include_dirs=dbus_glib_includes,
             library_dirs=dbus_glib_libs,
             libraries=["dbus-glib-1", "dbus-1", "glib-2.0"],

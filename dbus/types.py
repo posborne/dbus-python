@@ -1,19 +1,19 @@
-import dbus_bindings
+import _dbus_bindings
 
-ObjectPath = dbus_bindings.ObjectPath
-ByteArray = dbus_bindings.ByteArray
-Signature = dbus_bindings.Signature
-Byte = dbus_bindings.Byte
-Boolean = dbus_bindings.Boolean
-Int16 = dbus_bindings.Int16
-UInt16 = dbus_bindings.UInt16
-Int32 = dbus_bindings.Int32
-UInt32 = dbus_bindings.UInt32
-Int64 = dbus_bindings.Int64
-UInt64 = dbus_bindings.UInt64
-Double = dbus_bindings.Double
-String = dbus_bindings.String
-Array = dbus_bindings.Array
-Struct = dbus_bindings.Struct
-Dictionary = dbus_bindings.Dictionary
-Variant = dbus_bindings.Variant
+ObjectPath = _dbus_bindings.ObjectPath
+ByteArray = _dbus_bindings.ByteArray
+Signature = _dbus_bindings.Signature
+Byte = _dbus_bindings.Byte
+Boolean = _dbus_bindings.Boolean
+Int16 = _dbus_bindings.Int16
+UInt16 = _dbus_bindings.UInt16
+Int32 = _dbus_bindings.Int32
+UInt32 = _dbus_bindings.UInt32
+Int64 = _dbus_bindings.Int64
+UInt64 = _dbus_bindings.UInt64
+Double = _dbus_bindings.Double
+String = _dbus_bindings.String
+Array = _dbus_bindings.Array
+Struct = _dbus_bindings.Struct
+Dictionary = _dbus_bindings.Dictionary
+Variant = _dbus_bindings.Variant

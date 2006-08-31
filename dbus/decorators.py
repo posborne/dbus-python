@@ -5,11 +5,14 @@ __docformat__ = 'restructuredtext'
 
 import _util
 import inspect
-import dbus_bindings
+import _dbus_bindings
 
 def method(dbus_interface, in_signature=None, out_signature=None, async_callbacks=None, sender_keyword=None):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to be exported on the D-Bus.
+
+    The decorated method will be exported over D-Bus as the method of the
+    same name on the given D-Bus interface.
 
     :Parameters:
         `dbus_interface` : str
@@ -65,7 +68,7 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
             args.remove(sender_keyword)
 
         if in_signature:
-            in_sig = tuple(dbus_bindings.Signature(in_signature))
+            in_sig = tuple(_dbus_bindings.Signature(in_signature))
 
             if len(in_sig) > len(args):
                 raise ValueError, 'input signature is longer than the number of arguments taken'
@@ -84,15 +87,28 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
     return decorator
 
 def signal(dbus_interface, signature=None):
+    """Factory for decorators used to mark methods of a `dbus.service.Object`
+    to emit signals on the D-Bus.
+
+    Whenever the decorated method is called in Python, after the method
+    body is executed, a signal with the same name as the decorated method,
+    from the given D-Bus interface, will be emitted.
+
+    :Parameters:
+        `dbus_interface` : str
+            The D-Bus interface whose signal is emitted
+        `signature` : str
+            The signature of the signal in the usual D-Bus notation
+    """
     _util._validate_interface_or_name(dbus_interface)
     def decorator(func):
         def emit_signal(self, *args, **keywords):
             func(self, *args, **keywords)
-            message = dbus_bindings.Signal(self._object_path, dbus_interface, func.__name__)
+            message = _dbus_bindings.Signal(self._object_path, dbus_interface, func.__name__)
             iter = message.get_iter(True)
 
             if emit_signal._dbus_signature:
-                signature = tuple(dbus_bindings.Signature(emit_signal._dbus_signature))
+                signature = tuple(_dbus_bindings.Signature(emit_signal._dbus_signature))
                 for (arg, sig) in zip(args, signature):
                     iter.append_strict(arg, sig)
             else:
@@ -105,7 +121,7 @@ def signal(dbus_interface, signature=None):
         args.pop(0)
 
         if signature:
-            sig = tuple(dbus_bindings.Signature(signature))
+            sig = tuple(_dbus_bindings.Signature(signature))
 
             if len(sig) > len(args):
                 raise ValueError, 'signal signature is longer than the number of arguments provided'
@@ -123,5 +139,14 @@ def signal(dbus_interface, signature=None):
     return decorator
 
 def explicitly_pass_message(func):
+    """Decorator which marks the given function such that, if it is called
+    as a D-Bus signal recipient, then the Signal message will be passed
+    to it as a keyword parameter named ``dbus_message``.
+
+    Deprecated? Should Messages really be exposed to client code?
+
+    FIXME: this alters the namespace of the decorated function without
+    using the ``__magic__`` naming convention.
+    """
     func._dbus_pass_message = True
     return func

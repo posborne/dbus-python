@@ -1,7 +1,7 @@
 __all__ = ('BusName', 'Object', 'method', 'signal')
 __docformat__ = 'restructuredtext'
 
-import dbus_bindings
+import _dbus_bindings
 import _dbus
 import operator
 import traceback
@@ -59,23 +59,23 @@ class BusName(object):
 
         # otherwise register the name
 	name_flags = \
-	    dbus_bindings.NAME_FLAG_ALLOW_REPLACEMENT * allow_replacement + \
-	    dbus_bindings.NAME_FLAG_REPLACE_EXISTING * replace_existing +  \
-	    dbus_bindings.NAME_FLAG_DO_NOT_QUEUE * do_not_queue 
+	    _dbus_bindings.NAME_FLAG_ALLOW_REPLACEMENT * allow_replacement + \
+	    _dbus_bindings.NAME_FLAG_REPLACE_EXISTING * replace_existing +  \
+	    _dbus_bindings.NAME_FLAG_DO_NOT_QUEUE * do_not_queue 
 	 
-        retval = dbus_bindings.bus_request_name(bus.get_connection(), name, name_flags)
+        retval = _dbus_bindings.bus_request_name(bus.get_connection(), name, name_flags)
 
         # TODO: more intelligent tracking of bus name states?
-        if retval == dbus_bindings.REQUEST_NAME_REPLY_PRIMARY_OWNER:
+        if retval == _dbus_bindings.REQUEST_NAME_REPLY_PRIMARY_OWNER:
             pass
-        elif retval == dbus_bindings.REQUEST_NAME_REPLY_IN_QUEUE:
+        elif retval == _dbus_bindings.REQUEST_NAME_REPLY_IN_QUEUE:
             # queueing can happen by default, maybe we should
             # track this better or let the user know if they're
             # queued or not?
             pass
-        elif retval == dbus_bindings.REQUEST_NAME_REPLY_EXISTS:
+        elif retval == _dbus_bindings.REQUEST_NAME_REPLY_EXISTS:
             raise NameExistsException(name)
-        elif retval == dbus_bindings.REQUEST_NAME_REPLY_ALREADY_OWNER:
+        elif retval == _dbus_bindings.REQUEST_NAME_REPLY_ALREADY_OWNER:
             # if this is a shared bus which is being used by someone
             # else in this process, this can happen legitimately
             pass
@@ -101,7 +101,7 @@ class BusName(object):
     # we can delete the low-level name here because these objects
     # are guaranteed to exist only once for each bus name
     def __del__(self):
-        dbus_bindings.bus_release_name(self._bus.get_connection(), self._name)
+        _dbus_bindings.bus_release_name(self._bus.get_connection(), self._name)
         pass
 
     def get_bus(self):
@@ -184,7 +184,7 @@ def _method_lookup(self, method_name, dbus_interface):
 
 
 def _method_reply_return(connection, message, method_name, signature, *retval):
-    reply = dbus_bindings.MethodReturn(message)
+    reply = _dbus_bindings.MethodReturn(message)
     iter = reply.get_iter(append=True)
 
     # do strict adding if an output signature was provided
@@ -216,7 +216,7 @@ def _method_reply_error(connection, message, exception):
         name = 'org.freedesktop.DBus.Python.%s.%s' % (exception.__module__, exception.__class__.__name__)
 
     contents = traceback.format_exc()
-    reply = dbus_bindings.Error(message, name, contents)
+    reply = _dbus_bindings.Error(message, name, contents)
 
     connection.send(reply)
 
@@ -255,15 +255,15 @@ class InterfaceType(type):
             # convert signature into a tuple so length refers to number of
             # types, not number of characters. the length is checked by
             # the decorator to make sure it matches the length of args.
-            in_sig = tuple(dbus_bindings.Signature(func._dbus_in_signature))
+            in_sig = tuple(_dbus_bindings.Signature(func._dbus_in_signature))
         else:
             # magic iterator which returns as many v's as we need
-            in_sig = dbus_bindings.VariantSignature()
+            in_sig = _dbus_bindings.VariantSignature()
 
         if func._dbus_out_signature:
-            out_sig = dbus_bindings.Signature(func._dbus_out_signature)
+            out_sig = _dbus_bindings.Signature(func._dbus_out_signature)
         else:
-            # its tempting to default to dbus_bindings.Signature('v'), but
+            # its tempting to default to _dbus_bindings.Signature('v'), but
             # for methods that return nothing, providing incorrect
             # introspection data is worse than providing none at all
             out_sig = []
@@ -283,10 +283,10 @@ class InterfaceType(type):
         if func._dbus_signature:
             # convert signature into a tuple so length refers to number of
             # types, not number of characters
-            sig = tuple(dbus_bindings.Signature(func._dbus_signature))
+            sig = tuple(_dbus_bindings.Signature(func._dbus_signature))
         else:
             # magic iterator which returns as many v's as we need
-            sig = dbus_bindings.VariantSignature()
+            sig = _dbus_bindings.VariantSignature()
 
         reflection_data = '    <signal name="%s">\n' % (func.__name__)
         for pair in zip(sig, args):
@@ -346,7 +346,7 @@ class Object(Interface):
 
             # iterate signature into list of complete types
             if parent_method._dbus_out_signature:
-                signature = tuple(dbus_bindings.Signature(parent_method._dbus_out_signature))
+                signature = tuple(_dbus_bindings.Signature(parent_method._dbus_out_signature))
             else:
                 signature = None
 

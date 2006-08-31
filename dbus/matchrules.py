@@ -208,7 +208,7 @@ class SignalMatchRule:
 
     def __repr__(self):
         """Returns a custom representation of this DBusMatchRule that can
-            be used with dbus_bindings
+            be used with _dbus_bindings
         """
         repr = "type='signal'"
         if (self.dbus_interface):
