@@ -1,6 +1,6 @@
-dbus_bindings.c
-dbus_glib_bindings.c
-dbus_bindings.pxd
+_dbus_bindings.c
+_dbus_glib_bindings.c
+_dbus_bindings.pxd
 ChangeLog
 build
 *.pyc
