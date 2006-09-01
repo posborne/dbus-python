@@ -177,7 +177,7 @@ class UInt16(int):
     """An unsigned 16-bit integer"""
     def __init__(self, value):
         if value < 0:
-            raise TypeError('Unsigned integers must not have a negitive value') 
+            raise TypeError('Unsigned integers must not have a negative value')
         int.__init__(self, value)
 
 class Int32(int):
@@ -187,7 +187,7 @@ class UInt32(long):
     """An unsigned 32-bit integer"""
     def __init__(self, value):
         if value < 0:
-            raise TypeError('Unsigned integers must not have a negitive value') 
+            raise TypeError('Unsigned integers must not have a negative value')
         long.__init__(self, value)
 
 class Int64(long):
@@ -197,7 +197,7 @@ class UInt64(long):
     """An unsigned 64-bit integer"""
     def __init__(self, value):
         if value < 0:
-            raise TypeError('Unsigned integers must not have a negitive value') 
+            raise TypeError('Unsigned integers must not have a negative value')
         long.__init__(self, value)
 
 class Double(float):
