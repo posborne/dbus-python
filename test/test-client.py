@@ -11,7 +11,7 @@ sys.path.insert(0, pydir)
 sys.path.insert(0, pydir + 'dbus')
 
 import dbus
-import dbus.dbus_bindings 
+import _dbus_bindings
 import gobject
 import dbus.glib
 import dbus.service
@@ -20,8 +20,8 @@ pkg = dbus.__file__
 if not pkg.startswith(pydir):
     raise Exception("DBus modules (%s) are not being picked up from the package"%pkg)
 
-if not dbus.dbus_bindings.__file__.startswith(pydir):
-    raise Exception("DBus modules (%s) are not being picked up from the package"%dbus.dbus_bindings.__file__)
+if not _dbus_bindings.__file__.startswith(pydir):
+    raise Exception("DBus modules (%s) are not being picked up from the package"%_dbus_bindings.__file__)
 
 test_types_vals = [1, 12323231, 3.14159265, 99999999.99,
                  "dude", "123", "What is all the fuss about?", "gob@gob.com",
@@ -262,7 +262,7 @@ class TestDBusBindings(unittest.TestCase):
         del names
 
         bus = dbus.Bus()
-        ret = dbus.dbus_bindings.bus_name_has_owner(bus._connection, 'org.freedesktop.DBus.Python.TestName')
+        ret = _dbus_bindings.bus_name_has_owner(bus._connection, 'org.freedesktop.DBus.Python.TestName')
         self.assert_(not ret, 'deleting reference failed to release BusName org.freedesktop.DBus.Python.TestName')
 
 """ Remove this for now
