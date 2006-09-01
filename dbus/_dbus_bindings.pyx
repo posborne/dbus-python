@@ -1,5 +1,9 @@
 # -*- Mode: Python -*-
 
+# Note that this file now definitely compiles _dbus_bindings
+# and not dbus._dbus_bindings, despite its location in the
+# source tree. -smcv
+
 # jdahlin is the most coolest and awesomest person in the world
 # and wrote all the good parts of this code. all the bad parts
 # where python conditionals have a ( ) around them, thus violating
@@ -70,8 +74,6 @@ class ConnectionError(Exception):
 
 class ObjectPath(str):
     """A D-Bus object path, e.g. ``/org/example/foo/FooBar``."""
-    def __init__(self, value):
-        str.__init__(self, value)
 
 class ByteArray(str):
     """A byte array represented as an 8-bit string.
@@ -79,8 +81,6 @@ class ByteArray(str):
     Used to avoid having to construct a list of integers when passing
     byte-array (``ay``) parameters to D-Bus methods.
     """
-    def __init__(self, value):
-        str.__init__(self, value)
 
 class SignatureIter(object):
     """An iterator over complete types in a D-Bus signature."""
@@ -145,8 +145,6 @@ class SignatureIter(object):
 class Signature(str):
     """An iterable method signature. Iterating gives the signature of each
     argument in turn."""
-    def __init__(self, value):
-        return str.__init__(self, value)
 
     def __iter__(self):
         """Return an iterator over complete types in the signature."""
@@ -168,18 +166,12 @@ class VariantSignature(object):
 
 class Byte(int):
     """An unsigned byte"""
-    def __init__(self, value):
-        int.__init__(self, value)
 
 class Boolean(int):
     """A Boolean value"""
-    def __init__(self, value):
-        int.__init__(self, value)
 
 class Int16(int):
     """A signed 16-bit integer"""
-    def __init__(self, value):
-        int.__init__(self, value)
 
 class UInt16(int):
     """An unsigned 16-bit integer"""
@@ -190,8 +182,6 @@ class UInt16(int):
 
 class Int32(int):
     """An signed 32-bit integer"""
-    def __init__(self, value):
-        int.__init__(self, value)
 
 class UInt32(long):
     """An unsigned 32-bit integer"""
@@ -202,8 +192,6 @@ class UInt32(long):
 
 class Int64(long):
     """A signed 64-bit integer"""
-    def __init__(self, value):
-        long.__init__(self, value)
 
 class UInt64(long):
     """An unsigned 64-bit integer"""
@@ -214,13 +202,9 @@ class UInt64(long):
 
 class Double(float):
     """A double-precision floating point number"""
-    def __init__(self, value):
-        float.__init__(self, value)
 
 class String(unicode):
     """A Unicode string"""
-    def __init__(self, value):
-        unicode.__init__(self, value)
 
 class Array(list):
     """An array of values of the same type"""
@@ -252,8 +236,6 @@ class Struct(tuple):
     """An immutable structure containing D-Bus values, possibly of
     different types.
     """
-    def __init__(self, value):
-        tuple.__init__(self, value)
 
 class Dictionary(dict):
     """A mapping from distinct keys (all of the same type) to values (all
