@@ -7,6 +7,8 @@
 
 #FIXME: find memory leaks that I am sure exist
 
+__docformat__ = 'restructuredtext'
+
 cdef extern from "sys/types.h":
     ctypedef size_t
     ctypedef __int64_t
@@ -61,25 +63,40 @@ ctypedef struct DBusObjectPathVTable:
   void (* dbus_internal_pad4) (void *)
 
 class DBusException(Exception):
-    pass
+    """Represents any D-Bus-related error."""
 
 class ConnectionError(Exception):
-    pass
+    """FIXME: Appears to be unused?"""
 
 class ObjectPath(str):
+    """A D-Bus object path, e.g. ``/org/example/foo/FooBar``."""
     def __init__(self, value):
         str.__init__(self, value)
 
 class ByteArray(str):
+    """A byte array represented as an 8-bit string.
+
+    Used to avoid having to construct a list of integers when passing
+    byte-array (``ay``) parameters to D-Bus methods.
+    """
     def __init__(self, value):
         str.__init__(self, value)
 
 class SignatureIter(object):
+    """An iterator over complete types in a D-Bus signature."""
+
     def __init__(self, string):
+        """Constructor.
+
+        :Parameters:
+             `string` : str
+                A D-Bus signature
+        """
         object.__init__(self)
         self.remaining = string
 
     def next(self):
+        """Return the next complete type, e.g. ``b``, ``ab`` or ``a{sv}``."""
         if self.remaining == '':
             raise StopIteration
 
@@ -132,64 +149,81 @@ class Signature(str):
         return str.__init__(self, value)
 
     def __iter__(self):
+        """Return an iterator over complete types in the signature."""
         return SignatureIter(self)
 
 class VariantSignature(object):
-    """A fake method signature which when iterated, is an endless stream
-    of variants (handy with zip()). It has no string representation."""
+    """A fake method signature which, when iterated, yields an endless stream
+    of 'v' characters representing variants (handy with zip()).
+
+    It has no string representation.
+    """
     def __iter__(self):
+        """Return self."""
         return self
 
     def next(self):
+        """Return 'v' whenever called."""
         return 'v'
 
 class Byte(int):
+    """An unsigned byte"""
     def __init__(self, value):
         int.__init__(self, value)
 
 class Boolean(int):
+    """A Boolean value"""
     def __init__(self, value):
         int.__init__(self, value)
 
 class Int16(int):
+    """A signed 16-bit integer"""
     def __init__(self, value):
         int.__init__(self, value)
 
 class UInt16(int):
+    """An unsigned 16-bit integer"""
     def __init__(self, value):
         if value < 0:
             raise TypeError('Unsigned integers must not have a negitive value') 
         int.__init__(self, value)
 
 class Int32(int):
+    """An signed 32-bit integer"""
     def __init__(self, value):
         int.__init__(self, value)
 
 class UInt32(long):
+    """An unsigned 32-bit integer"""
     def __init__(self, value):
         if value < 0:
             raise TypeError('Unsigned integers must not have a negitive value') 
         long.__init__(self, value)
 
 class Int64(long):
+    """A signed 64-bit integer"""
     def __init__(self, value):
         long.__init__(self, value)
 
 class UInt64(long):
+    """An unsigned 64-bit integer"""
     def __init__(self, value):
         if value < 0:
             raise TypeError('Unsigned integers must not have a negitive value') 
         long.__init__(self, value)
 
 class Double(float):
+    """A double-precision floating point number"""
     def __init__(self, value):
         float.__init__(self, value)
 
 class String(unicode):
+    """A Unicode string"""
     def __init__(self, value):
         unicode.__init__(self, value)
 
 class Array(list):
+    """An array of values of the same type"""
     def __init__(self, value, type=None, signature=None):
         if signature and type:
             raise TypeError('Can not mix type and signature arguments in a D-BUS Array')
@@ -199,6 +233,7 @@ class Array(list):
         list.__init__(self, value)
 
 class Variant:
+    """A generic wrapper for values of any other basic D-Bus type"""
     def __init__(self, value, type=None, signature=None):
         self.value = value
         if signature and type:
@@ -214,10 +249,16 @@ class Variant:
         return str(self.value)
 
 class Struct(tuple):
+    """An immutable structure containing D-Bus values, possibly of
+    different types.
+    """
     def __init__(self, value):
         tuple.__init__(self, value)
 
 class Dictionary(dict):
+    """A mapping from distinct keys (all of the same type) to values (all
+    of the same type, which need not be the same type as the values).
+    """
     def __init__(self, value, key_type=None, value_type=None, signature=None):
         if key_type and not value_type:
              raise TypeError('When specifying a key_type you must also have a value_type in a D-BUS Dictionary')
@@ -300,6 +341,7 @@ cdef DBusHandlerResult cmessage_function_handler (DBusConnection *connection,
 
 
 cdef class Connection:
+    """A connection to either the bus daemon or a peer."""
     def __init__(self, address=None, Connection _conn=None):
         cdef DBusConnection *c_conn
         cdef char *c_address
@@ -598,6 +640,7 @@ cdef void _pending_call_free_user_data(void *data):
     Py_XDECREF(call_tuple)
 
 cdef class PendingCall:
+    """Object representing a method call to which a reply is expected."""
     cdef DBusPendingCall *pending_call
 
     def __init__(self, PendingCall _pending_call=None):
@@ -640,6 +683,7 @@ cdef class PendingCall:
         
 
 cdef class Watch:
+    """Object representing a file descriptor to be watched"""
     cdef DBusWatch* watch
 
     def __init__(self):
@@ -1412,6 +1456,9 @@ cdef class MessageIter:
 (HANDLER_RESULT_HANDLED, HANDLER_RESULT_NOT_YET_HANDLED, HANDLER_RESULT_NEED_MEMORY) = range(3)
     
 cdef class Message:
+    """A D-Bus message. This may be a method call or reply, a signal, an
+    error, or some message type yet to be invented.
+    """
     cdef DBusMessage *msg
 
     def __init__(self, message_type=MESSAGE_TYPE_INVALID,
@@ -1615,26 +1662,32 @@ cdef class Message:
     # FIXME: all the different dbus_message_*args* methods
 
 class Signal(Message):
+    """Message representing a signal."""
     def __init__(self, spath, sinterface, sname):
         Message.__init__(self, MESSAGE_TYPE_SIGNAL, path=spath, dbus_interface=sinterface, name=sname)
 
 class EmptyMessage(Message):
+    """Message for internal use in _dbus_bindings. Do not instantiate."""
     def __init__(self):
         Message.__init__(self, _create=False)
 
 class MethodCall(Message):
+    """Message representing a method call."""
     def __init__(self, mpath, minterface, mmethod):
         Message.__init__(self, MESSAGE_TYPE_METHOD_CALL, path=mpath, dbus_interface=minterface, method=mmethod)
 
 class MethodReturn(Message):
+    """Message representing a method return."""
     def __init__(self, method_call):
         Message.__init__(self, MESSAGE_TYPE_METHOD_RETURN, method_call=method_call)
 
 class Error(Message):
+    """Message representing an error."""
     def __init__(self, reply_to, error_name, error_message):
         Message.__init__(self, MESSAGE_TYPE_ERROR, reply_to=reply_to, error_name=error_name, error_message=error_message)
         
 cdef class Server:
+    """A server that listens for new connections from other applications."""
     cdef DBusServer *server
     def __init__(self, address):
         cdef DBusError error
@@ -1674,6 +1727,16 @@ BUS_SYSTEM = DBUS_BUS_SYSTEM
 BUS_STARTER = DBUS_BUS_STARTER
 
 def bus_get (bus_type, private=False):
+    """Return a Connection to the appropriate bus type.
+
+    :Parameters:
+        `bus_type` : DBUS_BUS_SESSION, DBUS_BUS_SYSTEM or DBUS_BUS_STARTER
+            The bus to which connection is required.
+        `private` : bool
+            If true, a unique Connection will be returned. If false (default)
+            the Connection may be the same one returned by previous
+            invocations of bus_get.
+    """
     cdef DBusError error
     cdef Connection conn
     cdef DBusConnection *connection
@@ -1696,11 +1759,24 @@ def bus_get (bus_type, private=False):
     return conn 
 
 def bus_get_unique_name(Connection connection):
+    """Return the unique name of the calling application on the given
+    connection, which must be to a bus daemon.
+    """
     cdef DBusConnection *conn
     conn = connection._get_conn()
     return dbus_bus_get_unique_name(conn)
 
 def bus_get_unix_user(Connection connection, service_name):
+    """Return the numeric uid of the process which owns the given
+    bus name.
+
+    :Parameters:
+        `connection` : Connection
+            The connection on which the name exists, which must be to a bus
+            daemon.
+        `service_name` : str
+            The bus name to be queried.
+    """
     cdef DBusError error
     dbus_error_init(&error)
     cdef int retval
@@ -1721,6 +1797,18 @@ DBUS_START_REPLY_SUCCESS = 0
 DBUS_START_REPLY_ALREADY_RUNNING = 1
 
 def bus_start_service_by_name(Connection connection, service_name, flags=0):
+    """Start a service that will request ownership of the given bus name.
+
+    :Parameters:
+        `connection` : Connection
+            Connection to a bus daemon.
+        `service_name` : str
+            A bus name for which an implementation is required.
+        `flags` : int
+            Reserved for future expansion, always use 0 for now.
+    :Returns:
+        A tuple containing FIXME
+    """
     cdef DBusError error
     dbus_error_init(&error)
     cdef dbus_bool_t retval
@@ -1739,6 +1827,9 @@ def bus_start_service_by_name(Connection connection, service_name, flags=0):
     return (retval, results) 
 
 def bus_register(Connection connection):
+    """Register a connection with the bus to which the Connection connects.
+    If registration succeeds, the unique name will be set.
+    """
     cdef DBusError error
     dbus_error_init(&error)
     cdef dbus_bool_t retval
@@ -1764,6 +1855,10 @@ REQUEST_NAME_REPLY_EXISTS        = 3
 REQUEST_NAME_REPLY_ALREADY_OWNER = 4
 
 def bus_request_name(Connection connection, service_name, flags=0):
+    """Ask the bus to which the Connection is connected to assign the
+    given name to this connection by invoking the RequestName method
+    on the bus.
+    """
     cdef DBusError error
     dbus_error_init(&error)
     cdef int retval
@@ -1786,6 +1881,10 @@ RELEASE_NAME_REPLY_NON_EXISTENT = 2
 RELEASE_NAME_REPLY_NOT_OWNER = 3
 
 def bus_release_name(Connection connection, service_name):
+    """Ask the bus to which the Connection is connected to unassign the
+    given name to this connection by invoking the ReleaseName method
+    on the bus.
+    """
     cdef DBusError error
     dbus_error_init(&error)
     cdef int retval
@@ -1803,6 +1902,9 @@ def bus_release_name(Connection connection, service_name):
     return retval
 
 def bus_name_has_owner(Connection connection, service_name):
+    """Return True if and only if the given bus name has an owner
+    on the bus to which the given connection is connected.
+    """
     cdef DBusError error
     dbus_error_init(&error)
     cdef dbus_bool_t retval

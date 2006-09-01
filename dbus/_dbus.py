@@ -72,6 +72,21 @@ class Bus(object):
     _shared_instances = weakref.WeakValueDictionary()
 
     def __new__(cls, bus_type=TYPE_SESSION, use_default_mainloop=True, private=False):
+        """Constructor, returning an existing instance where appropriate.
+
+        The returned instance is actually always an instance of `SessionBus`,
+        `SystemBus` or `StarterBus`.
+
+        :Parameters:
+            `bus_type` : cls.TYPE_SESSION, cls.TYPE_SYSTEM or cls.TYPE_STARTER
+                Connect to the appropriate bus
+            `use_default_mainloop` : bool
+                If true (default), automatically register the new connection
+                to be polled by the default main loop, if any
+            `private` : bool
+                If true, never return an existing shared instance, but instead
+                return a private connection
+        """
         if (not private and bus_type in cls._shared_instances):
             return cls._shared_instances[bus_type]
 
@@ -117,26 +132,43 @@ class Bus(object):
         pass
 
     def close(self):
+        """Close the connection."""
         self._connection.close()
 
     def get_connection(self):
+        """Return the underlying `_dbus_bindings.Connection`."""
         return self._connection
 
     def get_session(private=False):
-        """Static method that returns the session bus"""
+        """Static method that returns a connection to the session bus.
+        
+        :Parameters:
+            `private` : bool
+                If true, do not return a shared connection.
+        """
         return SessionBus(private=private)
 
     get_session = staticmethod(get_session)
 
     def get_system(private=False):
-        """Static method that returns the system bus"""
+        """Static method that returns a connection to the system bus.
+        
+        :Parameters:
+            `private` : bool
+                If true, do not return a shared connection.
+        """
         return SystemBus(private=private)
 
     get_system = staticmethod(get_system)
 
 
     def get_starter(private=False):
-        """Static method that returns the starter bus"""
+        """Static method that returns a connection to the starter bus.
+
+        :Parameters:
+            `private` : bool
+                If true, do not return a shared connection.
+        """
         return StarterBus(private=private)
 
     get_starter = staticmethod(get_starter)
@@ -173,6 +205,37 @@ class Bus(object):
                                   named_service=None,
                                   path=None,
                                   **keywords):
+        """Arrange for the given function to be called when a signal matching
+        the parameters is emitted.
+
+        :Parameters:
+            `handler_function` : callable
+                The function to be called.
+            `signal_name` : str
+                The signal name; None (the default) matches all names
+            `dbus_interface` : str
+                The D-Bus interface name with which to qualify the signal;
+                None (the default) matches all interface names
+            `named_service` : str
+                A bus name for the sender, which will be resolved to a
+                unique name if it is not already; None (the default) matches
+                any sender
+            `path` : str
+                The object path of the object which must have emitted the
+                signal; None (the default) matches any object path
+            `sender_keyword` : str
+                If not None (the default), the handler function will receive
+                the unique name of the sending endpoint as a keyword
+                argument with this name
+            `path_keyword` : str
+                If not None (the default), the handler function will receive
+                the object-path of the sending object as a keyword argument
+                with this name
+            `keywords`
+                If there are additional keyword parameters of the form
+                ``arg``\ *n*, match only signals where the *n*\ th argument
+                is the value given for that keyword parameter
+        """
 
         args_dict = self._create_args_dict(keywords)
 
@@ -240,6 +303,13 @@ class Bus(object):
         self._match_rule_tree.exec_matches(match_rule, message)
 
     def start_service_by_name(self, named_service):
+        """Start a service which will implement the given bus name on this
+        Bus.
+
+        :Parameters:
+            `named_service` : str
+                The well-known bus name for which an implementation is required
+        """
         return _dbus_bindings.bus_start_service_by_name(self._connection, named_service)
 
     def __repr__(self):
@@ -256,26 +326,54 @@ class Bus(object):
     __str__ = __repr__
 
 class SystemBus(Bus):
-    """The system-wide message bus
-    """
+    """The system-wide message bus."""
     def __new__(cls, use_default_mainloop=True, private=False):
+        """Return a connection to the system bus.
+
+        :Parameters:
+            `use_default_mainloop` : bool
+                If true (default), automatically register the new connection
+                to be polled by the default main loop, if any
+            `private` : bool
+                If true, never return an existing shared instance, but instead
+                return a private connection.
+        """
         return Bus.__new__(cls, Bus.TYPE_SYSTEM, use_default_mainloop, private)
 
 class SessionBus(Bus):
-    """The session (current login) message bus
-    """
+    """The session (current login) message bus."""
     def __new__(cls, use_default_mainloop=True, private=False):
+        """Return a connection to the session bus.
+
+        :Parameters:
+            `use_default_mainloop` : bool
+                If true (default), automatically register the new connection
+                to be polled by the default main loop, if any
+            `private` : bool
+                If true, never return an existing shared instance, but instead
+                return a private connection.
+        """
         return Bus.__new__(cls, Bus.TYPE_SESSION, use_default_mainloop, private)
 
 class StarterBus(Bus):
-    """The bus that activated this process (if
-    this process was launched by DBus activation)
+    """The bus that activated this process (only valid if
+    this process was launched by DBus activation).
     """
     def __new__(cls, use_default_mainloop=True, private=False):
+        """Return a connection to the bus that activated this process.
+
+        :Parameters:
+            `use_default_mainloop` : bool
+                If true (default), automatically register the new connection
+                to be polled by the default main loop, if any
+            `private` : bool
+                If true, never return an existing shared instance, but instead
+                return a private connection.
+        """
         return Bus.__new__(cls, Bus.TYPE_STARTER, use_default_mainloop, private)
 
 class Interface:
-    """An interface into a remote object
+    """An interface into a remote object.
 
     An Interface can be used to wrap ProxyObjects
     so that calls can be routed to their correct
@@ -283,16 +381,50 @@ class Interface:
     """
 
     def __init__(self, object, dbus_interface):
+        """Construct a proxy for the given interface on the given object.
+
+        :Parameters:
+            `object` : `dbus.proxies.ProxyObject`
+                The remote object
+            `dbus_interface` : str
+                An interface the `object` implements
+        """
         self._obj = object
         self._dbus_interface = dbus_interface
 
     def connect_to_signal(self, signal_name, handler_function, dbus_interface = None, **keywords):
+        """Arrange for a function to be called when the given signal is
+        emitted.
+
+        :Parameters:
+            `signal_name` : str
+                The name of the signal
+            `handler_function` : callable
+                A function to be called (FIXME arguments?) when the signal
+                is emitted by the remote object.
+            `dbus_interface` : str
+                Optional interface with which to qualify the signal name.
+                The default is to use the interface this Interface represents.
+            `sender_keyword` : str
+                If not None (the default), the handler function will receive
+                the unique name of the sending endpoint as a keyword
+                argument with this name
+            `path_keyword` : str
+                If not None (the default), the handler function will receive
+                the object-path of the sending object as a keyword argument
+                with this name
+            `keywords`
+                If there are additional keyword parameters of the form
+                ``arg``\ *n*, match only signals where the *n*\ th argument
+                is the value given for that keyword parameter
+        """
         if not dbus_interface:
             dbus_interface = self._dbus_interface
             
         self._obj.connect_to_signal(signal_name, handler_function, dbus_interface, **keywords)
 
     def __getattr__(self, member, **keywords):
+        # FIXME: this syntax is bizarre.
         if (keywords.has_key('dbus_interface')):
             _dbus_interface = keywords['dbus_interface']
         else:

@@ -124,6 +124,20 @@ class ProxyObject:
     INTROSPECT_STATE_INTROSPECT_DONE = 2
 
     def __init__(self, bus, named_service, object_path, introspect=True):
+        """Initialize the proxy object.
+
+        :Parameters:
+            `bus` : `dbus.Bus`
+                The bus on which to find this object
+            `named_service` : str
+                A bus name for the endpoint owning the object (need not
+                actually be a service name)
+            `object_path` : str
+                The object path at which the endpoint exports the object
+            `introspect` : bool
+                If true (default), attempt to introspect the remote
+                object to find out supported methods and their signatures
+        """
         self._bus           = bus
         self._named_service = named_service
         self._object_path   = object_path
@@ -144,6 +158,31 @@ class ProxyObject:
             
 
     def connect_to_signal(self, signal_name, handler_function, dbus_interface=None, **keywords):
+        """Arrange for the given function to be called when the given signal
+        is received.
+
+        :Parameters:
+            `signal_name` : str
+                The name of the signal
+            `handler_function` : callable
+                A function to be called (FIXME arguments?) when the signal
+                is emitted by the remote object.
+            `dbus_interface` : str
+                Optional interface with which to qualify the signal name.
+                The default is to use the interface this Interface represents.
+            `sender_keyword` : str
+                If not None (the default), the handler function will receive
+                the unique name of the sending endpoint as a keyword
+                argument with this name
+            `path_keyword` : str
+                If not None (the default), the handler function will receive
+                the object-path of the sending object as a keyword argument
+                with this name
+            `keywords`
+                If there are additional keyword parameters of the form
+                ``arg``\ *n*, match only signals where the *n*\ th argument
+                is the value given for that keyword parameter
+        """
         self._bus.add_signal_receiver(handler_function,
                                       signal_name=signal_name,
                                       dbus_interface=dbus_interface,
