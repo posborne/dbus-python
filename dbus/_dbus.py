@@ -40,7 +40,14 @@ For example, the dbus-daemon itself provides a service and some objects::
     print(dbus_object.ListServices())
 """
 
-__all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus', 'Interface')
+__all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus', 'Interface',
+        # From exceptions (some originally from _dbus_bindings)
+        'DBusException', 'ConnectionError', 'MissingErrorHandlerException',
+        'MissingReplyHandlerException', 'ValidationException',
+        'IntrospectionParserException', 'UnknownMethodException',
+        'NameExistsException',
+        # proxies, matchrules are not public API, so exclude them
+        )
 __docformat__ = 'reStructuredText'
 
 import dbus
