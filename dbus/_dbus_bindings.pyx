@@ -8,6 +8,7 @@
 # and wrote all the good parts of this code. all the bad parts
 # where python conditionals have a ( ) around them, thus violating
 # PEP-8 were written by the lame wannabe python programmer seth
+# - This may now be untrue. -smcv
 
 #FIXME: find memory leaks that I am sure exist
 
@@ -166,6 +167,8 @@ class VariantSignature(object):
 
 class Byte(int):
     """An unsigned byte"""
+    # FIXME: this should subclass str and force length 1, judging by the rest
+    # of the API!
 
 class Boolean(int):
     """A Boolean value"""
@@ -362,38 +365,57 @@ cdef class Connection:
         return self.conn
     
     def get_unique_name(self):
+        """get_unique_name() -> str
+        Return this endpoint's unique name on the bus to which it is
+        connected.
+        """
         return bus_get_unique_name(self)
 
     def close(self):
+        """close() -> None
+        Close the connection."""
         dbus_connection_close(self.conn)
 
     def get_is_connected(self):
+        """get_is_connected() -> bool
+        Return true if this Connection is connected.
+        """
         return dbus_connection_get_is_connected(self.conn)
     
     def get_is_authenticated(self):
+        """get_is_connected() -> bool
+        Return true if this Connection was ever authenticated.
+        """
         return dbus_connection_get_is_authenticated(self.conn)
 
     def flush(self):
+        """flush() -> None
+        Block until the outgoing message queue is empty.
+        """
         dbus_connection_flush(self.conn)
 
     def borrow_message(self):
+        """FIXME: This shouldn't be Python-level API."""
         cdef Message m
         m = EmptyMessage()
         m._set_msg(dbus_connection_borrow_message(self.conn))
         return m
     
     def return_message(self, Message message):
+        """FIXME: This shouldn't be Python-level API."""
         cdef DBusMessage *msg
         msg = message._get_msg()
         dbus_connection_return_message(self.conn, msg)
 
     def steal_borrowed_message(self, Message message):
+        """FIXME: This shouldn't be Python-level API."""
         cdef DBusMessage *msg
         msg = message._get_msg()
         dbus_connection_steal_borrowed_message(self.conn,
                                                msg)
     
     def pop_message(self):
+        """FIXME: This shouldn't be Python-level API."""
         cdef DBusMessage *msg
         cdef Message m
  
@@ -406,12 +428,15 @@ cdef class Connection:
         return m        
 
     def get_dispatch_status(self):
+        """FIXME: should this really be Python-level API?"""
         return dbus_connection_get_dispatch_status(self.conn)
     
     def dispatch(self):
+        """FIXME: should this really be Python-level API?"""
         return dbus_connection_dispatch(self.conn)
 
     def send(self, Message message):
+        """FIXME: should this really be Python-level API?"""
         #cdef dbus_uint32_t client_serial
         #if type(message) != Message:
         #    raise TypeError
@@ -423,6 +448,7 @@ cdef class Connection:
         return retval
 
     def send_with_reply_handlers(self, Message message, timeout_milliseconds, reply_handler, error_handler):
+        """FIXME: should this really be Python-level API?"""
         retval = False
         try:
             (retval, pending_call) = self.send_with_reply(message, timeout_milliseconds)
@@ -434,6 +460,7 @@ cdef class Connection:
         return (retval, pending_call)
 
     def send_with_reply(self, Message message, timeout_milliseconds):
+        """FIXME: should this really be Python-level API?"""
         cdef dbus_bool_t retval
         cdef DBusPendingCall *cpending_call
         cdef DBusMessage *msg
@@ -458,6 +485,7 @@ cdef class Connection:
                                 
     def send_with_reply_and_block(self, Message message,
                                   timeout_milliseconds=-1):
+        """FIXME: should this really be Python-level API?"""
         cdef DBusMessage * retval
         cdef DBusError error
         cdef DBusMessage *msg
@@ -486,17 +514,21 @@ cdef class Connection:
         return m
 
     def set_watch_functions(self, add_function, remove_function, data):
+        """FIXME: this appears to be a stub"""
         pass
 
     def set_timeout_functions(self, add_function, remove_function, data):
+        """FIXME: this appears to be a stub"""
         pass
 
     def set_wakeup_main_function(self, wakeup_main_function, data):
+        """FIXME: this appears to be a stub"""
         pass
 
     # FIXME: set_dispatch_status_function, get_unix_user, set_unix_user_function
 
     def add_filter(self, filter_function):
+        """FIXME: should this really be Python-level API?"""
         user_data = (filter_function,)
         Py_XINCREF(user_data)
        
@@ -511,25 +543,50 @@ cdef class Connection:
     #       if we truly have no more calls to our message_function_handler...ugh
 
     def set_data(self, slot, data):
+        """FIXME: this appears to be a stub"""
         pass
 
     def get_data(self, slot):
+        """FIXME: this appears to be a stub"""
         pass
 
     def set_max_message_size(self, size):
+        """set_max_message_size(size: int) -> None
+        Set the maximum allowed message size on this connection.
+
+        Receiving a larger message than this will cause disconnection.
+        """
         dbus_connection_set_max_message_size(self.conn, size)
 
     def get_max_message_size(self):
+        """get_max_message_size() -> int
+        Return the maximum allowed message size on this connection.
+        """
         return dbus_connection_get_max_message_size(self.conn)
 
     def set_max_received_size(self, size):
+        """get_max_received_size() -> int
+        Set the maximum total size of pending messages on this
+        connection.
+
+        For the exact semantics, see the C API.
+        """
         dbus_connection_set_max_received_size(self.conn, size)
 
     def get_max_received_size(self):
+        """get_max_received_size() -> int
+        Return the maximum total size of pending messages on this
+        connection.
+        """
         return dbus_connection_get_max_received_size(self.conn)
 
     def get_outgoing_size(self):
-        return dbus_connection_get_outgoing_size(self.conn)    
+        """get_outgoing_size() -> int
+        Get the approximate total size of the outgoing message queue.
+
+        FIXME: would Python code ever need to know this?
+        """
+        return dbus_connection_get_outgoing_size(self.conn)
 
     # preallocate_send, free_preallocated_send, send_preallocated
 
@@ -1152,13 +1209,16 @@ cdef class MessageIter:
         return dbus_message_iter_append_basic(self.iter, TYPE_BOOLEAN, <dbus_bool_t *>&c_value)
 
     def append_byte(self, value):
+        # FIXME: Integers should be supported!
+        # FIXME: What about subclasses?
         cdef char b
         if type(value) == str and len(value) == 1:
                 b = ord(value)
         elif type(value) == Byte:
                 b = value
         else:
-            raise TypeError
+            raise TypeError("Unable to append %r (of type %r) as a Byte"
+                            % (value, type(value)))
 
         return dbus_message_iter_append_basic(self.iter, TYPE_BYTE, <char *>&b)
 
