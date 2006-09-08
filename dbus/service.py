@@ -11,6 +11,20 @@ from exceptions import UnknownMethodException
 from decorators import method
 from decorators import signal
 
+class _VariantSignature(object):
+    """A fake method signature which, when iterated, yields an endless stream
+    of 'v' characters representing variants (handy with zip()).
+
+    It has no string representation.
+    """
+    def __iter__(self):
+        """Return self."""
+        return self
+
+    def next(self):
+        """Return 'v' whenever called."""
+        return 'v'
+
 class BusName(object):
     """A base class for exporting your own Named Services across the Bus.
 
@@ -258,7 +272,7 @@ class InterfaceType(type):
             in_sig = tuple(_dbus_bindings.Signature(func._dbus_in_signature))
         else:
             # magic iterator which returns as many v's as we need
-            in_sig = _dbus_bindings.VariantSignature()
+            in_sig = _VariantSignature()
 
         if func._dbus_out_signature:
             out_sig = _dbus_bindings.Signature(func._dbus_out_signature)
@@ -286,7 +300,7 @@ class InterfaceType(type):
             sig = tuple(_dbus_bindings.Signature(func._dbus_signature))
         else:
             # magic iterator which returns as many v's as we need
-            sig = _dbus_bindings.VariantSignature()
+            sig = _VariantSignature()
 
         reflection_data = '    <signal name="%s">\n' % (func.__name__)
         for pair in zip(sig, args):

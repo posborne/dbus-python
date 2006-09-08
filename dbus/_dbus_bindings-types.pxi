@@ -81,20 +81,6 @@ class Signature(str):
         """Return an iterator over complete types in the signature."""
         return SignatureIter(self)
 
-class VariantSignature(object):
-    """A fake method signature which, when iterated, yields an endless stream
-    of 'v' characters representing variants (handy with zip()).
-
-    It has no string representation.
-    """
-    def __iter__(self):
-        """Return self."""
-        return self
-
-    def next(self):
-        """Return 'v' whenever called."""
-        return 'v'
-
 class Byte(int):
     """An unsigned byte"""
     # FIXME: this should subclass str and force length 1, judging by the rest
