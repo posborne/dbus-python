@@ -273,7 +273,16 @@ cdef class Connection:
         return (retval, pending_call)
 
     def send_with_reply(self, Message message, timeout_milliseconds):
-        """FIXME: should this really be Python-level API?"""
+        """send_with_reply(message: Message, timeout_milliseconds: int) -> (bool, PendingCall) 
+
+        Send the given Message, returning an object representing the
+        pending reply. timeout_milliseconds is a timeout in ms, or -1 to
+        use a reasonable default timeout; if no reply is received by then,
+        the local D-Bus implementation will synthesize an error response
+        and use that instead.
+
+        FIXME: should this really be Python-level API?
+        """
         cdef dbus_bool_t retval
         cdef DBusPendingCall *cpending_call
         cdef DBusMessage *msg
@@ -1661,8 +1670,13 @@ def bus_start_service_by_name(Connection connection, service_name, flags=0):
             A bus name for which an implementation is required.
         `flags` : int
             Reserved for future expansion, always use 0 for now.
-    :Returns:
-        A tuple containing FIXME
+
+    :Returns: A tuple of 2 elements. The first is always True, the second is
+              either START_REPLY_SUCCESS or START_REPLY_ALREADY_RUNNING.
+
+              (FIXME: this is silly - the first element is unnecessary.)
+
+    :Raises DBusException: if the service could not be started.
     """
     cdef DBusError error
     dbus_error_init(&error)
