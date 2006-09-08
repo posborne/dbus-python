@@ -3,6 +3,9 @@ import introspect_parser
 import sys
 from exceptions import MissingReplyHandlerException, MissingErrorHandlerException, IntrospectionParserException
 
+__docformat__ = 'restructuredtext'
+
+
 class DeferedMethod:
     """A DeferedMethod
     
