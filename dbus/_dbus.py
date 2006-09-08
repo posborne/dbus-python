@@ -182,7 +182,19 @@ class Bus(object):
 
 
     def get_object(self, named_service, object_path):
-        """Get a proxy object to call over the bus"""
+        """Return a local proxy for the given remote object.
+
+        Method calls on the proxy are translated into method calls on the
+        remote object.
+        
+        :Parameters:
+            `named_service` : str
+                A bus name (either the unique name or a well-known name)
+                of the application owning the object
+            `object_path` : str
+                The object path of the desired object
+        :Returns: a `dbus.proxies.ProxyObject`
+        """
         return self.ProxyObjectClass(self, named_service, object_path)
 
     def _create_args_dict(self, keywords):
@@ -293,7 +305,13 @@ class Bus(object):
         #TODO we leak match rules in the lower level bindings.  We need to ref count them
 
     def get_unix_user(self, named_service):
-        """Get the unix user for the given named_service on this Bus"""
+        """Get the numeric uid of the process which owns the given bus name
+        on the connected bus daemon.
+
+        :Parameters:
+            `named_service` : str
+                A bus name (may be either a unique name or a well-known name)
+        """
         return _dbus_bindings.bus_get_unix_user(self._connection, named_service)
     
     def _signal_func(self, connection, message):
@@ -316,6 +334,11 @@ class Bus(object):
         :Parameters:
             `named_service` : str
                 The well-known bus name for which an implementation is required
+
+        :Returns: A tuple of 2 elements. The first is always True, the second is
+                  either START_REPLY_SUCCESS or START_REPLY_ALREADY_RUNNING.
+
+        :Raises DBusException: if the service could not be started.
         """
         return _dbus_bindings.bus_start_service_by_name(self._connection, named_service)
 
@@ -332,6 +355,9 @@ class Bus(object):
         return '<dbus.Bus on %s at %#x>' % (name, id(self))
     __str__ = __repr__
 
+
+# FIXME: Drop the subclasses here? I can't think why we'd ever want
+# polymorphism
 class SystemBus(Bus):
     """The system-wide message bus."""
     def __new__(cls, use_default_mainloop=True, private=False):
