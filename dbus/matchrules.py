@@ -1,4 +1,4 @@
-from exceptions import DBusException
+from dbus.exceptions import DBusException
 
 class SignalMatchNode:
     def __init__(self):
