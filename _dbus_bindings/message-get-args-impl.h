@@ -362,7 +362,7 @@ Message_get_args_list(Message *self, PyObject *args, PyObject *kwargs)
                                 "untyped_integers",
                                 "variant_unpack_level",
                                 "utf8_strings", NULL };
-    PyObject *list, *tuple = NULL;
+    PyObject *list;
     DBusMessageIter iter;
 
     if (PyTuple_Size(args) != 0) {

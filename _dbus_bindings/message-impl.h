@@ -744,8 +744,8 @@ static PyMethodDef Message_tp_methods[] = {
     {"is_error", (PyCFunction)Message_is_error,
       METH_VARARGS, Message_is_error__doc__},
 
-    {"get_args", (PyCFunction)Message_get_args,
-      METH_VARARGS|METH_KEYWORDS, Message_get_args__doc__},
+    {"get_args_list", (PyCFunction)Message_get_args_list,
+      METH_VARARGS|METH_KEYWORDS, Message_get_args_list__doc__},
     {"guess_signature", (PyCFunction)Message_guess_signature,
       METH_VARARGS|METH_STATIC, Message_guess_signature__doc__},
     {"append", (PyCFunction)Message_append,
