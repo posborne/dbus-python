@@ -1,6 +1,6 @@
 """D-Bus exceptions."""
 
-__all__ = ('DBusException', 'ConnectionError', 'MissingErrorHandlerException',
+__all__ = ('DBusException', 'MissingErrorHandlerException',
            'MissingReplyHandlerException', 'ValidationException',
            'IntrospectionParserException', 'UnknownMethodException',
            'NameExistsException')
@@ -8,7 +8,6 @@ __all__ = ('DBusException', 'ConnectionError', 'MissingErrorHandlerException',
 import _dbus_bindings
 
 DBusException = _dbus_bindings.DBusException
-ConnectionError = _dbus_bindings.ConnectionError
 
 class MissingErrorHandlerException(DBusException):
     def __init__(self):

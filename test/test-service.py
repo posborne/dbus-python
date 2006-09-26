@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os
+import logging
 
 builddir = os.environ["DBUS_TOP_BUILDDIR"]
 pydir = builddir
@@ -11,13 +12,18 @@ sys.path.insert(0, pydir + 'dbus')
 import dbus
 
 if not dbus.__file__.startswith(pydir):
-    os.system("echo %s> /tmp/dbus.log"%pydir)
     raise Exception("DBus modules are not being picked up from the package")
 
 import dbus.service
 import dbus.glib
 import gobject
 import random
+
+
+logging.basicConfig(filename=pydir + '/test-service.log', filemode='w')
+logging.getLogger().setLevel(1)
+logger = logging.getLogger('test-service')
+
 
 class TestInterface(dbus.service.Interface):
     @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='', out_signature='b')
@@ -68,6 +74,7 @@ class TestObject(dbus.service.Object, TestInterface):
 
     @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='u', out_signature='(ss)')
     def ReturnStruct(self, test):
+        logger.info('ReturnStruct(%r) -> %r', test, self.returnValue(test))
         return self.returnValue(test)
 
     @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='u', out_signature='as')
@@ -80,15 +87,15 @@ class TestObject(dbus.service.Object, TestInterface):
 
     @dbus.service.signal("org.freedesktop.DBus.TestSuiteInterface", signature='s')
     def SignalOneString(self, test):
-        pass
+        logger.info('SignalOneString(%r)', test)
 
     @dbus.service.signal("org.freedesktop.DBus.TestSuiteInterface", signature='ss')
     def SignalTwoStrings(self, test, test2):
-        pass
+        logger.info('SignalTwoStrings(%r, %r)', test, test2)
 
     @dbus.service.signal("org.freedesktop.DBus.TestSuiteInterface", signature='(ss)')
     def SignalStruct(self, test):
-        pass
+        logger.info('SignalStruct(%r)', test)
 
     @dbus.service.signal("org.freedesktop.DBus.TestSuiteInterface", signature='as')
     def SignalArray(self, test):
@@ -110,6 +117,7 @@ class TestObject(dbus.service.Object, TestInterface):
         else:
             val = tuple([val])
 
+        logger.info('Emitting %s with %r', signal, val)
         sig(*val)
 
     def CheckInheritance(self):

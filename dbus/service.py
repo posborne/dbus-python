@@ -1,15 +1,21 @@
 __all__ = ('BusName', 'Object', 'method', 'signal')
 __docformat__ = 'restructuredtext'
 
-import _dbus_bindings
-import _dbus
+import sys
+import logging
 import operator
 import traceback
 
-from exceptions import NameExistsException
-from exceptions import UnknownMethodException
-from decorators import method
-from decorators import signal
+import _dbus_bindings
+import dbus._dbus as _dbus
+from dbus.exceptions import NameExistsException
+from dbus.exceptions import UnknownMethodException
+from dbus.decorators import method
+from dbus.decorators import signal
+
+
+_logger = logging.getLogger('dbus.service')
+
 
 class _VariantSignature(object):
     """A fake method signature which, when iterated, yields an endless stream
@@ -77,7 +83,7 @@ class BusName(object):
 	    _dbus_bindings.NAME_FLAG_REPLACE_EXISTING * replace_existing +  \
 	    _dbus_bindings.NAME_FLAG_DO_NOT_QUEUE * do_not_queue 
 	 
-        retval = _dbus_bindings.bus_request_name(bus.get_connection(), name, name_flags)
+        retval = bus.request_name(name, name_flags)
 
         # TODO: more intelligent tracking of bus name states?
         if retval == _dbus_bindings.REQUEST_NAME_REPLY_PRIMARY_OWNER:
@@ -115,7 +121,7 @@ class BusName(object):
     # we can delete the low-level name here because these objects
     # are guaranteed to exist only once for each bus name
     def __del__(self):
-        _dbus_bindings.bus_release_name(self._bus.get_connection(), self._name)
+        self._bus.release_name(self._name)
         pass
 
     def get_bus(self):
@@ -197,28 +203,25 @@ def _method_lookup(self, method_name, dbus_interface):
             raise UnknownMethodException('%s is not a valid method' % method_name)
 
 
+# FIXME: if signature is '', we used to accept anything, but now insist on
+# zero args. Which was desired? -smcv
 def _method_reply_return(connection, message, method_name, signature, *retval):
-    reply = _dbus_bindings.MethodReturn(message)
-    iter = reply.get_iter(append=True)
+    reply = _dbus_bindings.MethodReturnMessage(message)
+    try:
+        reply.append(signature=signature, *retval)
+    except Exception, e:
+        if signature is None:
+            try:
+                signature = reply.guess_signature(retval) + ' (guessed)'
+            except Exception, e:
+                _logger.error('Unable to guess signature for arguments %r: '
+                              '%s: %s', retval, e.__class__, e)
+                raise
+        _logger.error('Unable to append %r to message with signature %s: '
+                      '%s: %s', retval, signature, e.__class__, e)
+        raise
 
-    # do strict adding if an output signature was provided
-    if signature:
-        if len(signature) > len(retval):
-            raise TypeError('output signature %s is longer than the number of values returned by %s' %
-                (signature, method_name))
-        elif len(retval) > len(signature):
-            raise TypeError('output signature %s is shorter than the number of values returned by %s' %
-                (signature, method_name))
-        else:
-            for (value, sig) in zip(retval, signature):
-                iter.append_strict(value, sig)
-
-    # no signature, try and guess the return type by inspection
-    else:
-        for value in retval:
-            iter.append(value)
-
-    connection.send(reply)
+    connection._send(reply)
 
 
 def _method_reply_error(connection, message, exception):
@@ -230,9 +233,9 @@ def _method_reply_error(connection, message, exception):
         name = 'org.freedesktop.DBus.Python.%s.%s' % (exception.__module__, exception.__class__.__name__)
 
     contents = traceback.format_exc()
-    reply = _dbus_bindings.Error(message, name, contents)
+    reply = _dbus_bindings.ErrorMessage(message, name, contents)
 
-    connection.send(reply)
+    connection._send(reply)
 
 
 class InterfaceType(type):
@@ -342,10 +345,10 @@ class Object(Interface):
             
         self._connection = self._bus.get_connection()
 
-        self._connection.register_object_path(object_path, self._unregister_cb, self._message_cb)
+        self._connection._register_object_path(object_path, self._message_cb, self._unregister_cb)
 
     def _unregister_cb(self, connection):
-        print ("Unregister")
+        _logger.info('Unregistering exported object %r', self)
 
     def _message_cb(self, connection, message):
         try:
@@ -358,9 +361,8 @@ class Object(Interface):
             args = message.get_args_list()
             keywords = {}
 
-            # iterate signature into list of complete types
-            if parent_method._dbus_out_signature:
-                signature = tuple(_dbus_bindings.Signature(parent_method._dbus_out_signature))
+            if parent_method._dbus_out_signature is not None:
+                signature = _dbus_bindings.Signature(parent_method._dbus_out_signature)
             else:
                 signature = None
 
@@ -384,17 +386,18 @@ class Object(Interface):
             # otherwise we send the return values in a reply. if we have a
             # signature, use it to turn the return value into a tuple as
             # appropriate
-            if parent_method._dbus_out_signature:
+            if signature is not None:
+                signature_tuple = tuple(signature)
                 # if we have zero or one return values we want make a tuple
                 # for the _method_reply_return function, otherwise we need
                 # to check we're passing it a sequence
-                if len(signature) == 0:
+                if len(signature_tuple) == 0:
                     if retval == None:
                         retval = ()
                     else:
                         raise TypeError('%s has an empty output signature but did not return None' %
                             method_name)
-                elif len(signature) == 1:
+                elif len(signature_tuple) == 1:
                     retval = (retval,)
                 else:
                     if operator.isSequenceType(retval):
@@ -406,7 +409,6 @@ class Object(Interface):
 
             # no signature, so just turn the return into a tuple and send it as normal
             else:
-                signature = None
                 if retval == None:
                     retval = ()
                 else:

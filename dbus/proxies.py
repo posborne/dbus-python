@@ -1,9 +1,34 @@
-import _dbus_bindings
-import introspect_parser
 import sys
-from exceptions import MissingReplyHandlerException, MissingErrorHandlerException, IntrospectionParserException
+import logging
+
+import _dbus_bindings
+import dbus.introspect_parser as introspect_parser
+from dbus.exceptions import MissingReplyHandlerException, MissingErrorHandlerException, IntrospectionParserException, DBusException
 
 __docformat__ = 'restructuredtext'
+
+
+_logger = logging.getLogger('dbus.proxies')
+
+
+class _ReplyHandler(object):
+    __slots__ = ('_on_error', '_on_reply')
+    def __init__(self, on_reply, on_error):
+        self._on_error = on_error
+        self._on_reply = on_reply
+
+    def __call__(self, message):
+        if isinstance(message, _dbus_bindings.MethodReturnMessage):
+            self._on_reply(*message.get_args_list())
+        elif isinstance(message, _dbus_bindings.ErrorMessage):
+            args = message.get_args_list()
+            if len(args) > 0:
+                self._on_error(DBusException(args[0]))
+            else:
+                self._on_error(DBusException())
+        else:
+            self._on_error(DBusException('Unexpected reply message type: %s'
+                                        % message))
 
 
 class DeferedMethod:
@@ -24,7 +49,7 @@ class DeferedMethod:
         #block for now even on async
         # FIXME: put ret in async queue in future if we have a reply handler
 
-        self._proxy_method._proxy._pending_introspect.block()
+        self._proxy_method._proxy._pending_introspect._block()
         ret = self._proxy_method (*args, **keywords)
         
         return ret
@@ -82,35 +107,38 @@ class ProxyMethod:
         if self._proxy._introspect_method_map.has_key (key):
             introspect_sig = self._proxy._introspect_method_map[key]
 
-        message = _dbus_bindings.MethodCall(self._object_path, dbus_interface, self._method_name)
+        message = _dbus_bindings.MethodCallMessage(destination=None,
+                                                   path=self._object_path,
+                                                   interface=dbus_interface,
+                                                   method=self._method_name)
         message.set_destination(self._named_service)
         
         # Add the arguments to the function
-        iter = message.get_iter(True)
+        try:
+            message.append(signature=introspect_sig, *args)
+        except Exception, e:
+            _logger.error('Unable to set arguments %r according to '
+                          'introspected signature %r: %s: %s',
+                          args, introspect_sig, e.__class__, e)
+            raise
 
-        if introspect_sig:
-            for (arg, sig) in zip(args, _dbus_bindings.Signature(introspect_sig)):
-                iter.append_strict(arg, sig)
-        else:
-            for arg in args:
-                iter.append(arg)
-
+        # FIXME: using private API on Connection while I decide whether to
+        # make it public or what
         if ignore_reply:
-            result = self._connection.send(message)
-            args_tuple = (result,)
+            result = self._connection._send(message)
+            return None
         elif reply_handler:
-            result = self._connection.send_with_reply_handlers(message, timeout, reply_handler, error_handler)
-            args_tuple = result
+            result = self._connection._send_with_reply(message, _ReplyHandler(reply_handler, error_handler), timeout/1000.0)
+            return None
         else:
-            reply_message = self._connection.send_with_reply_and_block(message, timeout)
-            args_tuple = reply_message.get_args_list()
-
-        if len(args_tuple) == 0:
-            return
-        elif len(args_tuple) == 1:
-            return args_tuple[0]
-        else:
-            return args_tuple
+            reply_message = self._connection._send_with_reply_and_block(message, timeout)
+            args_list = reply_message.get_args_list()
+            if len(args_list) == 0:
+                return None
+            elif len(args_list) == 1:
+                return args_list[0]
+            else:
+                return tuple(args_list)
 
 
 class ProxyObject:
@@ -157,7 +185,7 @@ class ProxyObject:
         else:
             self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS
             
-            (result, self._pending_introspect) = self._Introspect()
+            self._pending_introspect = self._Introspect()
             
 
     def connect_to_signal(self, signal_name, handler_function, dbus_interface=None, **keywords):
@@ -194,12 +222,10 @@ class ProxyObject:
                                       **keywords)
 
     def _Introspect(self):
-        message = _dbus_bindings.MethodCall(self._object_path, 'org.freedesktop.DBus.Introspectable', 'Introspect')
+        message = _dbus_bindings.MethodCallMessage(None, self._object_path, 'org.freedesktop.DBus.Introspectable', 'Introspect')
         message.set_destination(self._named_service)
         
-        result = self._bus.get_connection().send_with_reply_handlers(message, -1, 
-                                                                     self._introspect_reply_handler, 
-                                                                     self._introspect_error_handler)
+        result = self._bus.get_connection()._send_with_reply(message, _ReplyHandler(self._introspect_reply_handler, self._introspect_error_handler), -1)
         return result   
     
     def _introspect_execute_queue(self): 

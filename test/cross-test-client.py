@@ -1,10 +1,11 @@
 import sys
 from sets import Set
 from time import sleep
+import logging
 
 import gobject
 
-from dbus import SessionBus, Interface, Array, Byte, Double, Variant, Boolean, ByteArray
+from dbus import SessionBus, Interface, Array, Byte, Double, Variant, Boolean, ByteArray, Int32
 from dbus.service import BusName
 import dbus.glib
 
@@ -12,6 +13,9 @@ from crosstest import CROSS_TEST_PATH, CROSS_TEST_BUS_NAME,\
                       INTERFACE_SINGLE_TESTS, INTERFACE_TESTS,\
                       INTERFACE_SIGNAL_TESTS, INTERFACE_CALLBACK_TESTS,\
                       SignalTestsImpl
+
+
+logging.basicConfig()
 
 
 class Client(SignalTestsImpl):
@@ -22,7 +26,7 @@ class Client(SignalTestsImpl):
         for x in self.expected:
             self.fail_id += 1
             print "<%s> fail %d" % (x, self.fail_id)
-            print "report <%d>: reply to %s didn't arrive" % (self.fail_id, x)
+            print "report %d: reply to %s didn't arrive" % (self.fail_id, x)
         sys.stderr.write("CLIENT: asking server to Exit\n")
         Interface(self.obj, INTERFACE_TESTS).Exit(reply_handler=self.quit_reply_handler, error_handler=self.quit_error_handler)
         # if the server doesn't reply we'll just exit anyway
@@ -44,7 +48,7 @@ class Client(SignalTestsImpl):
         if (input1, input2) != (42, 23):
             self.fail_id += 1
             print "<%s.Trigger> fail %d" % (INTERFACE_SIGNAL_TESTS, self.fail_id)
-            print ("report <%d>: expected (42,23), got %r"
+            print ("report %d: expected (42,23), got %r"
                    % (self.fail_id, (input1, input2)))
         else:
             print "<%s.Trigger> pass" % INTERFACE_SIGNAL_TESTS
@@ -58,13 +62,14 @@ class Client(SignalTestsImpl):
         except Exception, e:
             self.fail_id += 1
             print "<%s.%s> fail %d" % (interface, member, self.fail_id)
-            print ("report <%d>: %s.%s%r: expected %r, raised %r \"%s\""
+            print ("report %d: %s.%s%r: expected %r, raised %r \"%s\""
                    % (self.fail_id, interface, member, args, ret, e, e))
+            __import__('traceback').print_exc()
             return
         if real_ret != ret:
             self.fail_id += 1
             print "<%s.%s> fail %d" % (interface, member, self.fail_id)
-            print ("report <%d>: %s.%s%r: expected %r, got %r"
+            print ("report %d: %s.%s%r: expected %r, got %r"
                    % (self.fail_id, interface, member, args, ret, real_ret))
             return
         print "<%s.%s> pass" % (interface, member)
@@ -77,12 +82,12 @@ class Client(SignalTestsImpl):
         if sender_path != '/Where/Ever':
             self.fail_id += 1
             print "<%s.Trigger> fail %d" % (INTERFACE_TESTS, self.fail_id)
-            print ("report <%d>: expected signal from /Where/Ever, got %r"
+            print ("report %d: expected signal from /Where/Ever, got %r"
                    % (self.fail_id, sender_path))
         elif param != 42:
             self.fail_id += 1
             print "<%s.Trigger> fail %d" % (INTERFACE_TESTS, self.fail_id)
-            print ("report <%d>: expected signal param 42, got %r"
+            print ("report %d: expected signal param 42, got %r"
                    % (self.fail_id, parameter))
         else:
             print "<%s.Trigger> pass" % INTERFACE_TESTS
@@ -123,20 +128,18 @@ class Client(SignalTestsImpl):
     def run_synchronous_tests(self, obj):
         # "Single tests"
         self.assert_method_eq(INTERFACE_SINGLE_TESTS, 6, 'Sum', [1, 2, 3])
-        # FIXME: works, but should it?
         self.assert_method_eq(INTERFACE_SINGLE_TESTS, 6, 'Sum', ['\x01', '\x02', '\x03'])
         self.assert_method_eq(INTERFACE_SINGLE_TESTS, 6, 'Sum', [Byte(1), Byte(2), Byte(3)])
 
         # Main tests
-        self.assert_method_eq(INTERFACE_TESTS, 'foo', 'Identity', 'foo')
-        # FIXME: Arrays of Byte -> lists of str, but Byte -> int?!
-        self.assert_method_eq(INTERFACE_TESTS, 42, 'Identity', Byte(42))
-        self.assert_method_eq(INTERFACE_TESTS, 42, 'Identity', Variant(Byte(42)))
-        self.assert_method_eq(INTERFACE_TESTS, 42, 'Identity', Variant(Variant(Variant(Variant(Variant(Variant(Variant(Byte(42)))))))))
-        self.assert_method_eq(INTERFACE_TESTS, 42.5, 'Identity', Double(42.5))
-        self.assert_method_eq(INTERFACE_TESTS, -42.5, 'Identity', -42.5)
-        self.assert_method_eq(INTERFACE_TESTS, 0x42, 'IdentityByte', '\x42')
-        self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityByte', Byte(42))
+        self.assert_method_eq(INTERFACE_TESTS, Variant(u'foo', 's'), 'Identity', 'foo')
+        self.assert_method_eq(INTERFACE_TESTS, Variant(Byte(42)), 'Identity', Byte(42))
+        self.assert_method_eq(INTERFACE_TESTS, Variant(Byte(42)), 'Identity', Variant(Byte(42)))
+        self.assert_method_eq(INTERFACE_TESTS, Variant(Variant(Variant(Variant(Variant(Variant(Variant(Byte(42)))))))), 'Identity', Variant(Variant(Variant(Variant(Variant(Variant(Variant(Byte(42)))))))))
+        self.assert_method_eq(INTERFACE_TESTS, Variant(42.5), 'Identity', Double(42.5))
+        self.assert_method_eq(INTERFACE_TESTS, Variant(-42.5), 'Identity', -42.5)
+        self.assert_method_eq(INTERFACE_TESTS, Byte(0x42), 'IdentityByte', '\x42')
+        self.assert_method_eq(INTERFACE_TESTS, Byte(42), 'IdentityByte', Byte(42))
         self.assert_method_eq(INTERFACE_TESTS, True, 'IdentityBool', 42)
         self.assert_method_eq(INTERFACE_TESTS, True, 'IdentityBool', Boolean(42))
         self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityInt16', 42)
@@ -147,12 +150,11 @@ class Client(SignalTestsImpl):
         self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityUInt64', 42)
         self.assert_method_eq(INTERFACE_TESTS, 42.3, 'IdentityDouble', 42.3)
         self.assert_method_eq(INTERFACE_TESTS, u'\xa9', 'IdentityString', u'\xa9')
-        # FIXME: if this is the intended API, then Byte shouldn't subclass int
-        self.assert_method_eq(INTERFACE_TESTS, ['\x01','\x02','\x03'], 'IdentityArray', ByteArray('\x01\x02\x03'))
-        self.assert_method_eq(INTERFACE_TESTS, [1,2,3], 'IdentityArray', [1,2,3])
-        self.assert_method_eq(INTERFACE_TESTS, ['a','b','c'], 'IdentityArray', ['a','b','c'])
-        self.assert_method_eq(INTERFACE_TESTS, [1,2,3], 'IdentityByteArray', ByteArray('\x01\x02\x03'))
-        self.assert_method_eq(INTERFACE_TESTS, [1,2,3], 'IdentityByteArray', ['\x01', '\x02', '\x03'])
+        self.assert_method_eq(INTERFACE_TESTS, [Variant(Byte('\x01')),Variant(Byte('\x02')),Variant(Byte('\x03'))], 'IdentityArray', ByteArray('\x01\x02\x03'))
+        self.assert_method_eq(INTERFACE_TESTS, [Variant(Int32(1)),Variant(Int32(2)),Variant(Int32(3))], 'IdentityArray', [1,2,3])
+        self.assert_method_eq(INTERFACE_TESTS, [Variant(u'a'),Variant(u'b'),Variant(u'c')], 'IdentityArray', ['a','b','c'])
+        self.assert_method_eq(INTERFACE_TESTS, ['\x01','\x02','\x03'], 'IdentityByteArray', ByteArray('\x01\x02\x03'))
+        self.assert_method_eq(INTERFACE_TESTS, ['\x01','\x02','\x03'], 'IdentityByteArray', ['\x01', '\x02', '\x03'])
         self.assert_method_eq(INTERFACE_TESTS, [False,True,True], 'IdentityBoolArray', [0,1,2])
         self.assert_method_eq(INTERFACE_TESTS, [1,2,3], 'IdentityInt16Array', [1,2,3])
         self.assert_method_eq(INTERFACE_TESTS, [1,2,3], 'IdentityUInt16Array', [1,2,3])
@@ -165,10 +167,9 @@ class Client(SignalTestsImpl):
         self.assert_method_eq(INTERFACE_TESTS, 6, 'Sum', [1,2,3])
         self.assert_method_eq(INTERFACE_TESTS, {'fps': ['unreal', 'quake'], 'rts': ['warcraft']}, 'InvertMapping', {'unreal': 'fps', 'quake': 'fps', 'warcraft': 'rts'})
 
-        # FIXME: for Pythonicness, this should really return a tuple
-        self.assert_method_eq(INTERFACE_TESTS, ['a', 1, 2], 'DeStruct', ('a', 1, 2))
-        self.assert_method_eq(INTERFACE_TESTS, ['x'], 'Primitize', [Variant(Variant(['x']))])
-        self.assert_method_eq(INTERFACE_TESTS, ['x', 1, 2], 'Primitize', [Variant([Variant(['x']), Array([Byte(1), Byte(2)])])])
+        self.assert_method_eq(INTERFACE_TESTS, ('a', 1, 2), 'DeStruct', ('a', 1, 2))
+        self.assert_method_eq(INTERFACE_TESTS, [Variant('x')], 'Primitize', [Variant(Variant(['x']))])
+        self.assert_method_eq(INTERFACE_TESTS, [Variant('x'), Variant(Byte(1)), Variant(Byte(2))], 'Primitize', [Variant([Variant(['x']), Array([Byte(1), Byte(2)])])])
         self.assert_method_eq(INTERFACE_TESTS, False, 'Invert', 42)
         self.assert_method_eq(INTERFACE_TESTS, True, 'Invert', 0)
 

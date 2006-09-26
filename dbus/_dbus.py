@@ -41,8 +41,8 @@ For example, the dbus-daemon itself provides a service and some objects::
 """
 
 __all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus', 'Interface',
-        # From exceptions (some originally from _dbus_bindings)
-        'DBusException', 'ConnectionError', 'MissingErrorHandlerException',
+        # From exceptions (DBusException originally from _dbus_bindings)
+        'DBusException', 'MissingErrorHandlerException',
         'MissingReplyHandlerException', 'ValidationException',
         'IntrospectionParserException', 'UnknownMethodException',
         'NameExistsException',
@@ -58,7 +58,7 @@ from proxies import *
 from exceptions import *
 from matchrules import *
 
-class Bus(object):
+class Bus(_dbus_bindings._Bus):
     """A connection to a DBus daemon.
 
     One of three possible standard buses, the SESSION, SYSTEM,
@@ -111,17 +111,13 @@ class Bus(object):
         else:
             raise ValueError('invalid bus_type %s' % bus_type)
 
-        bus = object.__new__(subclass)
+        bus = _dbus_bindings._Bus.__new__(subclass, bus_type)
 
         bus._bus_type = bus_type
         bus._bus_names = weakref.WeakValueDictionary()
         bus._match_rule_tree = SignalMatchTree()
 
-        # FIXME: if you get a starter and a system/session bus connection
-        # in the same process, it's the same underlying connection that
-        # is returned by bus_get, but we initialise it twice
-        bus._connection = _dbus_bindings.bus_get(bus_type, private)
-        bus._connection.add_filter(bus._signal_func)
+        bus._add_filter(bus._signal_func)
 
         if use_default_mainloop:
             func = getattr(dbus, "_dbus_mainloop_setup_function", None)
@@ -138,13 +134,10 @@ class Bus(object):
         # same object if __new__ returns a shared instance
         pass
 
-    def close(self):
-        """Close the connection."""
-        self._connection.close()
-
     def get_connection(self):
-        """Return the underlying `_dbus_bindings.Connection`."""
-        return self._connection
+        return self
+
+    _connection = property(get_connection)
 
     def get_session(private=False):
         """Static method that returns a connection to the session bus.
@@ -277,7 +270,7 @@ class Bus(object):
 
         self._match_rule_tree.add(match_rule)
 
-        _dbus_bindings.bus_add_match(self._connection, repr(match_rule))
+        self.add_match_string(repr(match_rule))
 
     def remove_signal_receiver(self, handler_function, 
                                signal_name=None,
@@ -302,19 +295,13 @@ class Bus(object):
         
         self._match_rule_tree.remove(match_rule)
         
-        #TODO we leak match rules in the lower level bindings.  We need to ref count them
+        # TODO: remove the match string at the libdbus level
 
-    def get_unix_user(self, named_service):
-        """Get the numeric uid of the process which owns the given bus name
-        on the connected bus daemon.
-
-        :Parameters:
-            `named_service` : str
-                A bus name (may be either a unique name or a well-known name)
-        """
-        return _dbus_bindings.bus_get_unix_user(self._connection, named_service)
-    
     def _signal_func(self, connection, message):
+        """D-Bus filter function. Handle signals by dispatching to Python
+        callbacks kept in the match-rule tree.
+        """
+
         if (message.get_type() != _dbus_bindings.MESSAGE_TYPE_SIGNAL):
             return _dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
         
@@ -326,21 +313,6 @@ class Bus(object):
         match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
 
         self._match_rule_tree.exec_matches(match_rule, message)
-
-    def start_service_by_name(self, named_service):
-        """Start a service which will implement the given bus name on this
-        Bus.
-
-        :Parameters:
-            `named_service` : str
-                The well-known bus name for which an implementation is required
-
-        :Returns: A tuple of 2 elements. The first is always True, the second is
-                  either START_REPLY_SUCCESS or START_REPLY_ALREADY_RUNNING.
-
-        :Raises DBusException: if the service could not be started.
-        """
-        return _dbus_bindings.bus_start_service_by_name(self._connection, named_service)
 
     def __repr__(self):
         if self._bus_type == self.TYPE_SESSION:

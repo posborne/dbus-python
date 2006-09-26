@@ -6,7 +6,6 @@ sys.path.append("dbus")
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.clean import clean
-from Pyrex.Distutils import build_ext
 
 import extract
 
@@ -20,15 +19,11 @@ def remove(filename):
 class full_clean(clean):
     def run(self):
         clean.run(self)
-        remove("dbus/extract.pyo")
-        remove("dbus/_dbus_bindings.pxd")
-        remove("dbus/_dbus_bindings.c")
-        remove("dbus/_dbus_glib_bindings.c")
         remove("ChangeLog")
 
 includedirs_flag = ['-I.']
-dbus_includes = ['.']
-dbus_glib_includes = ['.']
+dbus_includes = ['.', 'include']
+dbus_glib_includes = ['.', 'include']
 
 pipe = os.popen3("pkg-config --cflags dbus-1")
 output = pipe[1].read().strip()
@@ -102,11 +97,6 @@ if error:
     raise SystemExit
 dbus_glib_libs.extend([ x.replace("-L", "") for x in output.split() ])
 
-output = open("dbus/_dbus_bindings.pxd", 'w')
-includedirs_flag.append('-Idbus/')
-extract.main("dbus/_dbus_bindings.pxd.in", includedirs_flag, output)
-output.close()
-
 long_desc = '''D-BUS is a message bus system, a simple way for applications to
 talk to one another.
 
@@ -143,22 +133,19 @@ setup(
         "dbus/_util",
     ],
     ext_modules=[
-        Extension("_dbus_bindings", ["dbus/_dbus_bindings.pyx"],
+        Extension("_dbus_bindings", ["_dbus_bindings/module.c"],
+            extra_compile_args=['-O0'],
             include_dirs=dbus_includes,
             library_dirs=dbus_libs,
             libraries=["dbus-1"],
-
         ),
-        Extension("_dbus_glib_bindings", ["dbus/_dbus_glib_bindings.pyx"],
+        Extension("_dbus_glib_bindings", ["_dbus_glib_bindings/module.c"],
             include_dirs=dbus_glib_includes,
             library_dirs=dbus_glib_libs,
             libraries=["dbus-glib-1", "dbus-1", "glib-2.0"],
-            define_macros=[
-                ('DBUS_API_SUBJECT_TO_CHANGE', '1')
-            ],
         ),
     ],
-    cmdclass={'build_ext': build_ext, 'clean': full_clean, 'check': dbus_python_check}
+    cmdclass={'clean': full_clean, 'check': dbus_python_check}
 )
 
 # vim:ts=4:sw=4:tw=80:si:ai:showmatch:et

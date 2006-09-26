@@ -1,0 +1,84 @@
+===============================
+API changes in dbus-python-in-c
+===============================
+
+:Author: Simon McVittie
+:Contact: simon.mcvittie@collabora.co.uk
+:Organization: `Collabora Ltd`_
+:Date: 2006-09-26
+
+.. _ Collabora Ltd: http://www.collabora.co.uk/
+
+* Byte is a subtype of str rather than of int, which better matches
+  Python's conventions for dealing with byte streams. Its constructor
+  accepts either single-byte strings or integers in the range 0 to 255.
+
+* In method parameters, method returns from proxy methods, etc.,
+  integers arrive as instances of dbus.Int32 etc., bytes arrive as
+  Byte, and so on, rather than everything being converted to an
+  appropriate built-in Python type. This means you can tell exactly
+  what arguments went over the bus, and their types.
+
+* Variants arrive as method parameters, returns from proxy methods, etc.
+  as Variant objects. This is a bit of a big change, but makes things
+  completely unambiguous. To unwrap variants like the old Pyrex
+  implementation did, you can write::
+
+      while isinstance(myparam, dbus.Variant):
+          myparam = myparam.object
+
+  This should also work (and do nothing) under the Pyrex implementation.
+
+* The D-Bus integer types (dbus.Int32, etc.) are properly range-checked.
+
+* Variants are now immutable "value objects".
+
+* Variants are somewhat more useful: they can be cast using int(),
+  str(), long(), float(), you can iterate over them with iter() if they
+  contain an iterable, you can compare them with ``==`` and ``!=``,
+  and you can hash them if the underlying object supports it.
+
+* Array constructor takes arguments (iterable[, signature])
+  rather than (iterable[, type][, signature]); ditto Variant, Dict
+
+* Proxy methods with multiple return values return a tuple rather than
+  a list.
+
+* Calling a proxy method with reply ignored, or with async
+  handlers, returns None
+
+* The Boolean, String, Double and Struct types are now aliases for the
+  built-in bool, unicode, float and tuple types. Their use is vaguely
+  deprecated.
+
+* ConnectionError no longer exists (it was never raised)
+
+* dbus_bindings is now called _dbus_bindings, and is considerably
+  different internally:
+
+  * connections are private at the libdbus level: shared connections
+    are only shared among Python code
+
+  * The MessageIter stuff is now done in C: there's a much simpler
+    Python API, ``Message.append(...)`` where positional arguments are
+    the things to be appended, and the keyword argument ``signature``
+    controls how objects are interpreted
+
+  * The signature-guessing algorithm used if there is no proper
+    signature is exposed as a static method,
+    ``Message.guess_signature(*args)``
+
+  * Bus is a subclass of Connection rather than being a wrapper object
+    which has-a Connection
+
+  * Some relatively internal methods have been renamed starting with
+    an underscore - most Python code shouldn't need to use them, and
+    they expose the full complexity of Messages etc.
+
+  * The timeouts in _send_with_reply and in _send_with_reply_and_block
+    are in (possibly fractional) seconds, as is conventional in Python
+
+  * The specialized Message subclasses have names ending with Message
+
+..
+  vim:set sw=2 sts=2 et ft=rst tw=72:

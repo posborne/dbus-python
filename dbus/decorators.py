@@ -104,18 +104,15 @@ def signal(dbus_interface, signature=None):
     def decorator(func):
         def emit_signal(self, *args, **keywords):
             func(self, *args, **keywords)
-            message = _dbus_bindings.Signal(self._object_path, dbus_interface, func.__name__)
-            iter = message.get_iter(True)
+            message = _dbus_bindings.SignalMessage(self._object_path, dbus_interface, func.__name__)
 
             if emit_signal._dbus_signature:
-                signature = tuple(_dbus_bindings.Signature(emit_signal._dbus_signature))
-                for (arg, sig) in zip(args, signature):
-                    iter.append_strict(arg, sig)
+                message.append(signature=emit_signal._dbus_signature,
+                               *args)
             else:
-                for arg in args:
-                    iter.append(arg)
+                message.append(*args)
 
-            self._connection.send(message)
+            self._connection._send(message)
 
         args = inspect.getargspec(func)[0]
         args.pop(0)

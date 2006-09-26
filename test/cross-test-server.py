@@ -1,5 +1,6 @@
 import sys
 from sets import Set
+import logging
 
 import gobject
 
@@ -11,6 +12,9 @@ from crosstest import CROSS_TEST_PATH, CROSS_TEST_BUS_NAME, \
                       INTERFACE_SINGLE_TESTS, INTERFACE_TESTS,\
                       INTERFACE_CALLBACK_TESTS, INTERFACE_SIGNAL_TESTS,\
                       SignalTestsImpl
+
+
+logging.basicConfig()
 
 
 class VerboseSet(Set):
@@ -63,7 +67,7 @@ class SingleTestsImpl(dbus.service.Object):
     @dbus.service.method(INTERFACE_SINGLE_TESTS, 'ay', 'u')
     def Sum(self, input):
         tested_things.add(INTERFACE_SINGLE_TESTS + '.Sum')
-        return sum(input)
+        return sum(map(ord, input))
 
 
 class TestsImpl(dbus.service.Object):
@@ -219,7 +223,10 @@ class TestsImpl(dbus.service.Object):
                 for y in self.primitivize_helper(x):
                     yield y
                 for y in self.primitivize_helper(input[x]):
-                    yield input[x]
+                    yield y
+        elif isinstance(input, dbus.Variant):
+            for x in self.primitivize_helper(input()):
+                yield x
         else:
             yield input
 

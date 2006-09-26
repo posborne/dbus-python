@@ -3,6 +3,7 @@ import sys
 import os
 import unittest
 import time
+import logging
 
 builddir = os.environ["DBUS_TOP_BUILDDIR"]
 pydir = builddir
@@ -15,6 +16,10 @@ import _dbus_bindings
 import gobject
 import dbus.glib
 import dbus.service
+
+
+logging.basicConfig()
+
 
 pkg = dbus.__file__
 if not pkg.startswith(pydir):
@@ -32,7 +37,7 @@ test_types_vals = [1, 12323231, 3.14159265, 99999999.99,
                  {1:"a", 2:"b"}, {"a":1, "b":2}, #{"a":(1,"B")},
                  {1:1.1, 2:2.2}, [[1,2,3],[2,3,4]], [["a","b"],["c","d"]],
                  True, False,
-                 dbus.Int16(-10), dbus.UInt16(10),
+                 dbus.Int16(-10), dbus.UInt16(10), 'SENTINEL',
                  #([1,2,3],"c", 1.2, ["a","b","c"], {"a": (1,"v"), "b": (2,"d")})
                  ]
 
@@ -62,7 +67,7 @@ class TestDBusBindings(unittest.TestCase):
         for send_val in test_types_vals:
             print "Testing %s"% str(send_val)
             recv_val = self.iface.Echo(send_val)
-            self.assertEquals(send_val, recv_val)
+            self.assertEquals(send_val, recv_val.object)
 
     def testBenchmarkIntrospect(self):
         print "\n********* Benchmark Introspect ************"
@@ -91,7 +96,7 @@ class TestDBusBindings(unittest.TestCase):
                     if self.do_exit:
                         main_loop.quit()
 
-                    self.test_controler.assertEquals(val, self.expected_result)
+                    self.test_controler.assertEquals(val.object, self.expected_result)
                 except Exception, e:
                     print "%s:\n%s" % (e.__class__, e)
 
@@ -100,7 +105,8 @@ class TestDBusBindings(unittest.TestCase):
                 if self.do_exit:
                     main_loop.quit()
 
-                self.test_controler.assert_(val, False)
+                self.test_controler.assert_(False, '%s: %s' % (error.__class__,
+                                                               error))
         
         last_type = test_types_vals[-1]
         for send_val in test_types_vals:
@@ -123,7 +129,7 @@ class TestDBusBindings(unittest.TestCase):
         values = ["", ("",""), ("","",""), [], {}, ["",""], ["","",""]]
         methods = [
                     (self.iface.ReturnOneString, 'SignalOneString', set([0]), set([0])),
-                    (self.iface.ReturnTwoStrings, 'SignalTwoStrings', set([1, 5]), set([5])),
+                    (self.iface.ReturnTwoStrings, 'SignalTwoStrings', set([1, 5]), set([1])),
                     (self.iface.ReturnStruct, 'SignalStruct', set([1, 5]), set([1])),
                     # all of our test values are sequences so will marshall correctly into an array :P
                     (self.iface.ReturnArray, 'SignalArray', set(range(len(values))), set([3, 5, 6])),
@@ -136,7 +142,7 @@ class TestDBusBindings(unittest.TestCase):
                 try:
                     ret = method(value)
                 except Exception, e:
-                    print "%s(%r) raised %s" % (method._method_name, values[value], e.__class__)
+                    print "%s(%r) raised %s: %s" % (method._method_name, values[value], e.__class__, e)
 
                     # should fail if it tried to marshal the wrong type
                     self.assert_(value not in success_values, "%s should succeed when we ask it to return %r\n%s\n%s" % (method._method_name, values[value], e.__class__, e))
@@ -148,7 +154,7 @@ class TestDBusBindings(unittest.TestCase):
 
                     # check the value is right too :D
                     returns = map(lambda n: values[n], return_values)
-                    self.assert_(ret in returns, "%s should return one of %r" % (method._method_name, returns))
+                    self.assert_(ret in returns, "%s should return one of %r but it returned %r instead" % (method._method_name, returns, ret))
 
             print "\nTrying correct emission of", signal
             for value in range(len(values)):
@@ -183,12 +189,11 @@ class TestDBusBindings(unittest.TestCase):
                 print "calling AsynchronousMethod with %s %s %s" % (async, fail, val)
                 ret = self.iface.AsynchronousMethod(async, fail, val)
             except Exception, e:
-                print "%s:\n%s" % (e.__class__, e)
-                self.assert_(fail)
+                self.assert_(fail, '%s: %s' % (e.__class__, e))
+                print "Expected failure: %s: %s" % (e.__class__, e)
             else:
-                self.assert_(not fail)
-                print val, ret
-                self.assert_(val == ret)
+                self.assert_(not fail, 'Expected failure but succeeded?!')
+                self.assertEquals(val, ret.object)
 
     def testBusInstanceCaching(self):
         print "\n********* Testing dbus.Bus instance sharing *********"
@@ -262,7 +267,7 @@ class TestDBusBindings(unittest.TestCase):
         del names
 
         bus = dbus.Bus()
-        ret = _dbus_bindings.bus_name_has_owner(bus._connection, 'org.freedesktop.DBus.Python.TestName')
+        ret = bus.name_has_owner('org.freedesktop.DBus.Python.TestName')
         self.assert_(not ret, 'deleting reference failed to release BusName org.freedesktop.DBus.Python.TestName')
 
 """ Remove this for now
@@ -298,7 +303,7 @@ class TestDBusPythonToGLibBindings(unittest.TestCase):
         for send_val in test_types_vals:
             print "Testing %s"% str(send_val)
             recv_val = self.iface.EchoVariant(send_val)
-            self.assertEquals(send_val, recv_val)
+            self.assertEquals(send_val, recv_val.object)
 """
 if __name__ == '__main__':
     gobject.threads_init()
