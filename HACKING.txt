@@ -1,0 +1,35 @@
+=========================================
+D-Bus Python bindings - notes for hackers
+=========================================
+
+:Author: Simon McVittie
+:Date: 2006-09-26
+
+Code organisation
+=================
+
+Python wants everything except the init function to be declared static, so the
+whole of _dbus_bindings is a single translation unit - module.c #includes
+various files *-impl.h, which define static (sometimes static inline)
+functions. Even so, it compiles quicker than the old Pyrex implementation :-p
+
+Threading/locking model
+=======================
+
+All Python functions must be called with the GIL (obviously).
+
+Before calling into any D-Bus function that can block, release the GIL;
+as well as the usual "be nice to other threads", D-Bus does its own
+locking and we don't want to deadlock with it. Most Connection methods
+can block.
+
+Indentation and other holy wars
+===============================
+
+Python code is meant to follow PEP8, and has 4-space indentation, no hard tabs.
+
+C code is meant to follow what PEP7 as "Python 3000" style - 4-space
+indentation, no hard tabs, otherwise consistent with historical Python 2.x
+code.
+
+Docstrings etc. are reStructuredText.
