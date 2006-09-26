@@ -23,8 +23,8 @@
  *
  */
 
-PyDoc_STRVAR(Message_get_args__doc__,
-"get_args(**kwargs) -> tuple\n\n"
+PyDoc_STRVAR(Message_get_args_list__doc__,
+"get_args_list(**kwargs) -> list\n\n"
 "Return the message's arguments. Keyword arguments control the translation\n"
 "of D-Bus types to Python:\n"
 "\n"
@@ -355,7 +355,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
 }
 
 static PyObject *
-Message_get_args(Message *self, PyObject *args, PyObject *kwargs)
+Message_get_args_list(Message *self, PyObject *args, PyObject *kwargs)
 {
     Message_get_args_options opts = { 0, 0, 0, 0, 0 };
     static char *argnames[] = { "integer_bytes", "byte_arrays",
@@ -366,11 +366,12 @@ Message_get_args(Message *self, PyObject *args, PyObject *kwargs)
     DBusMessageIter iter;
 
     if (PyTuple_Size(args) != 0) {
-        PyErr_SetString(PyExc_TypeError, "get_args takes no positional "
+        PyErr_SetString(PyExc_TypeError, "get_args_list takes no positional "
                         "arguments");
         return NULL;
     }
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|iiiii:get_args", argnames,
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|iiiii:get_args_list",
+                                     argnames,
                                      &(opts.integer_bytes), &(opts.byte_arrays),
                                      &(opts.untyped_integers),
                                      &(opts.variant_unpack_level),
@@ -394,10 +395,7 @@ Message_get_args(Message *self, PyObject *args, PyObject *kwargs)
     fprintf(stderr, "\n");
 #endif
 
-    tuple = PyList_AsTuple(list);
-    /* whether tuple is NULL or not, we take the same action: */
-    Py_DECREF(list);
-    return tuple;
+    return list;
 }
 
 /* vim:set ft=c cino< sw=4 sts=4 et: */
