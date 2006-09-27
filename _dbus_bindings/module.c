@@ -49,33 +49,33 @@ static PyMethodDef module_functions[] = {
 };
 
 PyMODINIT_FUNC
-init_dbus_bindings (void)
+init_dbus_bindings(void)
 {
     PyObject *this_module;
 
-    if (!init_generic ()) return;
-    if (!init_exception_types ()) return;
-    if (!init_signature ()) return;
-    if (!init_types ()) return;
-    if (!init_container_types ()) return;
-    if (!init_byte_types ()) return;
-    if (!init_message_types ()) return;
-    if (!init_pending_call ()) return;
-    if (!init_conn_types ()) return;
-    if (!init_bus_types ()) return;
+    if (!init_generic()) return;
+    if (!init_exception_types()) return;
+    if (!init_signature()) return;
+    if (!init_types()) return;
+    if (!init_container_types()) return;
+    if (!init_byte_types()) return;
+    if (!init_message_types()) return;
+    if (!init_pending_call()) return;
+    if (!init_conn_types()) return;
+    if (!init_bus_types()) return;
 
-    this_module = Py_InitModule3 ("_dbus_bindings", module_functions, module_doc);
+    this_module = Py_InitModule3("_dbus_bindings", module_functions, module_doc);
     if (!this_module) return;
 
-    if (!insert_exception_types (this_module)) return;
-    if (!insert_signature (this_module)) return;
-    if (!insert_types (this_module)) return;
-    if (!insert_container_types (this_module)) return;
-    if (!insert_byte_types (this_module)) return;
-    if (!insert_message_types (this_module)) return;
-    if (!insert_pending_call (this_module)) return;
-    if (!insert_conn_types (this_module)) return;
-    if (!insert_bus_types (this_module)) return;
+    if (!insert_exception_types(this_module)) return;
+    if (!insert_signature(this_module)) return;
+    if (!insert_types(this_module)) return;
+    if (!insert_container_types(this_module)) return;
+    if (!insert_byte_types(this_module)) return;
+    if (!insert_message_types(this_module)) return;
+    if (!insert_pending_call(this_module)) return;
+    if (!insert_conn_types(this_module)) return;
+    if (!insert_bus_types(this_module)) return;
 
 #define ADD_CONST_VAL(x, v) \
     if (PyModule_AddIntConstant(this_module, x, v) < 0) return;
