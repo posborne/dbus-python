@@ -5,6 +5,8 @@ _dbus_glib_bindings.c
 _dbus_bindings.pxd
 ChangeLog
 build
+dist
 *.pyc
 *.pyo
 .*.sw?
+MANIFEST
