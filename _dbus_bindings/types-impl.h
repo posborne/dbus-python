@@ -62,7 +62,7 @@ PyDoc_STRVAR(UInt32_tp_doc,
 "An unsigned 32-bit integer (a subtype of long).");
 
 PyDoc_STRVAR(Int64_tp_doc,
-"A signed 16-bit integer (a subtype of long).");
+"A signed 64-bit integer (a subtype of long).");
 
 PyDoc_STRVAR(UInt64_tp_doc,
 "An unsigned 64-bit integer (a subtype of long).");
