@@ -121,8 +121,10 @@ validate_bus_name(PyObject *unused, PyObject *args, PyObject *kwargs)
     static char *argnames[] = { "name", "allow_unique", "allow_well_known",
                                 NULL };
 
-    if (!PyArg_ParseTuple(args, kwargs, "s|ii:validate_bus_name", argnames,
-                          &name, &allow_unique, &allow_well_known)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs,
+                                     "s|ii:validate_bus_name", argnames,
+                                     &name, &allow_unique,
+                                     &allow_well_known)) {
         return NULL;
     }
     if (!_validate_bus_name(name, !!allow_unique, !!allow_well_known)) {
