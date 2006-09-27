@@ -45,7 +45,7 @@ PyDoc_STRVAR(module_doc,
 #include "bus-impl.h"                /* Bus */
 
 static PyMethodDef module_functions[] = {
-#define ENTRY(name,flags) {#name, name, flags, name##__doc__}
+#define ENTRY(name,flags) {#name, (PyCFunction)name, flags, name##__doc__}
     ENTRY(validate_interface_name, METH_VARARGS),
     ENTRY(validate_member_name, METH_VARARGS),
     ENTRY(validate_bus_name, METH_VARARGS|METH_KEYWORDS),
