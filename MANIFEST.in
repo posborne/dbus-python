@@ -1,14 +1,15 @@
 include COPYING
 include AUTHORS
 include README
+include HACKING.txt
+include API_CHANGES.txt
 include setup.py
 include NEWS
 include ChangeLog
-recursive-include dbus *.py *.c *.h
-include dbus/dbus_bindings.pyx
-include dbus/dbus_glib_bindings.pyx
-include dbus/dbus_bindings.pxd.in
-include dbus/dbus_bindings.pxd
+recursive-include dbus *.py
+include include/dbus_bindings.h
+recursive-include _dbus_bindings *.h *.c
+include _dbus_glib_bindings/module.c
 recursive-include test *.py *.sh
 recursive-include tools *.sh *.conf 
 
