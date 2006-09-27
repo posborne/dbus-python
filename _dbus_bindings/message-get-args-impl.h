@@ -282,9 +282,11 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
               return dict;
           }
           else if (opts->byte_arrays && type == DBUS_TYPE_BYTE) {
+              DBusMessageIter sub;
               int n;
               DBG("%s", "actually, a byte array...");
-              dbus_message_iter_get_fixed_array(iter,
+              dbus_message_iter_recurse(iter, &sub);
+              dbus_message_iter_get_fixed_array(&sub,
                                                 (const unsigned char **)&u.s,
                                                 &n);
               return ByteArray_from_uchars((const unsigned char *)u.s, n);
