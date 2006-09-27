@@ -135,7 +135,7 @@ PyDoc_STRVAR(Connection__send_with_reply__doc__,
 "       If the reply takes more than this many seconds, a timeout error\n"
 "       will be created locally and raised instead. If this timeout is\n"
 "       negative (default), a sane default (supplied by libdbus) is used.\n"
-":Returns\n"
+":Returns:\n"
 "   A `PendingCall` instance which can be used to cancel the pending call.\n"
 "\n"
 );
@@ -197,10 +197,10 @@ PyDoc_STRVAR(Connection__send_with_reply_and_block__doc__,
 "       If the reply takes more than this many seconds, a timeout error\n"
 "       will be created locally and raised instead. If this timeout is\n"
 "       negative (default), a sane default (supplied by libdbus) is used.\n"
-":Returns\n"
+":Returns:\n"
 "   A `Message` instance (probably a `MethodReturnMessage`) on success\n"
-":Raises\n"
-"   A `DBusException` on error (including if the reply arrives but is an\n"
+":Raises DBusException:\n"
+"   On error (including if the reply arrives but is an\n"
 "   error message)\n"
 "\n"
 );
@@ -341,7 +341,7 @@ PyDoc_STRVAR(Connection__add_filter__doc__,
 "_add_filter(callable)\n\n"
 "Add the given message filter to the internal list.\n\n"
 "Filters are handlers that are run on all incoming messages, prior to the\n"
-"objects registered with `_register_object_path`.\n"
+"objects registered with `_register_object_path`.\n\n"
 "Filters are run in the order that they were added. The same handler can\n"
 "be added as a filter more than once, in which case it will be run more\n"
 "than once. Filters added during a filter callback won't be run on the\n"
@@ -375,7 +375,10 @@ Connection__add_filter(Connection *self, PyObject *callable)
 
 PyDoc_STRVAR(Connection__remove_filter__doc__,
 "_remove_filter(callable)\n\n"
-"Remove the given message filter (see `_add_filter` for details).\n");
+"Remove the given message filter (see `_add_filter` for details).\n"
+"\n"
+":Raises LookupError:\n"
+"   The given callable is not among the registered filters\n");
 static PyObject *
 Connection__remove_filter(Connection *self, PyObject *callable)
 {
@@ -395,16 +398,25 @@ Connection__remove_filter(Connection *self, PyObject *callable)
     Py_RETURN_NONE;
 }
 
-/* object exports not yet implemented: */
-
 PyDoc_STRVAR(Connection__register_object_path__doc__,
 "_register_object_path(path: str, on_message: callable[, on_unregister: "
-"callable][, **kwargs])\n\n"
-"Keyword arguments accepted:\n"
-"fallback: bool (default False): if True, when a message arrives for a\n"
-"'subdirectory' of the given path and there is no more specific handler,\n"
-"use this handler. Normally this handler is only run if the paths match\n"
-"exactly.\n"
+"callable[, fallback: bool]])\n"
+"\n"
+"Register a callback to be called when messages arrive at the given\n"
+"object-path. Typically used to export objects' methods on the bus.\n"
+"\n"
+":Parameters:\n"
+"   `path` : str\n"
+"       Object path to be acted on\n"
+"   `on_message` : callable\n"
+"       Called when a message arrives at the given object-path, with\n"
+"       two positional parameters: the first is this Connection,\n"
+"       the second is the incoming message.\n"
+"   `fallback` : bool\n"
+"       If True (the default is False), when a message arrives for a\n"
+"       'subdirectory' of the given path and there is no more specific\n"
+"       handler, use this handler. Normally this handler is only run if\n"
+"       the paths match exactly.\n"
 );
 static PyObject *
 Connection__register_object_path(Connection *self, PyObject *args,

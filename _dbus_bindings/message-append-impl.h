@@ -29,7 +29,7 @@ PyDoc_STRVAR(Message_append__doc__,
 "the signature given by the ``signature`` keyword parameter.\n"
 "\n"
 "The following type conversions are supported:\n\n"
-"------------------------------- ---------------------------\n"
+"=============================== ===========================\n"
 "D-Bus (in signature)            Python\n"
 "=============================== ===========================\n"
 "boolean (b)                     any object (via bool())\n"
@@ -43,7 +43,7 @@ PyDoc_STRVAR(Message_append__doc__,
 "dict (a{...})                   any mapping\n"
 "array (a...)                    any iterable over appropriate objects\n"
 "struct ((...))                  any iterable over appropriate objects\n"
-"------------------------------- ---------------------------\n"
+"=============================== ===========================\n"
 "\n"
 "Here 'any integer' means anything on which int() or long()\n"
 "(as appropriate) will work, except for basestring subclasses.\n"
@@ -60,7 +60,7 @@ PyDoc_STRVAR(Message_guess_signature__doc__,
 "Python objects.\n"
 "\n"
 "The signature is constructed as follows:\n\n"
-"------------------------------- ---------------------------\n"
+"=============================== ===========================\n"
 "Python                          D-Bus\n"
 "=============================== ===========================\n"
 "bool                            boolean (y)\n"
@@ -80,7 +80,7 @@ PyDoc_STRVAR(Message_guess_signature__doc__,
 "dict or a subclass              dict (a{...}), guess key, value type\n"
 "                                according to types for an arbitrary item\n"
 "anything else                   raise TypeError\n"
-"------------------------------- ---------------------------\n"
+"=============================== ===========================\n"
 );
 
 /* Return a new reference. */

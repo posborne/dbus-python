@@ -104,12 +104,20 @@ static dbus_bool_t _validate_bus_name(const char *name,
 }
 
 PyDoc_STRVAR(validate_bus_name__doc__,
-"validate_bus_name(name: str[, allow_unique: bool[, allow_well_known: "
-"bool]])\n\n"
-"Raise ValueError if the argument is not a valid bus name.\n\n"
+"validate_bus_name(name[, allow_unique=True[, allow_well_known=True]])\n"
+"\n"
+"Raise ValueError if the argument is not a valid bus name.\n"
+"\n"
 "By default both unique and well-known names are accepted.\n"
-"The keyword arguments allow_unique and/or allow_well_known allow\n"
-"either type of bus name to be rejected.\n"
+"\n"
+":Parameters:\n"
+"   `name` : str\n"
+"       The name to be validated\n"
+"   `allow_unique` : bool\n"
+"       If False, unique names of the form :1.123 will be rejected\n"
+"   `allow_well_known` : bool\n"
+"       If False, well-known names of the form com.example.Foo\n"
+"       will be rejected\n"
 );
 
 static PyObject *
@@ -166,7 +174,8 @@ static dbus_bool_t _validate_member_name(const char *name)
 }
 
 PyDoc_STRVAR(validate_member_name__doc__,
-"validate_member_name(name: str)\n\n"
+"validate_member_name(name)\n"
+"\n"
 "Raise ValueError if the argument is not a valid member (signal or method) "
 "name.\n"
 );
@@ -250,13 +259,13 @@ static dbus_bool_t _validate_interface_name(const char *name)
 }
 
 PyDoc_STRVAR(validate_interface_name__doc__,
-"validate_interface_name(name: str)\n\n"
-"Raise ValueError if the argument is not a valid interface name.\n"
+"validate_interface_name(name)\n\n"
+"Raise ValueError if the given string is not a valid interface name.\n"
 );
 
 PyDoc_STRVAR(validate_error_name__doc__,
-"validate_error_name(name: str)\n\n"
-"Raise ValueError if the argument is not a valid error name.\n"
+"validate_error_name(name)\n\n"
+"Raise ValueError if the given string is not a valid error name.\n"
 );
 
 static PyObject *
@@ -313,8 +322,8 @@ static dbus_bool_t _validate_object_path(const char *path)
 }
 
 PyDoc_STRVAR(validate_object_path__doc__,
-"validate_object_path(name: str)\n\n"
-"Raise ValueError if the argument is not a valid object path.\n"
+"validate_object_path(name)\n\n"
+"Raise ValueError if the given string is not a valid object path.\n"
 );
 
 static PyObject *

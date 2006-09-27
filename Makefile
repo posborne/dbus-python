@@ -12,7 +12,7 @@ default:
 docs:
 	$(PYTHON) setup.py build
 	cd $(shell echo build/lib.*) && PYTHONPATH=. \
-	$(EPYDOC) -o ../epydoc --html --docformat plaintext -v \
+	$(EPYDOC) -o ../epydoc --html --docformat restructuredtext -v \
 		dbus _dbus_bindings _dbus_glib_bindings
 
 cross-test-compile:
