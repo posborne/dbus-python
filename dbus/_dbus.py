@@ -117,7 +117,7 @@ class Bus(_dbus_bindings._Bus):
         bus._bus_names = weakref.WeakValueDictionary()
         bus._match_rule_tree = SignalMatchTree()
 
-        bus._add_filter(bus._signal_func)
+        bus._add_filter(bus.__class__._signal_func)
 
         if use_default_mainloop:
             func = getattr(dbus, "_dbus_mainloop_setup_function", None)
@@ -297,7 +297,7 @@ class Bus(_dbus_bindings._Bus):
         
         # TODO: remove the match string at the libdbus level
 
-    def _signal_func(self, connection, message):
+    def _signal_func(self, message):
         """D-Bus filter function. Handle signals by dispatching to Python
         callbacks kept in the match-rule tree.
         """
