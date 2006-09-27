@@ -6,7 +6,7 @@ EPYDOC ?= epydoc
 
 default:
 	rm -rf build/lib.*/*.so build/temp.*
-	$(PYTHON) setup.py build -g
+	$(PYTHON) setup.py build
 
 # This assumes you've only built for one architecture.
 docs:

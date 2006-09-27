@@ -134,7 +134,6 @@ setup(
     ],
     ext_modules=[
         Extension("_dbus_bindings", ["_dbus_bindings/module.c"],
-            extra_compile_args=['-O0'],
             include_dirs=dbus_includes,
             library_dirs=dbus_libs,
             libraries=["dbus-1"],
