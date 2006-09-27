@@ -28,7 +28,8 @@
 #define INSIDE_DBUS_BINDINGS
 #include "dbus_bindings.h"
 
-PyDoc_STRVAR(module_doc, "");
+PyDoc_STRVAR(module_doc,
+"Low-level Python bindings for libdbus.\n");
 
 #include "debug-impl.h"              /* DBG, USING_DBG, DBG_EXC */
 #include "generic-impl.h"            /* Non D-Bus support code */
@@ -77,7 +78,7 @@ init_dbus_bindings (void)
     if (!insert_bus_types (this_module)) return;
 
 #define ADD_CONST_VAL(x, v) \
-    if (PyModule_AddIntConstant (this_module, x, v) < 0) abort();
+    if (PyModule_AddIntConstant(this_module, x, v) < 0) return;
 #define ADD_CONST_PREFIXED(x) ADD_CONST_VAL(#x, DBUS_##x)
 #define ADD_CONST(x) ADD_CONST_VAL(#x, x)
 
@@ -134,6 +135,9 @@ init_dbus_bindings (void)
     ADD_CONST_PREFIXED(HANDLER_RESULT_HANDLED)
     ADD_CONST_PREFIXED(HANDLER_RESULT_NOT_YET_HANDLED)
     ADD_CONST_PREFIXED(HANDLER_RESULT_NEED_MEMORY)
+
+    if (PyModule_AddStringConstant(this_module, "__docformat__",
+                                   "restructuredtext") < 0) return;
 }
 
 /* vim:set ft=c cino< sw=4 sts=4 et: */
