@@ -45,6 +45,15 @@ PyDoc_STRVAR(module_doc,
 #include "bus-impl.h"                /* Bus */
 
 static PyMethodDef module_functions[] = {
+#define ENTRY(name,flags) {#name, name, flags, name##__doc__}
+    ENTRY(validate_interface_name, METH_VARARGS),
+    ENTRY(validate_member_name, METH_VARARGS),
+    ENTRY(validate_bus_name, METH_VARARGS|METH_KEYWORDS),
+    ENTRY(validate_object_path, METH_VARARGS),
+    /* validate_error_name is just implemented as validate_interface_name */
+    {"validate_error_name", validate_interface_name,
+     METH_VARARGS, validate_error_name__doc__},
+#undef ENTRY
     {NULL, NULL, 0, NULL}
 };
 

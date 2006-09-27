@@ -3,9 +3,10 @@
 __all__ = ('explicitly_pass_message', 'method', 'signal')
 __docformat__ = 'restructuredtext'
 
-import _util
 import inspect
+
 import _dbus_bindings
+
 
 def method(dbus_interface, in_signature=None, out_signature=None, async_callbacks=None, sender_keyword=None):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
@@ -50,7 +51,7 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
             decorated function. When the method is called, the sender's
             unique name will be passed as this keyword argument.
     """
-    _util._validate_interface_or_name(dbus_interface)
+    _dbus_bindings.validate_interface_name(dbus_interface)
 
     def decorator(func):
         args = inspect.getargspec(func)[0]
@@ -86,6 +87,7 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
 
     return decorator
 
+
 def signal(dbus_interface, signature=None):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to emit signals on the D-Bus.
@@ -100,7 +102,7 @@ def signal(dbus_interface, signature=None):
         `signature` : str
             The signature of the signal in the usual D-Bus notation
     """
-    _util._validate_interface_or_name(dbus_interface)
+    _dbus_bindings.validate_interface_name(dbus_interface)
     def decorator(func):
         def emit_signal(self, *args, **keywords):
             func(self, *args, **keywords)
@@ -134,6 +136,7 @@ def signal(dbus_interface, signature=None):
         return emit_signal
 
     return decorator
+
 
 def explicitly_pass_message(func):
     """Decorator which marks the given function such that, if it is called
