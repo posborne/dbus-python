@@ -220,11 +220,16 @@ class ProxyObject:
             `signal_name` : str
                 The name of the signal
             `handler_function` : callable
-                A function to be called (FIXME arguments?) when the signal
-                is emitted by the remote object.
+                A function to be called when the signal is emitted by
+                the remote object. Its positional arguments will be the
+                arguments of the signal; optionally, it may be given
+                keyword arguments as described below.
             `dbus_interface` : str
                 Optional interface with which to qualify the signal name.
-                The default is to use the interface this Interface represents.
+                If None (the default) the handler will be called whenever a
+                signal of the given member name is received, whatever
+                its interface.
+        :Keywords:
             `sender_keyword` : str
                 If not None (the default), the handler function will receive
                 the unique name of the sending endpoint as a keyword
@@ -233,7 +238,7 @@ class ProxyObject:
                 If not None (the default), the handler function will receive
                 the object-path of the sending object as a keyword argument
                 with this name
-            `keywords`
+            `arg...`
                 If there are additional keyword parameters of the form
                 ``arg``\ *n*, match only signals where the *n*\ th argument
                 is the value given for that keyword parameter

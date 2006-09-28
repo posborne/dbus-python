@@ -242,11 +242,14 @@ class Bus(_dbus_bindings._Bus):
                                   path=None,
                                   **keywords):
         """Arrange for the given function to be called when a signal matching
-        the parameters is emitted.
+        the parameters is received.
 
         :Parameters:
             `handler_function` : callable
-                The function to be called.
+                The function to be called. Its positional arguments will
+                be the arguments of the signal. By default it will receive
+                no keyword arguments, but see the description of
+                the optional keyword arguments below.
             `signal_name` : str
                 The signal name; None (the default) matches all names
             `dbus_interface` : str
@@ -259,15 +262,16 @@ class Bus(_dbus_bindings._Bus):
             `path` : str
                 The object path of the object which must have emitted the
                 signal; None (the default) matches any object path
+        :Keywords:
             `sender_keyword` : str
                 If not None (the default), the handler function will receive
                 the unique name of the sending endpoint as a keyword
-                argument with this name
+                argument with this name.
             `path_keyword` : str
                 If not None (the default), the handler function will receive
                 the object-path of the sending object as a keyword argument
-                with this name
-            `keywords`
+                with this name.
+            `arg...`
                 If there are additional keyword parameters of the form
                 ``arg``\ *n*, match only signals where the *n*\ th argument
                 is the value given for that keyword parameter
@@ -434,6 +438,8 @@ class Interface:
             `dbus_interface` : str
                 Optional interface with which to qualify the signal name.
                 The default is to use the interface this Interface represents.
+                (FIXME: deprecate this? Violates least astonishment)
+        :Keywords:
             `sender_keyword` : str
                 If not None (the default), the handler function will receive
                 the unique name of the sending endpoint as a keyword
@@ -442,7 +448,7 @@ class Interface:
                 If not None (the default), the handler function will receive
                 the object-path of the sending object as a keyword argument
                 with this name
-            `keywords`
+            `arg...`
                 If there are additional keyword parameters of the form
                 ``arg``\ *n*, match only signals where the *n*\ th argument
                 is the value given for that keyword parameter
