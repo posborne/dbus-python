@@ -18,7 +18,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-import sys
 from sets import Set
 import logging
 
@@ -35,6 +34,7 @@ from crosstest import CROSS_TEST_PATH, CROSS_TEST_BUS_NAME, \
 
 
 logging.basicConfig()
+logger = logging.getLogger('cross-test-server')
 
 
 class VerboseSet(Set):
@@ -257,23 +257,27 @@ class TestsImpl(dbus.service.Object):
 
     @dbus.service.method(INTERFACE_TESTS, 'st', '')
     def Trigger(self, object, parameter):
-        sys.stderr.write('SERVER: method/signal: client wants me to emit Triggered(%r) from %r\n' % (parameter, object))
+        logger.info('method/signal: client wants me to emit Triggered(%r) from %r', parameter, object)
         tested_things.add(INTERFACE_TESTS + '.Trigger')
         gobject.idle_add(lambda: self.emit_Triggered_from(object, parameter))
     
     def emit_Triggered_from(self, object, parameter):
-        sys.stderr.write('SERVER: method/signal: Emitting Triggered(%r) from %r\n' % (parameter, object))
-        objects.setdefault(object, SignalTestsImpl(dbus.service.BusName(CROSS_TEST_BUS_NAME), object)).Triggered(parameter)
-        sys.stderr.write('SERVER: method/signal: Emitted Triggered\n')
+        logger.info('method/signal: Emitting Triggered(%r) from %r', parameter, object)
+        obj = objects.get(object, None)
+        if obj is None:
+            obj = SignalTestsImpl(dbus.service.BusName(CROSS_TEST_BUS_NAME), object)
+            objects[object] = obj
+        obj.Triggered(parameter)
+        logger.info('method/signal: Emitted Triggered')
 
     @dbus.service.method(INTERFACE_TESTS, '', '')
     def Exit(self):
-        sys.stderr.write('SERVER: client wants me to Exit\n')
+        logger.info('client wants me to Exit')
         tested_things.add(INTERFACE_TESTS + '.Exit')
         for x in testable_things:
             if x not in tested_things:
                 print '%s untested' % x
-        sys.stderr.write('SERVER: will quit when idle\n')
+        logger.info('will quit when idle')
         gobject.idle_add(self._exit_fn)
 
 
@@ -281,11 +285,11 @@ class Server(SingleTestsImpl, TestsImpl, SignalTestsImpl):
 
     def triggered_by_client(self, parameter1, parameter2, sender, sender_path):
         # Called when the client emits TestSignals.Trigger from any object.
-        sys.stderr.write('SERVER: signal/callback: Triggered by client (%s:%s): (%r,%r)\n' % (sender, sender_path, parameter1, parameter2))
+        logger.info('signal/callback: Triggered by client (%s:%s): (%r,%r)', sender, sender_path, parameter1, parameter2)
         tested_things.add(INTERFACE_SIGNAL_TESTS + '.Trigger')
         dbus.Interface(dbus.SessionBus().get_object(sender, sender_path),
                        INTERFACE_CALLBACK_TESTS).Response(parameter1, parameter2)
-        sys.stderr.write('SERVER: signal/callback: Sent Response\n')
+        logger.info('signal/callback: Sent Response')
 
 
 
@@ -294,6 +298,7 @@ if __name__ == '__main__':
     bus_name = BusName(CROSS_TEST_BUS_NAME)
     loop = gobject.MainLoop()
     obj = Server(bus_name, CROSS_TEST_PATH, loop.quit)
+    objects[CROSS_TEST_PATH] = obj
     bus.add_signal_receiver(obj.triggered_by_client,
                             signal_name='Trigger',
                             dbus_interface=INTERFACE_SIGNAL_TESTS,
@@ -301,8 +306,7 @@ if __name__ == '__main__':
                             path=None,
                             sender_keyword='sender',
                             path_keyword='sender_path')
-    objects[CROSS_TEST_PATH] = obj
 
-    sys.stderr.write("SERVER: running...\n")
+    logger.info("running...")
     loop.run()
-    sys.stderr.write("SERVER: main loop exited.\n")
+    logger.info("main loop exited.")
