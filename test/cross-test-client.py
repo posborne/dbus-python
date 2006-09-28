@@ -45,7 +45,7 @@ class Client(SignalTestsImpl):
     def quit(self):
         for x in self.expected:
             self.fail_id += 1
-            print "<%s> fail %d" % (x, self.fail_id)
+            print "%s fail %d" % (x, self.fail_id)
             print "report %d: reply to %s didn't arrive" % (self.fail_id, x)
         sys.stderr.write("CLIENT: asking server to Exit\n")
         Interface(self.obj, INTERFACE_TESTS).Exit(reply_handler=self.quit_reply_handler, error_handler=self.quit_error_handler)
@@ -67,11 +67,11 @@ class Client(SignalTestsImpl):
         self.expected.discard('%s.Trigger' % INTERFACE_SIGNAL_TESTS)
         if (input1, input2) != (42, 23):
             self.fail_id += 1
-            print "<%s.Trigger> fail %d" % (INTERFACE_SIGNAL_TESTS, self.fail_id)
+            print "%s.Trigger fail %d" % (INTERFACE_SIGNAL_TESTS, self.fail_id)
             print ("report %d: expected (42,23), got %r"
                    % (self.fail_id, (input1, input2)))
         else:
-            print "<%s.Trigger> pass" % INTERFACE_SIGNAL_TESTS
+            print "%s.Trigger pass" % INTERFACE_SIGNAL_TESTS
         self.quit()
 
     def assert_method_eq(self, interface, ret, member, *args):
@@ -81,18 +81,18 @@ class Client(SignalTestsImpl):
             real_ret = method(*args)
         except Exception, e:
             self.fail_id += 1
-            print "<%s.%s> fail %d" % (interface, member, self.fail_id)
+            print "%s.%s fail %d" % (interface, member, self.fail_id)
             print ("report %d: %s.%s%r: expected %r, raised %r \"%s\""
                    % (self.fail_id, interface, member, args, ret, e, e))
             __import__('traceback').print_exc()
             return
         if real_ret != ret:
             self.fail_id += 1
-            print "<%s.%s> fail %d" % (interface, member, self.fail_id)
+            print "%s.%s fail %d" % (interface, member, self.fail_id)
             print ("report %d: %s.%s%r: expected %r, got %r"
                    % (self.fail_id, interface, member, args, ret, real_ret))
             return
-        print "<%s.%s> pass" % (interface, member)
+        print "%s.%s pass" % (interface, member)
 
 
     def triggered_cb(self, param, sender_path):
@@ -101,16 +101,16 @@ class Client(SignalTestsImpl):
         self.expected.discard('%s.Trigger' % INTERFACE_TESTS)
         if sender_path != '/Where/Ever':
             self.fail_id += 1
-            print "<%s.Trigger> fail %d" % (INTERFACE_TESTS, self.fail_id)
+            print "%s.Trigger fail %d" % (INTERFACE_TESTS, self.fail_id)
             print ("report %d: expected signal from /Where/Ever, got %r"
                    % (self.fail_id, sender_path))
         elif param != 42:
             self.fail_id += 1
-            print "<%s.Trigger> fail %d" % (INTERFACE_TESTS, self.fail_id)
+            print "%s.Trigger fail %d" % (INTERFACE_TESTS, self.fail_id)
             print ("report %d: expected signal param 42, got %r"
                    % (self.fail_id, parameter))
         else:
-            print "<%s.Trigger> pass" % INTERFACE_TESTS
+            print "%s.Trigger pass" % INTERFACE_TESTS
 
     def trigger_returned_cb(self):
         sys.stderr.write('CLIENT: method/signal: Trigger() returned\n')

@@ -39,7 +39,7 @@ logging.basicConfig()
 
 class VerboseSet(Set):
     def add(self, thing):
-        print '<%s> ok' % thing
+        print '%s ok' % thing
         Set.add(self, thing)
 
 
@@ -272,7 +272,7 @@ class TestsImpl(dbus.service.Object):
         tested_things.add(INTERFACE_TESTS + '.Exit')
         for x in testable_things:
             if x not in tested_things:
-                print '<%s> untested' % x
+                print '%s untested' % x
         sys.stderr.write('SERVER: will quit when idle\n')
         gobject.idle_add(self._exit_fn)
 
