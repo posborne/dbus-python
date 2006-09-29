@@ -344,7 +344,7 @@ static PyTypeObject UInt32Type = {
 static dbus_int64_t
 int64_range_check(PyObject *obj)
 {
-    unsigned long i;
+    long long i;
     PyObject *long_obj = PyNumber_Long(obj);
 
     if (!long_obj) return -1;
