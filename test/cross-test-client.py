@@ -190,18 +190,30 @@ class Client(SignalTestsImpl):
             self.assert_method_eq(INTERFACE_TESTS, Variant(42.5), 'Identity', Double(42.5))
             self.assert_method_eq(INTERFACE_TESTS, Variant(-42.5), 'Identity', -42.5)
 
-        self.assert_method_eq(INTERFACE_TESTS, Byte(42), 'IdentityByte', Byte(42))
-        self.assert_method_eq(INTERFACE_TESTS, True, 'IdentityBool', Boolean(42))
+        for i in (0, 42, 255):
+            self.assert_method_eq(INTERFACE_TESTS, Byte(i), 'IdentityByte', Byte(i))
+        for i in (True, False):
+            self.assert_method_eq(INTERFACE_TESTS, i, 'IdentityBool', i)
 
-        self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityInt16', Int16(42))
-        self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityUInt16', UInt16(42))
-        self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityInt32', Int32(42))
-        self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityUInt32', UInt32(42))
-        self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityInt64', Int64(42))
-        self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityUInt64', UInt64(42))
+        for i in (-0x8000, 0, 42, 0x7fff):
+            self.assert_method_eq(INTERFACE_TESTS, i, 'IdentityInt16', Int16(i))
+        for i in (0, 42, 0xffff):
+            self.assert_method_eq(INTERFACE_TESTS, i, 'IdentityUInt16', UInt16(i))
+        for i in (-0x7fffffff-1, 0, 42, 0x7fffffff):
+            self.assert_method_eq(INTERFACE_TESTS, i, 'IdentityInt32', Int32(i))
+        for i in (0L, 42L, 0xffffffffL):
+            self.assert_method_eq(INTERFACE_TESTS, i, 'IdentityUInt32', UInt32(i))
+        MANY = 0x8000L * 0x10000L * 0x10000L * 0x10000L
+        for i in (-MANY, 0, 42, MANY-1):
+            self.assert_method_eq(INTERFACE_TESTS, i, 'IdentityInt64', Int64(i))
+        for i in (0, 42, 2*MANY - 1):
+            self.assert_method_eq(INTERFACE_TESTS, i, 'IdentityUInt64', UInt64(i))
+
         self.assert_method_eq(INTERFACE_TESTS, 42.3, 'IdentityDouble', 42.3)
-        self.assert_method_eq(INTERFACE_TESTS, u'\xa9', 'IdentityString', u'\xa9')
-        self.assert_method_eq(INTERFACE_TESTS, u'foo', 'IdentityString', 'foo')
+        for i in ('', 'foo'):
+            self.assert_method_eq(INTERFACE_TESTS, i, 'IdentityString', i)
+        for i in (u'\xa9', '\xc2\xa9'):
+            self.assert_method_eq(INTERFACE_TESTS, u'\xa9', 'IdentityString', i)
 
         if have_signatures:
             self.assert_method_eq(INTERFACE_TESTS, Byte(0x42), 'IdentityByte', '\x42')
