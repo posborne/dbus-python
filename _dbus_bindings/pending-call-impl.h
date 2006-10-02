@@ -76,7 +76,6 @@ _pending_call_notify_function(DBusPendingCall *pc,
 {
     PyGILState_STATE gil = PyGILState_Ensure();
     DBusMessage *msg = dbus_pending_call_steal_reply(pc);
-    Message *msg_obj;
 
     if (!msg) {
         /* omg, what happened here? the notify should only get called
@@ -84,9 +83,12 @@ _pending_call_notify_function(DBusPendingCall *pc,
         PyErr_Warn(PyExc_UserWarning, "D-Bus notify function was called "
                    "for an incomplete pending call (shouldn't happen)");
     } else {
-        msg_obj = (Message *)Message_ConsumeDBusMessage(msg);
+        Message *msg_obj = (Message *)Message_ConsumeDBusMessage(msg);
+
         if (msg_obj) {
-            Py_XDECREF(PyObject_CallFunctionObjArgs(handler, msg_obj, NULL));
+            PyObject *ret = PyObject_CallFunctionObjArgs(handler, msg_obj, NULL);
+
+            Py_XDECREF(ret);
         }
         /* else OOM has happened - not a lot we can do about that,
          * except possibly making it fatal (FIXME?) */
