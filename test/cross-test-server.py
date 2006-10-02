@@ -34,6 +34,7 @@ from crosstest import CROSS_TEST_PATH, CROSS_TEST_BUS_NAME, \
 
 
 logging.basicConfig()
+logging.getLogger().setLevel(1)
 logger = logging.getLogger('cross-test-server')
 
 
@@ -87,7 +88,9 @@ class SingleTestsImpl(dbus.service.Object):
     @dbus.service.method(INTERFACE_SINGLE_TESTS, 'ay', 'u')
     def Sum(self, input):
         tested_things.add(INTERFACE_SINGLE_TESTS + '.Sum')
-        return sum(map(ord, input))
+        u = sum(map(ord, input))
+        logger.info('Sum of %r is %r', input, u)
+        return u
 
 
 class TestsImpl(dbus.service.Object):
@@ -209,7 +212,10 @@ class TestsImpl(dbus.service.Object):
     @dbus.service.method(INTERFACE_TESTS, 'ai', 'x')
     def Sum(self, input):
         tested_things.add(INTERFACE_TESTS + '.Sum')
-        return sum(input)
+        x = sum(input)
+        logger.info('Sum of %r is %r', input, x)
+        return x
+
 
     @dbus.service.method(INTERFACE_TESTS, 'a{ss}', 'a{sas}')
     def InvertMapping(self, input):
