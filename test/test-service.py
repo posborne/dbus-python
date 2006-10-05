@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2004 Seth Nickell
+# Copyright (C) 2004 Red Hat Inc. <http://www.redhat.com/>
 # Copyright (C) 2005, 2006 Collabora Ltd. <http://www.collabora.co.uk/>
 #
 # Licensed under the Academic Free License version 2.1

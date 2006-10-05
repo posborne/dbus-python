@@ -1,7 +1,6 @@
-# Copyright (C) 2003, 2004 Seth Nickell
+# Copyright (C) 2003, 2004, 2005, 2006 Red Hat Inc. <http://www.redhat.com/>
 # Copyright (C) 2003 David Zeuthen
 # Copyright (C) 2004 Rob Taylor
-# Copyright (C) 2004, 2005, 2006 Red Hat Inc. <http://www.redhat.com/>
 # Copyright (C) 2005, 2006 Collabora Ltd. <http://www.collabora.co.uk/>
 # Copyright (C) 2006 Osvaldo Santana Neto
 # Copyright (C) 2006 Joseph Sacco
