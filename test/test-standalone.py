@@ -44,6 +44,14 @@ if not _dbus_bindings.__file__.startswith(pydir):
 
 class TestTypes(unittest.TestCase):
 
+    def test_integers(self):
+        # This is an API guarantee. Note that exactly which of these types
+        # are ints and which of them are longs is *not* guaranteed.
+        for cls in (types.Int16, types.UInt16, types.Int32, types.UInt32,
+            types.Int64, types.UInt64):
+            assert issubclass(cls, (int, long))
+            assert isinstance(cls(0), (int, long))
+
     def test_Variant(self):
         Variant = types.Variant
         a = self.assert_
