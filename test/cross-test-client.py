@@ -253,9 +253,9 @@ class Client(SignalTestsImpl):
             self.assert_method_eq(INTERFACE_TESTS, [Variant(Int32(1)),Variant(Int32(2)),Variant(Int32(3))], 'IdentityArray', [Int32(1),Int32(2),Int32(3)])
             self.assert_method_eq(INTERFACE_TESTS, [Variant(u'a'),Variant(u'b'),Variant(u'c')], 'IdentityArray', ['a','b','c'])
 
-        self.assert_method_eq(INTERFACE_TESTS, ['\x01','\x02','\x03'], 'IdentityByteArray', ByteArray('\x01\x02\x03'))
+        self.assert_method_eq(INTERFACE_TESTS, [1,2,3], 'IdentityByteArray', ByteArray('\x01\x02\x03'))
         if have_signatures:
-            self.assert_method_eq(INTERFACE_TESTS, ['\x01','\x02','\x03'], 'IdentityByteArray', ['\x01', '\x02', '\x03'])
+            self.assert_method_eq(INTERFACE_TESTS, [1,2,3], 'IdentityByteArray', ['\x01', '\x02', '\x03'])
         self.assert_method_eq(INTERFACE_TESTS, [False,True], 'IdentityBoolArray', [False,True])
         if have_signatures:
             self.assert_method_eq(INTERFACE_TESTS, [False,True,True], 'IdentityBoolArray', [0,1,2])

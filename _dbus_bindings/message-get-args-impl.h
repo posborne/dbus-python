@@ -59,7 +59,7 @@ PyDoc_STRVAR(Message_get_args_list__doc__,
 "D-Bus            Python\n"
 "===============  ===================================================\n"
 "byte (y)         Byte (int if integer_bytes set)\n"
-"bool (b)         bool\n"
+"bool (b)         Boolean (int subclass)\n"
 "Signature (g)    Signature (str subclass)\n"
 "intNN, uintNN    IntNN, UIntNN (int/long subclass)\n"
 "                 (int/long if untyped_integers set)\n"
@@ -167,7 +167,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
       case DBUS_TYPE_DOUBLE:
           DBG("%s", "found a double");
           dbus_message_iter_get_basic(iter, &u.d);
-          return PyFloat_FromDouble(u.d);
+          return Double_from_double(u.d);
 
       case DBUS_TYPE_INT16:
           DBG("%s", "found an int16");
@@ -239,7 +239,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
       case DBUS_TYPE_BOOLEAN:
           DBG("%s", "found a bool");
           dbus_message_iter_get_basic(iter, &u.b);
-          return PyBool_FromLong(u.b);
+          return Boolean_from_long(u.b);
 
       case DBUS_TYPE_ARRAY:
           DBG("%s", "found an array...");

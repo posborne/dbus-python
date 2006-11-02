@@ -28,7 +28,11 @@
 
 static PyTypeObject Int16Type, Int32Type, Int64Type;
 static PyTypeObject UInt16Type, UInt32Type, UInt64Type;
-static PyTypeObject ObjectPathType;
+static PyTypeObject ObjectPathType, BooleanType;
+static PyTypeObject DoubleType;
+#ifdef WITH_DBUS_FLOAT32
+static PyTypeObject FloatType;
+#endif
 
 #define DEFINE_CHECK(type) \
 static inline int type##_Check (PyObject *o) \
@@ -43,11 +47,19 @@ DEFINE_CHECK(UInt16)
 DEFINE_CHECK(UInt32)
 DEFINE_CHECK(UInt64)
 DEFINE_CHECK(ObjectPath)
+DEFINE_CHECK(Double)
+DEFINE_CHECK(Boolean)
+#ifdef WITH_DBUS_FLOAT32
+DEFINE_CHECK(Float)
+#endif
 #undef DEFINE_CHECK
 
 /* The Int and UInt types are nice and simple.
 FIXME: use Python int as base for UInt32 and Int64 on 64-bit platforms?
 */
+
+PyDoc_STRVAR(Boolean_tp_doc,
+"A boolean (a subtype of int).");
 
 PyDoc_STRVAR(Int16_tp_doc,
 "A signed 16-bit integer (a subtype of int).");
@@ -66,6 +78,90 @@ PyDoc_STRVAR(Int64_tp_doc,
 
 PyDoc_STRVAR(UInt64_tp_doc,
 "An unsigned 64-bit integer (a subtype of long).");
+
+PyDoc_STRVAR(Double_tp_doc,
+"A double-precision floating point number (a subtype of float).");
+
+#ifdef WITH_DBUS_FLOAT32
+PyDoc_STRVAR(Float_tp_doc,
+"A single-precision floating point number (a subtype of float).");
+#endif
+
+static PyObject *
+Boolean_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
+{
+    PyObject *tuple, *self;
+    int i;
+    static char *argnames[] = {"value", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i:__new__", argnames,
+                                     &i)) return NULL;
+    tuple = Py_BuildValue("(i)", i ? 1 : 0);
+    if (!tuple) return NULL;
+    self = (PyInt_Type.tp_new)(cls, tuple, NULL);
+    Py_DECREF(tuple);
+    return self;
+}
+
+static PyObject *
+Boolean_from_long(long b)
+{
+    PyObject *self;
+    PyObject *tuple = Py_BuildValue("(i)", b ? 1 : 0);
+    if (!tuple) return NULL;
+    self = (PyInt_Type.tp_new)(&BooleanType, tuple, NULL);
+    Py_DECREF(tuple);
+    return self;
+}
+
+static PyObject *
+Boolean_tp_repr (PyObject *self)
+{
+    return PyString_FromFormat("%s(%s)", self->ob_type->tp_name,
+                               PyInt_AsLong(self) ? "True" : "False");
+}
+
+static PyTypeObject BooleanType = {
+    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
+    0,
+    "dbus.Boolean",
+    0,
+    0,
+    0,                                      /* tp_dealloc */
+    0,                                      /* tp_print */
+    0,                                      /* tp_getattr */
+    0,                                      /* tp_setattr */
+    0,                                      /* tp_compare */
+    Boolean_tp_repr,                        /* tp_repr */
+    0,                                      /* tp_as_number */
+    0,                                      /* tp_as_sequence */
+    0,                                      /* tp_as_mapping */
+    0,                                      /* tp_hash */
+    0,                                      /* tp_call */
+    0,                                      /* tp_str */
+    0,                                      /* tp_getattro */
+    0,                                      /* tp_setattro */
+    0,                                      /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    Boolean_tp_doc,                         /* tp_doc */
+    0,                                      /* tp_traverse */
+    0,                                      /* tp_clear */
+    0,                                      /* tp_richcompare */
+    0,                                      /* tp_weaklistoffset */
+    0,                                      /* tp_iter */
+    0,                                      /* tp_iternext */
+    0,                                      /* tp_methods */
+    0,                                      /* tp_members */
+    0,                                      /* tp_getset */
+    DEFERRED_ADDRESS(&PyInt_Type),          /* tp_base */
+    0,                                      /* tp_dict */
+    0,                                      /* tp_descr_get */
+    0,                                      /* tp_descr_set */
+    0,                                      /* tp_dictoffset */
+    0,                                      /* tp_init */
+    0,                                      /* tp_alloc */
+    Boolean_tp_new,                         /* tp_new */
+};
 
 static dbus_int16_t
 int16_range_check(PyObject *obj)
@@ -492,6 +588,116 @@ static PyTypeObject UInt64Type = {
 
 #endif /* defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG) */
 
+/* Float types ====================================================== */
+
+static PyObject *
+Double_from_double(double d)
+{
+    PyObject *self;
+    PyObject *tuple = Py_BuildValue("(f)", d);
+    if (!tuple) return NULL;
+    self = (PyFloat_Type.tp_new)(&DoubleType, tuple, NULL);
+    Py_DECREF(tuple);
+    return self;
+}
+
+static PyTypeObject DoubleType = {
+    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
+    0,
+    "dbus.Double",
+    0,
+    0,
+    0,                                      /* tp_dealloc */
+    0,                                      /* tp_print */
+    0,                                      /* tp_getattr */
+    0,                                      /* tp_setattr */
+    0,                                      /* tp_compare */
+    float_subclass_tp_repr,                 /* tp_repr */
+    0,                                      /* tp_as_number */
+    0,                                      /* tp_as_sequence */
+    0,                                      /* tp_as_mapping */
+    0,                                      /* tp_hash */
+    0,                                      /* tp_call */
+    0,                                      /* tp_str */
+    0,                                      /* tp_getattro */
+    0,                                      /* tp_setattro */
+    0,                                      /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    Double_tp_doc,                          /* tp_doc */
+    0,                                      /* tp_traverse */
+    0,                                      /* tp_clear */
+    0,                                      /* tp_richcompare */
+    0,                                      /* tp_weaklistoffset */
+    0,                                      /* tp_iter */
+    0,                                      /* tp_iternext */
+    0,                                      /* tp_methods */
+    0,                                      /* tp_members */
+    0,                                      /* tp_getset */
+    DEFERRED_ADDRESS(&PyFloat_Type),        /* tp_base */
+    0,                                      /* tp_dict */
+    0,                                      /* tp_descr_get */
+    0,                                      /* tp_descr_set */
+    0,                                      /* tp_dictoffset */
+    0,                                      /* tp_init */
+    0,                                      /* tp_alloc */
+    0,                                      /* tp_new */
+};
+
+#ifdef WITH_DBUS_FLOAT32
+static PyObject *
+Float_from_double(double d)
+{
+    PyObject *self;
+    PyObject *tuple = Py_BuildValue("(f)", d);
+    if (!tuple) return NULL;
+    self = (PyFloat_Type.tp_new)(&DoubleType, tuple, NULL);
+    Py_DECREF(tuple);
+    return self;
+}
+
+static PyTypeObject FloatType = {
+    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
+    0,
+    "dbus.Float",
+    0,
+    0,
+    0,                                      /* tp_dealloc */
+    0,                                      /* tp_print */
+    0,                                      /* tp_getattr */
+    0,                                      /* tp_setattr */
+    0,                                      /* tp_compare */
+    float_subclass_tp_repr,                 /* tp_repr */
+    0,                                      /* tp_as_number */
+    0,                                      /* tp_as_sequence */
+    0,                                      /* tp_as_mapping */
+    0,                                      /* tp_hash */
+    0,                                      /* tp_call */
+    0,                                      /* tp_str */
+    0,                                      /* tp_getattro */
+    0,                                      /* tp_setattro */
+    0,                                      /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    Float_tp_doc,                           /* tp_doc */
+    0,                                      /* tp_traverse */
+    0,                                      /* tp_clear */
+    0,                                      /* tp_richcompare */
+    0,                                      /* tp_weaklistoffset */
+    0,                                      /* tp_iter */
+    0,                                      /* tp_iternext */
+    0,                                      /* tp_methods */
+    0,                                      /* tp_members */
+    0,                                      /* tp_getset */
+    DEFERRED_ADDRESS(&PyFloat_Type),        /* tp_base */
+    0,                                      /* tp_dict */
+    0,                                      /* tp_descr_get */
+    0,                                      /* tp_descr_set */
+    0,                                      /* tp_dictoffset */
+    0,                                      /* tp_init */
+    0,                                      /* tp_alloc */
+    0,                                      /* tp_new */
+};
+#endif /* defined(WITH_DBUS_FLOAT32) */
+
 /* Object path ====================================================== */
 
 PyDoc_STRVAR(ObjectPath_tp_doc,
@@ -600,6 +806,20 @@ init_types(void)
     if (PyType_Ready(&ObjectPathType) < 0) return 0;
     ObjectPathType.tp_print = NULL;
 
+    BooleanType.tp_base = &PyInt_Type;
+    if (PyType_Ready(&BooleanType) < 0) return 0;
+    BooleanType.tp_print = NULL;
+
+    DoubleType.tp_base = &PyFloat_Type;
+    if (PyType_Ready(&DoubleType) < 0) return 0;
+    DoubleType.tp_print = NULL;
+
+#ifdef WITH_DBUS_FLOAT32
+    FloatType.tp_base = &PyFloat_Type;
+    if (PyType_Ready(&FloatType) < 0) return 0;
+    FloatType.tp_print = NULL;
+#endif
+
     return 1;
 }
 
@@ -612,6 +832,11 @@ insert_types(PyObject *this_module)
     Py_INCREF(&UInt32Type);
     Py_INCREF(&Int64Type);
     Py_INCREF(&UInt64Type);
+    Py_INCREF(&BooleanType);
+#ifdef WITH_DBUS_FLOAT32
+    Py_INCREF(&FloatType);
+#endif
+    Py_INCREF(&DoubleType);
     if (PyModule_AddObject(this_module, "Int16",
                            (PyObject *)&Int16Type) < 0) return 0;
     if (PyModule_AddObject(this_module, "UInt16",
@@ -624,6 +849,14 @@ insert_types(PyObject *this_module)
                            (PyObject *)&Int64Type) < 0) return 0;
     if (PyModule_AddObject(this_module, "UInt64",
                            (PyObject *)&UInt64Type) < 0) return 0;
+    if (PyModule_AddObject(this_module, "Boolean",
+                           (PyObject *)&BooleanType) < 0) return 0;
+#ifdef WITH_DBUS_FLOAT32
+    if (PyModule_AddObject(this_module, "Float",
+                           (PyObject *)&FloatType) < 0) return 0;
+#endif
+    if (PyModule_AddObject(this_module, "Double",
+                           (PyObject *)&DoubleType) < 0) return 0;
 
     Py_INCREF(&ObjectPathType);
     if (PyModule_AddObject(this_module, "ObjectPath",

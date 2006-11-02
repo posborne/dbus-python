@@ -67,6 +67,26 @@ long_subclass_tp_repr(PyObject *self)
     return my_repr;
 }
 
+/* A generic repr() implementation for float subclasses, returning something
+ * like 'dbus.Double(123)'.
+ * Equivalent to the following Python:
+ * def __repr__(self):
+ *     return '%s(%r)' % (self.__class__, float.__repr__(self))
+ */
+static PyObject *
+float_subclass_tp_repr(PyObject *self)
+{
+    PyObject *parent_repr = (PyFloat_Type.tp_repr)(self);
+    PyObject *my_repr;
+
+    if (!parent_repr) return NULL;
+    my_repr = PyString_FromFormat("%s(%s)", self->ob_type->tp_name,
+                                  PyString_AS_STRING(parent_repr));
+    /* whether my_repr is NULL or not: */
+    Py_DECREF(parent_repr);
+    return my_repr;
+}
+
 /* A generic repr() implementation for str subclasses, returning something
  * like "dbus.ObjectPath('/foo/bar')".
  * Equivalent to the following Python:

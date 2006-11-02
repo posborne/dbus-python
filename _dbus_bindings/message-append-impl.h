@@ -63,7 +63,7 @@ PyDoc_STRVAR(Message_guess_signature__doc__,
 "=============================== ===========================\n"
 "Python                          D-Bus\n"
 "=============================== ===========================\n"
-"bool                            boolean (y)\n"
+"bool or dbus.Boolean            boolean (y)\n"
 "dbus.Int16, etc.                the corresponding type\n"
 "any other int subclass          int32 (i) (FIXME: make this error?)\n"
 "long or a subclass              int64 (x) (FIXME: make this error?)\n"
@@ -97,6 +97,8 @@ _signature_string_from_pyobject(PyObject *obj)
             return PyString_FromString(DBUS_TYPE_INT32_AS_STRING);
         else if (UInt16_Check(obj))
             return PyString_FromString(DBUS_TYPE_UINT16_AS_STRING);
+        else if (Boolean_Check(obj))
+            return PyString_FromString(DBUS_TYPE_BOOLEAN_AS_STRING);
         else
             return PyString_FromString(DBUS_TYPE_INT32_AS_STRING);
     }
@@ -112,8 +114,16 @@ _signature_string_from_pyobject(PyObject *obj)
     }
     else if (PyUnicode_Check(obj))
         return PyString_FromString(DBUS_TYPE_STRING_AS_STRING);
-    else if (PyFloat_Check(obj))
-        return PyString_FromString(DBUS_TYPE_DOUBLE_AS_STRING);
+    else if (PyFloat_Check(obj)) {
+#ifdef WITH_DBUS_FLOAT32
+        if (Double_Check(obj))
+            return PyString_FromString(DBUS_TYPE_DOUBLE_AS_STRING);
+        else if (Float_Check(obj))
+            return PyString_FromString(DBUS_TYPE_FLOAT_AS_STRING);
+        else
+#endif
+            return PyString_FromString(DBUS_TYPE_DOUBLE_AS_STRING);
+    }
     else if (Variant_Check(obj)) {
         return PyString_FromString(DBUS_TYPE_VARIANT_AS_STRING);
     }

@@ -158,8 +158,9 @@ class TestMessageMarshalling(unittest.TestCase):
         aeq = self.assertEquals
         s = _dbus_bindings.SignalMessage('/', 'foo.bar', 'baz')
         s.append('b', 'bytes', -1, 1, 'str', 'var', signature='yayiusv')
-        aeq(s.get_args_list(), ['b', ['b','y','t','e','s'], -1, 1,
-                                u'str', types.Variant(u'var', signature='s')])
+        aeq(s.get_args_list(), [ord('b'),
+                                [ord('b'),ord('y'),ord('t'),ord('e'), ord('s')],
+                                -1, 1, u'str', types.Variant(u'var', signature='s')])
         byte, bytes, int32, uint32, string, variant = s.get_args_list()
         aeq(byte.__class__, types.Byte)
         aeq(bytes.__class__, types.Array)

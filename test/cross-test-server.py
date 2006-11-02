@@ -88,7 +88,7 @@ class SingleTestsImpl(dbus.service.Object):
     @dbus.service.method(INTERFACE_SINGLE_TESTS, 'ay', 'u')
     def Sum(self, input):
         tested_things.add(INTERFACE_SINGLE_TESTS + '.Sum')
-        u = sum(map(ord, input))
+        u = sum(input)
         logger.info('Sum of %r is %r', input, u)
         return u
 
