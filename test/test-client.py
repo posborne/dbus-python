@@ -90,7 +90,8 @@ class TestDBusBindings(unittest.TestCase):
         for send_val in test_types_vals:
             print "Testing %s"% str(send_val)
             recv_val = self.iface.Echo(send_val)
-            self.assertEquals(send_val, recv_val.object)
+            self.assertEquals(send_val, recv_val)
+            self.assertEquals(recv_val.variant_level, 1)
 
     def testBenchmarkIntrospect(self):
         print "\n********* Benchmark Introspect ************"
@@ -119,7 +120,8 @@ class TestDBusBindings(unittest.TestCase):
                     if self.do_exit:
                         main_loop.quit()
 
-                    self.test_controler.assertEquals(val.object, self.expected_result)
+                    self.test_controler.assertEquals(val, self.expected_result)
+                    self.test_controler.assertEquals(val.variant_level, 1)
                 except Exception, e:
                     print "%s:\n%s" % (e.__class__, e)
 
@@ -133,9 +135,9 @@ class TestDBusBindings(unittest.TestCase):
         
         last_type = test_types_vals[-1]
         for send_val in test_types_vals:
-            print "Testing %s"% str(send_val)
-            check = async_check(self, send_val, last_type == send_val) 
-            recv_val = self.iface.Echo(send_val, 
+            print "Testing %s" % str(send_val)
+            check = async_check(self, send_val, last_type == send_val)
+            recv_val = self.iface.Echo(send_val,
                                        reply_handler = check.callback,
                                        error_handler = check.error_handler)
             
@@ -216,7 +218,8 @@ class TestDBusBindings(unittest.TestCase):
                 print "Expected failure: %s: %s" % (e.__class__, e)
             else:
                 self.assert_(not fail, 'Expected failure but succeeded?!')
-                self.assertEquals(val, ret.object)
+                self.assertEquals(val, ret)
+                self.assertEquals(1, ret.variant_level)
 
     def testBusInstanceCaching(self):
         print "\n********* Testing dbus.Bus instance sharing *********"

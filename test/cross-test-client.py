@@ -24,7 +24,7 @@ import logging
 
 import gobject
 
-from dbus import SessionBus, Interface, Array, Byte, Double, Variant, Boolean, ByteArray, Int16, Int32, Int64, UInt16, UInt32, UInt64
+from dbus import SessionBus, Interface, Array, Byte, Double, Boolean, ByteArray, Int16, Int32, Int64, UInt16, UInt32, UInt64, String, UTF8String, Struct, Dictionary
 from dbus.service import BusName
 import dbus.glib
 
@@ -109,7 +109,32 @@ class Client(SignalTestsImpl):
     def assert_method_eq(self, interface, ret, member, *args):
         def equals(real_ret, exp):
             if real_ret != exp:
+                raise AssertionError('expected %r of class %s, got %r of class %s' % (exp, exp.__class__, real_ret, real_ret.__class__))
+            if real_ret != exp:
                 raise AssertionError('expected %r, got %r' % (exp, real_ret))
+            if not isinstance(exp, (tuple, type(None))):
+                if real_ret.variant_level != getattr(exp, 'variant_level', 0):
+                    raise AssertionError('expected variant_level=%d, got %r with level %d'
+                        % (getattr(exp, 'variant_level', 0), real_ret,
+                           real_ret.variant_level))
+            if isinstance(exp, list) or isinstance(exp, tuple):
+                for i in xrange(len(exp)):
+                    try:
+                        equals(real_ret[i], exp[i])
+                    except AssertionError, e:
+                        if not isinstance(e.args, tuple):
+                            e.args = (e.args,)
+                        e.args = e.args + ('(at position %d in sequence)' % i,)
+                        raise e
+            elif isinstance(exp, dict):
+                for k in exp:
+                    try:
+                        equals(real_ret[k], exp[k])
+                    except AssertionError, e:
+                        if not isinstance(e.args, tuple):
+                            e.args = (e.args,)
+                        e.args = e.args + ('(at key %r in dict)' % k,)
+                        raise e
         self.assert_method_matches(interface, equals, ret, member, *args)
 
     def assert_InvertMapping_eq(self, interface, expected, member, mapping):
@@ -186,7 +211,7 @@ class Client(SignalTestsImpl):
     def run_synchronous_tests(self, obj):
         # We can't test that coercion works correctly unless the server has
         # sent us introspection data. Java doesn't :-/
-        have_signatures = False
+        have_signatures = True
 
         # "Single tests"
         if have_signatures:
@@ -196,17 +221,17 @@ class Client(SignalTestsImpl):
         self.assert_method_eq(INTERFACE_SINGLE_TESTS, 6, 'Sum', ByteArray('\x01\x02\x03'))
 
         # Main tests
-        self.assert_method_eq(INTERFACE_TESTS, Variant(u'foo', 's'), 'Identity', Variant('foo'))
-        self.assert_method_eq(INTERFACE_TESTS, Variant(Byte(42)), 'Identity', Variant(Byte(42)))
-        self.assert_method_eq(INTERFACE_TESTS, Variant(Variant(Variant(Variant(Variant(Variant(Variant(Byte(42)))))))), 'Identity', Variant(Variant(Variant(Variant(Variant(Variant(Variant(Byte(42)))))))))
-        self.assert_method_eq(INTERFACE_TESTS, Variant(42.5), 'Identity', Variant(Double(42.5)))
-        self.assert_method_eq(INTERFACE_TESTS, Variant(-42.5), 'Identity', Variant(-42.5))
+        self.assert_method_eq(INTERFACE_TESTS, String(u'foo', variant_level=1), 'Identity', String('foo'))
+        self.assert_method_eq(INTERFACE_TESTS, Byte(42, variant_level=1), 'Identity', Byte(42))
+        self.assert_method_eq(INTERFACE_TESTS, Byte(42, variant_level=23), 'Identity', Byte(42, variant_level=23))
+        self.assert_method_eq(INTERFACE_TESTS, Double(42.5, variant_level=1), 'Identity', 42.5)
+        self.assert_method_eq(INTERFACE_TESTS, Double(-42.5, variant_level=1), 'Identity', -42.5)
 
         if have_signatures:
-            self.assert_method_eq(INTERFACE_TESTS, Variant(u'foo', 's'), 'Identity', 'foo')
-            self.assert_method_eq(INTERFACE_TESTS, Variant(Byte(42)), 'Identity', Byte(42))
-            self.assert_method_eq(INTERFACE_TESTS, Variant(42.5), 'Identity', Double(42.5))
-            self.assert_method_eq(INTERFACE_TESTS, Variant(-42.5), 'Identity', -42.5)
+            self.assert_method_eq(INTERFACE_TESTS, String(u'foo', variant_level=1), 'Identity', 'foo')
+            self.assert_method_eq(INTERFACE_TESTS, Byte(42, variant_level=1), 'Identity', Byte(42))
+            self.assert_method_eq(INTERFACE_TESTS, Double(42.5, variant_level=1), 'Identity', Double(42.5))
+            self.assert_method_eq(INTERFACE_TESTS, Double(-42.5, variant_level=1), 'Identity', -42.5)
 
         for i in (0, 42, 255):
             self.assert_method_eq(INTERFACE_TESTS, Byte(i), 'IdentityByte', Byte(i))
@@ -244,16 +269,55 @@ class Client(SignalTestsImpl):
             self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityUInt64', 42)
             self.assert_method_eq(INTERFACE_TESTS, 42.0, 'IdentityDouble', 42)
 
-        self.assert_method_eq(INTERFACE_TESTS, [Variant(Byte('\x01')),Variant(Byte('\x02')),Variant(Byte('\x03'))], 'IdentityArray', [Variant(Byte('\x01')), Variant(Byte('\x02')), Variant(Byte('\x03'))])
-        self.assert_method_eq(INTERFACE_TESTS, [Variant(Int32(1)),Variant(Int32(2)),Variant(Int32(3))], 'IdentityArray', [Variant(Int32(1)),Variant(Int32(2)),Variant(Int32(3))])
-        self.assert_method_eq(INTERFACE_TESTS, [Variant(u'a'),Variant(u'b'),Variant(u'c')], 'IdentityArray', [Variant('a'),Variant('b'),Variant('c')])
+        self.assert_method_eq(INTERFACE_TESTS, [Byte('\x01', variant_level=1),
+                                                Byte('\x02', variant_level=1),
+                                                Byte('\x03', variant_level=1)],
+                                               'IdentityArray',
+                                               Array([Byte('\x01'),
+                                                      Byte('\x02'),
+                                                      Byte('\x03')],
+                                                     signature='v'))
+
+        self.assert_method_eq(INTERFACE_TESTS, [Int32(1, variant_level=1),
+                                                Int32(2, variant_level=1),
+                                                Int32(3, variant_level=1)],
+                                               'IdentityArray',
+                                               Array([Int32(1),
+                                                      Int32(2),
+                                                      Int32(3)],
+                                                     signature='v'))
+        self.assert_method_eq(INTERFACE_TESTS, [String(u'a', variant_level=1),
+                                                String(u'b', variant_level=1),
+                                                String(u'c', variant_level=1)],
+                                               'IdentityArray',
+                                               Array([String('a'),
+                                                      String('b'),
+                                                      String('c')],
+                                                     signature='v'))
 
         if have_signatures:
-            self.assert_method_eq(INTERFACE_TESTS, [Variant(Byte('\x01')),Variant(Byte('\x02')),Variant(Byte('\x03'))], 'IdentityArray', ByteArray('\x01\x02\x03'))
-            self.assert_method_eq(INTERFACE_TESTS, [Variant(Int32(1)),Variant(Int32(2)),Variant(Int32(3))], 'IdentityArray', [Int32(1),Int32(2),Int32(3)])
-            self.assert_method_eq(INTERFACE_TESTS, [Variant(u'a'),Variant(u'b'),Variant(u'c')], 'IdentityArray', ['a','b','c'])
+            self.assert_method_eq(INTERFACE_TESTS, [Byte('\x01', variant_level=1),
+                                                    Byte('\x02', variant_level=1),
+                                                    Byte('\x03', variant_level=1)],
+                                                   'IdentityArray',
+                                                   ByteArray('\x01\x02\x03'))
+            self.assert_method_eq(INTERFACE_TESTS, [Int32(1, variant_level=1),
+                                                    Int32(2, variant_level=1),
+                                                    Int32(3, variant_level=1)],
+                                                   'IdentityArray',
+                                                   [Int32(1),
+                                                    Int32(2),
+                                                    Int32(3)])
+            self.assert_method_eq(INTERFACE_TESTS, [String(u'a', variant_level=1),
+                                                    String(u'b', variant_level=1),
+                                                    String(u'c', variant_level=1)],
+                                                   'IdentityArray',
+                                                   ['a','b','c'])
 
-        self.assert_method_eq(INTERFACE_TESTS, [1,2,3], 'IdentityByteArray', ByteArray('\x01\x02\x03'))
+        self.assert_method_eq(INTERFACE_TESTS,
+                              [Byte(1), Byte(2), Byte(3)],
+                              'IdentityByteArray',
+                              ByteArray('\x01\x02\x03'))
         if have_signatures:
             self.assert_method_eq(INTERFACE_TESTS, [1,2,3], 'IdentityByteArray', ['\x01', '\x02', '\x03'])
         self.assert_method_eq(INTERFACE_TESTS, [False,True], 'IdentityBoolArray', [False,True])
@@ -286,21 +350,29 @@ class Client(SignalTestsImpl):
         self.assert_InvertMapping_eq(INTERFACE_TESTS, {'fps': ['unreal', 'quake'], 'rts': ['warcraft']}, 'InvertMapping', {'unreal': 'fps', 'quake': 'fps', 'warcraft': 'rts'})
 
         self.assert_method_eq(INTERFACE_TESTS, ('a', 1, 2), 'DeStruct', ('a', UInt32(1), Int16(2)))
-        self.assert_method_eq(INTERFACE_TESTS, [Variant('x')], 'Primitize', [Variant('x')])
-        if 0: self.assert_method_eq(INTERFACE_TESTS,
-                              [Variant('x'), Variant(Byte(1)), Variant(Byte(2))],
+        self.assert_method_eq(INTERFACE_TESTS, Array([String('x', variant_level=1)]),
+                              'Primitize', [String('x', variant_level=1)])
+        self.assert_method_eq(INTERFACE_TESTS, Array([String('x', variant_level=1)]),
+                              'Primitize', [String('x', variant_level=23)])
+        self.assert_method_eq(INTERFACE_TESTS,
+                              Array([String('x', variant_level=1),
+                               Byte(1, variant_level=1),
+                               Byte(2, variant_level=1)]),
                               'Primitize',
-                              [Variant([Variant(['x']),
-                                       Variant(Array([Byte(1),
-                                                      Byte(2)]))])])
-        if 0:
-            self.assert_method_eq(INTERFACE_TESTS, [Variant('x')], 'Primitize', [Variant(Variant(['x']))])
-            self.assert_method_eq(INTERFACE_TESTS, [Variant('x'), Variant(Byte(1)), Variant(Byte(2))], 'Primitize', [Variant([Variant(['x']), Array([Byte(1), Byte(2)])])])
-        self.assert_method_eq(INTERFACE_TESTS, False, 'Invert', True)
-        self.assert_method_eq(INTERFACE_TESTS, True, 'Invert', False)
+                              Array([String('x'), Byte(1), Byte(2)],
+                                    signature='v'))
+        self.assert_method_eq(INTERFACE_TESTS,
+                              Array([String('x', variant_level=1),
+                               Byte(1, variant_level=1),
+                               Byte(2, variant_level=1)]),
+                              'Primitize',
+                              Array([String('x'), Array([Byte(1), Byte(2)])],
+                                    signature='v'))
+        self.assert_method_eq(INTERFACE_TESTS, Boolean(False), 'Invert', True)
+        self.assert_method_eq(INTERFACE_TESTS, Boolean(True), 'Invert', False)
         if have_signatures:
-            self.assert_method_eq(INTERFACE_TESTS, False, 'Invert', 42)
-            self.assert_method_eq(INTERFACE_TESTS, True, 'Invert', 0)
+            self.assert_method_eq(INTERFACE_TESTS, Boolean(False), 'Invert', 42)
+            self.assert_method_eq(INTERFACE_TESTS, Boolean(True), 'Invert', 0)
 
 
 if __name__ == '__main__':

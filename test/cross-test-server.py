@@ -250,9 +250,8 @@ class TestsImpl(dbus.service.Object):
                     yield y
                 for y in self.primitivize_helper(input[x]):
                     yield y
-        elif isinstance(input, dbus.Variant):
-            for x in self.primitivize_helper(input()):
-                yield x
+        elif input.variant_level > 0:
+            yield input.__class__(input)
         else:
             yield input
 

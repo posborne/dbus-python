@@ -129,7 +129,7 @@ class TestObject(dbus.service.Object, TestInterface):
 
     @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='su', out_signature='')
     def EmitSignal(self, signal, value):
-        sig = getattr(self, signal, None)
+        sig = getattr(self, str(signal), None)
         assert(sig != None)
 
         val = self.returnValue(value)

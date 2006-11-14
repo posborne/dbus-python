@@ -33,6 +33,6 @@ if test -z "$DBUS_TEST_PYTHON_IN_RUN_TEST"; then
   exec tools/run-with-tmp-session-bus.sh $SCRIPTNAME $MODE
 fi  
 echo "running test-standalone.py"
-test/test-standalone.py || die "test-standalone.py failed"
+$DEBUGGER python test/test-standalone.py || die "test-standalone.py failed"
 echo "running test-client.py"
-test/test-client.py || die "test-client.py failed"
+$DEBUGGER python test/test-client.py || die "test-client.py failed"
