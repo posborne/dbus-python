@@ -23,6 +23,35 @@
  *
  */
 
+/* Return the number of variants wrapping the given object. Return 0
+ * if the object is not a D-Bus type.
+ */
+static long
+get_variant_level(PyObject *obj)
+{
+    if (DBusPythonInt_Check(obj)) {
+        return ((DBusPythonInt *)obj)->variant_level;
+    }
+    else if (DBusPythonFloat_Check(obj)) {
+        return ((DBusPythonFloat *)obj)->variant_level;
+    }
+    else if (Array_Check(obj)) {
+        return ((Array *)obj)->variant_level;
+    }
+    else if (Dict_Check(obj)) {
+        return ((Dict *)obj)->variant_level;
+    }
+    else if (DBusPythonLong_Check(obj) ||
+             DBusPythonString_Check(obj) ||
+             String_Check(obj) ||
+             Struct_Check(obj)) {
+        return PyInt_AsLong(PyObject_GetAttr(obj, variant_level_const));
+    }
+    else {
+        return 0;
+    }
+}
+
 PyDoc_STRVAR(Message_append__doc__,
 "set_args(*args[, **kwargs])\n\n"
 "Set the message's arguments from the positional parameter, according to\n"
@@ -63,38 +92,48 @@ PyDoc_STRVAR(Message_guess_signature__doc__,
 "=============================== ===========================\n"
 "Python                          D-Bus\n"
 "=============================== ===========================\n"
-"bool or dbus.Boolean            boolean (y)\n"
-"dbus.Int16, etc.                the corresponding type\n"
+"D-Bus type, variant_level > 0   variant (v)\n"
+"D-Bus type, variant_level == 0  the corresponding type\n"
+"bool                            boolean (y)\n"
 "any other int subclass          int32 (i) (FIXME: make this error?)\n"
-"long or a subclass              int64 (x) (FIXME: make this error?)\n"
-"float or a subclass             double (d)\n"
-"dbus.ObjectPath, dbus.Signature the corresponding type (o, g)\n"
-"dbus.ByteArray or subclass      array of byte (ay)\n"
-"dbus.Byte or subclass           byte (y)\n"
-"str or any other subclass       string (s)\n"
-"unicode or a subclass           string (s)\n"
-"dbus.Variant or subclass        variant (v), guess contents' type\n"
-"tuple or a subclass             struct ((...)), guess contents' types\n"
-"list or a subclass              array (a...), guess contents' type\n"
+"any other long subclass         int64 (x) (FIXME: make this error?)\n"
+"any other float subclass        double (d)\n"
+"any other str subclass          string (s)\n"
+"any other unicode subclass      string (s)\n"
+"any other tuple subclass        struct ((...)), guess contents' types\n"
+"any other list subclass         array (a...), guess contents' type\n"
 "                                according to type of first item\n"
-"dict or a subclass              dict (a{...}), guess key, value type\n"
+"any other dict subclass         dict (a{...}), guess key, value type\n"
 "                                according to types for an arbitrary item\n"
 "anything else                   raise TypeError\n"
 "=============================== ===========================\n"
 );
 
-/* Return a new reference. */
+/* Return a new reference. If the object is a variant and variant_level_ptr
+ * is not NULL, put the variant level in the variable pointed to, and
+ * return the contained type instead of "v". */
 static PyObject *
-_signature_string_from_pyobject(PyObject *obj)
+_signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
 {
+    long variant_level = get_variant_level(obj);
+    if (variant_level_ptr) {
+        *variant_level_ptr = variant_level;
+    }
+    else if (variant_level > 0) {
+        return PyString_FromString(DBUS_TYPE_VARIANT_AS_STRING);
+    }
+
     /* Ordering is important: some of these are subclasses of each other. */
-    if (obj == Py_True || obj == Py_False)
+    if (obj == Py_True || obj == Py_False) {
       return PyString_FromString(DBUS_TYPE_BOOLEAN_AS_STRING);
+    }
     else if (PyInt_Check(obj)) {
         if (Int16_Check(obj))
             return PyString_FromString(DBUS_TYPE_INT16_AS_STRING);
         else if (Int32_Check(obj))
             return PyString_FromString(DBUS_TYPE_INT32_AS_STRING);
+        else if (Byte_Check(obj))
+            return PyString_FromString(DBUS_TYPE_BYTE_AS_STRING);
         else if (UInt16_Check(obj))
             return PyString_FromString(DBUS_TYPE_UINT16_AS_STRING);
         else if (Boolean_Check(obj))
@@ -124,13 +163,8 @@ _signature_string_from_pyobject(PyObject *obj)
 #endif
             return PyString_FromString(DBUS_TYPE_DOUBLE_AS_STRING);
     }
-    else if (Variant_Check(obj)) {
-        return PyString_FromString(DBUS_TYPE_VARIANT_AS_STRING);
-    }
     else if (PyString_Check(obj)) {
-        if (Byte_Check(obj))
-            return PyString_FromString(DBUS_TYPE_BYTE_AS_STRING);
-        else if (ObjectPath_Check(obj))
+        if (ObjectPath_Check(obj))
             return PyString_FromString(DBUS_TYPE_OBJECT_PATH_AS_STRING);
         else if (Signature_Check(obj))
             return PyString_FromString(DBUS_TYPE_SIGNATURE_AS_STRING);
@@ -177,7 +211,7 @@ _signature_string_from_pyobject(PyObject *obj)
                 Py_DECREF(list);
                 return NULL;
             }
-            item = _signature_string_from_pyobject(item);
+            item = _signature_string_from_pyobject(item, NULL);
             if (!item) {
                 Py_DECREF(list);
                 return NULL;
@@ -204,6 +238,10 @@ _signature_string_from_pyobject(PyObject *obj)
         PyObject *tmp;
         PyObject *ret = PyString_FromString(DBUS_TYPE_ARRAY_AS_STRING);
         if (!ret) return NULL;
+        if (Array_Check(obj) && PyString_Check(((Array *)obj)->signature)) {
+            PyString_Concat(&ret, ((Array *)obj)->signature);
+            return ret;
+        }
         if (PyList_GET_SIZE(obj) == 0) {
             /* No items, so fail. Or should we guess "av"? */
             PyErr_SetString (PyExc_ValueError, "Unable to guess signature "
@@ -211,7 +249,7 @@ _signature_string_from_pyobject(PyObject *obj)
             return NULL;
         }
         tmp = PyList_GetItem(obj, 0);
-        tmp = _signature_string_from_pyobject(tmp);
+        tmp = _signature_string_from_pyobject(tmp, NULL);
         if (!tmp) return NULL;
         PyString_ConcatAndDel (&ret, tmp);
         return ret;
@@ -221,14 +259,23 @@ _signature_string_from_pyobject(PyObject *obj)
         int pos = 0;
         PyObject *ret = NULL;
 
+        if (Dict_Check(obj) && PyString_Check(((Dict *)obj)->signature)) {
+            const char *sig = PyString_AS_STRING(((Dict *)obj)->signature);
+
+            return PyString_FromFormat((DBUS_TYPE_ARRAY_AS_STRING
+                                        DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
+                                        "%s"
+                                        DBUS_DICT_ENTRY_END_CHAR_AS_STRING),
+                                       sig);
+        }
         if (!PyDict_Next(obj, &pos, &key, &value)) {
             /* No items, so fail. Or should we guess "a{vv}"? */
             PyErr_SetString(PyExc_ValueError, "Unable to guess signature "
                              "from an empty dict");
             return NULL;
         }
-        keysig = _signature_string_from_pyobject(key);
-        valuesig = _signature_string_from_pyobject(value);
+        keysig = _signature_string_from_pyobject(key, NULL);
+        valuesig = _signature_string_from_pyobject(value, NULL);
         if (keysig && valuesig) {
             ret = PyString_FromFormat ((DBUS_TYPE_ARRAY_AS_STRING
                                         DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
@@ -250,7 +297,7 @@ _signature_string_from_pyobject(PyObject *obj)
 }
 
 static PyObject *
-Message_guess_signature(PyObject *unused, PyObject *args)
+Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
 {
     PyObject *tmp, *ret = NULL;
 
@@ -262,9 +309,9 @@ Message_guess_signature(PyObject *unused, PyObject *args)
     }
 
 #ifdef USING_DBG
-    fprintf(stderr, "DBG/%ld: called Message_guess_signature(*", (long)getpid());
+    fprintf(stderr, "DBG/%ld: called Message_guess_signature", (long)getpid());
     PyObject_Print(args, stderr, 0);
-    fprintf(stderr, ")\n");
+    fprintf(stderr, "\n");
 #endif
 
     if (!PyTuple_Check(args)) {
@@ -282,7 +329,7 @@ Message_guess_signature(PyObject *unused, PyObject *args)
     /* if there were args, the signature we want is, by construction,
      * exactly the signature we get for the tuple args, except that we don't
      * want the parentheses. */
-    tmp = _signature_string_from_pyobject(args);
+    tmp = _signature_string_from_pyobject(args, NULL);
     if (!tmp) {
         DBG("%s", "Message_guess_signature: failed");
         return NULL;
@@ -297,7 +344,8 @@ Message_guess_signature(PyObject *unused, PyObject *args)
     ret = PyObject_CallFunction((PyObject *)&SignatureType, "(s#)",
                                 PyString_AS_STRING (tmp) + 1,
                                 PyString_GET_SIZE (tmp) - 2);
-    DBG("Message_guess_signature: returning Signature at %p", ret);
+    DBG("Message_guess_signature: returning Signature at %p \"%s\"", ret,
+        ret ? PyString_AS_STRING(ret) : "(NULL)");
     Py_DECREF (tmp);
     return ret;
 }
@@ -313,11 +361,12 @@ _message_iter_append_string(DBusMessageIter *appender,
     char *s;
 
     if (PyString_Check (obj)) {
+        PyObject *unicode;
+
         /* Raise TypeError if the string has embedded NULs */
         if (PyString_AsStringAndSize (obj, &s, NULL) < 0) return -1;
         /* Surely there's a faster stdlib way to validate UTF-8... */
-        PyObject *unicode = PyUnicode_DecodeUTF8 (s, PyString_GET_SIZE (obj),
-                                                  NULL);
+        unicode = PyUnicode_DecodeUTF8 (s, PyString_GET_SIZE (obj), NULL);
         if (!unicode) {
             PyErr_SetString (PyExc_UnicodeError, "String parameters "
                              "to be sent over D-Bus must be valid UTF-8");
@@ -550,7 +599,7 @@ _message_iter_append_string_as_byte_array (DBusMessageIter *appender,
     int ret;
 
     s = PyString_AS_STRING(obj);
-    DBG("Opening ARRAY container", 0);
+    DBG("%s", "Opening ARRAY container");
     if (!dbus_message_iter_open_container(appender, DBUS_TYPE_ARRAY,
                                           DBUS_TYPE_BYTE_AS_STRING, &sub)) {
         PyErr_NoMemory();
@@ -564,7 +613,7 @@ _message_iter_append_string_as_byte_array (DBusMessageIter *appender,
         PyErr_NoMemory();
         ret = -1;
     }
-    DBG("Clossing ARRAY container", 0);
+    DBG("%s", "Closing ARRAY container");
     if (!dbus_message_iter_close_container(appender, &sub)) {
         PyErr_NoMemory();
         return -1;
@@ -576,54 +625,82 @@ _message_iter_append_string_as_byte_array (DBusMessageIter *appender,
 static int
 _message_iter_append_variant(DBusMessageIter *appender, PyObject *obj)
 {
-    DBusMessageIter sub;
-    DBusSignatureIter sig_iter;
-    const char *sig_str;
-    PyObject *sig, *guess_args;
+    DBusSignatureIter obj_sig_iter;
+    const char *obj_sig_str;
+    PyObject *obj_sig;
     int ret;
+    long variant_level;
 
-    if (Variant_Check (obj)) {
-        /* make sig an owned reference */
-        sig = ((Variant *)obj)->signature;
-        if (!sig) {
-            PyErr_SetString(PyExc_RuntimeError, "Internal error: "
-                            "broken Variant");
-            return -1;
+    /* Separate the object into the contained object, and the number of
+     * variants it's wrapped in. */
+    obj_sig = _signature_string_from_pyobject(obj, &variant_level);
+    if (!obj_sig) return -1;
+
+    obj_sig_str = PyString_AsString(obj_sig);
+    if (!obj_sig_str) return -1;
+
+    if (variant_level < 1) {
+        variant_level = 1;
+    }
+
+    dbus_signature_iter_init(&obj_sig_iter, obj_sig_str);
+
+    { /* scope for variant_iters */
+        DBusMessageIter variant_iters[variant_level];
+        long i;
+
+        for (i = 0; i < variant_level; i++) {
+            DBusMessageIter *child = &variant_iters[i];
+            /* The first is a special case: its parent is the iter passed in
+             * to this function, instead of being the previous one in the
+             * stack
+             */
+            DBusMessageIter *parent = (i == 0
+                                        ? appender
+                                        : &(variant_iters[i-1]));
+            /* The last is also a special case: it contains the actual
+             * object, rather than another variant
+             */
+            const char *sig_str = (i == variant_level-1
+                                        ? obj_sig_str
+                                        : DBUS_TYPE_VARIANT_AS_STRING);
+
+            DBG("Opening VARIANT container %p inside %p containing '%s'",
+                child, parent, sig_str);
+            if (!dbus_message_iter_open_container (parent, DBUS_TYPE_VARIANT,
+                                                   sig_str, child)) {
+                PyErr_NoMemory();
+                ret = -1;
+                goto out;
+            }
         }
-        Py_INCREF(sig);
-        /* obj is still a borrowed reference though */
-        obj = ((Variant *)obj)->object;
-    }
-    else {
-        /* Either it's a Variant with no explicit signature, or it's a
-        value. */
-        guess_args = Py_BuildValue("(O)", obj);
-        if (!guess_args) return -1;
-        sig = Message_guess_signature (NULL, guess_args);
-        Py_DECREF(guess_args);
-        if (!sig) return -1;
+
+        /* Put the object itself into the innermost variant */
+        ret = _message_iter_append_pyobject(&variant_iters[variant_level-1],
+                                            &obj_sig_iter, obj);
+
+        /* here we rely on i (and variant_level) being a signed long */
+        for (i = variant_level - 1; i >= 0; i--) {
+            DBusMessageIter *child = &variant_iters[i];
+            /* The first is a special case: its parent is the iter passed in
+             * to this function, instead of being the previous one in the
+             * stack
+             */
+            DBusMessageIter *parent = (i == 0 ? appender
+                                              : &(variant_iters[i-1]));
+
+            DBG("Closing VARIANT container %p inside %p", child, parent);
+            if (!dbus_message_iter_close_container (parent, child)) {
+                PyErr_NoMemory();
+                ret = -1;
+                goto out;
+            }
+        }
+
     }
 
-    sig_str = PyString_AsString(sig);
-    if (!sig_str) return -1;
-
-    dbus_signature_iter_init (&sig_iter, sig_str);
-
-    DBG("Opening VARIANT container", 0);
-    if (!dbus_message_iter_open_container (appender, DBUS_TYPE_VARIANT,
-                                           sig_str, &sub)) {
-        PyErr_NoMemory();
-        ret = -1;
-        goto out;
-    }
-    ret = _message_iter_append_pyobject(&sub, &sig_iter, obj);
-    DBG("Closing VARIANT container", 0);
-    if (!dbus_message_iter_close_container (appender, &sub)) {
-        PyErr_NoMemory();
-        ret = -1;
-    }
 out:
-    Py_XDECREF (sig);
+    Py_XDECREF (obj_sig);
     return ret;
 }
 
@@ -648,9 +725,10 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
     int ret = -1;
 
 #ifdef USING_DBG
-    fprintf(stderr, "Appending object: ");
+    fprintf(stderr, "Appending object at %p: ", obj);
     PyObject_Print(obj, stderr, 0);
-    fprintf(stderr, ", dbus wants type %c\n", sig_type);
+    fprintf(stderr, " into appender at %p, dbus wants type %c\n",
+            appender, sig_type);
 #endif
 
     switch (sig_type) {
@@ -687,6 +765,24 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
           }
           ret = 0;
           break;
+
+#ifdef WITH_DBUS_FLOAT32
+      case DBUS_TYPE_FLOAT:
+          u.d = PyFloat_AsDouble (obj);
+          if (PyErr_Occurred()) {
+              ret = -1;
+              break;
+          }
+          u.f = (float)u.d;
+          DBG("Performing actual append: float(%f)", u.f);
+          if (!dbus_message_iter_append_basic(appender, sig_type, &u.f)) {
+              PyErr_NoMemory();
+              ret = -1;
+              break;
+          }
+          ret = 0;
+          break;
+#endif
 
           /* The integer types are all basically the same - we delegate to
           intNN_range_check() */
@@ -788,11 +884,14 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
   
     DBG("Advancing signature iter at %p", sig_iter);
 #ifdef USING_DBG
-    { dbus_bool_t b =
+    {
+        dbus_bool_t b =
 #endif
     dbus_signature_iter_next(sig_iter);
 #ifdef USING_DBG
-    DBG("- result: %ld", (long)b);
+        DBG("- result: %ld, type %02x '%c'", (long)b,
+            (int)dbus_signature_iter_get_current_type(sig_iter),
+            (int)dbus_signature_iter_get_current_type(sig_iter));
     }
 #endif
     return 0;
