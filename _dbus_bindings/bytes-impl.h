@@ -37,58 +37,32 @@ static inline int ByteArray_Check(PyObject *o)
 }
 
 PyDoc_STRVAR(Byte_tp_doc,
-"Byte(integer or str of length 1)\n"
+"Byte(integer or str of length 1[, variant_level])\n"
 "\n"
 "Byte is a subtype of int, with range restricted to [0, 255].\n"
 "\n"
 "A Byte b may be converted to a str of length 1 via str(b) == chr(b).\n"
 );
 
-static inline unsigned char
-Byte_as_uchar(PyObject *self)
-{
-    return (unsigned char) (PyInt_AsLong (self));
-}
-
-PyObject *allocated_bytes[256] = {NULL};
-
-static PyObject *
-Byte_from_uchar(unsigned char data)
-{
-    PyObject *ret;
-    ret = allocated_bytes[data];
-    if (!ret) {
-        PyObject *tuple = Py_BuildValue("(i)", data);
-        DBG("Allocating a new Byte of value \\x%02x", data);
-
-        if (!tuple) return NULL;
-
-        ret = PyInt_Type.tp_new(&ByteType, tuple, NULL);
-        Py_DECREF(tuple);
-        tuple = NULL;
-
-#ifdef USING_DBG
-        fprintf(stderr, "New Byte of value \\x%02x: ", data);
-        PyObject_Print(ret, stderr, 0);
-        fprintf(stderr, "\n");
-#endif
-
-        Py_INCREF(ret);
-        allocated_bytes[data] = ret;
-      }
-    Py_INCREF(ret);
-    return ret;
-}
-
 static PyObject *
 Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     PyObject *obj;
     PyObject *tuple;
+    long variantness = 0;
+    static char *argnames[] = {"variant_level", NULL};
 
-    if (PyTuple_Size(args) != 1 || (kwargs && PyDict_Size(kwargs) != 0)) {
-        PyErr_SetString(PyExc_TypeError, "Byte constructor takes exactly one "
-                        "positional argument");
+    if (PyTuple_Size(args) > 1) {
+        PyErr_SetString(PyExc_TypeError, "Byte constructor takes no more "
+                        "than one positional argument");
+        return NULL;
+    }
+    if (!PyArg_ParseTupleAndKeywords(empty_tuple, kwargs,
+                                     "|l:__new__", argnames,
+                                     &variantness)) return NULL;
+    if (variantness < 0) {
+        PyErr_SetString(PyExc_ValueError,
+                        "variant_level must be non-negative");
         return NULL;
     }
 
@@ -100,17 +74,13 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         if (PyString_GET_SIZE(obj) != 1) {
             goto bad_arg;
         }
-        /* here arg goes from a borrowed to owned reference */
-        obj = Byte_from_uchar((unsigned char)(PyString_AS_STRING(obj)[0]));
-        if (cls == &ByteType) {
-            /* we know that the Byte type is the same as an int internally */
-            return obj;
-        }
+        obj = PyInt_FromLong((unsigned char)(PyString_AS_STRING(obj)[0]));
     }
     else if (PyInt_Check(obj)) {
         long i = PyInt_AS_LONG(obj);
 
-        if (obj->ob_type == cls) {
+        if (obj->ob_type == cls &&
+            ((DBusPythonInt *)obj)->variant_level == variantness) {
             Py_INCREF(obj);
             return obj;
         }
@@ -122,17 +92,12 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         goto bad_arg;
     }
 
-    /* so here's the complicated case: we're trying to instantiate a subclass
-    so we can't just allocate a Byte and go "it'll all be fine".
-
-    By now, we do have an int (or Byte) to use as an argument to the c'tor.
-    */
     tuple = Py_BuildValue("(O)", obj);
     if (!tuple) return NULL;
     Py_DECREF(obj);
     obj = NULL;
 
-    obj = PyInt_Type.tp_new(cls, tuple, NULL);
+    obj = DBusPythonIntType.tp_new(cls, tuple, kwargs);
     Py_DECREF(tuple);
     tuple = NULL;
     return obj;
@@ -149,8 +114,8 @@ bad_range:
 static PyObject *
 Byte_tp_str(PyObject *self)
 {
-    char str[] = { (char)Byte_as_uchar(self), 0 };
-    return PyString_FromStringAndSize(str, 1);
+    unsigned char str[2] = { (unsigned char)PyInt_AS_LONG(self), 0 };
+    return PyString_FromStringAndSize((char *)str, 1);
 }
 
 static PyTypeObject ByteType = {
@@ -164,7 +129,7 @@ static PyTypeObject ByteType = {
         0,                                      /* tp_getattr */
         0,                                      /* tp_setattr */
         0,                                      /* tp_compare */
-        int_subclass_tp_repr,                   /* tp_repr */
+        DBusPythonInt_tp_repr,                  /* tp_repr */
         0,                                      /* tp_as_number */
         0,                                      /* tp_as_sequence */
         0,                                      /* tp_as_mapping */
@@ -205,29 +170,21 @@ PyDoc_STRVAR(ByteArray_tp_doc,
 "it's just a string.\n"
 );
 
-static inline unsigned char *
-ByteArray_as_ucharptr(PyObject *self)
-{
-    return (unsigned char *)PyString_AsString(self);
-}
-
-static inline PyObject *
-ByteArray_from_uchars(const unsigned char *data, int size)
-{
-    return PyObject_CallFunction((PyObject *)&ByteArrayType, "(s#)",
-                                 (char *)data, size);
-}
-
 static PyObject *
 ByteArray_sq_item (PyObject *self, int i)
 {
     unsigned char c;
+    PyObject *args;
+
     if (i < 0 || i >= PyString_GET_SIZE(self)) {
         PyErr_SetString(PyExc_IndexError, "ByteArray index out of range");
         return NULL;
     }
     c = ((unsigned char *)PyString_AS_STRING(self))[i];
-    return Byte_from_uchar(c);
+    args = Py_BuildValue("(l)", (long)c);
+    if (!args)
+        return NULL;
+    return PyObject_Call((PyObject *)&ByteType, args, NULL);
 }
 
 static PyObject *
@@ -279,7 +236,7 @@ static PyTypeObject ByteArrayType = {
         0,                                      /* tp_getattr */
         0,                                      /* tp_setattr */
         0,                                      /* tp_compare */
-        str_subclass_tp_repr,                   /* tp_repr */
+        0,                                      /* tp_repr */
         0,                                      /* tp_as_number */
         &ByteArray_tp_as_sequence,              /* tp_as_sequence */
         &ByteArray_tp_as_mapping,               /* tp_as_mapping */
@@ -300,7 +257,7 @@ static PyTypeObject ByteArrayType = {
         0,                                      /* tp_methods */
         0,                                      /* tp_members */
         0,                                      /* tp_getset */
-        DEFERRED_ADDRESS(&PyString_Type),       /* tp_base */
+        DEFERRED_ADDRESS(&DBusPythonStringType), /* tp_base */
         0,                                      /* tp_dict */
         0,                                      /* tp_descr_get */
         0,                                      /* tp_descr_set */
@@ -313,11 +270,11 @@ static PyTypeObject ByteArrayType = {
 static inline int
 init_byte_types(void)
 {
-    ByteType.tp_base = &PyInt_Type;
+    ByteType.tp_base = &DBusPythonIntType;
     if (PyType_Ready(&ByteType) < 0) return 0;
     ByteType.tp_print = NULL;
 
-    ByteArrayType.tp_base = &PyString_Type;
+    ByteArrayType.tp_base = &DBusPythonStringType;
     if (PyType_Ready(&ByteArrayType) < 0) return 0;
     ByteArrayType.tp_print = NULL;
 
