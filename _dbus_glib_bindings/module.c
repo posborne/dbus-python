@@ -27,12 +27,22 @@
 #include <dbus/dbus-glib.h>
 #include <dbus/dbus-glib-lowlevel.h>
 
+#if defined(__GNUC__)
+#   if __GNUC__ >= 3
+#       define UNUSED __attribute__((__unused__))
+#   else
+#       define UNUSED /*nothing*/
+#   endif
+#else
+#   define UNUSED /*nothing*/
+#endif
+
 PyDoc_STRVAR(module_doc, "");
 
 PyDoc_STRVAR(setup_with_g_main__doc__,
 "setup_with_g_main(conn: dbus.Connection)");
 static PyObject *
-setup_with_g_main (PyObject *unused, PyObject *args)
+setup_with_g_main (PyObject *always_null UNUSED, PyObject *args)
 {
     DBusConnection *dbc;
     PyObject *conn;
@@ -47,7 +57,7 @@ setup_with_g_main (PyObject *unused, PyObject *args)
 PyDoc_STRVAR(gthreads_init__doc__,
 "gthreads_init()");
 static PyObject *
-gthreads_init (PyObject *unused, PyObject *also_unused)
+gthreads_init (PyObject *always_null UNUSED, PyObject *no_args UNUSED)
 {
     dbus_g_thread_init();
     Py_RETURN_NONE;

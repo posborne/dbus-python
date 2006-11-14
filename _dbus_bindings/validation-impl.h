@@ -121,7 +121,7 @@ PyDoc_STRVAR(validate_bus_name__doc__,
 );
 
 static PyObject *
-validate_bus_name(PyObject *unused, PyObject *args, PyObject *kwargs)
+validate_bus_name(PyObject *unused UNUSED, PyObject *args, PyObject *kwargs)
 {
     const char *name;
     int allow_unique = 1;
@@ -181,7 +181,7 @@ PyDoc_STRVAR(validate_member_name__doc__,
 );
 
 static PyObject *
-validate_member_name(PyObject *unused, PyObject *args)
+validate_member_name(PyObject *unused UNUSED, PyObject *args)
 {
     const char *name;
 
@@ -269,7 +269,7 @@ PyDoc_STRVAR(validate_error_name__doc__,
 );
 
 static PyObject *
-validate_interface_name(PyObject *unused, PyObject *args)
+validate_interface_name(PyObject *unused UNUSED, PyObject *args)
 {
     const char *name;
 
@@ -327,7 +327,7 @@ PyDoc_STRVAR(validate_object_path__doc__,
 );
 
 static PyObject *
-validate_object_path(PyObject *unused, PyObject *args)
+validate_object_path(PyObject *unused UNUSED, PyObject *args)
 {
     const char *name;
 

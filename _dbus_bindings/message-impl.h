@@ -76,7 +76,9 @@ static void Message_tp_dealloc (Message *self)
 }
 
 static PyObject *
-Message_tp_new (PyTypeObject *type, PyObject *args, PyObject *kwargs)
+Message_tp_new (PyTypeObject *type,
+                PyObject *args UNUSED,
+                PyObject *kwargs UNUSED)
 {
     Message *self;
 
@@ -247,7 +249,7 @@ PyDoc_STRVAR(Message_copy__doc__,
 "message.copy() -> Message (or subclass)\n"
 "Deep-copy the message, resetting the serial number to zero.\n");
 static PyObject *
-Message_copy (Message *self, PyObject *args)
+Message_copy (Message *self, PyObject *args UNUSED)
 {
     DBusMessage *msg;
     if (!self->msg) return DBusException_UnusableMessage();
@@ -261,7 +263,7 @@ PyDoc_STRVAR(Message_get_auto_start__doc__,
 "Return true if this message will cause an owner for the destination name\n"
 "to be auto-started.\n");
 static PyObject *
-Message_get_auto_start (Message *self, PyObject *unused)
+Message_get_auto_start (Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusException_UnusableMessage();
     return PyBool_FromLong (dbus_message_get_auto_start (self->msg));
@@ -286,7 +288,7 @@ PyDoc_STRVAR(Message_get_no_reply__doc__,
 "message.get_no_reply() -> bool\n"
 "Return true if this message need not be replied to.\n");
 static PyObject *
-Message_get_no_reply (Message *self, PyObject *unused)
+Message_get_no_reply (Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusException_UnusableMessage();
     return PyBool_FromLong (dbus_message_get_no_reply (self->msg));
@@ -309,7 +311,7 @@ PyDoc_STRVAR(Message_get_reply_serial__doc__,
 "message.get_reply_serial() -> long\n"
 "Returns the serial that the message is a reply to or 0 if none.\n");
 static PyObject *
-Message_get_reply_serial (Message *self, PyObject *unused)
+Message_get_reply_serial (Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusException_UnusableMessage();
     return PyLong_FromUnsignedLong (dbus_message_get_reply_serial (self->msg));
@@ -336,7 +338,7 @@ PyDoc_STRVAR(Message_get_type__doc__,
 "message.get_type() -> int\n\n"
 "Returns the type of the message.\n");
 static PyObject *
-Message_get_type (Message *self, PyObject *unused)
+Message_get_type (Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusException_UnusableMessage();
     return PyInt_FromLong (dbus_message_get_type (self->msg));
@@ -351,7 +353,7 @@ PyDoc_STRVAR(Message_get_serial__doc__,
 "received on a connection will have a serial, but messages you haven't\n"
 "sent yet may return 0.\n");
 static PyObject *
-Message_get_serial (Message *self, PyObject *unused)
+Message_get_serial (Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusException_UnusableMessage();
     return PyLong_FromUnsignedLong (dbus_message_get_serial (self->msg));
@@ -404,7 +406,7 @@ Message_is_signal (Message *self, PyObject *args)
 PyDoc_STRVAR(Message_get_member__doc__,
 "get_member() -> str or None");
 static PyObject *
-Message_get_member (Message *self, PyObject *unused)
+Message_get_member (Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 
@@ -452,7 +454,7 @@ PyDoc_STRVAR(Message_get_path__doc__,
 "source object path (if it's a method reply or a signal) or None (if it\n"
 "has no path).\n");
 static PyObject *
-Message_get_path (Message *self, PyObject *unused)
+Message_get_path (Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
   
@@ -469,7 +471,7 @@ PyDoc_STRVAR(Message_get_path_decomposed__doc__,
 "Return a list of path components (e.g. /foo/bar -> ['foo','bar'], / -> [])\n"
 "or None if the message has no associated path.\n");
 static PyObject *
-Message_get_path_decomposed (Message *self, PyObject *unused)
+Message_get_path_decomposed (Message *self, PyObject *unused UNUSED)
 {
     char **paths, **ptr;
     PyObject *ret = PyList_New(0);
@@ -537,7 +539,7 @@ Message_set_path (Message *self, PyObject *args)
 PyDoc_STRVAR(Message_get_signature__doc__,
 "get_signature() -> Signature or None");
 static PyObject *
-Message_get_signature (Message *self, PyObject *unused)
+Message_get_signature (Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 
@@ -567,7 +569,7 @@ PyDoc_STRVAR(Message_get_sender__doc__,
 "get_sender() -> str or None\n\n"
 "Return the message's sender unique name, or None if none.\n");
 static PyObject *
-Message_get_sender (Message *self, PyObject *unused)
+Message_get_sender (Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 
@@ -613,7 +615,7 @@ PyDoc_STRVAR(Message_get_destination__doc__,
 "get_destination() -> str or None\n\n"
 "Return the message's destination bus name, or None if none.\n");
 static PyObject *
-Message_get_destination(Message *self, PyObject *unused)
+Message_get_destination(Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 
@@ -658,7 +660,7 @@ Message_set_destination (Message *self, PyObject *args)
 PyDoc_STRVAR(Message_get_interface__doc__,
 "get_interface() -> str or None");
 static PyObject *
-Message_get_interface (Message *self, PyObject *unused)
+Message_get_interface (Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 
@@ -703,7 +705,7 @@ Message_set_interface (Message *self, PyObject *args)
 PyDoc_STRVAR(Message_get_error_name__doc__,
 "get_error_name() -> str or None");
 static PyObject *
-Message_get_error_name (Message *self, PyObject *unused)
+Message_get_error_name (Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 

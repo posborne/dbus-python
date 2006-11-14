@@ -105,7 +105,7 @@ PyDoc_STRVAR(Bus_get_unique_name__doc__,
 "get_unique_name() -> str\n\n"
 "Return this application's unique name on this bus.\n");
 static PyObject *
-Bus_get_unique_name (Connection *self, PyObject *args)
+Bus_get_unique_name (Connection *self, PyObject *args UNUSED)
 {
     const char *name;
 

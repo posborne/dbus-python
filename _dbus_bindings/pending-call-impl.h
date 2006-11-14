@@ -45,7 +45,7 @@ PyDoc_STRVAR(PendingCall_cancel__doc__,
 "Cancel this pending call. Its reply will be ignored and the associated\n"
 "reply handler will never be called.\n");
 static PyObject *
-PendingCall_cancel(PendingCall *self, PyObject *unused)
+PendingCall_cancel(PendingCall *self, PyObject *unused UNUSED)
 {
     Py_BEGIN_ALLOW_THREADS
     dbus_pending_call_cancel(self->pc);
@@ -62,7 +62,7 @@ PyDoc_STRVAR(PendingCall__block__doc__,
 "synchronous call to a method in this application. As a result, it's\n"
 "probably a bad idea.\n");
 static PyObject *
-PendingCall__block(PendingCall *self, PyObject *unused)
+PendingCall__block(PendingCall *self, PyObject *unused UNUSED)
 {
     Py_BEGIN_ALLOW_THREADS
     dbus_pending_call_block(self->pc);
@@ -103,7 +103,7 @@ PyDoc_STRVAR(PendingCall_get_completed__doc__,
 "If so, its associated reply handler has been called and it is no\n"
 "longer meaningful to cancel it.\n");
 static PyObject *
-PendingCall_get_completed(PendingCall *self, PyObject *unused)
+PendingCall_get_completed(PendingCall *self, PyObject *unused UNUSED)
 {
     dbus_bool_t ret;
 
