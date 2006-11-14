@@ -248,7 +248,7 @@ PyDoc_STRVAR(Connection_flush__doc__,
 "flush()\n\n"
 "Block until the outgoing message queue is empty.\n");
 static PyObject *
-Connection_flush (Connection *self, PyObject *args)
+Connection_flush (Connection *self, PyObject *args UNUSED)
 {
     Py_BEGIN_ALLOW_THREADS
     dbus_connection_flush (self->conn);
@@ -287,7 +287,7 @@ PyDoc_STRVAR(Connection_get_unix_fd__doc__,
 "for example. **Do not** read or write to the file descriptor, or try to\n"
 "``select()`` on it.\n");
 static PyObject *
-Connection_get_unix_fd (Connection *self, PyObject *unused)
+Connection_get_unix_fd (Connection *self, PyObject *unused UNUSED)
 {
     int fd;
     dbus_bool_t ok;
@@ -305,7 +305,7 @@ PyDoc_STRVAR(Connection_get_peer_unix_user__doc__,
 "authenticated. Return None if this is a non-UNIX platform or the\n"
 "connection has not been authenticated.\n");
 static PyObject *
-Connection_get_peer_unix_user (Connection *self, PyObject *unused)
+Connection_get_peer_unix_user (Connection *self, PyObject *unused UNUSED)
 {
     unsigned long uid;
     dbus_bool_t ok;
@@ -323,7 +323,7 @@ PyDoc_STRVAR(Connection_get_peer_unix_process_id__doc__,
 "authenticated. Return None if this is a non-UNIX platform or the\n"
 "connection has not been authenticated.\n");
 static PyObject *
-Connection_get_peer_unix_process_id (Connection *self, PyObject *unused)
+Connection_get_peer_unix_process_id (Connection *self, PyObject *unused UNUSED)
 {
     unsigned long pid;
     dbus_bool_t ok;
@@ -440,10 +440,8 @@ Connection__register_object_path(Connection *self, PyObject *args,
     Also, path needs to be a string (not a subclass which could do something
     mad) to preserve the desirable property that the DBusConnection can
     never strongly reference the Connection, even indirectly.
-    We make an exception for ObjectPaths because they're equally simple,
-    are known to have the same __eq__ and __hash__, and are what calling code
-    ought to be using. */
-    if (PyString_CheckExact(path) || path->ob_type == &ObjectPathType) {
+    */
+    if (PyString_CheckExact(path)) {
         Py_INCREF(path);
     }
     else if (PyUnicode_Check(path)) {
@@ -453,6 +451,10 @@ Connection__register_object_path(Connection *self, PyObject *args,
     else if (PyString_Check(path)) {
         path = PyString_FromString(PyString_AS_STRING(path));
         if (!path) return NULL;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "path must be a str or unicode object");
+        return NULL;
     }
 
     if (!_validate_object_path(PyString_AS_STRING(path))) {
@@ -543,17 +545,24 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
     static char *argnames[] = {"path", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs,
-                                     "O!:_unregister_object_path",
-                                     argnames, 
-                                     &PyString_Type, &path)) return NULL;
+                                     "O:_unregister_object_path",
+                                     argnames, &path)) return NULL;
 
     /* Take a ref to the path. Same comments as for _register_object_path. */
-    if (PyString_CheckExact(path) || path->ob_type == &ObjectPathType) {
+    if (PyString_CheckExact(path)) {
         Py_INCREF(path);
     }
-    else {
+    else if (PyUnicode_Check(path)) {
+        path = PyUnicode_AsUTF8String(path);
+        if (!path) return NULL;
+    }
+    else if (PyString_Check(path)) {
         path = PyString_FromString(PyString_AS_STRING(path));
         if (!path) return NULL;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "path must be a str or unicode object");
+        return NULL;
     }
 
     /* Guard against unregistering a handler that doesn't, in fact, exist,
