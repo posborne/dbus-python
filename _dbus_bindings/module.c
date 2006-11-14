@@ -35,8 +35,10 @@ PyDoc_STRVAR(module_doc,
 #include "generic-impl.h"            /* Non D-Bus support code */
 #include "validation-impl.h"         /* Interface name, etc., validation */
 #include "exceptions-impl.h"         /* Exception base classes */
+#include "abstract-impl.h"           /* DBusPythonInt, etc. */
 #include "signature-impl.h"          /* Signature and its custom iterator */
-#include "types-impl.h"              /* IntNN, UIntNN, ObjectPath */
+#include "types-impl.h"              /* Boolean, IntNN, UIntNN, ObjectPath */
+#include "floattypes-impl.h"         /* Float, Double */
 #include "containers-impl.h"         /* Array, Dict, Variant */
 #include "bytes-impl.h"              /* Byte, ByteArray */
 #include "message-impl.h"            /* Message and subclasses */
@@ -64,8 +66,10 @@ init_dbus_bindings(void)
 
     if (!init_generic()) return;
     if (!init_exception_types()) return;
+    if (!init_abstract()) return;
     if (!init_signature()) return;
     if (!init_types()) return;
+    if (!init_float_types()) return;
     if (!init_container_types()) return;
     if (!init_byte_types()) return;
     if (!init_message_types()) return;
@@ -77,8 +81,10 @@ init_dbus_bindings(void)
     if (!this_module) return;
 
     if (!insert_exception_types(this_module)) return;
+    if (!insert_abstract_types(this_module)) return;
     if (!insert_signature(this_module)) return;
     if (!insert_types(this_module)) return;
+    if (!insert_float_types(this_module)) return;
     if (!insert_container_types(this_module)) return;
     if (!insert_byte_types(this_module)) return;
     if (!insert_message_types(this_module)) return;
