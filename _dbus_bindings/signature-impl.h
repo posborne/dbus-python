@@ -148,21 +148,17 @@ Signature_tp_iter (PyObject *self)
 static PyObject *
 Signature_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    PyObject *tuple, *self;
     const char *str = NULL;
-    static char *argnames[] = {"object_path", NULL};
+    PyObject *ignored;
+    static char *argnames[] = {"object_path", "variant_level", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s:__new__", argnames,
-                                     &str)) return NULL;
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|O:__new__", argnames,
+                                     &str, &ignored)) return NULL;
     if (!dbus_signature_validate(str, NULL)) {
         PyErr_SetString(PyExc_ValueError, "Corrupt type signature");
         return NULL;
     }
-    tuple = Py_BuildValue("(s)", str);
-    if (!tuple) return NULL;
-    self = PyString_Type.tp_new(cls, tuple, NULL);
-    Py_DECREF(tuple);
-    return self;
+    return (DBusPythonStringType.tp_new)(cls, args, kwargs);
 }
 
 static PyTypeObject SignatureType = {
@@ -176,7 +172,7 @@ static PyTypeObject SignatureType = {
     0,                                      /* tp_getattr */
     0,                                      /* tp_setattr */
     0,                                      /* tp_compare */
-    str_subclass_tp_repr,                   /* tp_repr */
+    0,                                      /* tp_repr */
     0,                                      /* tp_as_number */
     0,                                      /* tp_as_sequence */
     0,                                      /* tp_as_mapping */
@@ -197,7 +193,7 @@ static PyTypeObject SignatureType = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&PyString_Type),       /* tp_base */
+    DEFERRED_ADDRESS(&DBusPythonStringType), /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -213,10 +209,8 @@ init_signature(void)
 {
     if (PyType_Ready(&SignatureIterType) < 0) return 0;
 
-    SignatureType.tp_base = &PyString_Type;
+    SignatureType.tp_base = &DBusPythonStringType;
     if (PyType_Ready(&SignatureType) < 0) return 0;
-    /* disable the tp_print copied from PyString_Type, so tp_repr gets called as
-    desired */
     SignatureType.tp_print = NULL;
 
     return 1;
