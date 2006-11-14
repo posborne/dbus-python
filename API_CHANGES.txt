@@ -9,9 +9,8 @@ API changes in dbus-python-in-c
 
 .. _ Collabora Ltd: http://www.collabora.co.uk/
 
-* Byte is a subtype of str rather than of int, which better matches
-  Python's conventions for dealing with byte streams. Its constructor
-  accepts either single-byte strings or integers in the range 0 to 255.
+* The Byte constructor accepts either single-byte strings, or integers in
+  the range 0 to 255.
 
 * In method parameters, method returns from proxy methods, etc.,
   integers arrive as instances of dbus.Int32 etc., bytes arrive as
@@ -19,27 +18,29 @@ API changes in dbus-python-in-c
   appropriate built-in Python type. This means you can tell exactly
   what arguments went over the bus, and their types.
 
-* Variants arrive as method parameters, returns from proxy methods, etc.
-  as Variant objects. This is a bit of a big change, but makes things
-  completely unambiguous. To unwrap variants like the old Pyrex
-  implementation did, you can write::
+* There is no Variant type any more. Instead, the ``variant_level``
+  attribute on D-Bus types gives the number of variant wrappers in
+  which it is contained; this is to remove ambiguity. For instance, calling
+  this method::
 
-      while isinstance(myparam, dbus.Variant):
-          myparam = myparam.object
+    @dbus.service.method('com.example', in_signature='v', out_signature='') 
+    def Print(self, variant):
+        print repr(variant)
 
-  This should also work (and do nothing) under the Pyrex implementation.
+  yields the following results::
+
+    # on the wire: Variant containing Int32
+    Int32(0, variant_level=1)
+    # on the wire: Variant containing Variant containing Int32
+    Int32(0, variant_level=2)
+
+  Once an object of a D-Bus type has been constructed, its
+  ``variant_level`` cannot be altered.
 
 * The D-Bus integer types (dbus.Int32, etc.) are properly range-checked.
 
-* Variants are now immutable "value objects".
-
-* Variants are somewhat more useful: they can be cast using int(),
-  str(), long(), float(), you can iterate over them with iter() if they
-  contain an iterable, you can compare them with ``==`` and ``!=``,
-  and you can hash them if the underlying object supports it.
-
-* Array constructor takes arguments (iterable[, signature])
-  rather than (iterable[, type][, signature]); ditto Variant, Dict
+* The Array constructor takes arguments (iterable[, signature])
+  rather than (iterable[, type][, signature]); ditto for Dict.
 
 * Proxy methods with multiple return values return a tuple rather than
   a list.
@@ -47,13 +48,9 @@ API changes in dbus-python-in-c
 * Calling a proxy method with reply ignored, or with async
   handlers, returns None
 
-* The Boolean, String, Double and Struct types are now aliases for the
-  built-in bool, unicode, float and tuple types. Their use is vaguely
-  deprecated.
-
 * ConnectionError no longer exists (it was never raised)
 
-* dbus_bindings is now called _dbus_bindings, and is considerably
+* ``dbus_bindings`` is now called ``_dbus_bindings``, and is considerably
   different internally:
 
   * connections are private at the libdbus level: shared connections
