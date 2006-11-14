@@ -43,7 +43,7 @@ __all__ = (
            # from types
            'ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
            'Int16', 'UInt16', 'Int32', 'UInt32', 'Int64', 'UInt64',
-           'Double', 'String', 'Array', 'Struct', 'Dictionary', 'Variant',
+           'Double', 'String', 'Array', 'Struct', 'Dictionary', 'UTF8String',
            )
 __docformat__ = 'restructuredtext'
 version = (0, 70, 0)
