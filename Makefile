@@ -1,12 +1,17 @@
 #!/usr/bin/make -f
-# Convenience Makefile.
+# Convenience Makefile for development - distributors and users should use
+# setup.py as usual.
 
 PYTHON ?= python
 EPYDOC ?= epydoc
+CFLAGS = -Wall -Wextra -Werror -Wno-missing-field-initializers \
+	 -Wdeclaration-after-statement
 
 default:
+	@echo "### If you're not a dbus-python developer, please ignore this"
+	@echo "### Makefile and use setup.py as usual."
 	rm -rf build/lib.*/*.so build/temp.*
-	$(PYTHON) setup.py build
+	CFLAGS="$(CFLAGS)" $(PYTHON) setup.py build --debug
 
 # This assumes you've only built for one architecture.
 docs:
@@ -16,7 +21,7 @@ docs:
 		dbus _dbus_bindings _dbus_glib_bindings
 
 cross-test-compile:
-	$(PYTHON) setup.py build
+	$(PYTHON) setup.py build --debug
 
 cross-test-server:
 	cd $(shell echo build/lib.*) && PYTHONPATH=. \
