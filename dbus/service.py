@@ -101,11 +101,11 @@ class BusName(object):
             return bus._bus_names[name]
 
         # otherwise register the name
-	name_flags = \
-	    _dbus_bindings.NAME_FLAG_ALLOW_REPLACEMENT * allow_replacement + \
-	    _dbus_bindings.NAME_FLAG_REPLACE_EXISTING * replace_existing +  \
-	    _dbus_bindings.NAME_FLAG_DO_NOT_QUEUE * do_not_queue 
-	 
+	name_flags = (
+            (allow_replacement and _dbus_bindings.NAME_FLAG_ALLOW_REPLACEMENT or 0) |
+            (replace_existing and _dbus_bindings.NAME_FLAG_REPLACE_EXISTING or 0) |
+            (do_not_queue and _dbus_bindings.NAME_FLAG_DO_NOT_QUEUE or 0))
+
         retval = bus.request_name(name, name_flags)
 
         # TODO: more intelligent tracking of bus name states?
@@ -363,7 +363,7 @@ class Object(Interface):
                 The D-Bus object path at which to export this Object.
         """
         self._object_path = object_path
-        self._name = bus_name 
+        self._name = bus_name
         self._bus = bus_name.get_bus()
             
         self._connection = self._bus.get_connection()
@@ -381,7 +381,7 @@ class Object(Interface):
             (candidate_method, parent_method) = _method_lookup(self, method_name, interface_name)
 
             # set up method call parameters
-            args = message.get_args_list()
+            args = message.get_args_list(**parent_method._dbus_get_args_options)
             keywords = {}
 
             if parent_method._dbus_out_signature is not None:

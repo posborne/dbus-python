@@ -62,6 +62,26 @@ class TestObject(dbus.service.Object, TestInterface):
     def Echo(self, arg):
         return arg
 
+    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='s', out_signature='s')
+    def AcceptUnicodeString(self, foo):
+        assert isinstance(foo, unicode), (foo, foo.__class__.__mro__)
+        return foo
+
+    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='s', out_signature='s', utf8_strings=True)
+    def AcceptUTF8String(self, foo):
+        assert isinstance(foo, str), (foo, foo.__class__.__mro__)
+        return foo
+
+    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='ay', out_signature='ay')
+    def AcceptListOfByte(self, foo):
+        assert isinstance(foo, list), (foo, foo.__class__.__mro__)
+        return foo
+
+    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='ay', out_signature='ay', byte_arrays=True)
+    def AcceptByteArray(self, foo):
+        assert isinstance(foo, str), (foo, foo.__class__.__mro__)
+        return foo
+
     @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface")
     def GetComplexArray(self):
         ret = []

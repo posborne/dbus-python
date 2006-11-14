@@ -217,7 +217,7 @@ class TestsImpl(dbus.service.Object):
         return x
 
 
-    @dbus.service.method(INTERFACE_TESTS, 'a{ss}', 'a{sas}')
+    @dbus.service.method(INTERFACE_TESTS, 'a{ss}', 'a{sas}', utf8_strings=True)
     def InvertMapping(self, input):
         tested_things.add(INTERFACE_TESTS + '.InvertMapping')
         output = dbus.Dictionary({})

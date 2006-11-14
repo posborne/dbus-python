@@ -75,7 +75,17 @@ class TestDBusBindings(unittest.TestCase):
         print self.remote_object.Echo("dbus_interface on Proxy test Passed", dbus_interface = "org.freedesktop.DBus.TestSuiteInterface")
         print self.iface.Echo("dbus_interface on Interface test Passed", dbus_interface = "org.freedesktop.DBus.TestSuiteInterface")
         self.assert_(True)
-        
+
+    def testCallingConventionOptions(self):
+        self.assertEquals(self.iface.AcceptListOfByte('\1\2\3'), [1,2,3])
+        self.assertEquals(self.iface.AcceptListOfByte('\1\2\3', byte_arrays=True), '\1\2\3')
+        self.assertEquals(self.iface.AcceptByteArray('\1\2\3'), [1,2,3])
+        self.assertEquals(self.iface.AcceptByteArray('\1\2\3', byte_arrays=True), '\1\2\3')
+        self.assert_(isinstance(self.iface.AcceptUTF8String('abc'), unicode))
+        self.assert_(isinstance(self.iface.AcceptUTF8String('abc', utf8_strings=True), str))
+        self.assert_(isinstance(self.iface.AcceptUnicodeString('abc'), unicode))
+        self.assert_(isinstance(self.iface.AcceptUnicodeString('abc', utf8_strings=True), str))
+
     def testIntrospection(self):
         #test introspection
         print "\n********* Introspection Test ************"

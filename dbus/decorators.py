@@ -31,7 +31,7 @@ import inspect
 import _dbus_bindings
 
 
-def method(dbus_interface, in_signature=None, out_signature=None, async_callbacks=None, sender_keyword=None):
+def method(dbus_interface, in_signature=None, out_signature=None, async_callbacks=None, sender_keyword=None, utf8_strings=False, byte_arrays=False):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to be exported on the D-Bus.
 
@@ -71,8 +71,29 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
 
         `sender_keyword` : str or None
             If not None, contains the name of a keyword argument to the
-            decorated function. When the method is called, the sender's
-            unique name will be passed as this keyword argument.
+            decorated function, conventionally ``'sender'``. When the
+            method is called, the sender's unique name will be passed as
+            this keyword argument.
+
+        `utf8_strings` : bool
+            If False (default), D-Bus strings are passed to the decorated
+            method as objects of class dbus.String, a unicode subclass.
+
+            If True, D-Bus strings are passed to the decorated method
+            as objects of class dbus.UTF8String, a str subclass guaranteed
+            to be encoded in UTF-8.
+
+            This option does not affect object-paths and signatures, which
+            are always 8-bit strings (str subclass) encoded in ASCII.
+
+        `byte_arrays` : bool
+            If False (default), a byte array will be passed to the decorated
+            method as an `Array` (a list subclass) of `Byte` objects.
+
+            If True, a byte array will be passed to the decorated method as
+            a `ByteArray`, a str subclass. This is usually what you want,
+            but is switched off by default to keep dbus-python's API
+            consistent.
     """
     _dbus_bindings.validate_interface_name(dbus_interface)
 
@@ -106,6 +127,8 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
         func._dbus_out_signature = out_signature
         func._dbus_sender_keyword = sender_keyword
         func._dbus_args = args
+        func._dbus_get_args_options = {'byte_arrays': byte_arrays,
+                                       'utf8_strings': utf8_strings}
         return func
 
     return decorator

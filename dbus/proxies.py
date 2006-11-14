@@ -103,12 +103,17 @@ class ProxyMethod:
 
         error_handler = None
         if keywords.has_key('error_handler'):
-            error_handler = keywords['error_handler']            
+            error_handler = keywords['error_handler']
 
         ignore_reply = False
         if keywords.has_key('ignore_reply'):
             ignore_reply = keywords['ignore_reply']
 
+        get_args_options = {}
+        if keywords.has_key('utf8_strings'):
+            get_args_options['utf8_strings'] = keywords['utf8_strings']
+        if keywords.has_key('byte_arrays'):
+            get_args_options['byte_arrays'] = keywords['byte_arrays']
 
         if not(reply_handler and error_handler):
             if reply_handler:
@@ -116,13 +121,13 @@ class ProxyMethod:
             elif error_handler:
                 raise MissingReplyHandlerException()
 
-        dbus_interface = self._dbus_interface 
+        dbus_interface = self._dbus_interface
         if keywords.has_key('dbus_interface'):
             dbus_interface = keywords['dbus_interface']
 
         tmp_iface = ''
         if dbus_interface:
-	    tmp_iface = dbus_interface + '.'
+            tmp_iface = dbus_interface + '.'
 
         key = tmp_iface + self._method_name
 
@@ -155,7 +160,7 @@ class ProxyMethod:
             return None
         else:
             reply_message = self._connection._send_with_reply_and_block(message, timeout)
-            args_list = reply_message.get_args_list()
+            args_list = reply_message.get_args_list(**get_args_options)
             if len(args_list) == 0:
                 return None
             elif len(args_list) == 1:
