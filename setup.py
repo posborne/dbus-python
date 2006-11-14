@@ -132,6 +132,11 @@ two apps to communicate directly (without going through the message bus daemon).
 Currently the communicating applications are on one computer, but TCP/IP option
 is available and remote support planned.'''
 
+extra_ext_args = {}
+
+if 'CFLAGS' in os.environ:
+    extra_ext_args['extra_compile_args'] = os.environ['CFLAGS'].split()
+
 setup(
     name='dbus-python',
     version='0.71',
@@ -160,11 +165,13 @@ setup(
             include_dirs=dbus_includes,
             library_dirs=dbus_libs,
             libraries=["dbus-1"],
+            **extra_ext_args
         ),
         Extension("_dbus_glib_bindings", ["_dbus_glib_bindings/module.c"],
             include_dirs=dbus_glib_includes,
             library_dirs=dbus_glib_libs,
             libraries=["dbus-glib-1", "dbus-1", "glib-2.0"],
+            **extra_ext_args
         ),
     ],
     cmdclass={'clean': full_clean, 'check': dbus_python_check}
