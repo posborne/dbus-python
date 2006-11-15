@@ -263,6 +263,18 @@ class Bus(_dbus_bindings._Bus):
                 The object path of the object which must have emitted the
                 signal; None (the default) matches any object path
         :Keywords:
+            `utf8_strings` : bool
+                If True, the handler function will receive any string
+                arguments as dbus.UTF8String objects (a subclass of str
+                guaranteed to be UTF-8). If False (default) it will receive
+                any string arguments as dbus.String objects (a subclass of
+                unicode).
+            `byte_arrays` : bool
+                If True, the handler function will receive any byte-array
+                arguments as dbus.ByteArray objects (a subclass of str).
+                If False (default) it will receive any byte-array
+                arguments as a dbus.Array of dbus.Byte (subclasses of:
+                a list of ints).
             `sender_keyword` : str
                 If not None (the default), the handler function will receive
                 the unique name of the sending endpoint as a keyword
@@ -271,10 +283,12 @@ class Bus(_dbus_bindings._Bus):
                 If not None (the default), the handler function will receive
                 the object-path of the sending object as a keyword argument
                 with this name.
-            `arg...`
+            `arg...` : unicode or UTF-8 str
                 If there are additional keyword parameters of the form
                 ``arg``\ *n*, match only signals where the *n*\ th argument
-                is the value given for that keyword parameter
+                is the value given for that keyword parameter. As of this
+                time only string arguments can be matched (in particular,
+                object paths and signatures can't).
         """
 
         args_dict = self._create_args_dict(keywords)
@@ -294,7 +308,9 @@ class Bus(_dbus_bindings._Bus):
         if args_dict:
             match_rule.add_args_match(args_dict)
 
-        match_rule.add_handler(handler_function)
+        match_rule.add_handler(handler_function,
+                               utf8_strings=keywords.get('utf8_strings', False),
+                               byte_arrays=keywords.get('byte_arrays', False))
 
         self._match_rule_tree.add(match_rule)
 
@@ -319,7 +335,10 @@ class Bus(_dbus_bindings._Bus):
             match_rule.add_args_match(args_dict)
 
         if (handler_function):
-            match_rule.add_handler(handler_function)
+            match_rule.add_handler(handler_function,
+                                   utf8_strings=keywords.get('utf8_strings', False),
+                                   byte_arrays=keywords.get('byte_arrays', False))
+        # FIXME: else, this will never match anything!
         
         self._match_rule_tree.remove(match_rule)
         
@@ -433,13 +452,26 @@ class Interface:
             `signal_name` : str
                 The name of the signal
             `handler_function` : callable
-                A function to be called (FIXME arguments?) when the signal
-                is emitted by the remote object.
+                A function to be called when the signal is emitted by the
+                remote object. It will receive the signal's arguments
+                as its positional arguments.
             `dbus_interface` : str
                 Optional interface with which to qualify the signal name.
                 The default is to use the interface this Interface represents.
                 (FIXME: deprecate this? Violates least astonishment)
         :Keywords:
+            `utf8_strings` : bool
+                If True, the handler function will receive any string
+                arguments as dbus.UTF8String objects (a subclass of str
+                guaranteed to be UTF-8). If False (default) it will receive
+                any string arguments as dbus.String objects (a subclass of
+                unicode).
+            `byte_arrays` : bool
+                If True, the handler function will receive any byte-array
+                arguments as dbus.ByteArray objects (a subclass of str).
+                If False (default) it will receive any byte-array
+                arguments as a dbus.Array of dbus.Byte (subclasses of:
+                a list of ints).
             `sender_keyword` : str
                 If not None (the default), the handler function will receive
                 the unique name of the sending endpoint as a keyword
@@ -448,10 +480,12 @@ class Interface:
                 If not None (the default), the handler function will receive
                 the object-path of the sending object as a keyword argument
                 with this name
-            `arg...`
+            `arg...` : unicode or UTF-8 str
                 If there are additional keyword parameters of the form
-                ``arg``\ *n*, match only signals where the *n*\ th argument
-                is the value given for that keyword parameter
+                ``arg``\ *n*, only call the handler_function for signals
+                where the *n*\ th argument is the value given for that
+                keyword parameter. As of this time only string arguments
+                can be matched.
         """
         if not dbus_interface:
             dbus_interface = self._dbus_interface

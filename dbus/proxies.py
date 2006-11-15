@@ -234,6 +234,18 @@ class ProxyObject:
                 signal of the given member name is received, whatever
                 its interface.
         :Keywords:
+            `utf8_strings` : bool
+                If True, the handler function will receive any string
+                arguments as dbus.UTF8String objects (a subclass of str
+                guaranteed to be UTF-8). If False (default) it will receive
+                any string arguments as dbus.String objects (a subclass of
+                unicode).
+            `byte_arrays` : bool
+                If True, the handler function will receive any byte-array
+                arguments as dbus.ByteArray objects (a subclass of str).
+                If False (default) it will receive any byte-array
+                arguments as a dbus.Array of dbus.Byte (subclasses of:
+                a list of ints).
             `sender_keyword` : str
                 If not None (the default), the handler function will receive
                 the unique name of the sending endpoint as a keyword
@@ -242,10 +254,12 @@ class ProxyObject:
                 If not None (the default), the handler function will receive
                 the object-path of the sending object as a keyword argument
                 with this name
-            `arg...`
+            `arg...` : unicode or UTF-8 str
                 If there are additional keyword parameters of the form
                 ``arg``\ *n*, match only signals where the *n*\ th argument
-                is the value given for that keyword parameter
+                is the value given for that keyword parameter. As of this time
+                only string arguments can be matched (in particular,
+                object paths and signatures can't).
         """
         self._bus.add_signal_receiver(handler_function,
                                       signal_name=signal_name,

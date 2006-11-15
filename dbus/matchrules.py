@@ -93,7 +93,7 @@ class SignalMatchTree:
         path.add(rule.path, leaf=rule)
        
     def exec_matches(self, match_rule, message):
-        args = message.get_args_list()
+        args = message.get_args_list(utf8_strings=True)
     
         sender_matches = self._tree.get_matches(match_rule.sender)
         for sender_node in sender_matches:
@@ -138,7 +138,8 @@ class SignalMatchTree:
 
 class SignalMatchRule:
     """This class represents a dbus rule used to filter signals.
-        When a rule matches a filter, the signal is propagated to the handler_funtions
+        When a rule matches a filter, the signal is propagated to the
+        handler_functions.
     """
     def __init__(self, signal_name, dbus_interface, sender, path):
         self.handler_functions = []
@@ -151,6 +152,14 @@ class SignalMatchRule:
 
     def add_args_match(self, args):
         self.args = args
+        for key, value in args.iteritems():
+            if isinstance(value, unicode):
+                value = value.encode('utf-8')
+            elif isinstance(value, str):
+                value.decode('utf-8')       # raises exception if not UTF-8
+            else:
+                raise TypeError('D-Bus match rules can only match string '
+                                'arguments')
 
     def execute(self, message, args=None):
         keywords = {}
@@ -160,21 +169,23 @@ class SignalMatchRule:
         if self.path_keyword is not None:
             keywords[self.path_keyword] = message.get_path()
 
-        # optimization just in case we already extracted the args
-        if not args:
-           args = message.get_args_list()
-           
-        for handler in self.handler_functions:
+        for handler, utf8_strings, byte_arrays in self.handler_functions:
+            args = message.get_args_list(utf8_strings=utf8_strings,
+                                         byte_arrays=byte_arrays)
             if getattr(handler, "_dbus_pass_message", False):
-                keywords["dbus_message"] = message
+                local_keywords = {}
+                local_keywords.update(keywords)
+                local_keywords["dbus_message"] = message
+            else:
+                local_keywords = keywords
 
-            if len(keywords) == 0:
+            if len(local_keywords) == 0:
                 handler(*args)
             else:
-                handler(*args, **keywords)
+                handler(*args, **local_keywords)
 
-    def add_handler(self, handler):
-        self.handler_functions.append(handler)
+    def add_handler(self, handler, utf8_strings=False, byte_arrays=False):
+        self.handler_functions.append((handler, utf8_strings, byte_arrays))
     
     #matches only those arguments listed by self
     def match_args_from_list(self, args_list):
@@ -212,6 +223,10 @@ class SignalMatchRule:
         return True
 
     def is_match(self, rule):
+        """Return True if this rule matches the same signals as the given
+        rule, and calls the same handler functions with the same calling
+        convention.
+        """
         if (self.signal_name == rule.signal_name and
             self.dbus_interface == rule.dbus_interface and
             self.sender == rule.sender and
@@ -237,7 +252,7 @@ class SignalMatchRule:
         if (self.dbus_interface):
             repr = repr + ",interface='%s'" % (self.dbus_interface)
 
-        if (self.sender):     
+        if (self.sender):
             repr = repr + ",sender='%s'" % (self.sender)
     
         if (self.path):
@@ -250,6 +265,7 @@ class SignalMatchRule:
             my_args_list = self.args.items()
             my_args_list.sort()
             for (index, value) in my_args_list:
-                repr = repr + ",arg%i='%s'" % (index, value)
+                repr = repr + ",arg%i='%s'" % (index,
+                                               value.replace("'", r"\'"))
 
         return repr
