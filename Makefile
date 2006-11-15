@@ -2,20 +2,23 @@
 # Convenience Makefile for development - distributors and users should use
 # setup.py as usual.
 
-PYTHON ?= python
-EPYDOC ?= epydoc
-CFLAGS = -Wall -Wextra -Werror -Wno-missing-field-initializers \
-	 -Wdeclaration-after-statement
+default: build
 
-default:
+warning:
 	@echo "### If you're not a dbus-python developer, please ignore this"
 	@echo "### Makefile and use setup.py as usual."
+
+PYTHON ?= python
+EPYDOC ?= epydoc
+CFLAGS ?= -Wall -Wextra -Werror -Wno-missing-field-initializers \
+	 -Wdeclaration-after-statement
+
+build: warning
 	rm -rf build/lib.*/*.so build/temp.*
 	CFLAGS="$(CFLAGS)" $(PYTHON) setup.py build --debug
 
 # This assumes you've only built for one architecture.
-docs:
-	$(PYTHON) setup.py build
+docs: build
 	cd $(shell echo build/lib.*) && PYTHONPATH=. \
 	$(EPYDOC) -o ../epydoc --html --docformat restructuredtext -v \
 		dbus _dbus_bindings _dbus_glib_bindings
@@ -32,3 +35,6 @@ cross-test-client:
 	cd $(shell echo build/lib.*) && PYTHONPATH=. \
 	PYTHONUNBUFFERED=1 \
 	$(PYTHON) ../../test/cross-test-client.py
+
+.PHONY: default docs warning
+.PHONY: cross-test-compile cross-test-server cross-test-client
