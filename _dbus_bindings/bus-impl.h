@@ -339,7 +339,6 @@ static struct PyMethodDef Bus_tp_methods[] = {
     ENTRY(request_name, METH_VARARGS)
     ENTRY(release_name, METH_VARARGS)
     ENTRY(name_has_owner, METH_VARARGS)
-    ENTRY(name_has_owner, METH_VARARGS)
     ENTRY(add_match_string, METH_VARARGS)
     ENTRY(add_match_string_non_blocking, METH_VARARGS)
     ENTRY(remove_match_string, METH_VARARGS)
