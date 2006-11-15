@@ -228,7 +228,8 @@ class Bus(_dbus_bindings._Bus):
                     args_dict[num] = value
                 except ValueError:
                     raise TypeError("Invalid arg index %s"%snum)
-            elif key in ("sender_keyword", "path_keyword"):
+            elif key in ("sender_keyword", "path_keyword", "utf8_strings",
+                         "byte_arrays"):
                 pass
             else:
                 raise TypeError("Unknown keyword %s"%(key))

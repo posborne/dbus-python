@@ -260,13 +260,15 @@ class TestsImpl(dbus.service.Object):
         tested_things.add(INTERFACE_TESTS + '.Invert')
         return not input
 
-    @dbus.service.method(INTERFACE_TESTS, 'st', '')
+    @dbus.service.method(INTERFACE_TESTS, 'st', '', utf8_strings=True)
     def Trigger(self, object, parameter):
+        assert isinstance(object, str)
         logger.info('method/signal: client wants me to emit Triggered(%r) from %r', parameter, object)
         tested_things.add(INTERFACE_TESTS + '.Trigger')
         gobject.idle_add(lambda: self.emit_Triggered_from(object, parameter))
     
     def emit_Triggered_from(self, object, parameter):
+        assert isinstance(object, str)
         logger.info('method/signal: Emitting Triggered(%r) from %r', parameter, object)
         obj = objects.get(object, None)
         if obj is None:
@@ -310,7 +312,8 @@ if __name__ == '__main__':
                             named_service=None,
                             path=None,
                             sender_keyword='sender',
-                            path_keyword='sender_path')
+                            path_keyword='sender_path',
+                            utf8_strings=True)
 
     logger.info("running...")
     loop.run()
