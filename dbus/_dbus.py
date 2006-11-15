@@ -101,6 +101,7 @@ class Bus(_dbus_bindings._Bus):
     START_REPLY_ALREADY_RUNNING = _dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING
 
     _shared_instances = weakref.WeakValueDictionary()
+    _have_mainloop = False
 
     def __new__(cls, bus_type=TYPE_SESSION, use_default_mainloop=True, private=False):
         """Constructor, returning an existing instance where appropriate.
@@ -147,6 +148,7 @@ class Bus(_dbus_bindings._Bus):
             func = getattr(dbus, "_dbus_mainloop_setup_function", None)
             if func:
                 func(bus)
+                bus._have_mainloop = True
 
         if not private:
             cls._shared_instances[bus_type] = bus
@@ -291,6 +293,14 @@ class Bus(_dbus_bindings._Bus):
                 time only string arguments can be matched (in particular,
                 object paths and signatures can't).
         """
+        if not self._have_mainloop:
+            raise RuntimeError(
+                'To receive signals (or make asynchronous method calls) '
+                'in dbus-python, you need to connect the Bus object to '
+                'a main loop. The usual way to do this is currently '
+                '"import dbus.glib" which does the GLib main loop setup as '
+                'a side-effect. Improvements are planned in future.'
+                )
 
         args_dict = self._create_args_dict(keywords)
 
