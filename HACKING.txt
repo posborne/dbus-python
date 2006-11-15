@@ -28,7 +28,7 @@ Indentation and other holy wars
 
 Python code is meant to follow PEP8, and has 4-space indentation, no hard tabs.
 
-C code is meant to follow what PEP7 as "Python 3000" style - 4-space
+C code is meant to follow what PEP7 refers to as "Python 3000" style - 4-space
 indentation, no hard tabs, otherwise consistent with historical Python 2.x
 code.
 
