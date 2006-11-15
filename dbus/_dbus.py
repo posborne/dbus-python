@@ -81,6 +81,7 @@ from proxies import *
 from exceptions import *
 from matchrules import *
 
+
 class Bus(_dbus_bindings._Bus):
     """A connection to a DBus daemon.
 
@@ -214,7 +215,7 @@ class Bus(_dbus_bindings._Bus):
         return self.ProxyObjectClass(self, named_service, object_path)
 
     def _create_args_dict(self, keywords):
-        args_dict = None 
+        args_dict = None
         for (key, value) in keywords.iteritems():
             if key.startswith('arg'):
                 try:
@@ -230,11 +231,11 @@ class Bus(_dbus_bindings._Bus):
             elif key in ("sender_keyword", "path_keyword"):
                 pass
             else:
-                raise TypeError("Unknown keyword %s"%(key)) 
+                raise TypeError("Unknown keyword %s"%(key))
 
-        return args_dict    
+        return args_dict
 
-    def add_signal_receiver(self, handler_function, 
+    def add_signal_receiver(self, handler_function,
                                   signal_name=None,
                                   dbus_interface=None,
                                   named_service=None,
@@ -299,7 +300,7 @@ class Bus(_dbus_bindings._Bus):
 
         self.add_match_string(repr(match_rule))
 
-    def remove_signal_receiver(self, handler_function, 
+    def remove_signal_receiver(self, handler_function,
                                signal_name=None,
                                dbus_interface=None,
                                named_service=None,
