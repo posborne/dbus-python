@@ -1,6 +1,5 @@
 include COPYING
 include AUTHORS
-include README
 include HACKING.txt
 include API_CHANGES.txt
 include setup.py
