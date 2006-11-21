@@ -89,6 +89,9 @@ out:
     Py_XDECREF(tuple);
     /* the user_data (a Python str) is no longer ref'd by the DBusConnection */
     Py_XDECREF((PyObject *)user_data);
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
     PyGILState_Release(gil);
 }
 
@@ -147,6 +150,9 @@ out:
     Py_XDECREF(msg_obj);
     Py_XDECREF(conn_obj);
     Py_XDECREF(tuple);
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
     PyGILState_Release(gil);
     return ret;
 }
