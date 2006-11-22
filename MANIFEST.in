@@ -1,14 +1,13 @@
-include COPYING
-include AUTHORS
-include HACKING.txt
 include API_CHANGES.txt
-include setup.py
-include NEWS
+include AUTHORS
+include COPYING
 include ChangeLog
-recursive-include dbus *.py
-include include/dbus_bindings.h
+include HACKING.txt
+include NEWS
 recursive-include _dbus_bindings *.h *.c
 include _dbus_glib_bindings/module.c
+recursive-include dbus *.py
+include include/dbus_bindings.h
+include setup.py
 recursive-include test *.py *.sh
 recursive-include tools *.sh *.conf 
-
