@@ -82,7 +82,7 @@ from exceptions import *
 from matchrules import *
 
 
-class Bus(_dbus_bindings._Bus):
+class Bus(_dbus_bindings.BusImplementation):
     """A connection to a DBus daemon.
 
     One of three possible standard buses, the SESSION, SYSTEM,
@@ -101,9 +101,8 @@ class Bus(_dbus_bindings._Bus):
     START_REPLY_ALREADY_RUNNING = _dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING
 
     _shared_instances = weakref.WeakValueDictionary()
-    _have_mainloop = False
 
-    def __new__(cls, bus_type=TYPE_SESSION, use_default_mainloop=True, private=False):
+    def __new__(cls, bus_type=TYPE_SESSION, private=False, mainloop=None):
         """Constructor, returning an existing instance where appropriate.
 
         The returned instance is actually always an instance of `SessionBus`,
@@ -112,12 +111,13 @@ class Bus(_dbus_bindings._Bus):
         :Parameters:
             `bus_type` : cls.TYPE_SESSION, cls.TYPE_SYSTEM or cls.TYPE_STARTER
                 Connect to the appropriate bus
-            `use_default_mainloop` : bool
-                If true (default), automatically register the new connection
-                to be polled by the default main loop, if any
             `private` : bool
                 If true, never return an existing shared instance, but instead
                 return a private connection
+            `mainloop` : dbus.mainloop.NativeMainLoop or dbus.mainloop.MainLoopBase
+                The main loop to use. The default is to use the default
+                main loop if one has been set up, or raise an exception
+                if none has been.
         """
         if (not private and bus_type in cls._shared_instances):
             return cls._shared_instances[bus_type]
@@ -136,19 +136,13 @@ class Bus(_dbus_bindings._Bus):
         else:
             raise ValueError('invalid bus_type %s' % bus_type)
 
-        bus = _dbus_bindings._Bus.__new__(subclass, bus_type)
+        bus = _dbus_bindings.BusImplementation.__new__(subclass, bus_type)
 
         bus._bus_type = bus_type
         bus._bus_names = weakref.WeakValueDictionary()
         bus._match_rule_tree = SignalMatchTree()
 
         bus._add_filter(bus.__class__._signal_func)
-
-        if use_default_mainloop:
-            func = getattr(dbus, "_dbus_mainloop_setup_function", None)
-            if func:
-                func(bus)
-                bus._have_mainloop = True
 
         if not private:
             cls._shared_instances[bus_type] = bus
@@ -161,9 +155,14 @@ class Bus(_dbus_bindings._Bus):
         pass
 
     def get_connection(self):
+        """Return self, for backwards compatibility with earlier dbus-python
+        versions where Bus was not a subclass of Connection.
+        """
         return self
-
-    _connection = property(get_connection)
+    _connection = property(get_connection, None, None,
+                           """self.connection == self, for backwards
+                           compatibility with earlier dbus-python versions
+                           where Bus was not a subclass of Connection.""")
 
     def get_session(private=False):
         """Static method that returns a connection to the session bus.
@@ -293,15 +292,6 @@ class Bus(_dbus_bindings._Bus):
                 time only string arguments can be matched (in particular,
                 object paths and signatures can't).
         """
-        if not self._have_mainloop:
-            raise RuntimeError(
-                'To receive signals (or make asynchronous method calls) '
-                'in dbus-python, you need to connect the Bus object to '
-                'a main loop. The usual way to do this is currently '
-                '"import dbus.glib" which does the GLib main loop setup as '
-                'a side-effect. Improvements are planned in future.'
-                )
-
         args_dict = self._create_args_dict(keywords)
 
         if (named_service and named_service[0] != ':'):
@@ -390,50 +380,56 @@ class Bus(_dbus_bindings._Bus):
 # polymorphism
 class SystemBus(Bus):
     """The system-wide message bus."""
-    def __new__(cls, use_default_mainloop=True, private=False):
+    def __new__(cls, private=False, mainloop=None):
         """Return a connection to the system bus.
 
         :Parameters:
-            `use_default_mainloop` : bool
-                If true (default), automatically register the new connection
-                to be polled by the default main loop, if any
             `private` : bool
                 If true, never return an existing shared instance, but instead
                 return a private connection.
+            `mainloop` : dbus.mainloop.NativeMainLoop or dbus.mainloop.MainLoopBase
+                The main loop to use. The default is to use the default
+                main loop if one has been set up, or raise an exception
+                if none has been.
         """
-        return Bus.__new__(cls, Bus.TYPE_SYSTEM, use_default_mainloop, private)
+        return Bus.__new__(cls, Bus.TYPE_SYSTEM, mainloop=mainloop,
+                           private=private)
 
 class SessionBus(Bus):
     """The session (current login) message bus."""
-    def __new__(cls, use_default_mainloop=True, private=False):
+    def __new__(cls, private=False, mainloop=None):
         """Return a connection to the session bus.
 
         :Parameters:
-            `use_default_mainloop` : bool
-                If true (default), automatically register the new connection
-                to be polled by the default main loop, if any
             `private` : bool
                 If true, never return an existing shared instance, but instead
                 return a private connection.
+            `mainloop` : dbus.mainloop.NativeMainLoop or dbus.mainloop.MainLoopBase
+                The main loop to use. The default is to use the default
+                main loop if one has been set up, or raise an exception
+                if none has been.
         """
-        return Bus.__new__(cls, Bus.TYPE_SESSION, use_default_mainloop, private)
+        return Bus.__new__(cls, Bus.TYPE_SESSION, private=private,
+                           mainloop=mainloop)
 
 class StarterBus(Bus):
     """The bus that activated this process (only valid if
     this process was launched by DBus activation).
     """
-    def __new__(cls, use_default_mainloop=True, private=False):
+    def __new__(cls, private=False, mainloop=None):
         """Return a connection to the bus that activated this process.
 
         :Parameters:
-            `use_default_mainloop` : bool
-                If true (default), automatically register the new connection
-                to be polled by the default main loop, if any
             `private` : bool
                 If true, never return an existing shared instance, but instead
                 return a private connection.
+            `mainloop` : dbus.mainloop.NativeMainLoop or dbus.mainloop.MainLoopBase
+                The main loop to use. The default is to use the default
+                main loop if one has been set up, or raise an exception
+                if none has been.
         """
-        return Bus.__new__(cls, Bus.TYPE_STARTER, use_default_mainloop, private)
+        return Bus.__new__(cls, Bus.TYPE_STARTER, private=private,
+                           mainloop=mainloop)
 
 class Interface:
     """An interface into a remote object.

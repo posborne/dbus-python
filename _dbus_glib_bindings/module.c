@@ -37,10 +37,66 @@
 #   define UNUSED /*nothing*/
 #endif
 
+static dbus_bool_t
+dbus_py_glib_set_up_conn(DBusConnection *conn, void *data)
+{
+    GMainContext *ctx = (GMainContext *)data;
+    Py_BEGIN_ALLOW_THREADS
+    dbus_connection_setup_with_g_main(conn, ctx);
+    Py_END_ALLOW_THREADS
+    return 1;
+}
+
+static dbus_bool_t
+dbus_py_glib_set_up_srv(DBusServer *srv, void *data)
+{
+    GMainContext *ctx = (GMainContext *)data;
+    Py_BEGIN_ALLOW_THREADS
+    dbus_server_setup_with_g_main(srv, ctx);
+    Py_END_ALLOW_THREADS
+    return 1;
+}
+
+static void
+dbus_py_glib_unref_mainctx(void *data)
+{
+    if (data)
+        g_main_context_unref((GMainContext *)data);
+}
+
+/* Generate a dbus-python NativeMainLoop wrapper from a GLib main loop */
+static PyObject *
+dbus_glib_native_mainloop(GMainContext *ctx)
+{
+    PyObject *loop = NativeMainLoop_New4(dbus_py_glib_set_up_conn,
+                                         dbus_py_glib_set_up_srv,
+                                         dbus_py_glib_unref_mainctx,
+                                         ctx ? g_main_context_ref(ctx) : NULL);
+    if (!loop && ctx) {
+        g_main_context_unref(ctx);
+    }
+    return loop;
+}
+
 PyDoc_STRVAR(module_doc, "");
 
+PyDoc_STRVAR(DBusGMainLoop__doc__,
+"DBusGMainLoop() -> NativeMainLoop\n"
+"\n"
+"Factory function. Return a NativeMainLoop object which can be used to\n"
+"represent the default GLib main context in dbus-python.\n"
+"\n"
+"Non-default main contexts are not currently supported\n");
+static PyObject *
+DBusGMainLoop (PyObject *always_null UNUSED, PyObject *no_args UNUSED)
+{
+    return dbus_glib_native_mainloop(NULL);
+}
+
 PyDoc_STRVAR(setup_with_g_main__doc__,
-"setup_with_g_main(conn: dbus.Connection)");
+"setup_with_g_main(conn: dbus.Connection)\n"
+"\n"
+"Deprecated.\n");
 static PyObject *
 setup_with_g_main (PyObject *always_null UNUSED, PyObject *args)
 {
@@ -50,7 +106,7 @@ setup_with_g_main (PyObject *always_null UNUSED, PyObject *args)
 
     dbc = Connection_BorrowDBusConnection (conn);
     if (!dbc) return NULL;
-    dbus_connection_setup_with_g_main (dbc, NULL);
+    dbus_py_glib_set_up_conn(dbc, NULL);
     Py_RETURN_NONE;
 }
 
@@ -67,15 +123,16 @@ static PyMethodDef module_functions[] = {
     {"setup_with_g_main", setup_with_g_main, METH_VARARGS,
      setup_with_g_main__doc__},
     {"gthreads_init", gthreads_init, METH_NOARGS, gthreads_init__doc__},
+    {"DBusGMainLoop", DBusGMainLoop, METH_NOARGS, DBusGMainLoop__doc__},
     {NULL, NULL, 0, NULL}
 };
 
 PyMODINIT_FUNC
-init_dbus_glib_bindings (void)
+init_dbus_glib_bindings(void)
 {
     PyObject *this_module;
 
-    if (import_dbus_bindings () < 0) return;
+    if (import_dbus_bindings("_dbus_glib_bindings") < 0) return;
     this_module = Py_InitModule3 ("_dbus_glib_bindings", module_functions,
                                   module_doc);
     if (!this_module) return;

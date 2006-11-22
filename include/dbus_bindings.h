@@ -30,30 +30,56 @@
 
 DBUS_BEGIN_DECLS
 
+#define DBUS_BINDINGS_API_COUNT 3
+
 #ifdef INSIDE_DBUS_BINDINGS
 
-static DBusConnection *Connection_BorrowDBusConnection (PyObject *);
+static DBusConnection *Connection_BorrowDBusConnection(PyObject *);
+static PyObject *NativeMainLoop_New4(dbus_bool_t (*)(DBusConnection *, void *),
+                                     dbus_bool_t (*)(DBusServer *, void *),
+                                     void (*)(void *),
+                                     void *);
 
 #else
 
 static void **dbus_bindings_API;
+
 #define Connection_BorrowDBusConnection \
-        (*(DBusConnection *(*)(PyObject *))dbus_bindings_API[0])
+        (*(DBusConnection *(*)(PyObject *))dbus_bindings_API[1])
+#define NativeMainLoop_New4 \
+    ((PyObject *(*)(dbus_bool_t (*)(DBusConnection *, void *),\
+                    dbus_bool_t (*)(DBusServer *, void *),\
+                    void (*)(void *),\
+                    void *))dbus_bindings_API[2])
+
 static int
-import_dbus_bindings(void)
+import_dbus_bindings(const char *this_module_name)
 {
   PyObject *module = PyImport_ImportModule ("_dbus_bindings");
+  int count;
 
-  if (module != NULL)
-    {
+  if (module != NULL) {
       PyObject *c_api = PyObject_GetAttrString (module, "_C_API");
       if (c_api == NULL) return -1;
-      if (PyCObject_Check (c_api))
-        {
+      if (PyCObject_Check (c_api)) {
           dbus_bindings_API = (void **)PyCObject_AsVoidPtr (c_api);
-        }
+      }
+      else {
+          Py_DECREF(c_api);
+          PyErr_SetString(PyExc_RuntimeError, "C API is not a PyCObject");
+          return -1;
+      }
       Py_DECREF (c_api);
-    }
+      count = *(int *)dbus_bindings_API[0];
+      if (count < DBUS_BINDINGS_API_COUNT) {
+          PyErr_Format(PyExc_RuntimeError,
+                       "_dbus_bindings has API version %d but %s needs "
+                       "_dbus_bindings API version at least %d",
+                       count, this_module_name,
+                       DBUS_BINDINGS_API_COUNT);
+          return -1;
+      }
+  }
   return 0;
 }
 

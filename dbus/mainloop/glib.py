@@ -20,11 +20,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from dbus.mainloop.glib import DBusGMainLoop, threads_init
-import _dbus_glib_bindings
-import _dbus_bindings
+__all__ = ('DBusGMainLoop', 'threads_init')
 
-def init_threads():
-    threads_init()
+from _dbus_glib_bindings import DBusGMainLoop, gthreads_init
 
-_dbus_bindings.Connection.set_default_main_loop(DBusGMainLoop())
+_dbus_gthreads_initialized = False
+def threads_init():
+    global _dbus_gthreads_initialized
+    if not _dbus_gthreads_initialized:
+        gthreads_init()
+        _dbus_gthreads_initialized = True

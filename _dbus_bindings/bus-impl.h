@@ -39,15 +39,16 @@ static PyTypeObject BusType;
 static PyObject *
 Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    PyObject *first = NULL;
+    PyObject *first = NULL, *mainloop = NULL;
     DBusConnection *conn;
     DBusError error;
     Connection *self;
     dbus_bool_t ret;
     long type;
-    static char *argnames[] = {"address_or_type", NULL};
+    static char *argnames[] = {"address_or_type", "mainloop", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords (args, kwargs, "|O", argnames, &first)) {
+    if (!PyArg_ParseTupleAndKeywords (args, kwargs, "|OO", argnames,
+                                      &first, &mainloop)) {
         return NULL;
     }
 
@@ -60,7 +61,7 @@ Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         if (!self) return NULL;
 
         Py_BEGIN_ALLOW_THREADS
-        ret = dbus_bus_register (self->conn, &error);
+        ret = dbus_bus_register(self->conn, &error);
         Py_END_ALLOW_THREADS
         if (!ret) {
             DBusException_ConsumeError(&error);
@@ -98,7 +99,7 @@ Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         DBusException_ConsumeError (&error);
         return NULL;
     }
-    return Connection_NewConsumingDBusConnection(cls, conn);
+    return Connection_NewConsumingDBusConnection(cls, conn, mainloop);
 }
 
 PyDoc_STRVAR(Bus_get_unique_name__doc__,
@@ -347,14 +348,10 @@ static struct PyMethodDef Bus_tp_methods[] = {
     {NULL},
 };
 
-/* TODO: Call this dbus.Bus rather than _dbus_bindings._Bus if it ever gets
- * all the functionality of the current dbus._dbus.Bus (mainly creation of
- * proxies).
- */
 static PyTypeObject BusType = {
         PyObject_HEAD_INIT(NULL)
         0,                      /*ob_size*/
-        "_dbus_bindings._Bus",  /*tp_name*/
+        "_dbus_bindings.BusImplementation",  /*tp_name*/
         0,                      /*tp_basicsize*/
         0,                      /*tp_itemsize*/
         /* methods */
@@ -406,7 +403,7 @@ init_bus_types (void)
 static inline int
 insert_bus_types (PyObject *this_module)
 {
-    if (PyModule_AddObject (this_module, "_Bus",
+    if (PyModule_AddObject (this_module, "BusImplementation",
                             (PyObject *)&BusType) < 0) return 0;
     return 1;
 }

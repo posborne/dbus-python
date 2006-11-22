@@ -52,5 +52,3 @@ __version__ = '.'.join(map(str, version))
 
 from dbus._dbus import *
 from dbus.types import *
-
-_dbus_main_loop_setup_function = None

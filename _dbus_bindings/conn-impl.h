@@ -233,8 +233,10 @@ out:
 /* D-Bus Connection user data slot, containing an owned reference to either
  * the Connection, or a weakref to the Connection.
  */
-
 static dbus_int32_t _connection_python_slot;
+
+/* The main loop if none is passed to the constructor */
+static PyObject *Connection_default_main_loop;
 
 /* C API for main-loop hooks ======================================== */
 
@@ -346,6 +348,10 @@ Connection_ExistingFromDBusConnection(DBusConnection *conn)
     return NULL;
 }
 
+static dbus_bool_t dbus_python_set_up_connection(Connection *conn,
+                                                 PyObject *mainloop);
+static dbus_bool_t check_mainloop_sanity(PyObject *mainloop);
+
 /* Return a new reference to a Python Connection or subclass (given by cls)
  * corresponding to the DBusConnection conn, which must have been newly
  * created. For use by the Connection and Bus constructors.
@@ -353,9 +359,11 @@ Connection_ExistingFromDBusConnection(DBusConnection *conn)
  * Raises AssertionError if the DBusConnection already has a Connection.
  */
 static PyObject *
-Connection_NewConsumingDBusConnection(PyTypeObject *cls, DBusConnection *conn)
+Connection_NewConsumingDBusConnection(PyTypeObject *cls,
+                                      DBusConnection *conn,
+                                      PyObject *mainloop)
 {
-    Connection *self;
+    Connection *self = NULL;
     PyObject *ref;
     dbus_bool_t ok;
 
@@ -375,6 +383,20 @@ Connection_NewConsumingDBusConnection(PyTypeObject *cls, DBusConnection *conn)
         }
     }
     ref = NULL;
+
+    if (!mainloop || mainloop == Py_None) {
+        mainloop = Connection_default_main_loop;
+        if (!mainloop || mainloop == Py_None) {
+            PyErr_SetString(PyExc_ValueError,
+                            "D-Bus connections must be attached to a main "
+                            "loop by passing mainloop=... to the constructor "
+                            "or calling dbus.Bus.set_default_main_loop(...)");
+            goto err;
+        }
+    }
+    /* Make sure there's a ref to the main loop (in case someone changes the
+     * default) */
+    Py_INCREF(mainloop);
 
     DBG("Constructing Connection from DBusConnection at %p", conn);
 
@@ -403,10 +425,17 @@ Connection_NewConsumingDBusConnection(PyTypeObject *cls, DBusConnection *conn)
 
     self->conn = conn;
 
+    if (!dbus_python_set_up_connection(self, mainloop)) {
+        goto err;
+    }
+
+    Py_DECREF(mainloop);
+
     return (PyObject *)self;
 
 err:
     DBG("Failed to construct Connection from DBusConnection at %p", conn);
+    Py_XDECREF(mainloop);
     Py_XDECREF(self);
     Py_XDECREF(ref);
     if (conn) {
@@ -428,10 +457,11 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     DBusConnection *conn;
     const char *address;
     DBusError error;
-    PyObject *self;
-    static char *argnames[] = {"address", NULL};
+    PyObject *self, *mainloop = NULL;
+    static char *argnames[] = {"address", "mainloop", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", argnames, &address)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|O", argnames,
+                                     &address, &mainloop)) {
         return NULL;
     }
 
@@ -447,7 +477,7 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         DBusException_ConsumeError(&error);
         return NULL;
     }
-    self = Connection_NewConsumingDBusConnection(cls, conn);
+    self = Connection_NewConsumingDBusConnection(cls, conn, mainloop);
 
     return self;
 }
@@ -526,6 +556,8 @@ static PyTypeObject ConnectionType = {
 static inline dbus_bool_t
 init_conn_types(void)
 {
+    Connection_default_main_loop = NULL;
+
     /* Get a slot to store our weakref on DBus Connections */
     _connection_python_slot = -1;
     if (!dbus_connection_allocate_data_slot(&_connection_python_slot)) {
@@ -540,15 +572,6 @@ init_conn_types(void)
 static inline dbus_bool_t
 insert_conn_types(PyObject *this_module)
 {
-    PyObject *c_api;
-    static void *dbus_bindings_API[1];
-
-    dbus_bindings_API[0] = (void *)Connection_BorrowDBusConnection;
-    c_api = PyCObject_FromVoidPtr ((void *)dbus_bindings_API, NULL);
-    if (c_api) {
-        PyModule_AddObject(this_module, "_C_API", c_api);
-    }
-
     if (PyModule_AddObject(this_module, "Connection",
                            (PyObject *)&ConnectionType) < 0) return 0;
     return 1;

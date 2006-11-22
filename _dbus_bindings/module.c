@@ -45,6 +45,7 @@ PyDoc_STRVAR(module_doc,
 #include "pending-call-impl.h"       /* PendingCall */
 #include "conn-impl.h"               /* Connection */
 #include "bus-impl.h"                /* Bus */
+#include "mainloop-impl.h"           /* NativeMainLoop */
 
 static PyMethodDef module_functions[] = {
 #define ENTRY(name,flags) {#name, (PyCFunction)name, flags, name##__doc__}
@@ -62,7 +63,13 @@ static PyMethodDef module_functions[] = {
 PyMODINIT_FUNC
 init_dbus_bindings(void)
 {
-    PyObject *this_module;
+    PyObject *this_module, *c_api;
+    static const int API_count = DBUS_BINDINGS_API_COUNT;
+    static void *dbus_bindings_API[DBUS_BINDINGS_API_COUNT];
+
+    dbus_bindings_API[0] = (void *)&API_count;
+    dbus_bindings_API[1] = (void *)Connection_BorrowDBusConnection;
+    dbus_bindings_API[2] = (void *)NativeMainLoop_New4;
 
     if (!init_generic()) return;
     if (!init_exception_types()) return;
@@ -76,6 +83,7 @@ init_dbus_bindings(void)
     if (!init_pending_call()) return;
     if (!init_conn_types()) return;
     if (!init_bus_types()) return;
+    if (!init_mainloop()) return;
 
     this_module = Py_InitModule3("_dbus_bindings", module_functions, module_doc);
     if (!this_module) return;
@@ -91,6 +99,7 @@ init_dbus_bindings(void)
     if (!insert_pending_call(this_module)) return;
     if (!insert_conn_types(this_module)) return;
     if (!insert_bus_types(this_module)) return;
+    if (!insert_mainloop_types(this_module)) return;
 
 #define ADD_CONST_VAL(x, v) \
     if (PyModule_AddIntConstant(this_module, x, v) < 0) return;
@@ -151,8 +160,19 @@ init_dbus_bindings(void)
     ADD_CONST_PREFIXED(HANDLER_RESULT_NOT_YET_HANDLED)
     ADD_CONST_PREFIXED(HANDLER_RESULT_NEED_MEMORY)
 
+    ADD_CONST_PREFIXED(WATCH_READABLE)
+    ADD_CONST_PREFIXED(WATCH_WRITABLE)
+    ADD_CONST_PREFIXED(WATCH_HANGUP)
+    ADD_CONST_PREFIXED(WATCH_ERROR)
+
     if (PyModule_AddStringConstant(this_module, "__docformat__",
                                    "restructuredtext") < 0) return;
+
+    c_api = PyCObject_FromVoidPtr ((void *)dbus_bindings_API, NULL);
+    if (!c_api) {
+        return;
+    }
+    PyModule_AddObject(this_module, "_C_API", c_api);
 }
 
 /* vim:set ft=c cino< sw=4 sts=4 et: */

@@ -159,6 +159,8 @@ setup(
         "dbus/decorators",
         "dbus/introspect_parser",
         "dbus/proxies",
+        "dbus/mainloop/__init__",
+        "dbus/mainloop/glib",
     ],
     ext_modules=[
         Extension("_dbus_bindings", ["_dbus_bindings/module.c"],

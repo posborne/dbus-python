@@ -156,15 +156,6 @@ class ProxyMethod:
             result = self._connection._send(message)
             return None
         elif reply_handler:
-            if not getattr(self._connection, '_have_mainloop', False):
-                raise RuntimeError(
-                    'To make asynchronous method calls (or receive signals) '
-                    'in dbus-python, you need to connect the Bus object to '
-                    'a main loop. The usual way to do this is currently '
-                    '"import dbus.glib" which does the GLib main loop setup as '
-                    'a side-effect. Improvements are planned in future.'
-                    )
-
             result = self._connection._send_with_reply(message, _ReplyHandler(reply_handler, error_handler), timeout/1000.0)
             return None
         else:
