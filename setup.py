@@ -139,7 +139,7 @@ if 'CFLAGS' in os.environ:
 
 setup(
     name='dbus-python',
-    version='0.80~pre1',
+    version='0.80pre2',
     description='D-Bus Python bindings',
     long_description=long_desc,
     url='http://dbus.freedesktop.org/',

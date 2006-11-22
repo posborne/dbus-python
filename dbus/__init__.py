@@ -46,8 +46,8 @@ __all__ = (
            'Double', 'String', 'Array', 'Struct', 'Dictionary', 'UTF8String',
            )
 __docformat__ = 'restructuredtext'
-# version is really 0.80pre1, but you can't represent that in this form
-version = (0, 79, 1)
+# version is really 0.80pre2, but you can't represent that in this form
+version = (0, 79, 2)
 __version__ = '.'.join(map(str, version))
 
 from dbus._dbus import *
