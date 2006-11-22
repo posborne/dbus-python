@@ -1,20 +1,15 @@
 # Backwards-compatibility with the old dbus_bindings.
 
+from warnings import warn as _warn
+from dbus._dbus import _dbus_bindings_warning
+_warn(_dbus_bindings_warning, DeprecationWarning, stacklevel=2)
+
 # Exceptions
 from _dbus_bindings import DBusException
 class ConnectionError(Exception): pass
 
 # Types
-from _dbus_bindings import Int16, UInt16, Int32, UInt32, Int64, UInt64,\
-                           Variant, ObjectPath, Signature, Byte, ByteArray
-# Don't bother importing SignatureIter, it can't be instantiated
-# These used to be specialized subclasses, but these are unambiguous
-String = unicode
-Boolean = bool
-Array = list            # FIXME: c'tor params
-Double = float
-Struct = tuple
-Dictionary = dict       # FIXME: c'tor params
+from dbus.types import *
 
 # Messages
 from _dbus_bindings import Message, SignalMessage as Signal,\

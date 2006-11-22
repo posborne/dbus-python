@@ -149,6 +149,8 @@ setup(
     maintainer_email='johnp@redhat.com',
     package_dir={'dbus':'dbus'},
     py_modules=[
+        "dbus_bindings",
+        "dbus/dbus_bindings",
         "dbus/_dbus",
         "dbus/exceptions",
         "dbus/glib",

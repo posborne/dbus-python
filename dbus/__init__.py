@@ -51,4 +51,5 @@ version = (0, 79, 1)
 __version__ = '.'.join(map(str, version))
 
 from dbus._dbus import *
+from dbus._dbus import dbus_bindings    # not in __all__ - for backwards compat
 from dbus.types import *
