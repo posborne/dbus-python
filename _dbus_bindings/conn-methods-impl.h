@@ -679,10 +679,10 @@ PyDoc_STRVAR(Connection_set_default_main_loop__doc__,
 "\n"
 "There are two types of main loop wrapper in dbus-python. Python\n"
 "main-loop wrappers are objects supporting the interface defined by\n"
-"`dbus.mainloop.base.MainLoop`; their API is entirely based on Python\n"
+"`dbus.mainloop.MainLoop`; their API is entirely based on Python\n"
 "methods.\n"
 "\n"
-"Native main-loop wrappers are instances of dbus.mainloop.base.NativeMainLoop\n"
+"Native main-loop wrappers are instances of dbus.mainloop.NativeMainLoop\n"
 "supplied by extension modules like `dbus.mainloop.glib`: they have no\n"
 "Python API, but connect themselves to ``libdbus`` using native code.\n");
 static PyObject *
