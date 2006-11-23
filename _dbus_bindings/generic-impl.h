@@ -44,6 +44,29 @@ static inline int type##_Check (PyObject *o) \
 
 static PyObject *empty_tuple = NULL;
 
+static PyObject *
+Glue_tp_richcompare_by_pointer(PyObject *self,
+                               PyObject *other,
+                               int op)
+{
+    if (op == Py_EQ || op == Py_NE) {
+        if (self == other) {
+            return PyInt_FromLong(op == Py_EQ);
+        }
+        return PyInt_FromLong(op == Py_NE);
+    }
+    PyErr_SetString(PyExc_TypeError,
+                    "Instances of this type are not ordered");
+    return NULL;
+}
+
+static long
+Glue_tp_hash_by_pointer(PyObject *self)
+{
+    long hash = (long)self;
+    return (hash == -1L ? -2L : hash);
+}
+
 static int
 Glue_immutable_setattro(PyObject *obj UNUSED,
                         PyObject *name UNUSED,
