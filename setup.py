@@ -31,19 +31,9 @@ sys.path.append("dbus")
 
 from distutils.core import setup
 from distutils.extension import Extension
-from distutils.command.clean import clean
 
 sys.path.append("test")
 from dbus_python_check import dbus_python_check
-
-def remove(filename):
-    if os.path.exists(filename):
-        os.remove(filename)
-
-class full_clean(clean):
-    def run(self):
-        clean.run(self)
-        remove("ChangeLog")
 
 includedirs_flag = ['-I.']
 dbus_includes = ['.', 'include']
@@ -178,7 +168,7 @@ setup(
             **extra_ext_args
         ),
     ],
-    cmdclass={'clean': full_clean, 'check': dbus_python_check}
+    cmdclass={'check': dbus_python_check}
 )
 
 # vim:ts=4:sw=4:tw=80:si:ai:showmatch:et
