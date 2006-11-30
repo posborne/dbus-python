@@ -47,7 +47,7 @@ __all__ = (
            'Int16', 'UInt16', 'Int32', 'UInt32', 'Int64', 'UInt64',
            'Double', 'String', 'Array', 'Struct', 'Dictionary', 'UTF8String',
            # submodules
-           'service', 'mainloop'
+           'service', 'mainloop', 'lowlevel'
            )
 __docformat__ = 'restructuredtext'
 # version is really 0.80pre2, but you can't represent that in this form
