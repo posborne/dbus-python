@@ -20,3 +20,7 @@ from _dbus_bindings import Message, SignalMessage as Signal,\
 
 # Connection
 from _dbus_bindings import Connection
+
+from dbus import Bus
+bus_request_name = Bus.request_name
+bus_release_name = Bus.release_name
