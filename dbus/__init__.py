@@ -34,6 +34,8 @@ __all__ = (
            # from _dbus
            'Bus', 'SystemBus', 'SessionBus', 'StarterBus',
            'Interface',
+           # from _dbus_bindings via _dbus
+           'get_default_main_loop', 'set_default_main_loop',
            # from _dbus_bindings via exceptions
            'DBusException', 'ConnectionError',
            # from exceptions
@@ -44,6 +46,8 @@ __all__ = (
            'ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
            'Int16', 'UInt16', 'Int32', 'UInt32', 'Int64', 'UInt64',
            'Double', 'String', 'Array', 'Struct', 'Dictionary', 'UTF8String',
+           # submodules
+           'service', 'mainloop'
            )
 __docformat__ = 'restructuredtext'
 # version is really 0.80pre2, but you can't represent that in this form
