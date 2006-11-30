@@ -24,7 +24,7 @@
 
 PyDoc_STRVAR(PendingCall_tp_doc,
 "Object representing a pending D-Bus call, returned by\n"
-"Connection._send_with_reply(). Cannot be instantiated directly.\n"
+"Connection.send_message_with_reply(). Cannot be instantiated directly.\n"
 );
 
 static PyTypeObject PendingCallType;
@@ -53,8 +53,8 @@ PendingCall_cancel(PendingCall *self, PyObject *unused UNUSED)
     Py_RETURN_NONE;
 }
 
-PyDoc_STRVAR(PendingCall__block__doc__,
-"_block()\n\n"
+PyDoc_STRVAR(PendingCall_block__doc__,
+"block()\n\n"
 "Block until this pending call has completed and the associated\n"
 "reply handler has been called.\n"
 "\n"
@@ -62,7 +62,7 @@ PyDoc_STRVAR(PendingCall__block__doc__,
 "synchronous call to a method in this application. As a result, it's\n"
 "probably a bad idea.\n");
 static PyObject *
-PendingCall__block(PendingCall *self, PyObject *unused UNUSED)
+PendingCall_block(PendingCall *self, PyObject *unused UNUSED)
 {
     Py_BEGIN_ALLOW_THREADS
     dbus_pending_call_block(self->pc);
@@ -72,10 +72,29 @@ PendingCall__block(PendingCall *self, PyObject *unused UNUSED)
 
 static void 
 _pending_call_notify_function(DBusPendingCall *pc,
-                              PyObject *handler)
+                              PyObject *list)
 {
     PyGILState_STATE gil = PyGILState_Ensure();
-    DBusMessage *msg = dbus_pending_call_steal_reply(pc);
+    /* BEGIN CRITICAL SECTION
+     * While holding the GIL, make sure the callback only gets called once
+     * by deleting it from the 1-item list that's held by libdbus.
+     */
+    PyObject *handler = PyList_GetItem(list, 0);
+    DBusMessage *msg;
+
+    if (!handler) {
+        PyErr_Print();
+        goto release;
+    }
+    if (handler == Py_None) {
+        goto release;
+    }
+    Py_INCREF(handler);     /* previously borrowed from the list, now owned */
+    Py_INCREF(Py_None);     /* take a ref so SetItem can steal it */
+    PyList_SetItem(list, 0, Py_None);
+    /* END CRITICAL SECTION */
+
+    msg = dbus_pending_call_steal_reply(pc);
 
     if (!msg) {
         /* omg, what happened here? the notify should only get called
@@ -94,6 +113,8 @@ _pending_call_notify_function(DBusPendingCall *pc,
          * except possibly making it fatal (FIXME?) */
     }
 
+    Py_XDECREF(handler);
+release:
     PyGILState_Release(gil);
 }
 
@@ -118,9 +139,12 @@ static PyObject *
 PendingCall_ConsumeDBusPendingCall (DBusPendingCall *pc, PyObject *callable)
 {
     dbus_bool_t ret;
+    PyObject *list = PyList_New(1);
     PendingCall *self = PyObject_New(PendingCall, &PendingCallType);
 
-    if (!self) {
+    if (!list || !self) {
+        Py_XDECREF(list);
+        Py_XDECREF(self);
         Py_BEGIN_ALLOW_THREADS
         dbus_pending_call_cancel(pc);
         dbus_pending_call_unref(pc);
@@ -128,16 +152,22 @@ PendingCall_ConsumeDBusPendingCall (DBusPendingCall *pc, PyObject *callable)
         return NULL;
     }
 
+    /* INCREF because SET_ITEM steals a ref */
     Py_INCREF(callable);
+    PyList_SET_ITEM(list, 0, callable);
+
+    /* INCREF so we can give a ref to set_notify and still have one */
+    Py_INCREF(list);    
 
     Py_BEGIN_ALLOW_THREADS
     ret = dbus_pending_call_set_notify(pc,
         (DBusPendingCallNotifyFunction)_pending_call_notify_function,
-        (void *)callable, (DBusFreeFunction)Glue_TakeGILAndXDecref);
+        (void *)list, (DBusFreeFunction)Glue_TakeGILAndXDecref);
     Py_END_ALLOW_THREADS
 
     if (!ret) {
         PyErr_NoMemory();
+        Py_DECREF(list);
         Py_DECREF(callable);
         Py_DECREF(self);
         Py_BEGIN_ALLOW_THREADS
@@ -146,6 +176,29 @@ PendingCall_ConsumeDBusPendingCall (DBusPendingCall *pc, PyObject *callable)
         Py_END_ALLOW_THREADS
         return NULL;
     }
+
+    /* As Alexander Larsson pointed out on dbus@lists.fd.o on 2006-11-30,
+     * the API has a race condition if set_notify runs in one thread and a
+     * mail loop runs in another - if the reply gets in before set_notify
+     * runs, the notify isn't called and there is no indication of error.
+     *
+     * The workaround is to check for completion immediately, but this also
+     * has a race which might lead to getting the notify called twice if
+     * we're unlucky. So I use the list to arrange for the notify to be
+     * deleted before it's called for the second time. The GIL protects
+     * the critical section in which I delete the callback from the list.
+     */
+    if (dbus_pending_call_get_completed(pc)) {
+        /* the first race condition happened, so call the callable here.
+         * FIXME: we ought to arrange for the callable to run from the
+         * mainloop thread, like it would if the race hadn't happened...
+         * this needs a better mainloop abstraction, though.
+         */
+        _pending_call_notify_function(pc, list);
+    }
+
+    Py_DECREF(list);
+    Py_DECREF(callable);
     self->pc = pc;
     return (PyObject *)self;
 }
@@ -162,8 +215,8 @@ PendingCall_tp_dealloc (PendingCall *self)
 }
 
 static PyMethodDef PendingCall_tp_methods[] = {
-    {"_block", (PyCFunction)PendingCall__block, METH_NOARGS,
-     PendingCall__block__doc__},
+    {"block", (PyCFunction)PendingCall_block, METH_NOARGS,
+     PendingCall_block__doc__},
     {"cancel", (PyCFunction)PendingCall_cancel, METH_NOARGS,
      PendingCall_cancel__doc__},
     {"get_completed", (PyCFunction)PendingCall_get_completed, METH_NOARGS,
@@ -174,7 +227,7 @@ static PyMethodDef PendingCall_tp_methods[] = {
 static PyTypeObject PendingCallType = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
-    "_dbus_bindings.PendingCall",
+    "dbus.lowlevel.PendingCall",
     sizeof(PendingCall),
     0,
     (destructor)PendingCall_tp_dealloc,     /* tp_dealloc */
