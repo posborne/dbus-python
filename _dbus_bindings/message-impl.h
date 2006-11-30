@@ -815,7 +815,7 @@ static PyMethodDef Message_tp_methods[] = {
 static PyTypeObject MessageType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "_dbus_bindings.Message",   /*tp_name*/
+    "dbus.lowlevel.Message",   /*tp_name*/
     sizeof(Message),     /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     (destructor)Message_tp_dealloc, /*tp_dealloc*/
@@ -857,7 +857,7 @@ static PyTypeObject MessageType = {
 static PyTypeObject MethodCallMessageType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "_dbus_bindings.MethodCallMessage",  /*tp_name*/
+    "dbus.lowlevel.MethodCallMessage",  /*tp_name*/
     0,                         /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     0,                         /*tp_dealloc*/
@@ -899,7 +899,7 @@ static PyTypeObject MethodCallMessageType = {
 static PyTypeObject MethodReturnMessageType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "_dbus_bindings.MethodReturnMessage",  /*tp_name*/
+    "dbus.lowlevel.MethodReturnMessage",  /*tp_name*/
     0,                         /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     0,                         /*tp_dealloc*/
@@ -941,7 +941,7 @@ static PyTypeObject MethodReturnMessageType = {
 static PyTypeObject SignalMessageType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "_dbus_bindings.SignalMessage",  /*tp_name*/
+    "dbus.lowlevel.SignalMessage",  /*tp_name*/
     0,                         /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     0,                         /*tp_dealloc*/
@@ -983,7 +983,7 @@ static PyTypeObject SignalMessageType = {
 static PyTypeObject ErrorMessageType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
-    "_dbus_bindings.ErrorMessage",  /*tp_name*/
+    "dbus.lowlevel.ErrorMessage",  /*tp_name*/
     0,                         /*tp_basicsize*/
     0,                         /*tp_itemsize*/
     0,                         /*tp_dealloc*/
