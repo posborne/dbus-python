@@ -64,6 +64,8 @@ For example, the dbus-daemon itself provides a service and some objects::
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 __all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus', 'Interface',
+        # From _dbus_bindings
+        'get_default_main_loop', 'set_default_main_loop',
         # From exceptions (DBusException originally from _dbus_bindings)
         'DBusException', 'MissingErrorHandlerException',
         'MissingReplyHandlerException', 'ValidationException',
@@ -82,7 +84,12 @@ from exceptions import *
 from matchrules import *
 
 
-class Bus(_dbus_bindings.BusImplementation):
+get_default_main_loop = _dbus_bindings.get_default_main_loop
+set_default_main_loop = _dbus_bindings.set_default_main_loop
+BusImplementation = _dbus_bindings.BusImplementation
+
+
+class Bus(BusImplementation):
     """A connection to a DBus daemon.
 
     One of three possible standard buses, the SESSION, SYSTEM,
@@ -155,7 +162,9 @@ class Bus(_dbus_bindings.BusImplementation):
         pass
 
     def get_connection(self):
-        """Return self, for backwards compatibility with earlier dbus-python
+        """(Deprecated - in new code, just use self)
+
+        Return self, for backwards compatibility with earlier dbus-python
         versions where Bus was not a subclass of Connection.
         """
         return self
@@ -506,6 +515,7 @@ class Interface:
         else:
             _dbus_interface = self._dbus_interface
 
+        # I have no idea what's going on here. -smcv
         if member == '__call__':
             return object.__call__
         else:
