@@ -72,7 +72,7 @@ class DeferedMethod:
         #block for now even on async
         # FIXME: put ret in async queue in future if we have a reply handler
 
-        self._proxy_method._proxy._pending_introspect._block()
+        self._proxy_method._proxy._pending_introspect.block()
         ret = self._proxy_method (*args, **keywords)
         
         return ret
@@ -150,16 +150,14 @@ class ProxyMethod:
                           args, introspect_sig, e.__class__, e)
             raise
 
-        # FIXME: using private API on Connection while I decide whether to
-        # make it public or what
         if ignore_reply:
-            result = self._connection._send(message)
+            result = self._connection.send_message(message)
             return None
         elif reply_handler:
-            result = self._connection._send_with_reply(message, _ReplyHandler(reply_handler, error_handler), timeout/1000.0)
+            result = self._connection.send_message_with_reply(message, _ReplyHandler(reply_handler, error_handler), timeout/1000.0)
             return None
         else:
-            reply_message = self._connection._send_with_reply_and_block(message, timeout)
+            reply_message = self._connection.send_message_with_reply_and_block(message, timeout)
             args_list = reply_message.get_args_list(**get_args_options)
             if len(args_list) == 0:
                 return None
@@ -275,10 +273,10 @@ class ProxyObject:
         message = _dbus_bindings.MethodCallMessage(None, self._object_path, 'org.freedesktop.DBus.Introspectable', 'Introspect')
         message.set_destination(self._named_service)
         
-        result = self._bus.get_connection()._send_with_reply(message, _ReplyHandler(self._introspect_reply_handler, self._introspect_error_handler), -1)
-        return result   
+        result = self._bus.get_connection().send_message_with_reply(message, _ReplyHandler(self._introspect_reply_handler, self._introspect_error_handler), -1)
+        return result
     
-    def _introspect_execute_queue(self): 
+    def _introspect_execute_queue(self):
         for call in self._pending_introspect_queue:
             (member, iface, args, keywords) = call
 
