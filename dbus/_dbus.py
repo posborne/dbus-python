@@ -149,7 +149,7 @@ class Bus(BusImplementation):
         bus._bus_names = weakref.WeakValueDictionary()
         bus._match_rule_tree = SignalMatchTree()
 
-        bus._add_filter(bus.__class__._signal_func)
+        bus.add_message_filter(bus.__class__._signal_func)
 
         if not private:
             cls._shared_instances[bus_type] = bus

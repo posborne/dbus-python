@@ -244,7 +244,7 @@ def _method_reply_return(connection, message, method_name, signature, *retval):
                       '%s: %s', retval, signature, e.__class__, e)
         raise
 
-    connection._send(reply)
+    connection.send_message(reply)
 
 
 def _method_reply_error(connection, message, exception):
@@ -258,7 +258,7 @@ def _method_reply_error(connection, message, exception):
     contents = traceback.format_exc()
     reply = _dbus_bindings.ErrorMessage(message, name, contents)
 
-    connection._send(reply)
+    connection.send_message(reply)
 
 
 class InterfaceType(type):

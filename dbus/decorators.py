@@ -160,7 +160,7 @@ def signal(dbus_interface, signature=None):
             else:
                 message.append(*args)
 
-            self._connection._send(message)
+            self._connection.send_message(message)
 
         args = inspect.getargspec(func)[0]
         args.pop(0)
