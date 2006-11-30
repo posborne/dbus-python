@@ -81,16 +81,53 @@ dbus_glib_native_mainloop(GMainContext *ctx)
 PyDoc_STRVAR(module_doc, "");
 
 PyDoc_STRVAR(DBusGMainLoop__doc__,
-"DBusGMainLoop() -> NativeMainLoop\n"
+"DBusGMainLoop([set_as_default=False]) -> NativeMainLoop\n"
 "\n"
-"Factory function. Return a NativeMainLoop object which can be used to\n"
+"Return a NativeMainLoop object which can be used to\n"
 "represent the default GLib main context in dbus-python.\n"
 "\n"
-"Non-default main contexts are not currently supported\n");
+"If the keyword argument set_as_default is given and is true, set the new\n"
+"main loop as the default for all new Connection or Bus instances.\n"
+"\n"
+"Non-default main contexts are not currently supported.\n");
 static PyObject *
-DBusGMainLoop (PyObject *always_null UNUSED, PyObject *no_args UNUSED)
+DBusGMainLoop (PyObject *always_null UNUSED, PyObject *args, PyObject *kwargs)
 {
-    return dbus_glib_native_mainloop(NULL);
+    PyObject *mainloop, *function, *result;
+    int set_as_default = 0;
+    static char *argnames[] = {"set_as_default", NULL};
+
+    if (PyTuple_Size(args) != 0) {
+        PyErr_SetString(PyExc_TypeError, "DBusGMainLoop() takes no "
+                                         "positional arguments");
+        return NULL;
+    }
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i", argnames,
+                                     &set_as_default)) {
+        return NULL;
+    }
+
+    mainloop = dbus_glib_native_mainloop(NULL);
+    if (mainloop && set_as_default) {
+        if (!_dbus_bindings_module) {
+            PyErr_SetString(PyExc_ImportError, "_dbus_bindings not imported");
+            Py_DECREF(mainloop);
+            return NULL;
+        }
+        function = PyObject_GetAttrString(_dbus_bindings_module,
+                                          "set_default_main_loop");
+        if (!function) {
+            Py_DECREF(mainloop);
+            return NULL;
+        }
+        result = PyObject_CallFunctionObjArgs(function, mainloop, NULL);
+        Py_DECREF(function);
+        if (!result) {
+            Py_DECREF(mainloop);
+            return NULL;
+        }
+    }
+    return mainloop;
 }
 
 PyDoc_STRVAR(setup_with_g_main__doc__,
@@ -123,7 +160,8 @@ static PyMethodDef module_functions[] = {
     {"setup_with_g_main", setup_with_g_main, METH_VARARGS,
      setup_with_g_main__doc__},
     {"gthreads_init", gthreads_init, METH_NOARGS, gthreads_init__doc__},
-    {"DBusGMainLoop", DBusGMainLoop, METH_NOARGS, DBusGMainLoop__doc__},
+    {"DBusGMainLoop", (PyCFunction)DBusGMainLoop,
+     METH_VARARGS|METH_KEYWORDS, DBusGMainLoop__doc__},
     {NULL, NULL, 0, NULL}
 };
 
