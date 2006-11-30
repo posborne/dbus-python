@@ -220,6 +220,9 @@ class ProxyObject:
         """Arrange for the given function to be called when the given signal
         is received.
 
+        FIXME: this binds to the unique name regardless of whether this is a
+        by-unique-name or by-well-known-name proxy.
+
         :Parameters:
             `signal_name` : str
                 The name of the signal

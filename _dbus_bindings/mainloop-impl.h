@@ -500,14 +500,16 @@ PyDoc_STRVAR(set_default_main_loop__doc__,
 "If None, return to the initial situation: there is no default, and you\n"
 "must always pass the mainloop parameter to the constructor.\n"
 "\n"
-"There are two types of main loop wrapper in dbus-python. Python\n"
-"main-loop wrappers are objects supporting the interface defined by\n"
-"`dbus.mainloop.MainLoop`; their API is entirely based on Python\n"
-"methods.\n"
-"\n"
+"Two types of main loop wrapper are planned in dbus-python.\n"
 "Native main-loop wrappers are instances of dbus.mainloop.NativeMainLoop\n"
 "supplied by extension modules like `dbus.mainloop.glib`: they have no\n"
-"Python API, but connect themselves to ``libdbus`` using native code.\n");
+"Python API, but connect themselves to ``libdbus`` using native code.\n"
+
+"Python main-loop wrappers are not yet implemented. They will be objects\n"
+"supporting the interface defined by `dbus.mainloop.MainLoop`, with an\n"
+"API entirely based on Python methods.\n"
+"\n"
+);
 static PyObject *
 set_default_main_loop(PyObject *always_null UNUSED,
                       PyObject *args)

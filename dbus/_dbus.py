@@ -121,7 +121,7 @@ class Bus(BusImplementation):
             `private` : bool
                 If true, never return an existing shared instance, but instead
                 return a private connection
-            `mainloop` : dbus.mainloop.NativeMainLoop or dbus.mainloop.MainLoopBase
+            `mainloop` : dbus.mainloop.NativeMainLoop
                 The main loop to use. The default is to use the default
                 main loop if one has been set up, or raise an exception
                 if none has been.
@@ -207,13 +207,19 @@ class Bus(BusImplementation):
 
     get_starter = staticmethod(get_starter)
 
-
     def get_object(self, named_service, object_path):
         """Return a local proxy for the given remote object.
 
         Method calls on the proxy are translated into method calls on the
         remote object.
-        
+
+        If the given object path is a well-known name (as opposed to a
+        unique name) the proxy will use the well-known name for
+        communication, meaning that if the owner of the well-known
+        name changes, the proxy will point to the new owner.
+
+        If state needs to be maintained between 
+
         :Parameters:
             `named_service` : str
                 A bus name (either the unique name or a well-known name)
@@ -222,6 +228,40 @@ class Bus(BusImplementation):
                 The object path of the desired object
         :Returns: a `dbus.proxies.ProxyObject`
         """
+        return self.ProxyObjectClass(self, named_service, object_path)
+
+    def get_object_by_unique_name(self, named_service, object_path):
+        """Return a local proxy for the given remote object,
+        first resolving the given bus name to the unique name of
+        the current owner of that name.
+
+        Method calls on the proxy are translated into method calls on the
+        remote object.
+
+        If the given object path is a well-known name (as opposed to a
+        unique name) query the bus for the unique name of the application
+        currently owning that well-known name, and use that for
+        communication.
+
+        :Parameters:
+            `named_service` : str
+                A bus name (either the unique name or a well-known name)
+                of the application owning the object; if a well-known name,
+                will be converted to the owning unique name immediately
+            `object_path` : str
+                The object path of the desired object
+        :Returns: a `dbus.proxies.ProxyObject`
+        :Raises `DBusException`: if resolving the well-known name to a
+            unique name fails
+        """
+
+        if (named_service and named_service[0] != ':'):
+            bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
+            named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
+            if named_service is None:
+                raise DBusException('That well-known name is not '
+                                    'available on this Bus')
+
         return self.ProxyObjectClass(self, named_service, object_path)
 
     def _create_args_dict(self, keywords):
@@ -306,7 +346,7 @@ class Bus(BusImplementation):
         if (named_service and named_service[0] != ':'):
             bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
             named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
-        
+
         match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
 
         for kw in ("sender_keyword", "path_keyword"):
@@ -396,7 +436,7 @@ class SystemBus(Bus):
             `private` : bool
                 If true, never return an existing shared instance, but instead
                 return a private connection.
-            `mainloop` : dbus.mainloop.NativeMainLoop or dbus.mainloop.MainLoopBase
+            `mainloop` : dbus.mainloop.NativeMainLoop
                 The main loop to use. The default is to use the default
                 main loop if one has been set up, or raise an exception
                 if none has been.
@@ -413,7 +453,7 @@ class SessionBus(Bus):
             `private` : bool
                 If true, never return an existing shared instance, but instead
                 return a private connection.
-            `mainloop` : dbus.mainloop.NativeMainLoop or dbus.mainloop.MainLoopBase
+            `mainloop` : dbus.mainloop.NativeMainLoop
                 The main loop to use. The default is to use the default
                 main loop if one has been set up, or raise an exception
                 if none has been.
@@ -432,7 +472,7 @@ class StarterBus(Bus):
             `private` : bool
                 If true, never return an existing shared instance, but instead
                 return a private connection.
-            `mainloop` : dbus.mainloop.NativeMainLoop or dbus.mainloop.MainLoopBase
+            `mainloop` : dbus.mainloop.NativeMainLoop
                 The main loop to use. The default is to use the default
                 main loop if one has been set up, or raise an exception
                 if none has been.
