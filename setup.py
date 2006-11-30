@@ -151,6 +151,7 @@ setup(
         "dbus/decorators",
         "dbus/introspect_parser",
         "dbus/proxies",
+        "dbus/lowlevel",
         "dbus/mainloop/__init__",
         "dbus/mainloop/glib",
     ],
