@@ -87,6 +87,7 @@ _pending_call_notify_function(DBusPendingCall *pc,
         goto release;
     }
     if (handler == Py_None) {
+        /* We've already called (and thrown away) the callback */
         goto release;
     }
     Py_INCREF(handler);     /* previously borrowed from the list, now owned */
@@ -107,6 +108,9 @@ _pending_call_notify_function(DBusPendingCall *pc,
         if (msg_obj) {
             PyObject *ret = PyObject_CallFunctionObjArgs(handler, msg_obj, NULL);
 
+            if (!ret) {
+                PyErr_Print();
+            }
             Py_XDECREF(ret);
         }
         /* else OOM has happened - not a lot we can do about that,
@@ -167,8 +171,9 @@ PendingCall_ConsumeDBusPendingCall (DBusPendingCall *pc, PyObject *callable)
 
     if (!ret) {
         PyErr_NoMemory();
+        /* DECREF twice - one for the INCREF and one for the allocation */
         Py_DECREF(list);
-        Py_DECREF(callable);
+        Py_DECREF(list);
         Py_DECREF(self);
         Py_BEGIN_ALLOW_THREADS
         dbus_pending_call_cancel(pc);
@@ -198,7 +203,6 @@ PendingCall_ConsumeDBusPendingCall (DBusPendingCall *pc, PyObject *callable)
     }
 
     Py_DECREF(list);
-    Py_DECREF(callable);
     self->pc = pc;
     return (PyObject *)self;
 }
