@@ -79,7 +79,7 @@ class BusName(object):
                 The well-known name to be advertised
             `bus` : dbus.Bus
                 A Bus on which this service will be advertised; if None
-                (default) a default bus will be used
+                (default) the session bus will be used
             `allow_replacement` : bool
                 If True, other processes trying to claim the same well-known
                 name will take precedence over this one.
@@ -343,28 +343,46 @@ class Object(Interface):
 
     Just inherit from Object and provide a list of methods to share
     across the Bus.
-
-    Issues
-    ------
-    - The constructor takes a well-known name: this is wrong. There should be
-      no requirement to register a well-known name in order to export bus
-      objects.
     """
-    def __init__(self, bus_name, object_path):
-        """Constructor.
+    # the signature of __init__ is a bit mad, for backwards compatibility
+    def __init__(self, conn=None, object_path=None, bus_name=None):
+        """Constructor. Either conn or bus_name is required; object_path
+        is also required.
 
         :Parameters:
-            `bus_name` : BusName
+            `conn` : dbus.Connection
+                The connection on which to export this object.
+                If None, use the Bus associated with the given bus_name.
+
+                For backwards compatibility, if an instance of
+                dbus.service.BusName is passed as the first parameter,
+                this will also be accepted.
+
+            `object_path` : str
+                The D-Bus object path at which to export this Object.
+
+            `bus_name` : dbus.service.BusName
                 Represents a well-known name claimed by this process. A
                 reference to the BusName object will be held by this
                 Object, preventing the name from being released during this
                 Object's lifetime (subject to status).
-            `object_path` : str
-                The D-Bus object path at which to export this Object.
         """
+        if object_path is None:
+            raise TypeError('The object_path argument is required')
+
+        if isinstance(conn, BusName):
+            # someone's using the old API; don't gratuitously break them
+            bus_name = conn
+            conn = None
+
+        if conn is None:
+            if bus_name is None:
+                raise TypeError('Either conn or bus_name is required')
+            conn = bus_name.get_bus()
+
         self._object_path = object_path
         self._name = bus_name
-        self._bus = bus_name.get_bus()
+        self._bus = conn
             
         self._connection = self._bus.get_connection()
 
