@@ -91,12 +91,16 @@ Connection_set_exit_on_disconnect (Connection *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
-PyDoc_STRVAR(Connection__send__doc__,
-"_send(msg: Message) -> long\n\n"
+PyDoc_STRVAR(Connection_send_message__doc__,
+"send_message(msg) -> long\n\n"
 "Queue the given message for sending, and return the message serial number.\n"
+"\n"
+":Parameters:\n"
+"   `msg` : dbus.lowlevel.Message\n"
+"       The message to be sent.\n"
 );
 static PyObject *
-Connection__send (Connection *self, PyObject *args)
+Connection_send_message(Connection *self, PyObject *args)
 {
     dbus_bool_t ok;
     PyObject *obj;
@@ -120,13 +124,13 @@ Connection__send (Connection *self, PyObject *args)
 }
 
 /* The timeout is in seconds here, since that's conventional in Python. */
-PyDoc_STRVAR(Connection__send_with_reply__doc__,
-"_send_with_reply(msg: Message, reply_handler: callable[, timeout_s: float])"
-" -> PendingCall\n\n"
+PyDoc_STRVAR(Connection_send_message_with_reply__doc__,
+"send_message_with_reply(msg: Message, reply_handler: callable[, timeout_s: float])"
+" -> dbus.lowlevel.PendingCall\n\n"
 "Queue the message for sending; expect a reply via the returned PendingCall.\n"
 "\n"
 ":Parameters:\n"
-"   `msg` : Message\n"
+"   `msg` : dbus.lowlevel.Message\n"
 "       The message to be sent\n"
 "   `reply_handler` : callable\n"
 "       Asynchronous reply handler: will be called with one positional\n"
@@ -136,11 +140,11 @@ PyDoc_STRVAR(Connection__send_with_reply__doc__,
 "       will be created locally and raised instead. If this timeout is\n"
 "       negative (default), a sane default (supplied by libdbus) is used.\n"
 ":Returns:\n"
-"   A `PendingCall` instance which can be used to cancel the pending call.\n"
+"   A `dbus.lowlevel.PendingCall` instance which can be used to cancel the pending call.\n"
 "\n"
 );
 static PyObject *
-Connection__send_with_reply(Connection *self, PyObject *args)
+Connection_send_message_with_reply(Connection *self, PyObject *args)
 {
     dbus_bool_t ok;
     double timeout_s = -1.0;
@@ -149,7 +153,7 @@ Connection__send_with_reply(Connection *self, PyObject *args)
     DBusMessage *msg;
     DBusPendingCall *pending;
 
-    if (!PyArg_ParseTuple(args, "OO|f:send_with_reply", &obj, &callable,
+    if (!PyArg_ParseTuple(args, "OO|f:send_message_with_reply", &obj, &callable,
                           &timeout_s)) {
         return NULL;
     }
@@ -181,9 +185,9 @@ Connection__send_with_reply(Connection *self, PyObject *args)
 }
 
 /* Again, the timeout is in seconds, since that's conventional in Python. */
-PyDoc_STRVAR(Connection__send_with_reply_and_block__doc__,
-"_send_with_reply_and_block(msg: Message, [, timeout_s: float])"
-" -> Message\n\n"
+PyDoc_STRVAR(Connection_send_message_with_reply_and_block__doc__,
+"send_message_with_reply_and_block(msg: dbus.lowlevel.Message, [, timeout_s: float])"
+" -> dbus.lowlevel.Message\n\n"
 "Send the message and block while waiting for a reply.\n"
 "\n"
 "This does not re-enter the main loop, so it can lead to a deadlock, if\n"
@@ -191,21 +195,21 @@ PyDoc_STRVAR(Connection__send_with_reply_and_block__doc__,
 "application. As such, it's probably a bad idea.\n"
 "\n"
 ":Parameters:\n"
-"   `msg` : Message\n"
+"   `msg` : dbus.lowlevel.Message\n"
 "       The message to be sent\n"
 "   `timeout_s` : float\n"
 "       If the reply takes more than this many seconds, a timeout error\n"
 "       will be created locally and raised instead. If this timeout is\n"
 "       negative (default), a sane default (supplied by libdbus) is used.\n"
 ":Returns:\n"
-"   A `Message` instance (probably a `MethodReturnMessage`) on success\n"
-":Raises DBusException:\n"
+"   A `dbus.lowlevel.Message` instance (probably a `dbus.lowlevel.MethodReturnMessage`) on success\n"
+":Raises dbus.DBusException:\n"
 "   On error (including if the reply arrives but is an\n"
 "   error message)\n"
 "\n"
 );
 static PyObject *
-Connection__send_with_reply_and_block(Connection *self, PyObject *args)
+Connection_send_message_with_reply_and_block(Connection *self, PyObject *args)
 {
     double timeout_s = -1.0;
     int timeout_ms;
@@ -213,7 +217,7 @@ Connection__send_with_reply_and_block(Connection *self, PyObject *args)
     DBusMessage *msg, *reply;
     DBusError error;
 
-    if (!PyArg_ParseTuple(args, "O|f:_send_with_reply_and_block", &obj,
+    if (!PyArg_ParseTuple(args, "O|f:send_message_with_reply_and_block", &obj,
                           &timeout_s)) {
         return NULL;
     }
@@ -337,18 +341,19 @@ Connection_get_peer_unix_process_id (Connection *self, PyObject *unused UNUSED)
 
 /* TODO: wrap dbus_connection_set_unix_user_function Pythonically */
 
-PyDoc_STRVAR(Connection__add_filter__doc__,
-"_add_filter(callable)\n\n"
+PyDoc_STRVAR(Connection_add_message_filter__doc__,
+"add_message_filter(callable)\n\n"
 "Add the given message filter to the internal list.\n\n"
 "Filters are handlers that are run on all incoming messages, prior to the\n"
-"objects registered with `_register_object_path`.\n\n"
+"objects registered to handle object paths.\n"
+"\n"
 "Filters are run in the order that they were added. The same handler can\n"
 "be added as a filter more than once, in which case it will be run more\n"
 "than once. Filters added during a filter callback won't be run on the\n"
 "message being processed.\n"
 );
 static PyObject *
-Connection__add_filter(Connection *self, PyObject *callable)
+Connection_add_message_filter(Connection *self, PyObject *callable)
 {
     dbus_bool_t ok;
 
@@ -373,14 +378,14 @@ Connection__add_filter(Connection *self, PyObject *callable)
     Py_RETURN_NONE;
 }
 
-PyDoc_STRVAR(Connection__remove_filter__doc__,
-"_remove_filter(callable)\n\n"
-"Remove the given message filter (see `_add_filter` for details).\n"
+PyDoc_STRVAR(Connection_remove_message_filter__doc__,
+"remove_message_filter(callable)\n\n"
+"Remove the given message filter (see `add_message_filter` for details).\n"
 "\n"
 ":Raises LookupError:\n"
 "   The given callable is not among the registered filters\n");
 static PyObject *
-Connection__remove_filter(Connection *self, PyObject *callable)
+Connection_remove_message_filter(Connection *self, PyObject *callable)
 {
     PyObject *obj;
 
@@ -399,11 +404,13 @@ Connection__remove_filter(Connection *self, PyObject *callable)
 }
 
 PyDoc_STRVAR(Connection__register_object_path__doc__,
-"_register_object_path(path: str, on_message: callable[, on_unregister: "
+"register_object_path(path: str, on_message: callable[, on_unregister: "
 "callable[, fallback: bool]])\n"
 "\n"
 "Register a callback to be called when messages arrive at the given\n"
-"object-path. Typically used to export objects' methods on the bus.\n"
+"object-path. Used to export objects' methods on the bus in a low-level\n"
+"way. For the high-level interface to this functionality (usually\n"
+"recommended) see the `dbus.service.Object` base class.\n"
 "\n"
 ":Parameters:\n"
 "   `path` : str\n"
@@ -411,7 +418,7 @@ PyDoc_STRVAR(Connection__register_object_path__doc__,
 "   `on_message` : callable\n"
 "       Called when a message arrives at the given object-path, with\n"
 "       two positional parameters: the first is this Connection,\n"
-"       the second is the incoming message.\n"
+"       the second is the incoming `dbus.lowlevel.Message`.\n"
 "   `fallback` : bool\n"
 "       If True (the default is False), when a message arrives for a\n"
 "       'subdirectory' of the given path and there is no more specific\n"
@@ -532,8 +539,14 @@ Connection__register_object_path(Connection *self, PyObject *args,
 }
 
 PyDoc_STRVAR(Connection__unregister_object_path__doc__,
-"_unregister_object_path(path: str)\n\n"
-""
+"unregister_object_path(path: str)\n\n"
+"Remove a previously registered handler for the given object path.\n"
+"\n"
+":Parameters:\n"
+"   `path` : str\n"
+"       The object path whose handler is to be removed\n"
+":Raises KeyError: if there is no handler registered for exactly that\n"
+"   object path.\n"
 );
 static PyObject *
 Connection__unregister_object_path(Connection *self, PyObject *args,
@@ -660,12 +673,12 @@ static struct PyMethodDef Connection_tp_methods[] = {
     ENTRY(get_unix_fd, METH_NOARGS),
     ENTRY(get_peer_unix_user, METH_NOARGS),
     ENTRY(get_peer_unix_process_id, METH_NOARGS),
-    ENTRY(_add_filter, METH_O),
+    ENTRY(add_message_filter, METH_O),
     ENTRY(_register_object_path, METH_VARARGS|METH_KEYWORDS),
-    ENTRY(_remove_filter, METH_O),
-    ENTRY(_send, METH_VARARGS),
-    ENTRY(_send_with_reply, METH_VARARGS),
-    ENTRY(_send_with_reply_and_block, METH_VARARGS),
+    ENTRY(remove_message_filter, METH_O),
+    ENTRY(send_message, METH_VARARGS),
+    ENTRY(send_message_with_reply, METH_VARARGS),
+    ENTRY(send_message_with_reply_and_block, METH_VARARGS),
     ENTRY(_unregister_object_path, METH_VARARGS|METH_KEYWORDS),
     {NULL},
 #undef ENTRY
