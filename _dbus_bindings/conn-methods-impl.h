@@ -650,60 +650,6 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
 
 /* dbus_connection_get_outgoing_size - almost certainly unneeded */
 
-PyDoc_STRVAR(Connection_get_default_main_loop__doc__,
-"Connection.get_default_main_loop() -> object\n\n"
-"Return the global default dbus-python main loop wrapper, which is used\n"
-"when no main loop wrapper is passed to the Connection constructor.\n"
-"\n"
-"If None, there is no default and you must always pass the mainloop\n"
-"parameter to the constructor. This will be the case until\n"
-"set_default_main_loop is called.\n");
-static PyObject *
-Connection_get_default_main_loop(PyObject *always_null UNUSED,
-                                 PyObject *no_args UNUSED)
-{
-    if (!Connection_default_main_loop) {
-        Py_RETURN_NONE;
-    }
-    Py_INCREF(Connection_default_main_loop);
-    return Connection_default_main_loop;
-}
-
-PyDoc_STRVAR(Connection_set_default_main_loop__doc__,
-"Connection.set_default_main_loop(object)\n\n"
-"Change the global default dbus-python main loop wrapper, which is used\n"
-"when no main loop wrapper is passed to the Connection constructor.\n"
-"\n"
-"If None, return to the initial situation: there is no default, and you\n"
-"must always pass the mainloop parameter to the constructor.\n"
-"\n"
-"There are two types of main loop wrapper in dbus-python. Python\n"
-"main-loop wrappers are objects supporting the interface defined by\n"
-"`dbus.mainloop.MainLoop`; their API is entirely based on Python\n"
-"methods.\n"
-"\n"
-"Native main-loop wrappers are instances of dbus.mainloop.NativeMainLoop\n"
-"supplied by extension modules like `dbus.mainloop.glib`: they have no\n"
-"Python API, but connect themselves to ``libdbus`` using native code.\n");
-static PyObject *
-Connection_set_default_main_loop(PyObject *always_null UNUSED,
-                                 PyObject *args)
-{
-    PyObject *new_loop, *old_loop;
-
-    if (!PyArg_ParseTuple(args, "O", &new_loop)) {
-        return NULL;
-    }
-    if (!check_mainloop_sanity(new_loop)) {
-        return NULL;
-    }
-    old_loop = Connection_default_main_loop;
-    Py_INCREF(new_loop);
-    Connection_default_main_loop = new_loop;
-    Py_XDECREF(old_loop);
-    Py_RETURN_NONE;
-}
-
 static struct PyMethodDef Connection_tp_methods[] = {
 #define ENTRY(name, flags) {#name, (PyCFunction)Connection_##name, flags, Connection_##name##__doc__}
     ENTRY(close, METH_NOARGS),
@@ -721,8 +667,6 @@ static struct PyMethodDef Connection_tp_methods[] = {
     ENTRY(_send_with_reply, METH_VARARGS),
     ENTRY(_send_with_reply_and_block, METH_VARARGS),
     ENTRY(_unregister_object_path, METH_VARARGS|METH_KEYWORDS),
-    ENTRY(get_default_main_loop, METH_NOARGS|METH_STATIC),
-    ENTRY(set_default_main_loop, METH_VARARGS|METH_STATIC),
     {NULL},
 #undef ENTRY
 };

@@ -437,6 +437,8 @@ static PyTypeObject NativeMainLoopType = {
     0,                                      /* tp_new */
 };
 
+/* Internal C API for Connection, Bus, Server ======================= */
+
 static dbus_bool_t
 check_mainloop_sanity(PyObject *mainloop)
 {
@@ -449,16 +451,80 @@ check_mainloop_sanity(PyObject *mainloop)
 }
 
 static dbus_bool_t
-dbus_python_set_up_connection(Connection *conn, PyObject *mainloop)
+dbus_python_set_up_connection(PyObject *conn, PyObject *mainloop)
 {
     if (NativeMainLoop_Check(mainloop)) {
         /* Native mainloops are allowed to do arbitrary strange things */
         NativeMainLoop *nml = (NativeMainLoop *)mainloop;
-        return (nml->set_up_connection_cb)(conn->conn, nml->data);
+        DBusConnection *dbc = Connection_BorrowDBusConnection(conn);
+
+        if (!dbc) {
+            return FALSE;
+        }
+        return (nml->set_up_connection_cb)(dbc, nml->data);
     }
     PyErr_SetString(PyExc_TypeError,
                     "A dbus.mainloop.NativeMainLoop instance is required");
     return FALSE;
+}
+
+/* The main loop if none is passed to the constructor */
+static PyObject *default_main_loop;
+
+/* Python API ======================================================= */
+
+PyDoc_STRVAR(get_default_main_loop__doc__,
+"get_default_main_loop() -> object\n\n"
+"Return the global default dbus-python main loop wrapper, which is used\n"
+"when no main loop wrapper is passed to the Connection constructor.\n"
+"\n"
+"If None, there is no default and you must always pass the mainloop\n"
+"parameter to the constructor. This will be the case until\n"
+"set_default_main_loop is called.\n");
+static PyObject *
+get_default_main_loop(PyObject *always_null UNUSED,
+                      PyObject *no_args UNUSED)
+{
+    if (!default_main_loop) {
+        Py_RETURN_NONE;
+    }
+    Py_INCREF(default_main_loop);
+    return default_main_loop;
+}
+
+PyDoc_STRVAR(set_default_main_loop__doc__,
+"set_default_main_loop(object)\n\n"
+"Change the global default dbus-python main loop wrapper, which is used\n"
+"when no main loop wrapper is passed to the Connection constructor.\n"
+"\n"
+"If None, return to the initial situation: there is no default, and you\n"
+"must always pass the mainloop parameter to the constructor.\n"
+"\n"
+"There are two types of main loop wrapper in dbus-python. Python\n"
+"main-loop wrappers are objects supporting the interface defined by\n"
+"`dbus.mainloop.MainLoop`; their API is entirely based on Python\n"
+"methods.\n"
+"\n"
+"Native main-loop wrappers are instances of dbus.mainloop.NativeMainLoop\n"
+"supplied by extension modules like `dbus.mainloop.glib`: they have no\n"
+"Python API, but connect themselves to ``libdbus`` using native code.\n");
+static PyObject *
+set_default_main_loop(PyObject *always_null UNUSED,
+                      PyObject *args)
+{
+    PyObject *new_loop, *old_loop;
+
+    if (!PyArg_ParseTuple(args, "O", &new_loop)) {
+        return NULL;
+    }
+    if (!check_mainloop_sanity(new_loop)) {
+        return NULL;
+    }
+    old_loop = default_main_loop;
+    Py_INCREF(new_loop);
+    default_main_loop = new_loop;
+    Py_XDECREF(old_loop);
+    Py_RETURN_NONE;
 }
 
 /* C API ============================================================ */

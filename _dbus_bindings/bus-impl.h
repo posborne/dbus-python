@@ -23,7 +23,7 @@
  */
 
 PyDoc_STRVAR(Bus_tp_doc,
-"Bus([address: str or int])\n\n"
+"BusImplementation([address: str or int])\n\n"
 "If the address is an int it must be one of the constants BUS_SESSION,\n"
 "BUS_SYSTEM, BUS_STARTER. The default is BUS_SESSION.\n"
 );
@@ -381,7 +381,7 @@ static PyTypeObject BusType = {
         Bus_tp_methods,         /*tp_methods*/
         0,                      /*tp_members*/
         0,                      /*tp_getset*/
-        &ConnectionType,        /*tp_base*/
+        DEFERRED_ADDRESS(&ConnectionType), /*tp_base*/
         0,                      /*tp_dict*/
         0,                      /*tp_descr_get*/
         0,                      /*tp_descr_set*/
@@ -396,6 +396,7 @@ static PyTypeObject BusType = {
 static inline int
 init_bus_types (void)
 {
+    BusType.tp_base = &ConnectionType;
     if (PyType_Ready (&BusType) < 0) return 0;
     return 1;
 }

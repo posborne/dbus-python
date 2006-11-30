@@ -29,7 +29,9 @@
 #include "dbus_bindings.h"
 
 PyDoc_STRVAR(module_doc,
-"Low-level Python bindings for libdbus.\n");
+"Low-level Python bindings for libdbus. Don't use this module directly -\n"
+"the public API is provided by the `dbus`, `dbus.service`, `dbus.mainloop`\n"
+"and `dbus.mainloop.glib` modules.\n");
 
 #include "debug-impl.h"              /* DBG, USING_DBG, DBG_EXC */
 #include "generic-impl.h"            /* Non D-Bus support code */
@@ -43,9 +45,9 @@ PyDoc_STRVAR(module_doc,
 #include "bytes-impl.h"              /* Byte, ByteArray */
 #include "message-impl.h"            /* Message and subclasses */
 #include "pending-call-impl.h"       /* PendingCall */
+#include "mainloop-impl.h"           /* NativeMainLoop */
 #include "conn-impl.h"               /* Connection */
 #include "bus-impl.h"                /* Bus */
-#include "mainloop-impl.h"           /* NativeMainLoop */
 
 static PyMethodDef module_functions[] = {
 #define ENTRY(name,flags) {#name, (PyCFunction)name, flags, name##__doc__}
@@ -53,6 +55,8 @@ static PyMethodDef module_functions[] = {
     ENTRY(validate_member_name, METH_VARARGS),
     ENTRY(validate_bus_name, METH_VARARGS|METH_KEYWORDS),
     ENTRY(validate_object_path, METH_VARARGS),
+    ENTRY(set_default_main_loop, METH_VARARGS),
+    ENTRY(get_default_main_loop, METH_NOARGS),
     /* validate_error_name is just implemented as validate_interface_name */
     {"validate_error_name", validate_interface_name,
      METH_VARARGS, validate_error_name__doc__},
@@ -81,9 +85,9 @@ init_dbus_bindings(void)
     if (!init_byte_types()) return;
     if (!init_message_types()) return;
     if (!init_pending_call()) return;
+    if (!init_mainloop()) return;
     if (!init_conn_types()) return;
     if (!init_bus_types()) return;
-    if (!init_mainloop()) return;
 
     this_module = Py_InitModule3("_dbus_bindings", module_functions, module_doc);
     if (!this_module) return;
@@ -97,9 +101,9 @@ init_dbus_bindings(void)
     if (!insert_byte_types(this_module)) return;
     if (!insert_message_types(this_module)) return;
     if (!insert_pending_call(this_module)) return;
+    if (!insert_mainloop_types(this_module)) return;
     if (!insert_conn_types(this_module)) return;
     if (!insert_bus_types(this_module)) return;
-    if (!insert_mainloop_types(this_module)) return;
 
 #define ADD_CONST_VAL(x, v) \
     if (PyModule_AddIntConstant(this_module, x, v) < 0) return;

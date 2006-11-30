@@ -26,7 +26,8 @@
 /* Connection definition ============================================ */
 
 PyDoc_STRVAR(Connection_tp_doc,
-"Connection(address: str)\n\n"
+"A D-Bus connection.\n\n"
+"Connection(address: str, mainloop=None) -> Connection\n"
 );
 
 typedef struct Connection {
@@ -235,9 +236,6 @@ out:
  */
 static dbus_int32_t _connection_python_slot;
 
-/* The main loop if none is passed to the constructor */
-static PyObject *Connection_default_main_loop;
-
 /* C API for main-loop hooks ======================================== */
 
 /* Return a borrowed reference to the DBusConnection which underlies this
@@ -348,10 +346,6 @@ Connection_ExistingFromDBusConnection(DBusConnection *conn)
     return NULL;
 }
 
-static dbus_bool_t dbus_python_set_up_connection(Connection *conn,
-                                                 PyObject *mainloop);
-static dbus_bool_t check_mainloop_sanity(PyObject *mainloop);
-
 /* Return a new reference to a Python Connection or subclass (given by cls)
  * corresponding to the DBusConnection conn, which must have been newly
  * created. For use by the Connection and Bus constructors.
@@ -385,7 +379,7 @@ Connection_NewConsumingDBusConnection(PyTypeObject *cls,
     ref = NULL;
 
     if (!mainloop || mainloop == Py_None) {
-        mainloop = Connection_default_main_loop;
+        mainloop = default_main_loop;
         if (!mainloop || mainloop == Py_None) {
             PyErr_SetString(PyExc_ValueError,
                             "D-Bus connections must be attached to a main "
@@ -425,7 +419,7 @@ Connection_NewConsumingDBusConnection(PyTypeObject *cls,
 
     self->conn = conn;
 
-    if (!dbus_python_set_up_connection(self, mainloop)) {
+    if (!dbus_python_set_up_connection((PyObject *)self, mainloop)) {
         goto err;
     }
 
@@ -556,25 +550,23 @@ static PyTypeObject ConnectionType = {
 static inline dbus_bool_t
 init_conn_types(void)
 {
-    Connection_default_main_loop = NULL;
+    default_main_loop = NULL;
 
     /* Get a slot to store our weakref on DBus Connections */
     _connection_python_slot = -1;
-    if (!dbus_connection_allocate_data_slot(&_connection_python_slot)) {
-        return 0;
-    }
-
-    ConnectionType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&ConnectionType) < 0) return 0;
-    return 1;
+    if (!dbus_connection_allocate_data_slot(&_connection_python_slot))
+        return FALSE;
+    if (PyType_Ready(&ConnectionType) < 0)
+        return FALSE;
+    return TRUE;
 }
 
 static inline dbus_bool_t
 insert_conn_types(PyObject *this_module)
 {
     if (PyModule_AddObject(this_module, "Connection",
-                           (PyObject *)&ConnectionType) < 0) return 0;
-    return 1;
+                           (PyObject *)&ConnectionType) < 0) return FALSE;
+    return TRUE;
 }
 
 /* vim:set ft=c cino< sw=4 sts=4 et: */
