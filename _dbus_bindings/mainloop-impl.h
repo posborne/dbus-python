@@ -72,8 +72,8 @@ Watch_get_flags(Watch *self, PyObject *unused UNUSED)
     }
     flags = dbus_watch_get_flags(self->watch);
     DBG("Watch at %p (wrapping DBusWatch at %p) has flags 0x%x (%s,%s)",
-        self, self->watch, flags, flags & WATCH_READABLE ? "read" : ".",
-        flags & WATCH_WRITABLE ? "write" : ".");
+        self, self->watch, flags, flags & DBUS_WATCH_READABLE ? "read" : ".",
+        flags & DBUS_WATCH_WRITABLE ? "write" : ".");
     return PyInt_FromLong((long)flags);
 }
 
@@ -115,8 +115,8 @@ Watch_handle(Watch *self, PyObject *args)
         return NULL;
     }
     DBG("Watch at %p (wrapping DBusWatch at %p) handle(0x%x) (%s,%s)",
-        self, self->watch, flags, flags & WATCH_READABLE ? "read" : ".",
-        flags & WATCH_WRITABLE ? "write" : ".");
+        self, self->watch, flags, flags & DBUS_WATCH_READABLE ? "read" : ".",
+        flags & DBUS_WATCH_WRITABLE ? "write" : ".");
     Py_BEGIN_ALLOW_THREADS
     dbus_watch_handle(self->watch, (unsigned int)flags);
     Py_END_ALLOW_THREADS
