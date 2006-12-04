@@ -32,7 +32,10 @@ if test -z "$DBUS_TEST_PYTHON_IN_RUN_TEST"; then
   export DBUS_TEST_PYTHON_IN_RUN_TEST
   exec tools/run-with-tmp-session-bus.sh $SCRIPTNAME $MODE
 fi  
+#dbus-monitor >&2 &
 echo "running test-standalone.py"
 $DEBUGGER python test/test-standalone.py || die "test-standalone.py failed"
 echo "running test-client.py"
 $DEBUGGER python test/test-client.py || die "test-client.py failed"
+echo "running test-signals.py"
+$DEBUGGER python test/test-signals.py || die "test-signals.py failed"
