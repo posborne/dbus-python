@@ -292,7 +292,7 @@ Bus_add_match_string_non_blocking (Connection *self, PyObject *args)
 }
 
 PyDoc_STRVAR (Bus_remove_match_string__doc__,
-"remove_match_string_non_blocking(rule: str)\n\n"
+"remove_match_string(rule: str)\n\n"
 "Remove the given match rule; if it has been added more than once,\n"
 "remove one of the identical copies, leaving the others active.\n"
 "This version blocks, and raises DBusException on error.\n");
