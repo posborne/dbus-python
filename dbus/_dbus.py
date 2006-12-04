@@ -63,6 +63,8 @@ For example, the dbus-daemon itself provides a service and some objects::
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+from __future__ import generators
+
 __all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus', 'Interface',
         # From _dbus_bindings
         'get_default_main_loop', 'set_default_main_loop',
@@ -77,16 +79,184 @@ __docformat__ = 'reStructuredText'
 
 import dbus
 import _dbus_bindings
+
+import logging
 import weakref
 
 from proxies import *
 from exceptions import *
-from matchrules import *
+
+try:
+    import thread
+except ImportError:
+    import dummy_thread as thread
+
+logger = logging.getLogger('dbus._dbus')
+BUS_DAEMON_NAME = 'org.freedesktop.DBus'
+BUS_DAEMON_PATH = '/org/freedesktop/DBus'
+BUS_DAEMON_IFACE = BUS_DAEMON_NAME
+
+_NAME_OWNER_CHANGE_MATCH = ("type='signal',sender='%s',"
+                            "interface='%s',member='NameOwnerChanged',"
+                            "path='%s',arg0='%%s'"
+                            % (BUS_DAEMON_NAME, BUS_DAEMON_IFACE,
+                               BUS_DAEMON_PATH))
+"""(_NAME_OWNER_CHANGE_MATCH % sender) matches relevant NameOwnerChange
+messages"""
+
 
 
 get_default_main_loop = _dbus_bindings.get_default_main_loop
 set_default_main_loop = _dbus_bindings.set_default_main_loop
 BusImplementation = _dbus_bindings.BusImplementation
+
+class SignalMatch(object):
+    __slots__ = ('sender_unique', '_member', '_interface', '_sender',
+                 '_path', '_handler', '_args_match', '_rule',
+                 '_utf8_strings', '_byte_arrays', '_conn_weakref',
+                 '_sender_keyword', '_path_keyword', '_int_args_match')
+
+    def __init__(self, conn, sender, object_path, dbus_interface,
+                 member, handler, utf8_strings=False, byte_arrays=False,
+                 sender_keyword=None, path_keyword=None, **kwargs):
+        self._conn_weakref = weakref.ref(conn)
+        self._sender = sender
+        self._interface = dbus_interface
+        self._member = member
+        self._path = object_path
+        self._handler = handler
+        if (sender is not None and sender[:1] != ':'
+            and sender != BUS_DAEMON_NAME):
+            self.sender_unique = conn.get_object(BUS_DAEMON_NAME, BUS_DAEMON_PATH).GetNameOwner(sender, dbus_interface=BUS_DAEMON_IFACE)
+        else:
+            self.sender_unique = sender
+        self._utf8_strings = utf8_strings
+        self._byte_arrays = byte_arrays
+        self._sender_keyword = sender_keyword
+        self._path_keyword = path_keyword
+
+        self._args_match = kwargs
+        if not kwargs:
+            self._int_args_match = None
+        else:
+            self._int_args_match = {}
+            for kwarg in kwargs:
+                if not kwarg.startswith('arg'):
+                    raise TypeError('SignalMatch: unknown keyword argument %s'
+                                    % kwarg)
+                try:
+                    index = int(kwarg)
+                except ValueError:
+                    raise TypeError('SignalMatch: unknown keyword argument %s'
+                                    % kwarg)
+                if index < 0 or index > 63:
+                    raise TypeError('SignalMatch: arg match index must be in '
+                                    'range(64), not %d' % index)
+                self._int_args_match[index] = kwargs[kwarg]
+
+        # we're always going to have to calculate the match rule for
+        # the Bus's benefit, so this constructor might as well do the work
+        rule = ["type='signal'"]
+        if self._sender is not None:
+            rule.append("sender='%s'" % self._sender)
+        if self._path is not None:
+            rule.append("path='%s'" % self._path)
+        if self._interface is not None:
+            rule.append("interface='%s'" % self._interface)
+        if self._member is not None:
+            rule.append("member='%s'" % self._member)
+        for kwarg, value in kwargs.iteritems():
+            rule.append("%s='%s'" % (kwarg, value))
+            
+        self._rule = ','.join(rule)
+
+    def __str__(self):
+        return self._rule
+
+    def __repr__(self):
+        return ('<%s at %x "%s" on conn %r>'
+                % (self.__class__, id(self), self._rule, self._conn_weakref()))
+
+    def matches_removal_spec(self, sender, object_path,
+                             dbus_interface, member, handler, **kwargs):
+        if handler not in (None, self._handler):
+            #logger.debug('No match: handler %r is not %r', handler, self._handler)
+            return False
+        if sender != self._sender:
+            #logger.debug('No match: sender %r is not %r', sender, self._sender)
+            return False
+        if object_path != self._path:
+            #logger.debug('No match: path %r is not %r', object_path, self._path)
+            return False
+        if dbus_interface != self._interface:
+            #logger.debug('No match: interface %r is not %r', dbus_interface, self._interface)
+            return False
+        if member != self._member:
+            #logger.debug('No match: member %r is not %r', member, self._member)
+            return False
+        if kwargs != self._args_match:
+            #logger.debug('No match: args %r are not %r', kwargs, self._args_match)
+            return False
+        return True
+
+    def maybe_handle_message(self, message):
+        #logger.debug('%r: Considering whether I match %r %r', self, message,
+                     #message.get_args_list())
+        args = None
+
+        # these haven't been checked yet by the match tree
+        if self.sender_unique not in (None, message.get_sender()):
+            #logger.debug('%r: not the desired sender, it was %r and I want '
+                         #'%r', self, message.get_sender(), self.sender_unique)
+            return False
+        if self._int_args_match is not None:
+            # extracting args with utf8_strings and byte_arrays is less work
+            args = message.get_args_list(utf8_strings=True, byte_arrays=True)
+            for index, value in self._int_args_match.iteritems():
+                if (index >= len(args)
+                    or not isinstance(args[index], dbus.UTF8String)
+                    or args[index] != value):
+                    #logger.debug('%r: not the desired args', self)
+                    return False
+
+        # these have likely already been checked by the match tree
+        if self._member not in (None, message.get_member()):
+            #logger.debug('%r: not the desired member', self)
+            return False
+        if self._interface not in (None, message.get_interface()):
+            #logger.debug('%r: not the desired interface', self)
+            return False
+        if self._path not in (None, message.get_path()):
+            #logger.debug('%r: not the desired path', self)
+            return False
+
+        #logger.debug('%r: yes, I want to handle that signal', self)
+        # minor optimization: if we already extracted the args with the right
+        # calling convention to do the args match, don't bother doing so again
+        if args is None or not self._utf8_strings or not self._byte_arrays:
+            args = message.get_args_list(utf8_strings=self._utf8_strings,
+                                         byte_arrays=self._byte_arrays)
+        #logger.debug('%r: extracted signal arguments', self)
+        kwargs = {}
+        if self._sender_keyword is not None:
+            kwargs[self._sender_keyword] = message.get_sender()
+        if self._path_keyword is not None:
+            kwargs[self._path_keyword] = message.get_path()
+        #logger.debug('%r: calling handler with %r and %r', self, args, kwargs)
+        self._handler(*args, **kwargs)
+        #logger.debug('%r: signal handled', self)
+        return True
+
+    def remove(self):
+        #logger.debug('%r: removing', self)
+        conn = self._conn_weakref()
+        # do nothing if the connection has already vanished
+        if conn is not None:
+            #logger.debug('%r: removing from connection %r', self, conn)
+            conn.remove_signal_receiver(self, self._member,
+                                        self._interface, self._sender,
+                                        self._path,
+                                        **self._args_match)
 
 
 class Bus(BusImplementation):
@@ -143,11 +313,25 @@ class Bus(BusImplementation):
         else:
             raise ValueError('invalid bus_type %s' % bus_type)
 
-        bus = _dbus_bindings.BusImplementation.__new__(subclass, bus_type)
+        bus = _dbus_bindings.BusImplementation.__new__(subclass, bus_type,
+                                                       mainloop=mainloop)
 
         bus._bus_type = bus_type
+        # _bus_names is used by dbus.service.BusName!
         bus._bus_names = weakref.WeakValueDictionary()
-        bus._match_rule_tree = SignalMatchTree()
+
+        bus._signal_recipients_by_object_path = {}
+        """Map from object path to dict mapping dbus_interface to dict
+        mapping member to list of SignalMatch objects."""
+
+        bus._signal_sender_matches = {}
+        """Map from sender well-known name to list of match rules for all
+        signal handlers that match on sender well-known name."""
+
+        bus._signals_lock = thread.allocate_lock()
+        """Lock used to protect signal data structures if doing two
+        removals at the same time (everything else is atomic, thanks to
+        the GIL)"""
 
         bus.add_message_filter(bus.__class__._signal_func)
 
@@ -169,7 +353,7 @@ class Bus(BusImplementation):
         """
         return self
     _connection = property(get_connection, None, None,
-                           """self.connection == self, for backwards
+                           """self._connection == self, for backwards
                            compatibility with earlier dbus-python versions
                            where Bus was not a subclass of Connection.""")
 
@@ -255,36 +439,17 @@ class Bus(BusImplementation):
             unique name fails
         """
 
-        if (named_service and named_service[0] != ':'):
-            bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
-            named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
-            if named_service is None:
-                raise DBusException('That well-known name is not '
-                                    'available on this Bus')
+        if named_service[:1] == ':' or named_service == BUS_DAEMON_NAME:
+            unique = named_service
+        else:
+            bus_object = self.ProxyObjectClass(self, BUS_DAEMON_NAME, BUS_DAEMON_PATH)
+            unique = bus_object.GetNameOwner(named_service,
+                                             dbus_interface=BUS_DAEMON_IFACE)
+            if not unique:
+                raise DBusException('Well-known name %r is not '
+                                    'present on %r', named_service, self)
 
-        return self.ProxyObjectClass(self, named_service, object_path)
-
-    def _create_args_dict(self, keywords):
-        args_dict = None
-        for (key, value) in keywords.iteritems():
-            if key.startswith('arg'):
-                try:
-                    snum = key[3:]
-                    num = int(snum)
-
-                    if not args_dict:
-                        args_dict = {}
-
-                    args_dict[num] = value
-                except ValueError:
-                    raise TypeError("Invalid arg index %s"%snum)
-            elif key in ("sender_keyword", "path_keyword", "utf8_strings",
-                         "byte_arrays"):
-                pass
-            else:
-                raise TypeError("Unknown keyword %s"%(key))
-
-        return args_dict
+        return self.ProxyObjectClass(self, unique, object_path)
 
     def add_signal_receiver(self, handler_function,
                                   signal_name=None,
@@ -341,75 +506,144 @@ class Bus(BusImplementation):
                 time only string arguments can be matched (in particular,
                 object paths and signatures can't).
         """
-        args_dict = self._create_args_dict(keywords)
 
-        if (named_service and named_service[0] != ':'):
-            bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
-            named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
+        match = SignalMatch(self, named_service, path, dbus_interface,
+                            signal_name, handler_function, **keywords)
+        by_interface = self._signal_recipients_by_object_path.setdefault(path,
+                                                                         {})
+        by_member = by_interface.setdefault(dbus_interface, {})
+        matches = by_member.setdefault(signal_name, [])
+        # The bus daemon is special - its unique-name is org.freedesktop.DBus
+        # rather than starting with :
+        if (named_service is not None and named_service[:1] != ':'
+            and named_service != BUS_DAEMON_NAME):
+            notification = self._signal_sender_matches.setdefault(named_service,
+                                                                  [])
+            if not notification:
+                self.add_match_string(_NAME_OWNER_CHANGE_MATCH % named_service)
+            notification.append(match)
+        # make sure nobody is currently manipulating the list
+        self._signals_lock.acquire()
+        try:
+            matches.append(match)
+        finally:
+            self._signals_lock.release()
+        self.add_match_string(str(match))
+        return match
 
-        match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
+    def _iter_easy_matches(self, path, dbus_interface, member):
+        if path is not None:
+            path_keys = (None, path)
+        else:
+            path_keys = (None,)
+        if dbus_interface is not None:
+            interface_keys = (None, dbus_interface)
+        else:
+            interface_keys = (None,)
+        if member is not None:
+            member_keys = (None, member)
+        else:
+            member_keys = (None,)
 
-        for kw in ("sender_keyword", "path_keyword"):
-            if kw in keywords:
-                setattr(match_rule, kw, keywords[kw])
-            else:
-                setattr(match_rule, kw, None)
+        for path in path_keys:
+            by_interface = self._signal_recipients_by_object_path.get(path,
+                                                                      None)
+            if by_interface is None:
+                continue
+            for dbus_interface in interface_keys:
+                by_member = by_interface.get(dbus_interface, None)
+                if by_member is None:
+                    continue
+                for member in member_keys:
+                    matches = by_member.get(member, None)
+                    if matches is None:
+                        continue
+                    for m in matches:
+                        yield m
 
-        if args_dict:
-            match_rule.add_args_match(args_dict)
+    def _remove_name_owner_changed_for_match(self, named_service, match):
+        notification = self._signal_sender_matches.get(named_service, False)
+        if notification:
+            try:
+                notification.remove(match)
+            except LookupError:
+                pass
+            if not notification:
+                self.remove_match_string(_NAME_OWNER_CHANGE_MATCH
+                                         % named_service)
 
-        match_rule.add_handler(handler_function,
-                               utf8_strings=keywords.get('utf8_strings', False),
-                               byte_arrays=keywords.get('byte_arrays', False))
-
-        self._match_rule_tree.add(match_rule)
-
-        self.add_match_string(repr(match_rule))
-
-    def remove_signal_receiver(self, handler_function,
+    def remove_signal_receiver(self, handler_or_match,
                                signal_name=None,
                                dbus_interface=None,
                                named_service=None,
                                path=None,
                                **keywords):
-
-        args_dict = self._create_args_dict(keywords)
-    
-        if (named_service and named_service[0] != ':'):
-            bus_object = self.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
-            named_service = bus_object.GetNameOwner(named_service, dbus_interface='org.freedesktop.DBus')
-        
-        match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
-
-        if (args_dict):
-            match_rule.add_args_match(args_dict)
-
-        if (handler_function):
-            match_rule.add_handler(handler_function,
-                                   utf8_strings=keywords.get('utf8_strings', False),
-                                   byte_arrays=keywords.get('byte_arrays', False))
-        # FIXME: else, this will never match anything!
-        
-        self._match_rule_tree.remove(match_rule)
-        
-        # TODO: remove the match string at the libdbus level
+        #logger.debug('%r: removing signal receiver %r: member=%s, '
+                     #'iface=%s, sender=%s, path=%s, kwargs=%r',
+                     #self, handler_or_match, signal_name,
+                     #dbus_interface, named_service, path, keywords)
+        #logger.debug('%r', self._signal_recipients_by_object_path)
+        by_interface = self._signal_recipients_by_object_path.get(path, None)
+        if by_interface is None:
+            return
+        by_member = by_interface.get(dbus_interface, None)
+        if by_member is None:
+            return
+        matches = by_member.get(signal_name, None)
+        if matches is None:
+            return
+        self._signals_lock.acquire()
+        #logger.debug(matches)
+        try:
+            new = []
+            for match in matches:
+                if (handler_or_match is match
+                    or match.matches_removal_spec(named_service,
+                                                  path,
+                                                  dbus_interface,
+                                                  signal_name,
+                                                  handler_or_match,
+                                                  **keywords)):
+                    #logger.debug('Removing match string: %s', match)
+                    self.remove_match_string(str(match))
+                    self._remove_name_owner_changed_for_match(named_service,
+                                                              match)
+                else:
+                    new.append(match)
+            by_member[signal_name] = new
+        finally:
+            self._signals_lock.release()
 
     def _signal_func(self, message):
         """D-Bus filter function. Handle signals by dispatching to Python
         callbacks kept in the match-rule tree.
         """
 
+        #logger.debug('Incoming message %r with args %r', message,
+                     #message.get_args_list())
+
         if (message.get_type() != _dbus_bindings.MESSAGE_TYPE_SIGNAL):
             return _dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
-        
-        dbus_interface      = message.get_interface()
-        named_service       = message.get_sender()
-        path                = message.get_path()
-        signal_name         = message.get_member()
 
-        match_rule = SignalMatchRule(signal_name, dbus_interface, named_service, path)
+        # If it's NameOwnerChanged, we'll need to update our
+        # sender well-known name -> sender unique name mappings
+        if (message.is_signal(BUS_DAEMON_NAME, 'NameOwnerChanged')
+            and message.has_path(BUS_DAEMON_PATH)):
+                name, unused, new = message.get_args_list()
+                for match in self._signal_sender_matches.get(name, (None,))[1:]:
+                    match.sender_unique = new
 
-        self._match_rule_tree.exec_matches(match_rule, message)
+        # See if anyone else wants to know
+        dbus_interface = message.get_interface()
+        path = message.get_path()
+        signal_name = message.get_member()
+
+        ret = _dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
+        for match in self._iter_easy_matches(path, dbus_interface,
+                                             signal_name):
+            if match.maybe_handle_message(message):
+                ret = _dbus_bindings.HANDLER_RESULT_HANDLED
+        return ret
 
     def __repr__(self):
         if self._bus_type == self.TYPE_SESSION:
@@ -419,7 +653,7 @@ class Bus(BusImplementation):
         elif self._bus_type == self.TYPE_STARTER:
             name = 'STARTER'
         else:
-            assert False, 'Unable to represent unknown bus type.'
+            raise AssertionError('Unable to represent unknown bus type.')
 
         return '<dbus.Bus on %s at %#x>' % (name, id(self))
     __str__ = __repr__
@@ -546,7 +780,7 @@ class Interface:
         if not dbus_interface:
             dbus_interface = self._dbus_interface
             
-        self._obj.connect_to_signal(signal_name, handler_function, dbus_interface, **keywords)
+        return self._obj.connect_to_signal(signal_name, handler_function, dbus_interface, **keywords)
 
     def __getattr__(self, member, **keywords):
         # FIXME: this syntax is bizarre.
