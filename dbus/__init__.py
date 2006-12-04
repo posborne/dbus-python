@@ -1,10 +1,6 @@
 """\
 Implements the public API for a D-Bus client. See the dbus.service module
 to implement services.
-
-FIXME
------
-Which of the imported symbols constitute public API?
 """
 
 # Copyright (C) 2003, 2004, 2005, 2006 Red Hat Inc. <http://www.redhat.com/>
