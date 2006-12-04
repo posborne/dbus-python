@@ -151,7 +151,7 @@ class ProxyMethod:
             raise
 
         if ignore_reply:
-            result = self._connection.send_message(message)
+            self._connection.send_message(message)
             return None
         elif reply_handler:
             result = self._connection.send_message_with_reply(message, _ReplyHandler(reply_handler, error_handler), timeout/1000.0)
@@ -262,6 +262,7 @@ class ProxyObject:
                 only string arguments can be matched (in particular,
                 object paths and signatures can't).
         """
+        return \
         self._bus.add_signal_receiver(handler_function,
                                       signal_name=signal_name,
                                       dbus_interface=dbus_interface,
