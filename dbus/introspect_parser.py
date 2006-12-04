@@ -23,7 +23,7 @@
 
 import libxml2
 import cStringIO
-import exceptions
+import dbus.exceptions as exceptions
 
 def process_introspection_data(data):
     method_map = {}
