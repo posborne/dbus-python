@@ -20,12 +20,19 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+"""GLib main loop integration using libdbus-glib."""
+
 __all__ = ('DBusGMainLoop', 'threads_init')
 
 from _dbus_glib_bindings import DBusGMainLoop, gthreads_init
 
 _dbus_gthreads_initialized = False
 def threads_init():
+    """Initialize threads in dbus-glib, if this has not already been done.
+
+    This must be called before creating a second thread in a program that
+    uses this module.
+    """
     global _dbus_gthreads_initialized
     if not _dbus_gthreads_initialized:
         gthreads_init()

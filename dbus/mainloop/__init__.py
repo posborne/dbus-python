@@ -1,3 +1,7 @@
+"""Base definitions, etc. for main loop integration.
+
+"""
+
 import _dbus_bindings
 
 NativeMainLoop = _dbus_bindings.NativeMainLoop
