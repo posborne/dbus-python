@@ -118,6 +118,7 @@ PyDoc_STRVAR(validate_bus_name__doc__,
 "   `allow_well_known` : bool\n"
 "       If False, well-known names of the form com.example.Foo\n"
 "       will be rejected\n"
+":Since: 0.80\n"
 );
 
 static PyObject *
@@ -178,6 +179,8 @@ PyDoc_STRVAR(validate_member_name__doc__,
 "\n"
 "Raise ValueError if the argument is not a valid member (signal or method) "
 "name.\n"
+"\n"
+":Since: 0.80\n"
 );
 
 static PyObject *
@@ -261,11 +264,15 @@ static dbus_bool_t _validate_interface_name(const char *name)
 PyDoc_STRVAR(validate_interface_name__doc__,
 "validate_interface_name(name)\n\n"
 "Raise ValueError if the given string is not a valid interface name.\n"
+"\n"
+":Since: 0.80\n"
 );
 
 PyDoc_STRVAR(validate_error_name__doc__,
 "validate_error_name(name)\n\n"
 "Raise ValueError if the given string is not a valid error name.\n"
+"\n"
+":Since: 0.80\n"
 );
 
 static PyObject *
@@ -324,6 +331,8 @@ static dbus_bool_t _validate_object_path(const char *path)
 PyDoc_STRVAR(validate_object_path__doc__,
 "validate_object_path(name)\n\n"
 "Raise ValueError if the given string is not a valid object path.\n"
+"\n"
+":Since: 0.80\n"
 );
 
 static PyObject *
