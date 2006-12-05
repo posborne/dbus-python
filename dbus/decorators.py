@@ -189,10 +189,15 @@ def explicitly_pass_message(func):
     as a D-Bus signal recipient, then the Signal message will be passed
     to it as a keyword parameter named ``dbus_message``.
 
-    Deprecated? Should Messages really be exposed to client code?
-
-    FIXME: this alters the namespace of the decorated function without
-    using the ``__magic__`` naming convention.
+    :Deprecated:
+        This is mostly a workaround for the lack of ``sender_keyword``
+        and ``path_keyword`` in older dbus-python versions. If this
+        functionality is still needed, it should be a keyword
+        parameter to the signal connection function like the rest of the
+        calling-convention modifiers.
+    :Bug:
+        This decorator alters the namespace of the decorated function
+        without using the ``__magic__`` naming convention.
     """
     func._dbus_pass_message = True
     return func
