@@ -31,16 +31,31 @@ static PyTypeObject ArrayType;
 DEFINE_CHECK(Array)
 
 PyDoc_STRVAR(Array_tp_doc,
-"Array([iterable][, signature][, variant_level])\n\n"
 "An array of similar items, implemented as a subtype of list.\n"
 "\n"
 "As currently implemented, an Array behaves just like a list, but\n"
 "with the addition of a ``signature`` property set by the constructor;\n"
 "conversion of its items to D-Bus types is only done when it's sent in\n"
-"a Message. This may change in future so validation is done earlier.\n"
+"a Message. This might change in future so validation is done earlier.\n"
 "\n"
-"The signature may be None, in which case when the Array is sent over\n"
-"D-Bus, the item signature will be guessed from the first element.\n");
+":SupportedUsage:\n"
+"   ``from dbus import Array`` or ``from dbus.types import Array``\n"
+"\n"
+":Constructor:\n"
+"    Array([iterable][, signature][, variant_level])\n"
+"\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+"    The signature may be None, in which case when the Array is sent over\n"
+"    D-Bus, the item signature will be guessed from the first element.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing an array, this is represented in Python by an\n"
+"    Array with variant_level==2.\n"
+);
 
 typedef struct {
     PyListObject super;
@@ -217,7 +232,6 @@ static PyTypeObject DictType;
 DEFINE_CHECK(Dict)
 
 PyDoc_STRVAR(Dict_tp_doc,
-"Dictionary([mapping_or_iterable, ][signature=Signature(...)])\n\n"
 "An mapping whose keys are similar and whose values are similar,\n"
 "implemented as a subtype of dict.\n"
 "\n"
@@ -226,9 +240,25 @@ PyDoc_STRVAR(Dict_tp_doc,
 "conversion of its items to D-Bus types is only done when it's sent in\n"
 "a Message. This may change in future so validation is done earlier.\n"
 "\n"
-"The signature may be None, in which case when the Dictionary is sent over\n"
-"D-Bus, the key and value signatures will be guessed from some arbitrary.\n"
-"element.\n");
+":SupportedUsage:\n"
+"   ``from dbus import Dictionary`` or ``from dbus.types import Dictionary``\n"
+"\n"
+":Constructor:\n"
+"    Dictionary([mapping_or_iterable][, signature][, variant_level])\n"
+"\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+"    The signature may be None, in which case when the Dictionary is sent over\n"
+"    D-Bus, the key and value signatures will be guessed from some arbitrary.\n"
+"    element.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing an array of DICT_ENTRY, this is represented in\n"
+"    Python by a Dictionary with variant_level==2.\n"
+);
 
 typedef struct {
     PyDictObject super;
@@ -405,11 +435,27 @@ static PyTypeObject StructType;
 DEFINE_CHECK(Struct)
 
 PyDoc_STRVAR(Struct_tp_doc,
-"Struct([iterable][, signature][, variant_level])\n\n"
-"An structure containing distinct items.\n"
+"An structure containing items of possibly distinct types.\n"
 "\n"
-"The signature may be omitted or None, in which case it will be guessed\n"
-"from the types of the items during construction.\n"
+":SupportedUsage:\n"
+"   ``from dbus import Struct`` or ``from dbus.types import Struct``\n"
+"\n"
+":Constructor:\n"
+"    ``Struct(iterable[, signature: str][, variant_level: int]) -> Struct``\n"
+"\n"
+"    D-Bus structs may not be empty, so the iterable argument is required.\n"
+"\n"
+"    The signature may be omitted or None, in which case it will be guessed\n"
+"    from the types of the items during construction.\n"
+"\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing a struct, this is represented in Python by a\n"
+"    Struct with variant_level==2.\n"
 );
 
 static PyObject *
@@ -472,8 +518,16 @@ Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     if (!variantness) {
         variantness = PyInt_FromLong(0);
     }
+
     self = (PyTuple_Type.tp_new)(cls, args, NULL);
-    if (!self) return NULL;
+    if (!self)
+        return NULL;
+    if (PyTuple_Size(self) < 1) {
+        PyErr_SetString(PyExc_ValueError, "D-Bus structs may not be empty");
+        Py_DECREF(self);
+        return NULL;
+    }
+
     if (PyObject_GenericSetAttr(self, variant_level_const, variantness) < 0) {
         Py_DECREF(self);
         return NULL;
