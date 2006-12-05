@@ -145,7 +145,6 @@ setup(
         "dbus/exceptions",
         "dbus/glib",
         "dbus/__init__",
-        "dbus/matchrules",
         "dbus/service",
         "dbus/types",
         "dbus/decorators",
