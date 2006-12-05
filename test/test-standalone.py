@@ -61,9 +61,9 @@ class TestTypes(unittest.TestCase):
         self.assertEquals(types.Double(0.125, variant_level=2).variant_level, 2)
 
     def test_Struct(self):
-        x = types.Struct(())
+        x = types.Struct(('',))
         self.assertEquals(x.variant_level, 0)
-        self.assertEquals(x, ())
+        self.assertEquals(x, ('',))
         x = types.Struct('abc', variant_level=42)
         self.assertEquals(x.variant_level, 42)
         self.assertEquals(x, ('a','b','c'))
