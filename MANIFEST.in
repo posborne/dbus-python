@@ -5,6 +5,7 @@ include ChangeLog
 include HACKING.txt
 include MANIFEST.in
 include NEWS
+include TODO
 recursive-include _dbus_bindings *.h *.c
 include _dbus_glib_bindings/module.c
 recursive-include dbus *.py
