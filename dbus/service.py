@@ -339,11 +339,37 @@ class Interface(object):
     __metaclass__ = InterfaceType
 
 class Object(Interface):
-    """A base class for exporting your own Objects across the Bus.
+    r"""A base class for exporting your own Objects across the Bus.
 
-    Just inherit from Object and provide a list of methods to share
-    across the Bus.
+    Just inherit from Object and mark exported methods with the
+    @\ `dbus.service.method` or @\ `dbus.service.signal` decorator.
+
+    Example::
+
+        class Example(dbus.service.object):
+            def __init__(self, object_path):
+                dbus.service.Object.__init__(self, dbus.SessionBus(), path)
+                self._last_input = None
+
+            @dbus.service.method(interface='com.example.Sample',
+                                 in_signature='v', out_signature='s')
+            def StringifyVariant(self, var):
+                self.LastInputChanged(var)      # emits the signal
+                return str(var)
+
+            @dbus.service.signal(interface='com.example.Sample',
+                                 signature='v')
+            def LastInputChanged(self, var):
+                # run just before the signal is actually emitted
+                # just put "pass" if nothing should happen
+                self._last_input = var
+
+            @dbus.service.method(interface='com.example.Sample',
+                                 in_signature='', out_signature='v')
+            def GetLastInput(self):
+                return self._last_input
     """
+
     # the signature of __init__ is a bit mad, for backwards compatibility
     def __init__(self, conn=None, object_path=None, bus_name=None):
         """Constructor. Either conn or bus_name is required; object_path
@@ -352,11 +378,14 @@ class Object(Interface):
         :Parameters:
             `conn` : dbus.Connection
                 The connection on which to export this object.
-                If None, use the Bus associated with the given bus_name.
+
+                If None, use the Bus associated with the given ``bus_name``,
+                or raise TypeError if there is no ``bus_name`` either.
 
                 For backwards compatibility, if an instance of
                 dbus.service.BusName is passed as the first parameter,
-                this will also be accepted.
+                this is equivalent to passing its associated Bus as
+                ``conn``, and passing the BusName itself as ``bus_name``.
 
             `object_path` : str
                 The D-Bus object path at which to export this Object.
@@ -365,7 +394,7 @@ class Object(Interface):
                 Represents a well-known name claimed by this process. A
                 reference to the BusName object will be held by this
                 Object, preventing the name from being released during this
-                Object's lifetime (subject to status).
+                Object's lifetime (unless it's released manually).
         """
         if object_path is None:
             raise TypeError('The object_path argument is required')
@@ -373,9 +402,9 @@ class Object(Interface):
         if isinstance(conn, BusName):
             # someone's using the old API; don't gratuitously break them
             bus_name = conn
-            conn = None
-
-        if conn is None:
+            conn = bus_name.get_bus()
+        elif conn is None:
+            # someone's using the old API but naming arguments, probably
             if bus_name is None:
                 raise TypeError('Either conn or bus_name is required')
             conn = bus_name.get_bus()

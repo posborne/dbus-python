@@ -1,44 +1,4 @@
-"""Module for high-level communication over the FreeDesktop.org Bus (DBus)
-
-DBus allows you to share and access remote objects between processes
-running on the desktop, and also to access system services (such as
-the print spool).
-
-To use DBus, first get a Bus object, which provides a connection to one
-of a few standard dbus-daemon instances that might be running. From the
-Bus you can get a RemoteService. A service is provided by an application or
-process connected to the Bus, and represents a set of objects. Once you
-have a RemoteService you can get a RemoteObject that implements a specific interface
-(an interface is just a standard group of member functions). Then you can call
-those member functions directly.
-
-You can think of a complete method call as looking something like::
-
-    Bus:SESSION -> Service:org.gnome.Evolution -> Object:/org/gnome/Evolution/Inbox -> Interface: org.gnome.Evolution.MailFolder -> Method: Forward('message1', 'seth@gnome.org')
-
-This communicates over the SESSION Bus to the org.gnome.Evolution process to call the
-Forward method of the /org/gnome/Evolution/Inbox object (which provides the
-org.gnome.Evolution.MailFolder interface) with two string arguments.
-
-For example, the dbus-daemon itself provides a service and some objects::
-
-    # Get a connection to the desktop-wide SESSION bus
-    bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
-
-    # Get the service provided by the dbus-daemon named org.freedesktop.DBus
-    dbus_service = bus.get_service('org.freedesktop.DBus')
-
-    # Get a reference to the desktop bus' standard object, denoted
-    # by the path /org/freedesktop/DBus. The object /org/freedesktop/DBus
-    # implements the 'org.freedesktop.DBus' interface
-    dbus_object = dbus_service.get_object('/org/freedesktop/DBus',
-                                           'org.freedesktop.DBus')
-
-    # One of the member functions in the org.freedesktop.DBus interface
-    # is ListServices(), which provides a list of all the other services
-    # registered on this bus. Call it, and print the list.
-    print(dbus_object.ListServices())
-"""
+"""Implementation for dbus.Bus. Not to be imported directly."""
 
 # Copyright (C) 2003, 2004, 2005, 2006 Red Hat Inc. <http://www.redhat.com/>
 # Copyright (C) 2003 David Zeuthen
@@ -65,26 +25,18 @@ For example, the dbus-daemon itself provides a service and some objects::
 
 from __future__ import generators
 
-__all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus', 'Interface',
-        # From _dbus_bindings
-        'get_default_main_loop', 'set_default_main_loop',
-        # From exceptions (DBusException originally from _dbus_bindings)
-        'DBusException', 'MissingErrorHandlerException',
-        'MissingReplyHandlerException', 'ValidationException',
-        'IntrospectionParserException', 'UnknownMethodException',
-        'NameExistsException',
-        # proxies, matchrules are not public API, so exclude them
-        )
+__all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus', 'Interface')
 __docformat__ = 'reStructuredText'
 
-import dbus
 import _dbus_bindings
+UTF8String = _dbus_bindings.UTF8String
+DBusException = _dbus_bindings.DBusException
+BusImplementation = _dbus_bindings.BusImplementation
 
 import logging
 import weakref
 
-from proxies import *
-from exceptions import *
+from proxies import ProxyObject
 
 try:
     import thread
@@ -104,11 +56,6 @@ _NAME_OWNER_CHANGE_MATCH = ("type='signal',sender='%s',"
 """(_NAME_OWNER_CHANGE_MATCH % sender) matches relevant NameOwnerChange
 messages"""
 
-
-
-get_default_main_loop = _dbus_bindings.get_default_main_loop
-set_default_main_loop = _dbus_bindings.set_default_main_loop
-BusImplementation = _dbus_bindings.BusImplementation
 
 class SignalMatch(object):
     __slots__ = ('sender_unique', '_member', '_interface', '_sender',
@@ -214,7 +161,7 @@ class SignalMatch(object):
             args = message.get_args_list(utf8_strings=True, byte_arrays=True)
             for index, value in self._int_args_match.iteritems():
                 if (index >= len(args)
-                    or not isinstance(args[index], dbus.UTF8String)
+                    or not isinstance(args[index], UTF8String)
                     or args[index] != value):
                     #logger.debug('%r: not the desired args', self)
                     return False
@@ -265,12 +212,16 @@ class Bus(BusImplementation):
     One of three possible standard buses, the SESSION, SYSTEM,
     or STARTER bus
     """
-    TYPE_SESSION    = _dbus_bindings.BUS_SESSION
-    TYPE_SYSTEM     = _dbus_bindings.BUS_SYSTEM
-    TYPE_STARTER = _dbus_bindings.BUS_STARTER
 
-    """bus_type=[Bus.TYPE_SESSION | Bus.TYPE_SYSTEM | Bus.TYPE_STARTER]
-    """
+    TYPE_SESSION    = _dbus_bindings.BUS_SESSION
+    """Represents a session bus (same as the global dbus.BUS_SESSION)"""
+
+    TYPE_SYSTEM     = _dbus_bindings.BUS_SYSTEM
+    """Represents the system bus (same as the global dbus.BUS_SYSTEM)"""
+
+    TYPE_STARTER = _dbus_bindings.BUS_STARTER
+    """Represents the bus that started this service by activation (same as
+    the global dbus.BUS_STARTER)"""
 
     ProxyObjectClass = ProxyObject
 
@@ -295,6 +246,14 @@ class Bus(BusImplementation):
                 The main loop to use. The default is to use the default
                 main loop if one has been set up, or raise an exception
                 if none has been.
+        :ToDo:
+            - There is currently no way to connect this class to a custom
+              address.
+            - Some of this functionality should be available on
+              peer-to-peer D-Bus connections too.
+        :Changed: in dbus-python 0.80:
+            converted from a wrapper around a Connection to a Connection
+            subclass.
         """
         if (not private and bus_type in cls._shared_instances):
             return cls._shared_instances[bus_type]
@@ -339,11 +298,6 @@ class Bus(BusImplementation):
             cls._shared_instances[bus_type] = bus
 
         return bus
-
-    def __init__(self, *args, **keywords):
-        # do nothing here because this can get called multiple times on the
-        # same object if __new__ returns a shared instance
-        pass
 
     def get_connection(self):
         """(Deprecated - in new code, just use self)
@@ -824,10 +778,10 @@ class _DBusBindingsEmulation:
     def __repr__(self):
         return '_DBusBindingsEmulation()'
     def __getattr__(self, attr):
-        from warnings import warn as _warn
-        _warn(_dbus_bindings_warning, DeprecationWarning, stacklevel=2)
-
         if self._module is None:
+            from warnings import warn as _warn
+            _warn(_dbus_bindings_warning, DeprecationWarning, stacklevel=2)
+
             import dbus.dbus_bindings as m
             self._module = m
         return getattr(self._module, attr)
