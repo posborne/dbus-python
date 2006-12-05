@@ -23,11 +23,24 @@
  */
 
 PyDoc_STRVAR(Signature_tp_doc,
-"Signature(str) -> Signature\n"
-"\n"
-"Signature is a string subclass whose values are restricted to valid D-Bus\n"
+"A string subclass whose values are restricted to valid D-Bus\n"
 "signatures. When iterated over, instead of individual characters it\n"
 "produces Signature instances representing single complete types.\n"
+"\n"
+":Constructor:\n"
+"    Signature(value: str or unicode[, variant_level: int]) -> Signature\n"
+"\n"
+"    value must be a valid D-Bus signature (zero or more single complete\n"
+"    types)\n"
+"\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing a signature, this is represented in Python by a\n"
+"    Signature with variant_level==2.\n"
 );
 
 static PyTypeObject SignatureType;
