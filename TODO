@@ -1,0 +1,8 @@
+Perhaps
+=======
+
+- Add a PeerConnection
+
+- Should dbus.String be renamed to dbus.UnicodeString, with String as a
+  vaguely deprecated alias? String not subclassing str violates least
+  astonishment

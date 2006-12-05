@@ -1,0 +1,48 @@
+Incompatibilities observed in Debian
+------------------------------------
+
+avahi
+~~~~~
+Looks OK.
+
+hal-device-manager
+~~~~~~~~~~~~~~~~~~
+
+* String lists are presented poorly in the info view due to the changed
+  repr() - near line 443
+  * patched - smcv
+* Everything appears as a 'strlist' because of equality tests on types
+  near line 443
+  * patched - smcv
+* Unregistering object paths is done with callback=None. This won't
+  actually unregister, currently (should be fixed in dbus-python)
+
+gajim
+~~~~~
+
+* Uses name ``dbus.dbus_bindings.DBusException`` - will fail
+  * glue in dbus-python -smcv
+* RemoteInterface will need fixing up - uses Variant and tries to
+  represent None
+* Uses ``dbus_bindings.Signal`` to emit signals!
+
+gnome-osd
+~~~~~~~~~
+
+* eventbridge: Uses ``dbus.dbus_bindings.bus_request_name`` to get a name
+  * glue in dbus-python -smcv
+* server: Old API, but looks OK
+* capplet: correctly uses ``SessionBus().start_service_by_name``
+* client: nicely simple
+
+jokosher
+~~~~~~~~
+Looks OK.
+
+listen
+~~~~~~
+* Uses BusName - need to keep compatible.
+* Doesn't provide signatures.
+
+..
+  vim:set sw=2 sts=2 et ft=rst tw=72:
