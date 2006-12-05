@@ -25,7 +25,7 @@ import sys
 import logging
 
 import _dbus_bindings
-import dbus.introspect_parser as introspect_parser
+from dbus.introspect_parser import process_introspection_data
 from dbus.exceptions import MissingReplyHandlerException, MissingErrorHandlerException, IntrospectionParserException, DBusException
 
 __docformat__ = 'restructuredtext'
@@ -303,7 +303,7 @@ class ProxyObject:
 
     def _introspect_reply_handler(self, data):
         try:
-            self._introspect_method_map = introspect_parser.process_introspection_data(data)
+            self._introspect_method_map = process_introspection_data(data)
         except IntrospectionParserException, e:
             self._introspect_error_handler(e)
             return
