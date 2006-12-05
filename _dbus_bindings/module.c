@@ -31,7 +31,11 @@
 PyDoc_STRVAR(module_doc,
 "Low-level Python bindings for libdbus. Don't use this module directly -\n"
 "the public API is provided by the `dbus`, `dbus.service`, `dbus.mainloop`\n"
-"and `dbus.mainloop.glib` modules.\n");
+"and `dbus.mainloop.glib` modules.\n"
+"\n"
+":NewField Constructor: Constructor\n"
+":NewField SupportedUsage: Supported usage\n"
+);
 
 #include "debug-impl.h"              /* DBG, USING_DBG, DBG_EXC */
 #include "generic-impl.h"            /* Non D-Bus support code */
