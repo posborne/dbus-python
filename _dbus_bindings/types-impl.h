@@ -33,10 +33,25 @@ static PyTypeObject BooleanType;
 DEFINE_CHECK(Boolean)
 
 PyDoc_STRVAR(Boolean_tp_doc,
-"Boolean(value: int[, variant_level: int]) -> Boolean\n\n"
-"A boolean (a subtype of int).\n\n"
-"value is converted to 0 or 1.\n"
-"variant_level must be non-negative; the default is 0.\n"
+"A boolean, represented as a subtype of `int` (not `bool`, because `bool`\n"
+"cannot be subclassed).\n"
+"\n"
+":SupportedUsage:\n"
+"    ``from dbus import Boolean`` or ``from dbus.types import Boolean``\n"
+"\n"
+":Constructor:\n"
+"    Boolean(value: int[, variant_level: int]) -> Boolean\n"
+"\n"
+"    value is converted to 0 or 1.\n"
+"\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing a boolean, this is represented in Python by a\n"
+"    Boolean with variant_level==2.\n"
 );
 
 static PyObject *
@@ -124,10 +139,24 @@ static PyTypeObject Int16Type;
 DEFINE_CHECK(Int16)
 
 PyDoc_STRVAR(Int16_tp_doc,
-"Int16(value: any integer[, variant_level: int]) -> Int16\n\n"
-"A signed 16-bit integer (a subtype of int).\n\n"
-"value must be in the range -0x8000 to +0x7fff.\n"
-"variant_level must be non-negative; the default is 0.\n"
+"A signed 16-bit integer between -0x8000 and +0x7FFF, represented as\n"
+"a subtype of `int`.\n"
+"\n"
+":SupportedUsage:\n"
+"    ``from dbus import Int16`` or ``from dbus.types import Int16``\n"
+"\n"
+":Constructor:\n"
+"    Int16(value: int[, variant_level: int]) -> Int16\n"
+"    value must be within the allowed range, or OverflowError will be\n"
+"    raised.\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing an int16, this is represented in Python by an\n"
+"    Int16 with variant_level==2.\n"
 );
 
 static dbus_int16_t
@@ -203,10 +232,24 @@ static PyTypeObject UInt16Type;
 DEFINE_CHECK(UInt16)
 
 PyDoc_STRVAR(UInt16_tp_doc,
-"UInt16(value: any integer[, variant_level: int]) -> UInt16\n\n"
-"An unsigned 16-bit integer (a subtype of int).\n\n"
-"value must be in the range 0 to 0xffff.\n"
-"variant_level must be non-negative; the default is 0.\n"
+"An unsigned 16-bit integer between 0 and 0xFFFF, represented as\n"
+"a subtype of `int`.\n"
+"\n"
+":SupportedUsage:\n"
+"    ``from dbus import UInt16`` or ``from dbus.types import UInt16``\n"
+"\n"
+":Constructor:\n"
+"    UInt16(value: int[, variant_level: int]) -> UInt16\n"
+"    value must be within the allowed range, or OverflowError will be\n"
+"    raised.\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing a uint16, this is represented in Python by a\n"
+"    UInt16 with variant_level==2.\n"
 );
 
 static dbus_uint16_t
@@ -283,10 +326,24 @@ static PyTypeObject Int32Type;
 DEFINE_CHECK(Int32)
 
 PyDoc_STRVAR(Int32_tp_doc,
-"Int32(value: any integer[, variant_level: int]) -> Int32\n\n"
-"A signed 32-bit integer (a subtype of int).\n\n"
-"value must be in the range -0x80000000 to +0x7fffffff.\n"
-"variant_level must be non-negative; the default is 0.\n"
+"A signed 32-bit integer between -0x8000 0000 and +0x7FFF FFFF, represented as\n"
+"a subtype of `int`.\n"
+"\n"
+":SupportedUsage:\n"
+"    ``from dbus import Int32`` or ``from dbus.types import Int32``\n"
+"\n"
+":Constructor:\n"
+"    Int32(value: int[, variant_level: int]) -> Int32\n"
+"    value must be within the allowed range, or OverflowError will be\n"
+"    raised.\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing an int32, this is represented in Python by an\n"
+"    Int32 with variant_level==2.\n"
 );
 
 static dbus_int32_t
@@ -362,10 +419,27 @@ static PyTypeObject UInt32Type;
 DEFINE_CHECK(UInt32)
 
 PyDoc_STRVAR(UInt32_tp_doc,
-"UInt32(value: any integer[, variant_level: int]) -> UInt32\n\n"
-"An unsigned 32-bit integer (a subtype of long).\n\n"
-"value must be in the range 0 to 0xffffffff.\n"
-"variant_level must be non-negative; the default is 0.\n"
+"An unsigned 32-bit integer between 0 and 0xFFFF FFFF, represented as a\n"
+"subtype of `long`.\n"
+"\n"
+"Note that this may be changed in future to be a subtype of `int` on\n"
+"64-bit platforms; applications should not rely on either behaviour.\n"
+"\n"
+":SupportedUsage:\n"
+"    ``from dbus import UInt32`` or ``from dbus.types import UInt32``\n"
+"\n"
+":Constructor:\n"
+"    UInt32(value: long[, variant_level: int]) -> UInt32\n"
+"    value must be within the allowed range, or OverflowError will be\n"
+"    raised.\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing a uint32, this is represented in Python by a\n"
+"    UInt32 with variant_level==2.\n"
 );
 
 static dbus_uint32_t
@@ -444,25 +518,57 @@ static PyTypeObject UInt32Type = {
     UInt32_tp_new,                          /* tp_new */
 };
 
-#if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
-
 /* Int64 =========================================================== */
+
+#if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
+#   define DBUS_PYTHON_64_BIT_WORKS 1
+#else
+#   undef DBUS_PYTHON_64_BIT_WORKS
+#endif /* defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG) */
 
 static PyTypeObject Int64Type;
 
 DEFINE_CHECK(Int64)
 
 PyDoc_STRVAR(Int64_tp_doc,
-"Int64(value: any integer[, variant_level: int]) -> Int64\n\n"
-"A signed 64-bit integer (a subtype of long).\n\n"
-"value must be in the range -0x8000000000000000 to 0x7fffffffffffffff.\n"
-"variant_level must be non-negative; the default is 0.\n"
+"A signed 64-bit integer between -0x8000 0000 0000 0000 and\n"
+"+0x7FFF FFFF FFFF FFFF, represented as a subtype of `long`.\n"
+"\n"
+"Note that this may be changed in future to be a subtype of `int` on\n"
+"64-bit platforms; applications should not rely on either behaviour.\n"
+"\n"
+"This type only works on platforms where the C compiler has suitable\n"
+"64-bit types, such as C99 ``long long``.\n"
+#ifdef DBUS_PYTHON_64_BIT_WORKS
+    "This is the case on your current platform.\n"
+#else /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
+    "This is not the case on your current platform, so this type's\n"
+    "constructor will always raise NotImplementedError. Try a better\n"
+    "compiler, if one is available.\n"
+#endif /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
+"\n"
+":SupportedUsage:\n"
+"    ``from dbus import Int64`` or ``from dbus.types import Int64``\n"
+"\n"
+":Constructor:\n"
+"    Int64(value: long[, variant_level: int]) -> Int64\n"
+"    value must be within the allowed range, or OverflowError will be\n"
+"    raised.\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing an int64, this is represented in Python by an\n"
+"    Int64 with variant_level==2.\n"
 );
 
+#ifdef DBUS_PYTHON_64_BIT_WORKS
 static dbus_int64_t
 int64_range_check(PyObject *obj)
 {
-    long long i;
+    PY_LONG_LONG i;
     PyObject *long_obj = PyNumber_Long(obj);
 
     if (!long_obj) return -1;
@@ -479,16 +585,23 @@ int64_range_check(PyObject *obj)
     Py_DECREF(long_obj);
     return i;
 }
+#endif
 
 static PyObject *
 Int64_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
+#ifdef DBUS_PYTHON_64_BIT_WORKS
     PyObject *self = (DBusPythonLongType.tp_new)(cls, args, kwargs);
     if (self && int64_range_check(self) == -1 && PyErr_Occurred()) {
         Py_DECREF(self);
         return NULL;
     }
     return self;
+#else
+    PyErr_SetString(PyExc_NotImplementedError,
+                    "64-bit types are not available on this platform");
+    return NULL;
+#endif
 }
 
 static PyTypeObject Int64Type = {
@@ -540,21 +653,42 @@ static PyTypeObject UInt64Type;
 DEFINE_CHECK(UInt64)
 
 PyDoc_STRVAR(UInt64_tp_doc,
-"UInt64(value: any integer[, variant_level: int]) -> UInt64\n\n"
-"An unsigned 64-bit integer (a subtype of long).\n\n"
-"value must be in the range 0 to 0xffffffffffffffff.\n"
-"variant_level must be non-negative; the default is 0.\n"
+"An unsigned 64-bit integer between 0 and 0xFFFF FFFF FFFF FFFF,\n"
+"represented as a subtype of `long`.\n"
+"\n"
+"This type only exists on platforms where the C compiler has suitable\n"
+"64-bit types, such as C99 ``unsigned long long``.\n"
+#ifdef DBUS_PYTHON_64_BIT_WORKS
+    "This is the case on your current platform.\n"
+#else /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
+    "This is not the case on your current platform, so this type's\n"
+    "constructor will always raise NotImplementedError. Try a better\n"
+    "compiler, if one is available.\n"
+#endif /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
+"\n"
+":Constructor:\n"
+"    UInt64(value: long[, variant_level: int]) -> UInt64\n"
+"    value must be within the allowed range, or OverflowError will be\n"
+"    raised.\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing a uint64, this is represented in Python by a\n"
+"    UInt64 with variant_level==2.\n"
 );
 
 static dbus_uint64_t
 uint64_range_check(PyObject *obj)
 {
-    unsigned long long i;
+    unsigned PY_LONG_LONG i;
     PyObject *long_obj = PyNumber_Long(obj);
 
     if (!long_obj) return (dbus_uint64_t)(-1);
     i = PyLong_AsUnsignedLongLong(long_obj);
-    if (i == (unsigned long long)(-1) && PyErr_Occurred()) {
+    if (i == (unsigned PY_LONG_LONG)(-1) && PyErr_Occurred()) {
         Py_DECREF(long_obj);
         return (dbus_uint64_t)(-1);
     }
@@ -570,6 +704,7 @@ uint64_range_check(PyObject *obj)
 static PyObject *
 UInt64_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
+#ifdef DBUS_PYTHON_64_BIT_WORKS
     PyObject *self = (DBusPythonLongType.tp_new)(cls, args, kwargs);
     if (self && uint64_range_check(self) == (dbus_uint64_t)(-1)
         && PyErr_Occurred()) {
@@ -577,6 +712,11 @@ UInt64_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     return self;
+#else
+    PyErr_SetString(PyExc_NotImplementedError,
+                    "64-bit integer types are not supported on this platform");
+    return NULL;
+#endif
 }
 
 static PyTypeObject UInt64Type = {
@@ -621,8 +761,6 @@ static PyTypeObject UInt64Type = {
     UInt64_tp_new,                          /* tp_new */
 };
 
-#endif /* defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG) */
-
 /* UTF-8 string representation ====================================== */
 
 static PyTypeObject UTF8StringType;
@@ -630,10 +768,22 @@ static PyTypeObject UTF8StringType;
 DEFINE_CHECK(UTF8String)
 
 PyDoc_STRVAR(UTF8String_tp_doc,
-"UTF8String(value: str[, variant_level: int])\n\n"
-"A string represented using UTF-8.\n"
+"A string represented using UTF-8 - a subtype of `str`.\n"
 "\n"
-"The variant_level must be non-negative; the default is 0.");
+":Constructor:\n"
+"    UTF8String(value: str or unicode[, variant_level: int]) -> UTF8String\n"
+"    If value is a str object it must be valid UTF-8.\n"
+"\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing a string, this is represented in Python by a\n"
+"    String or UTF8String with variant_level==2.\n"
+":Since: 0.80 (in older versions, use dbus.String)\n"
+);
 
 static PyObject *
 UTF8String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
@@ -700,12 +850,22 @@ static PyTypeObject ObjectPathType;
 DEFINE_CHECK(ObjectPath)
 
 PyDoc_STRVAR(ObjectPath_tp_doc,
-"ObjectPath(path: str[, variant_level: int])\n\n"
 "A D-Bus object path, such as '/com/example/MyApp/Documents/abc'.\n"
 "\n"
 "ObjectPath is a subtype of str, and object-paths behave like strings.\n"
 "\n"
-"The variant_level must be non-negative; the default is 0.");
+":Constructor:\n"
+"    ObjectPath(path: str[, variant_level: int]) -> ObjectPath\n"
+"    path must be an ASCII string following the syntax of object paths.\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing an object path, this is represented in Python by an\n"
+"    ObjectPath with variant_level==2.\n"
+);
 
 static PyObject *
 ObjectPath_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
@@ -768,6 +928,22 @@ static PyTypeObject ObjectPathType = {
 
 static PyTypeObject StringType;
 DEFINE_CHECK(String)
+
+PyDoc_STRVAR(String_tp_doc,
+"A string represented using Unicode - a subtype of `unicode`.\n"
+"\n"
+":Constructor:\n"
+"    String(value: str or unicode[, variant_level: int]) -> String\n"
+"\n"
+"    variant_level must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing a string, this is represented in Python by a\n"
+"    String or UTF8String with variant_level==2.\n"
+);
 
 static PyObject *
 String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
@@ -850,7 +1026,7 @@ static PyTypeObject StringType = {
     Glue_immutable_setattro,                /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    "",                                     /* tp_doc */
+    String_tp_doc,                          /* tp_doc */
     0,                                      /* tp_traverse */
     0,                                      /* tp_clear */
     0,                                      /* tp_richcompare */
