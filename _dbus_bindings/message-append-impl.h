@@ -822,8 +822,8 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
 #else
       case DBUS_TYPE_INT64:
       case DBUS_TYPE_UINT64:
-          PyErr_SetString (PyExc_RuntimeError, "64-bit integers not "
-                           "supported on this platform");
+          PyErr_SetString(PyExc_NotImplementedError, "64-bit integer "
+                          "types are not supported on this platform");
           ret = -1;
           break;
 #endif
@@ -887,7 +887,7 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
     {
         dbus_bool_t b =
 #endif
-    dbus_signature_iter_next(sig_iter);
+        dbus_signature_iter_next(sig_iter);
 #ifdef USING_DBG
         DBG("- result: %ld, type %02x '%c'", (long)b,
             (int)dbus_signature_iter_get_current_type(sig_iter),

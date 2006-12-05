@@ -307,7 +307,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
         case DBUS_TYPE_INT64:
             DBG("%s", "found an int64");
             dbus_message_iter_get_basic(iter, &u.i64);
-            args = Py_BuildValue("(L)", (long long)u.i64);
+            args = Py_BuildValue("(L)", (PY_LONG_LONG)u.i64);
             if (!args) break;
             ret = PyObject_Call((PyObject *)&Int64Type, args, kwargs);
             break;
@@ -315,15 +315,16 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
         case DBUS_TYPE_UINT64:
             DBG("%s", "found a uint64");
             dbus_message_iter_get_basic(iter, &u.u64);
-            args = Py_BuildValue("(K)", (unsigned long long)u.u64);
+            args = Py_BuildValue("(K)", (unsigned PY_LONG_LONG)u.u64);
             if (!args) break;
             ret = PyObject_Call((PyObject *)&UInt64Type, args, kwargs);
             break;
 #else
         case DBUS_TYPE_INT64:
         case DBUS_TYPE_UINT64:
-            PyErr_SetString (PyExc_RuntimeError, "64-bit integers not "
-                             "supported on this platform");
+            PyErr_SetString(PyExc_NotImplementedError,
+                            "64-bit integer types are not supported on "
+                            "this platform");
             break;
 #endif
 
