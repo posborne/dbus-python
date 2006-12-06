@@ -170,8 +170,8 @@ __all__ = (
            'service', 'mainloop', 'lowlevel'
            )
 __docformat__ = 'restructuredtext'
-# version is really 0.80pre2, but you can't represent that in this form
-version = (0, 79, 2)
+# version is really 0.80rc1, but you can't represent that in this form
+version = (0, 79, 91)
 __version__ = '.'.join(map(str, version))
 
 from _dbus_bindings import get_default_main_loop, set_default_main_loop,\

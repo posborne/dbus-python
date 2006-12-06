@@ -1,3 +1,25 @@
+D-Bus Python Bindings 0.80rc1 (aka 0.79.91) (5 December 2006)
+==
+- The "break the world" release
+- Rewrite dbus_bindings (Pyrex) as _dbus_bindings (C) - API changes!
+- Define what's public API
+- Move low-level but still public API to dbus.lowlevel
+- Remove Variant class, add variant_level property on all D-Bus types
+- Make signal matching keep working as expected when name ownership changes
+- Use unambiguous D-Bus types when transferring from D-Bus to Python
+- Follow well-defined rules when transferring from Python to D-Bus
+- Add utf8_strings and byte_arrays options in various places, so a user
+  can tweak the calling conventions to be more efficient
+- Raise RuntimeError if user tries to use a connection with no main loop
+- Redo main loop machinery so we can add pure-Python main loops later without
+  API breakage
+- Allow construction of a dbus.service.Object if you don't have a BusName
+  (or even a Bus)
+- Add docstrings throughout
+- Add more tests
+- Add interoperability tests (which interoperate with Java)
+- Add copyright notices!
+
 D-Bus Python Bindings 0.71 (24 July 2006)
 ==
 - Binary modules are now installed in the correct directory
