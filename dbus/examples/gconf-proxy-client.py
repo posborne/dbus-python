@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+print "WARNING: this hasn't been updated to current API yet, and might not work"
+
 import dbus
 
 gconf_key = "/desktop/gnome/file_views/icon_theme"

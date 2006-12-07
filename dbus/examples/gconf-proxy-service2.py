@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+print "WARNING: this hasn't been updated to current API yet, and might not work"
 #FIXME: doesn't work with the new bindings
 import dbus
 
