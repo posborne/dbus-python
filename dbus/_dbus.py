@@ -61,11 +61,16 @@ class SignalMatch(object):
     __slots__ = ('sender_unique', '_member', '_interface', '_sender',
                  '_path', '_handler', '_args_match', '_rule',
                  '_utf8_strings', '_byte_arrays', '_conn_weakref',
+                 '_destination_keyword', '_interface_keyword',
+                 '_message_keyword', '_member_keyword',
                  '_sender_keyword', '_path_keyword', '_int_args_match')
 
     def __init__(self, conn, sender, object_path, dbus_interface,
                  member, handler, utf8_strings=False, byte_arrays=False,
-                 sender_keyword=None, path_keyword=None, **kwargs):
+                 sender_keyword=None, path_keyword=None,
+                 interface_keyword=None, member_keyword=None,
+                 message_keyword=None, destination_keyword=None,
+                 **kwargs):
         self._conn_weakref = weakref.ref(conn)
         self._sender = sender
         self._interface = dbus_interface
@@ -81,6 +86,10 @@ class SignalMatch(object):
         self._byte_arrays = byte_arrays
         self._sender_keyword = sender_keyword
         self._path_keyword = path_keyword
+        self._member_keyword = member_keyword
+        self._interface_keyword = interface_keyword
+        self._message_keyword = message_keyword
+        self._destination_keyword = destination_keyword
 
         self._args_match = kwargs
         if not kwargs:
@@ -92,7 +101,7 @@ class SignalMatch(object):
                     raise TypeError('SignalMatch: unknown keyword argument %s'
                                     % kwarg)
                 try:
-                    index = int(kwarg)
+                    index = int(kwarg[3:])
                 except ValueError:
                     raise TypeError('SignalMatch: unknown keyword argument %s'
                                     % kwarg)
@@ -187,8 +196,16 @@ class SignalMatch(object):
         kwargs = {}
         if self._sender_keyword is not None:
             kwargs[self._sender_keyword] = message.get_sender()
+        if self._destination_keyword is not None:
+            kwargs[self._destination_keyword] = message.get_destination()
         if self._path_keyword is not None:
             kwargs[self._path_keyword] = message.get_path()
+        if self._member_keyword is not None:
+            kwargs[self._member_keyword] = message.get_member()
+        if self._interface_keyword is not None:
+            kwargs[self._interface_keyword] = message.get_interface()
+        if self._message_keyword is not None:
+            kwargs[self._message_keyword] = message
         #logger.debug('%r: calling handler with %r and %r', self, args, kwargs)
         self._handler(*args, **kwargs)
         #logger.debug('%r: signal handled', self)
@@ -449,10 +466,24 @@ class Bus(BusImplementation):
                 If not None (the default), the handler function will receive
                 the unique name of the sending endpoint as a keyword
                 argument with this name.
+            `destination_keyword` : str
+                If not None (the default), the handler function will receive
+                the bus name of the destination (or None if the signal is a
+                broadcast, as is usual) as a keyword argument with this name.
+            `interface_keyword` : str
+                If not None (the default), the handler function will receive
+                the signal interface as a keyword argument with this name.
+            `member_keyword` : str
+                If not None (the default), the handler function will receive
+                the signal name as a keyword argument with this name.
             `path_keyword` : str
                 If not None (the default), the handler function will receive
                 the object-path of the sending object as a keyword argument
                 with this name.
+            `message_keyword` : str
+                If not None (the default), the handler function will receive
+                the `dbus.lowlevel.SignalMessage` as a keyword argument with
+                this name.
             `arg...` : unicode or UTF-8 str
                 If there are additional keyword parameters of the form
                 ``arg``\ *n*, match only signals where the *n*\ th argument
@@ -720,10 +751,24 @@ class Interface:
                 If not None (the default), the handler function will receive
                 the unique name of the sending endpoint as a keyword
                 argument with this name
+            `destination_keyword` : str
+                If not None (the default), the handler function will receive
+                the bus name of the destination (or None if the signal is a
+                broadcast, as is usual) as a keyword argument with this name.
+            `interface_keyword` : str
+                If not None (the default), the handler function will receive
+                the signal interface as a keyword argument with this name.
+            `member_keyword` : str
+                If not None (the default), the handler function will receive
+                the signal name as a keyword argument with this name.
             `path_keyword` : str
                 If not None (the default), the handler function will receive
                 the object-path of the sending object as a keyword argument
                 with this name
+            `message_keyword` : str
+                If not None (the default), the handler function will receive
+                the `dbus.lowlevel.SignalMessage` as a keyword argument with
+                this name.
             `arg...` : unicode or UTF-8 str
                 If there are additional keyword parameters of the form
                 ``arg``\ *n*, only call the handler_function for signals

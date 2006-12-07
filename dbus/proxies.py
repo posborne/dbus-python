@@ -251,10 +251,24 @@ class ProxyObject:
                 If not None (the default), the handler function will receive
                 the unique name of the sending endpoint as a keyword
                 argument with this name
+            `destination_keyword` : str
+                If not None (the default), the handler function will receive
+                the bus name of the destination (or None if the signal is a
+                broadcast, as is usual) as a keyword argument with this name.
+            `interface_keyword` : str
+                If not None (the default), the handler function will receive
+                the signal interface as a keyword argument with this name.
+            `member_keyword` : str
+                If not None (the default), the handler function will receive
+                the signal name as a keyword argument with this name.
             `path_keyword` : str
                 If not None (the default), the handler function will receive
                 the object-path of the sending object as a keyword argument
                 with this name
+            `message_keyword` : str
+                If not None (the default), the handler function will receive
+                the `dbus.lowlevel.SignalMessage` as a keyword argument with
+                this name.
             `arg...` : unicode or UTF-8 str
                 If there are additional keyword parameters of the form
                 ``arg``\ *n*, match only signals where the *n*\ th argument
