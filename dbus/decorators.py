@@ -23,7 +23,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-__all__ = ('explicitly_pass_message', 'method', 'signal')
+__all__ = ('method', 'signal')
 __docformat__ = 'restructuredtext'
 
 import inspect
@@ -182,22 +182,3 @@ def signal(dbus_interface, signature=None):
         return emit_signal
 
     return decorator
-
-
-def explicitly_pass_message(func):
-    """Decorator which marks the given function such that, if it is called
-    as a D-Bus signal recipient, then the Signal message will be passed
-    to it as a keyword parameter named ``dbus_message``.
-
-    :Deprecated:
-        This is mostly a workaround for the lack of ``sender_keyword``
-        and ``path_keyword`` in older dbus-python versions. If this
-        functionality is still needed, it should be a keyword
-        parameter to the signal connection function like the rest of the
-        calling-convention modifiers.
-    :Bug:
-        This decorator alters the namespace of the decorated function
-        without using the ``__magic__`` naming convention.
-    """
-    func._dbus_pass_message = True
-    return func
