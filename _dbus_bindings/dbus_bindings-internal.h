@@ -44,6 +44,10 @@ extern PyObject *DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *,
 extern dbus_bool_t dbus_py_init_conn_types(void);
 extern dbus_bool_t dbus_py_insert_conn_types(PyObject *this_module);
 
+/* bus.c */
+extern dbus_bool_t dbus_py_init_bus_types(void);
+extern dbus_bool_t dbus_py_insert_bus_types(PyObject *this_module);
+
 /* exceptions.c */
 extern PyObject *DBusPyException;
 extern PyObject *DBusPyException_ConsumeError(DBusError *error);

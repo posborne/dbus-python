@@ -49,7 +49,6 @@ PyDoc_STRVAR(module_doc,
 #include "message-impl.h"            /* Message and subclasses */
 #include "pending-call-impl.h"       /* PendingCall */
 #include "mainloop-impl.h"           /* NativeMainLoop */
-#include "bus-impl.h"                /* Bus */
 
 static PyMethodDef module_functions[] = {
 #define ENTRY(name,flags) {#name, (PyCFunction)name, flags, name##__doc__}
@@ -89,7 +88,7 @@ init_dbus_bindings(void)
     if (!init_pending_call()) return;
     if (!init_mainloop()) return;
     if (!dbus_py_init_conn_types()) return;
-    if (!init_bus_types()) return;
+    if (!dbus_py_init_bus_types()) return;
 
     this_module = Py_InitModule3("_dbus_bindings", module_functions, module_doc);
     if (!this_module) return;
@@ -105,7 +104,7 @@ init_dbus_bindings(void)
     if (!insert_pending_call(this_module)) return;
     if (!insert_mainloop_types(this_module)) return;
     if (!dbus_py_insert_conn_types(this_module)) return;
-    if (!insert_bus_types(this_module)) return;
+    if (!dbus_py_insert_bus_types(this_module)) return;
 
 #define ADD_CONST_VAL(x, v) \
     if (PyModule_AddIntConstant(this_module, x, v) < 0) return;

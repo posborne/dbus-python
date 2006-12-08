@@ -398,16 +398,16 @@ static PyTypeObject BusType = {
         0,                      /*tp_is_gc*/
 };
 
-static inline int
-init_bus_types (void)
+dbus_bool_t
+dbus_py_init_bus_types (void)
 {
     BusType.tp_base = &DBusPyConnectionType;
     if (PyType_Ready (&BusType) < 0) return 0;
     return 1;
 }
 
-static inline int
-insert_bus_types (PyObject *this_module)
+dbus_bool_t
+dbus_py_insert_bus_types (PyObject *this_module)
 {
     if (PyModule_AddObject (this_module, "BusImplementation",
                             (PyObject *)&BusType) < 0) return 0;
