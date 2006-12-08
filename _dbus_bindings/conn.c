@@ -23,213 +23,15 @@
  *
  */
 
+#include "dbus_bindings-internal.h"
+#include "conn-internal.h"
+
 /* Connection definition ============================================ */
 
 PyDoc_STRVAR(Connection_tp_doc,
 "A D-Bus connection.\n\n"
 "Connection(address: str, mainloop=None) -> Connection\n"
 );
-
-typedef struct Connection {
-    PyObject_HEAD
-    DBusConnection *conn;
-    /* A list of filter callbacks. */
-    PyObject *filters;
-    /* A dict mapping object paths to one of:
-     * - tuples (unregister_callback or None, message_callback)
-     * - None (meaning unregistration from libdbus is in progress and nobody
-     *         should touch this entry til we're finished)
-     */
-    PyObject *object_paths;
-
-    PyObject *weaklist;
-} Connection;
-
-static PyTypeObject ConnectionType;
-
-static inline int Connection_Check(PyObject *o)
-{
-    return PyObject_TypeCheck(o, &ConnectionType);
-}
-
-/* Helpers ========================================================== */
-
-static PyObject *Connection_ExistingFromDBusConnection(DBusConnection *);
-static PyObject *Connection_GetObjectPathHandlers(Connection *, PyObject *);
-static DBusHandlerResult Connection_HandleMessage(Connection *, Message *,
-                                                  PyObject *);
-
-static void
-_object_path_unregister(DBusConnection *conn, void *user_data)
-{
-    PyGILState_STATE gil = PyGILState_Ensure();
-    PyObject *tuple = NULL;
-    Connection *conn_obj = NULL;
-    PyObject *callable;
-
-    conn_obj = (Connection *)Connection_ExistingFromDBusConnection(conn);
-    if (!conn_obj) goto out;
-
-    DBG("Connection at %p unregistering object path %s",
-        conn_obj, PyString_AS_STRING((PyObject *)user_data));
-    tuple = Connection_GetObjectPathHandlers(conn_obj, (PyObject *)user_data);
-    if (!tuple) goto out;
-    if (tuple == Py_None) goto out;
-
-    DBG("%s", "... yes we have handlers for that object path");
-
-    /* 0'th item is the unregisterer (if that's a word) */
-    callable = PyTuple_GetItem(tuple, 0);
-    if (callable && callable != Py_None) {
-        DBG("%s", "... and we even have an unregisterer");
-        /* any return from the unregisterer is ignored */
-        Py_XDECREF(PyObject_CallFunctionObjArgs(callable, conn_obj, NULL));
-    }
-out:
-    Py_XDECREF(conn_obj);
-    Py_XDECREF(tuple);
-    /* the user_data (a Python str) is no longer ref'd by the DBusConnection */
-    Py_XDECREF((PyObject *)user_data);
-    if (PyErr_Occurred()) {
-        PyErr_Print();
-    }
-    PyGILState_Release(gil);
-}
-
-static DBusHandlerResult
-_object_path_message(DBusConnection *conn, DBusMessage *message,
-                     void *user_data)
-{
-    DBusHandlerResult ret;
-    PyGILState_STATE gil = PyGILState_Ensure();
-    Connection *conn_obj = NULL;
-    PyObject *tuple = NULL;
-    Message *msg_obj;
-    PyObject *callable;             /* borrowed */
-
-    dbus_message_ref(message);
-    msg_obj = (Message *)Message_ConsumeDBusMessage(message);
-    if (!msg_obj) {
-        ret = DBUS_HANDLER_RESULT_NEED_MEMORY;
-        goto out;
-    }
-
-    conn_obj = (Connection *)Connection_ExistingFromDBusConnection(conn);
-    if (!conn_obj) {
-        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-        goto out;
-    }
-
-    DBG("Connection at %p messaging object path %s",
-        conn_obj, PyString_AS_STRING((PyObject *)user_data));
-    DBG_DUMP_MESSAGE(message);
-    tuple = Connection_GetObjectPathHandlers(conn_obj, (PyObject *)user_data);
-    if (!tuple || tuple == Py_None) {
-        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-        goto out;
-    }
-
-    DBG("%s", "... yes we have handlers for that object path");
-
-    /* 1st item (0-based) is the message callback */
-    callable = PyTuple_GetItem(tuple, 1);
-    if (!callable) {
-        DBG("%s", "... error getting message handler from tuple");
-        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    }
-    else if (callable == Py_None) {
-        /* there was actually no handler after all */
-        DBG("%s", "... but those handlers don't do messages");
-        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    }
-    else {
-        DBG("%s", "... and we have a message handler for that object path");
-        ret = Connection_HandleMessage(conn_obj, msg_obj, callable);
-    }
-
-out:
-    Py_XDECREF(msg_obj);
-    Py_XDECREF(conn_obj);
-    Py_XDECREF(tuple);
-    if (PyErr_Occurred()) {
-        PyErr_Print();
-    }
-    PyGILState_Release(gil);
-    return ret;
-}
-
-static const DBusObjectPathVTable _object_path_vtable = {
-    _object_path_unregister,
-    _object_path_message,
-};
-
-static DBusHandlerResult
-_filter_message(DBusConnection *conn, DBusMessage *message, void *user_data)
-{
-    DBusHandlerResult ret;
-    PyGILState_STATE gil = PyGILState_Ensure();
-    Connection *conn_obj = NULL;
-    PyObject *callable = NULL;
-    Message *msg_obj;
-#ifndef DBUS_PYTHON_DISABLE_CHECKS
-    int i, size;
-#endif
-
-    dbus_message_ref(message);
-    msg_obj = (Message *)Message_ConsumeDBusMessage(message);
-    if (!msg_obj) {
-        DBG("%s", "OOM while trying to construct Message");
-        ret = DBUS_HANDLER_RESULT_NEED_MEMORY;
-        goto out;
-    }
-
-    conn_obj = (Connection *)Connection_ExistingFromDBusConnection(conn);
-    if (!conn_obj) {
-        DBG("%s", "failed to traverse DBusConnection -> Connection weakref");
-        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-        goto out;
-    }
-
-    /* The user_data is a pointer to a Python object. To avoid
-     * cross-library reference cycles, the DBusConnection isn't allowed
-     * to reference it. However, as long as the Connection is still
-     * alive, its ->filters list owns a reference to the same Python
-     * object, so the object should also still be alive.
-     *
-     * To ensure that this works, be careful whenever manipulating the
-     * filters list! (always put things in the list *before* giving
-     * them to libdbus, etc.)
-     */
-#ifdef DBUS_PYTHON_DISABLE_CHECKS
-    callable = (PyObject *)user_data;
-#else
-    size = PyList_GET_SIZE(conn_obj->filters);
-    for (i = 0; i < size; i++) {
-        callable = PyList_GET_ITEM(conn_obj->filters, i);
-        if (callable == user_data) {
-            Py_INCREF(callable);
-        }
-        else {
-            callable = NULL;
-        }
-    }
-
-    if (!callable) {
-        DBG("... filter %p has vanished from ->filters, so not calling it",
-            user_data);
-        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-        goto out;
-    }
-#endif
-
-    ret = Connection_HandleMessage(conn_obj, msg_obj, callable);
-out:
-    Py_XDECREF(msg_obj);
-    Py_XDECREF(conn_obj);
-    Py_XDECREF(callable);
-    PyGILState_Release(gil);
-    return ret;
-}
 
 /* D-Bus Connection user data slot, containing an owned reference to either
  * the Connection, or a weakref to the Connection.
@@ -240,12 +42,12 @@ static dbus_int32_t _connection_python_slot;
 
 /* Return a borrowed reference to the DBusConnection which underlies this
  * Connection. */
-static DBusConnection *
-Connection_BorrowDBusConnection(PyObject *self)
+DBusConnection *
+DBusPyConnection_BorrowDBusConnection(PyObject *self)
 {
     DBusConnection *dbc;
 
-    if (!Connection_Check(self)) {
+    if (!DBusPyConnection_Check(self)) {
         PyErr_SetString(PyExc_TypeError, "A dbus.Connection is required");
         return NULL;
     }
@@ -261,8 +63,10 @@ Connection_BorrowDBusConnection(PyObject *self)
 /* Internal C API =================================================== */
 
 /* Pass a message through a handler. */
-static DBusHandlerResult
-Connection_HandleMessage(Connection *conn, Message *msg, PyObject *callable)
+DBusHandlerResult
+DBusPyConnection_HandleMessage(Connection *conn,
+                               PyObject *msg,
+                               PyObject *callable)
 {
     PyObject *obj = PyObject_CallFunctionObjArgs(callable, conn, msg,
                                                  NULL);
@@ -312,10 +116,11 @@ Connection_HandleMessage(Connection *conn, Message *msg, PyObject *callable)
 }
 
 /* On KeyError or if unregistration is in progress, return None. */
-static PyObject *
-Connection_GetObjectPathHandlers(Connection *self, PyObject *path)
+PyObject *
+DBusPyConnection_GetObjectPathHandlers(PyObject *self, PyObject *path)
 {
-    PyObject *callbacks = PyDict_GetItem(self->object_paths, path);
+    PyObject *callbacks = PyDict_GetItem(((Connection *)self)->object_paths,
+                                         path);
     if (!callbacks) {
         if (PyErr_ExceptionMatches(PyExc_KeyError)) {
             PyErr_Clear();
@@ -331,8 +136,8 @@ Connection_GetObjectPathHandlers(Connection *self, PyObject *path)
  *
  * Raises AssertionError if the DBusConnection does not have a Connection.
  */
-static PyObject *
-Connection_ExistingFromDBusConnection(DBusConnection *conn)
+PyObject *
+DBusPyConnection_ExistingFromDBusConnection(DBusConnection *conn)
 {
     PyObject *self, *ref;
 
@@ -342,7 +147,7 @@ Connection_ExistingFromDBusConnection(DBusConnection *conn)
     Py_END_ALLOW_THREADS
     if (ref) {
         self = PyWeakref_GetObject(ref);   /* still a borrowed ref */
-        if (self && self != Py_None && Connection_Check(self)) {
+        if (self && self != Py_None && DBusPyConnection_Check(self)) {
             Py_INCREF(self);
             return self;
         }
@@ -360,10 +165,10 @@ Connection_ExistingFromDBusConnection(DBusConnection *conn)
  *
  * Raises AssertionError if the DBusConnection already has a Connection.
  */
-static PyObject *
-Connection_NewConsumingDBusConnection(PyTypeObject *cls,
-                                      DBusConnection *conn,
-                                      PyObject *mainloop)
+PyObject *
+DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
+                                            DBusConnection *conn,
+                                            PyObject *mainloop)
 {
     Connection *self = NULL;
     PyObject *ref;
@@ -387,7 +192,7 @@ Connection_NewConsumingDBusConnection(PyTypeObject *cls,
     ref = NULL;
 
     if (!mainloop || mainloop == Py_None) {
-        mainloop = default_main_loop;
+        mainloop = dbus_py_get_default_main_loop();
         if (!mainloop || mainloop == Py_None) {
             PyErr_SetString(PyExc_ValueError,
                             "D-Bus connections must be attached to a main "
@@ -396,9 +201,9 @@ Connection_NewConsumingDBusConnection(PyTypeObject *cls,
             goto err;
         }
     }
-    /* Make sure there's a ref to the main loop (in case someone changes the
-     * default) */
-    Py_INCREF(mainloop);
+    else {
+        Py_INCREF(mainloop);
+    }
 
     DBG("Constructing Connection from DBusConnection at %p", conn);
 
@@ -417,7 +222,7 @@ Connection_NewConsumingDBusConnection(PyTypeObject *cls,
     Py_BEGIN_ALLOW_THREADS
     ok = dbus_connection_set_data(conn, _connection_python_slot,
                                   (void *)ref,
-                                  (DBusFreeFunction)Glue_TakeGILAndXDecref);
+                                  (DBusFreeFunction)dbus_py_take_gil_and_xdecref);
     Py_END_ALLOW_THREADS
 
     if (!ok) {
@@ -427,7 +232,7 @@ Connection_NewConsumingDBusConnection(PyTypeObject *cls,
 
     self->conn = conn;
 
-    if (!dbus_python_set_up_connection((PyObject *)self, mainloop)) {
+    if (!dbus_py_set_up_connection((PyObject *)self, mainloop)) {
         goto err;
     }
 
@@ -476,10 +281,10 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     Py_END_ALLOW_THREADS
 
     if (!conn) {
-        DBusException_ConsumeError(&error);
+        DBusPyException_ConsumeError(&error);
         return NULL;
     }
-    self = Connection_NewConsumingDBusConnection(cls, conn, mainloop);
+    self = DBusPyConnection_NewConsumingDBusConnection(cls, conn, mainloop);
 
     return self;
 }
@@ -515,9 +320,6 @@ static void Connection_tp_dealloc(Connection *self)
     (self->ob_type->tp_free)((PyObject *)self);
 }
 
-/* Connection_tp_methods */
-#include "conn-methods-impl.h"
-
 /* Connection type object =========================================== */
 
 static PyTypeObject ConnectionType = {
@@ -550,7 +352,7 @@ static PyTypeObject ConnectionType = {
     offsetof(Connection, weaklist),   /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
-    Connection_tp_methods,  /*tp_methods*/
+    DBusPyConnection_tp_methods,  /*tp_methods*/
     0,                      /*tp_members*/
     0,                      /*tp_getset*/
     0,                      /*tp_base*/
@@ -568,8 +370,6 @@ static PyTypeObject ConnectionType = {
 static inline dbus_bool_t
 init_conn_types(void)
 {
-    default_main_loop = NULL;
-
     /* Get a slot to store our weakref on DBus Connections */
     _connection_python_slot = -1;
     if (!dbus_connection_allocate_data_slot(&_connection_python_slot))

@@ -147,7 +147,7 @@ Watch_BorrowFromDBusWatch(DBusWatch *watch, PyObject *mainloop)
 
     Py_INCREF(self);
     dbus_watch_set_data(watch, self,
-                        (DBusFreeFunction)Glue_TakeGILAndXDecref);
+                        (DBusFreeFunction)dbus_py_take_gil_and_xdecref);
     return (PyObject *)self;
 }
 
@@ -303,7 +303,7 @@ Timeout_BorrowFromDBusTimeout(DBusTimeout *timeout, PyObject *mainloop)
 
     Py_INCREF(self);
     dbus_timeout_set_data(timeout, self,
-                          (DBusFreeFunction)Glue_TakeGILAndXDecref);
+                          (DBusFreeFunction)dbus_py_take_gil_and_xdecref);
     return (PyObject *)self;
 }
 
@@ -450,13 +450,13 @@ check_mainloop_sanity(PyObject *mainloop)
     return FALSE;
 }
 
-static dbus_bool_t
-dbus_python_set_up_connection(PyObject *conn, PyObject *mainloop)
+dbus_bool_t
+dbus_py_set_up_connection(PyObject *conn, PyObject *mainloop)
 {
     if (NativeMainLoop_Check(mainloop)) {
         /* Native mainloops are allowed to do arbitrary strange things */
         NativeMainLoop *nml = (NativeMainLoop *)mainloop;
-        DBusConnection *dbc = Connection_BorrowDBusConnection(conn);
+        DBusConnection *dbc = DBusPyConnection_BorrowDBusConnection(conn);
 
         if (!dbc) {
             return FALSE;
@@ -470,6 +470,17 @@ dbus_python_set_up_connection(PyObject *conn, PyObject *mainloop)
 
 /* The main loop if none is passed to the constructor */
 static PyObject *default_main_loop;
+
+/* Return a new reference to the default main loop */
+PyObject *
+dbus_py_get_default_main_loop(void)
+{
+    if (!default_main_loop) {
+        Py_RETURN_NONE;
+    }
+    Py_INCREF(default_main_loop);
+    return default_main_loop;
+}
 
 /* Python API ======================================================= */
 
@@ -485,11 +496,7 @@ static PyObject *
 get_default_main_loop(PyObject *always_null UNUSED,
                       PyObject *no_args UNUSED)
 {
-    if (!default_main_loop) {
-        Py_RETURN_NONE;
-    }
-    Py_INCREF(default_main_loop);
-    return default_main_loop;
+    return dbus_py_get_default_main_loop();
 }
 
 PyDoc_STRVAR(set_default_main_loop__doc__,
@@ -531,11 +538,11 @@ set_default_main_loop(PyObject *always_null UNUSED,
 
 /* C API ============================================================ */
 
-static PyObject *
-NativeMainLoop_New4(dbus_bool_t (*conn_cb)(DBusConnection *, void *),
-                    dbus_bool_t (*server_cb)(DBusServer *, void *),
-                    void (*free_cb)(void *),
-                    void *data)
+PyObject *
+DBusPyNativeMainLoop_New4(dbus_bool_t (*conn_cb)(DBusConnection *, void *),
+                          dbus_bool_t (*server_cb)(DBusServer *, void *),
+                          void (*free_cb)(void *),
+                          void *data)
 {
     NativeMainLoop *self = PyObject_New(NativeMainLoop, &NativeMainLoopType);
     if (self) {
@@ -563,6 +570,8 @@ noop_main_loop_cb(void *conn_or_server UNUSED, void *data UNUSED)
 static inline int
 init_mainloop (void)
 {
+    default_main_loop = NULL;
+
     if (PyType_Ready (&WatchType) < 0) return 0;
     if (PyType_Ready (&TimeoutType) < 0) return 0;
     if (PyType_Ready (&NativeMainLoopType) < 0) return 0;
@@ -577,10 +586,10 @@ init_mainloop (void)
 static inline int
 insert_mainloop_types (PyObject *this_module)
 {
-    PyObject *null_main_loop = NativeMainLoop_New4(noop_conn_cb,
-                                                   noop_server_cb,
-                                                   NULL,
-                                                   NULL);
+    PyObject *null_main_loop = DBusPyNativeMainLoop_New4(noop_conn_cb,
+                                                         noop_server_cb,
+                                                         NULL,
+                                                         NULL);
     if (!null_main_loop) return 0;
 
     if (PyModule_AddObject (this_module, "Watch",

@@ -876,7 +876,7 @@ ObjectPath_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|l:__new__", argnames,
                                      &str, &variantness)) return NULL;
-    if (!_validate_object_path(str)) {
+    if (!dbus_py_validate_object_path(str)) {
         return NULL;
     }
     return (DBusPythonStringType.tp_new)(cls, args, kwargs);

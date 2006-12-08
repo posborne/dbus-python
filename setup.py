@@ -155,7 +155,11 @@ setup(
         "dbus/mainloop/glib",
     ],
     ext_modules=[
-        Extension("_dbus_bindings", ["_dbus_bindings/module.c"],
+        Extension("_dbus_bindings", [
+                "_dbus_bindings/module.c",
+                "_dbus_bindings/conn.c",
+                "_dbus_bindings/conn-methods.c",
+            ],
             include_dirs=dbus_includes,
             library_dirs=dbus_libs,
             libraries=["dbus-1"],

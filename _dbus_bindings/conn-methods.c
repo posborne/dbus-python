@@ -23,6 +23,181 @@
  *
  */
 
+#include "dbus_bindings-internal.h"
+#include "conn-internal.h"
+
+static void
+_object_path_unregister(DBusConnection *conn, void *user_data)
+{
+    PyGILState_STATE gil = PyGILState_Ensure();
+    PyObject *tuple = NULL;
+    Connection *conn_obj = NULL;
+    PyObject *callable;
+
+    conn_obj = (Connection *)DBusPyConnection_ExistingFromDBusConnection(conn);
+    if (!conn_obj) goto out;
+
+    DBG("Connection at %p unregistering object path %s",
+        conn_obj, PyString_AS_STRING((PyObject *)user_data));
+    tuple = DBusPyConnection_GetObjectPathHandlers((PyObject *)conn_obj, (PyObject *)user_data);
+    if (!tuple) goto out;
+    if (tuple == Py_None) goto out;
+
+    DBG("%s", "... yes we have handlers for that object path");
+
+    /* 0'th item is the unregisterer (if that's a word) */
+    callable = PyTuple_GetItem(tuple, 0);
+    if (callable && callable != Py_None) {
+        DBG("%s", "... and we even have an unregisterer");
+        /* any return from the unregisterer is ignored */
+        Py_XDECREF(PyObject_CallFunctionObjArgs(callable, conn_obj, NULL));
+    }
+out:
+    Py_XDECREF(conn_obj);
+    Py_XDECREF(tuple);
+    /* the user_data (a Python str) is no longer ref'd by the DBusConnection */
+    Py_XDECREF((PyObject *)user_data);
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+    PyGILState_Release(gil);
+}
+
+static DBusHandlerResult
+_object_path_message(DBusConnection *conn, DBusMessage *message,
+                     void *user_data)
+{
+    DBusHandlerResult ret;
+    PyGILState_STATE gil = PyGILState_Ensure();
+    Connection *conn_obj = NULL;
+    PyObject *tuple = NULL;
+    PyObject *msg_obj;
+    PyObject *callable;             /* borrowed */
+
+    dbus_message_ref(message);
+    msg_obj = DBusPyMessage_ConsumeDBusMessage(message);
+    if (!msg_obj) {
+        ret = DBUS_HANDLER_RESULT_NEED_MEMORY;
+        goto out;
+    }
+
+    conn_obj = (Connection *)DBusPyConnection_ExistingFromDBusConnection(conn);
+    if (!conn_obj) {
+        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+        goto out;
+    }
+
+    DBG("Connection at %p messaging object path %s",
+        conn_obj, PyString_AS_STRING((PyObject *)user_data));
+    DBG_DUMP_MESSAGE(message);
+    tuple = DBusPyConnection_GetObjectPathHandlers((PyObject *)conn_obj, (PyObject *)user_data);
+    if (!tuple || tuple == Py_None) {
+        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+        goto out;
+    }
+
+    DBG("%s", "... yes we have handlers for that object path");
+
+    /* 1st item (0-based) is the message callback */
+    callable = PyTuple_GetItem(tuple, 1);
+    if (!callable) {
+        DBG("%s", "... error getting message handler from tuple");
+        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+    else if (callable == Py_None) {
+        /* there was actually no handler after all */
+        DBG("%s", "... but those handlers don't do messages");
+        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
+    else {
+        DBG("%s", "... and we have a message handler for that object path");
+        ret = DBusPyConnection_HandleMessage(conn_obj, msg_obj, callable);
+    }
+
+out:
+    Py_XDECREF(msg_obj);
+    Py_XDECREF(conn_obj);
+    Py_XDECREF(tuple);
+    if (PyErr_Occurred()) {
+        PyErr_Print();
+    }
+    PyGILState_Release(gil);
+    return ret;
+}
+
+static const DBusObjectPathVTable _object_path_vtable = {
+    _object_path_unregister,
+    _object_path_message,
+};
+
+static DBusHandlerResult
+_filter_message(DBusConnection *conn, DBusMessage *message, void *user_data)
+{
+    DBusHandlerResult ret;
+    PyGILState_STATE gil = PyGILState_Ensure();
+    Connection *conn_obj = NULL;
+    PyObject *callable = NULL;
+    PyObject *msg_obj;
+#ifndef DBUS_PYTHON_DISABLE_CHECKS
+    int i, size;
+#endif
+
+    dbus_message_ref(message);
+    msg_obj = DBusPyMessage_ConsumeDBusMessage(message);
+    if (!msg_obj) {
+        DBG("%s", "OOM while trying to construct Message");
+        ret = DBUS_HANDLER_RESULT_NEED_MEMORY;
+        goto out;
+    }
+
+    conn_obj = (Connection *)DBusPyConnection_ExistingFromDBusConnection(conn);
+    if (!conn_obj) {
+        DBG("%s", "failed to traverse DBusConnection -> Connection weakref");
+        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+        goto out;
+    }
+
+    /* The user_data is a pointer to a Python object. To avoid
+     * cross-library reference cycles, the DBusConnection isn't allowed
+     * to reference it. However, as long as the Connection is still
+     * alive, its ->filters list owns a reference to the same Python
+     * object, so the object should also still be alive.
+     *
+     * To ensure that this works, be careful whenever manipulating the
+     * filters list! (always put things in the list *before* giving
+     * them to libdbus, etc.)
+     */
+#ifdef DBUS_PYTHON_DISABLE_CHECKS
+    callable = (PyObject *)user_data;
+#else
+    size = PyList_GET_SIZE(conn_obj->filters);
+    for (i = 0; i < size; i++) {
+        callable = PyList_GET_ITEM(conn_obj->filters, i);
+        if (callable == user_data) {
+            Py_INCREF(callable);
+        }
+        else {
+            callable = NULL;
+        }
+    }
+
+    if (!callable) {
+        DBG("... filter %p has vanished from ->filters, so not calling it",
+            user_data);
+        ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+        goto out;
+    }
+#endif
+
+    ret = DBusPyConnection_HandleMessage(conn_obj, msg_obj, callable);
+out:
+    Py_XDECREF(msg_obj);
+    Py_XDECREF(conn_obj);
+    Py_XDECREF(callable);
+    PyGILState_Release(gil);
+    return ret;
+}
+
 PyDoc_STRVAR(Connection_close__doc__,
 "close()\n\n"
 "Close the connection.");
@@ -109,7 +284,7 @@ Connection_send_message(Connection *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O", &obj)) return NULL;
 
-    msg = Message_BorrowDBusMessage(obj);
+    msg = DBusPyMessage_BorrowDBusMessage(obj);
     if (!msg) return NULL;
 
     Py_BEGIN_ALLOW_THREADS
@@ -158,7 +333,7 @@ Connection_send_message_with_reply(Connection *self, PyObject *args)
         return NULL;
     }
 
-    msg = Message_BorrowDBusMessage(obj);
+    msg = DBusPyMessage_BorrowDBusMessage(obj);
     if (!msg) return NULL;
 
     if (timeout_s < 0) {
@@ -181,7 +356,7 @@ Connection_send_message_with_reply(Connection *self, PyObject *args)
         return PyErr_NoMemory();
     }
 
-    return PendingCall_ConsumeDBusPendingCall(pending, callable);
+    return DBusPyPendingCall_ConsumeDBusPendingCall(pending, callable);
 }
 
 /* Again, the timeout is in seconds, since that's conventional in Python. */
@@ -222,7 +397,7 @@ Connection_send_message_with_reply_and_block(Connection *self, PyObject *args)
         return NULL;
     }
 
-    msg = Message_BorrowDBusMessage(obj);
+    msg = DBusPyMessage_BorrowDBusMessage(obj);
     if (!msg) return NULL;
 
     if (timeout_s < 0) {
@@ -243,9 +418,9 @@ Connection_send_message_with_reply_and_block(Connection *self, PyObject *args)
     Py_END_ALLOW_THREADS
 
     if (!reply) {
-        return DBusException_ConsumeError(&error);
+        return DBusPyException_ConsumeError(&error);
     }
-    return Message_ConsumeDBusMessage(reply);
+    return DBusPyMessage_ConsumeDBusMessage(reply);
 }
 
 PyDoc_STRVAR(Connection_flush__doc__,
@@ -464,7 +639,7 @@ Connection__register_object_path(Connection *self, PyObject *args,
         return NULL;
     }
 
-    if (!_validate_object_path(PyString_AS_STRING(path))) {
+    if (!dbus_py_validate_object_path(PyString_AS_STRING(path))) {
         Py_DECREF(path);
         return NULL;
     }
@@ -663,7 +838,7 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
 
 /* dbus_connection_get_outgoing_size - almost certainly unneeded */
 
-static struct PyMethodDef Connection_tp_methods[] = {
+struct PyMethodDef DBusPyConnection_tp_methods[] = {
 #define ENTRY(name, flags) {#name, (PyCFunction)Connection_##name, flags, Connection_##name##__doc__}
     ENTRY(close, METH_NOARGS),
     ENTRY(flush, METH_NOARGS),

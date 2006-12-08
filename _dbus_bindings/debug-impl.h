@@ -22,14 +22,8 @@
  *
  */
 
-#if 0
-#   include <sys/types.h>
-#   include <unistd.h>
-
-#   define USING_DBG
-#   define DBG(format, ...) fprintf(stderr, "DEBUG: " format "\n",\
-                                 __VA_ARGS__)
-static void _dbg_exc(void)
+#ifdef USING_DBG
+void _dbus_py_dbg_exc(void)
 {
     PyObject *c, *v, *t;
     /* This is a little mad. We want to get the traceback without
@@ -40,10 +34,27 @@ static void _dbg_exc(void)
     PyErr_Print();
     PyErr_Restore(c, v, t); /* steals another 3 refs */
 }
-#   define DBG_EXC(format, ...) do {DBG(format, __VA_ARGS__); \
-                                    _dbg_exc();} while (0)
-#else
-#   undef USING_DBG
-#   define DBG(format, ...) do {} while (0)
-#   define DBG_EXC(format, ...) do {} while (0)
+
+static void
+_dbus_py_dbg_dump_message(DBusMessage *message)
+{
+    const char *s;
+    fprintf(stderr, "DBusMessage at %p\n", message);
+
+    s = dbus_message_get_destination(message);
+    if (!s) s = "(null)";
+    fprintf(stderr, "\tdestination %s\n", s);
+
+    s = dbus_message_get_interface(message);
+    if (!s) s = "(null)";
+    fprintf(stderr, "\tinterface %s\n", s);
+
+    s = dbus_message_get_member(message);
+    if (!s) s = "(null)";
+    fprintf(stderr, "\tmember %s\n", s);
+
+    s = dbus_message_get_path(message);
+    if (!s) s = "(null)";
+    fprintf(stderr, "\tpath %s\n", s);
+}
 #endif

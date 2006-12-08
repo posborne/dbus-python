@@ -23,18 +23,6 @@
  *
  */
 
-#define DEFERRED_ADDRESS(ADDR) 0
-
-#if defined(__GNUC__)
-#   if __GNUC__ >= 3
-#       define UNUSED __attribute__((__unused__))
-#   else
-#       define UNUSED /*nothing*/
-#   endif
-#else
-#   define UNUSED /*nothing*/
-#endif
-
 #define DEFINE_CHECK(type) \
 static inline int type##_Check (PyObject *o) \
 { \
@@ -78,8 +66,8 @@ Glue_immutable_setattro(PyObject *obj UNUSED,
 
 /* Take the global interpreter lock and decrement the reference count.
  * Suitable for calling from a C callback. */
-static void
-Glue_TakeGILAndXDecref(PyObject *obj)
+void
+dbus_py_take_gil_and_xdecref(PyObject *obj)
 {
     PyGILState_STATE gil = PyGILState_Ensure();
     Py_XDECREF(obj);

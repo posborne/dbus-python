@@ -22,6 +22,9 @@
  *
  */
 
+#include "dbus_bindings-internal.h"
+#include "conn-internal.h"
+
 PyDoc_STRVAR(Bus_tp_doc,
 "BusImplementation([address: str or int])\n\n"
 "If the address is an int it must be one of the constants BUS_SESSION,\n"
@@ -57,19 +60,19 @@ Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     if (first && PyString_Check(first)) {
         /* It's a custom address. First connect to it, then register. */
 
-        self = (Connection *)Connection_tp_new(cls, args, kwargs);
+        self = (Connection *)(DBusPyConnectionType.tp_new)(cls, args, kwargs);
         if (!self) return NULL;
 
         Py_BEGIN_ALLOW_THREADS
         ret = dbus_bus_register(self->conn, &error);
         Py_END_ALLOW_THREADS
         if (!ret) {
-            DBusException_ConsumeError(&error);
+            DBusPyException_ConsumeError(&error);
             Py_DECREF(self);
             return NULL;
         }
 
-        return self;
+        return (PyObject *)self;
     }
 
     /* If the first argument isn't a string, it must be an integer
@@ -98,10 +101,10 @@ Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     Py_END_ALLOW_THREADS
 
     if (!conn) {
-        DBusException_ConsumeError (&error);
+        DBusPyException_ConsumeError (&error);
         return NULL;
     }
-    return Connection_NewConsumingDBusConnection(cls, conn, mainloop);
+    return DBusPyConnection_NewConsumingDBusConnection(cls, conn, mainloop);
 }
 
 PyDoc_STRVAR(Bus_get_unique_name__doc__,
@@ -117,7 +120,7 @@ Bus_get_unique_name (Connection *self, PyObject *args UNUSED)
     Py_END_ALLOW_THREADS
     if (!name) {
         /* shouldn't happen, but C subtypes could have done something stupid */
-        PyErr_SetString (DBusException, "Unable to retrieve unique name");
+        PyErr_SetString(DBusPyException, "Unable to retrieve unique name");
         return NULL;
     }
     return PyString_FromString (name);
@@ -148,7 +151,7 @@ Bus_get_unix_user (Connection *self, PyObject *args)
     Py_BEGIN_ALLOW_THREADS
     uid = dbus_bus_get_unix_user (self->conn, bus_name, &error);
     Py_END_ALLOW_THREADS
-    if (uid == (unsigned long)(-1)) return DBusException_ConsumeError (&error);
+    if (uid == (unsigned long)(-1)) return DBusPyException_ConsumeError(&error);
     return PyLong_FromUnsignedLong (uid);
 }
 
@@ -186,7 +189,7 @@ Bus_start_service_by_name (Connection *self, PyObject *args)
                                               0 /* flags */, &ret, &error);
     Py_END_ALLOW_THREADS
     if (!success) {
-        return DBusException_ConsumeError (&error);
+        return DBusPyException_ConsumeError(&error);
     }
     return Py_BuildValue ("(Ol)", Py_True, (long)ret);
 }
@@ -204,13 +207,13 @@ Bus_request_name (Connection *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "s|I:request_name", &bus_name, &flags)) {
         return NULL;
     }
-    if (!_validate_bus_name(bus_name, 0, 1)) return NULL;
+    if (!dbus_py_validate_bus_name(bus_name, 0, 1)) return NULL;
 
     dbus_error_init (&error);
     Py_BEGIN_ALLOW_THREADS
     ret = dbus_bus_request_name(self->conn, bus_name, flags, &error);
     Py_END_ALLOW_THREADS
-    if (ret == -1) return DBusException_ConsumeError (&error);
+    if (ret == -1) return DBusPyException_ConsumeError(&error);
 
     return PyInt_FromLong(ret);
 }
@@ -229,7 +232,7 @@ Bus_release_name (Connection *self, PyObject *args)
     Py_BEGIN_ALLOW_THREADS
     ret = dbus_bus_release_name(self->conn, bus_name, &error);
     Py_END_ALLOW_THREADS
-    if (ret == -1) return DBusException_ConsumeError (&error);
+    if (ret == -1) return DBusPyException_ConsumeError(&error);
 
     return PyInt_FromLong(ret);
 }
@@ -250,7 +253,7 @@ Bus_name_has_owner (Connection *self, PyObject *args)
     ret = dbus_bus_name_has_owner(self->conn, bus_name, &error);
     Py_END_ALLOW_THREADS
     if (dbus_error_is_set (&error)) {
-        return DBusException_ConsumeError (&error);
+        return DBusPyException_ConsumeError(&error);
     }
     return PyBool_FromLong(ret);
 }
@@ -271,7 +274,7 @@ Bus_add_match_string (Connection *self, PyObject *args)
     dbus_bus_add_match (self->conn, rule, &error);
     Py_END_ALLOW_THREADS
     if (dbus_error_is_set (&error)) {
-        return DBusException_ConsumeError (&error);
+        return DBusPyException_ConsumeError(&error);
     }
     Py_RETURN_NONE;
 }
@@ -310,7 +313,7 @@ Bus_remove_match_string (Connection *self, PyObject *args)
     dbus_bus_remove_match (self->conn, rule, &error);
     Py_END_ALLOW_THREADS
     if (dbus_error_is_set (&error)) {
-        return DBusException_ConsumeError (&error);
+        return DBusPyException_ConsumeError(&error);
     }
     Py_RETURN_NONE;
 }
@@ -357,7 +360,7 @@ static PyTypeObject BusType = {
         0,                      /*tp_basicsize*/
         0,                      /*tp_itemsize*/
         /* methods */
-        (destructor)Connection_tp_dealloc,  /*tp_dealloc*/
+        0,                      /*tp_dealloc*/
         0,                      /*tp_print*/
         0,                      /*tp_getattr*/
         0,                      /*tp_setattr*/
@@ -398,7 +401,7 @@ static PyTypeObject BusType = {
 static inline int
 init_bus_types (void)
 {
-    BusType.tp_base = &ConnectionType;
+    BusType.tp_base = &DBusPyConnectionType;
     if (PyType_Ready (&BusType) < 0) return 0;
     return 1;
 }

@@ -25,8 +25,7 @@
 #include <Python.h>
 #include <structmember.h>
 
-#define INSIDE_DBUS_BINDINGS
-#include "dbus_bindings.h"
+#include "dbus_bindings-internal.h"
 
 PyDoc_STRVAR(module_doc,
 "Low-level Python bindings for libdbus. Don't use this module directly -\n"
@@ -50,7 +49,6 @@ PyDoc_STRVAR(module_doc,
 #include "message-impl.h"            /* Message and subclasses */
 #include "pending-call-impl.h"       /* PendingCall */
 #include "mainloop-impl.h"           /* NativeMainLoop */
-#include "conn-impl.h"               /* Connection */
 #include "bus-impl.h"                /* Bus */
 
 static PyMethodDef module_functions[] = {
@@ -90,7 +88,7 @@ init_dbus_bindings(void)
     if (!init_message_types()) return;
     if (!init_pending_call()) return;
     if (!init_mainloop()) return;
-    if (!init_conn_types()) return;
+    if (!dbus_py_init_conn_types()) return;
     if (!init_bus_types()) return;
 
     this_module = Py_InitModule3("_dbus_bindings", module_functions, module_doc);
@@ -106,7 +104,7 @@ init_dbus_bindings(void)
     if (!insert_message_types(this_module)) return;
     if (!insert_pending_call(this_module)) return;
     if (!insert_mainloop_types(this_module)) return;
-    if (!insert_conn_types(this_module)) return;
+    if (!dbus_py_insert_conn_types(this_module)) return;
     if (!insert_bus_types(this_module)) return;
 
 #define ADD_CONST_VAL(x, v) \

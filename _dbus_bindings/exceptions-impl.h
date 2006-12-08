@@ -22,47 +22,47 @@
  *
  */
 
-static PyObject *DBusException;
+PyObject *DBusPyException;
 
 PyDoc_STRVAR(DBusException__doc__, "Represents any D-Bus-related error.");
 
-static inline PyObject *
-DBusException_ConsumeError (DBusError *error)
+PyObject *
+DBusPyException_ConsumeError(DBusError *error)
 {
-    PyErr_Format (DBusException, "%s: %s", error->name, error->message);
+    PyErr_Format(DBusPyException, "%s: %s", error->name, error->message);
     dbus_error_free(error);
     return NULL;
 }
 
 static inline PyObject *
-DBusException_UnusableMessage (void)
+DBusException_UnusableMessage(void)
 {
-    PyErr_SetString (DBusException,
-                     "Message object is uninitialized, or has become unusable "
+    PyErr_SetString(DBusPyException,
+                    "Message object is uninitialized, or has become unusable "
                      "due to error while appending arguments");
     return NULL;
 }
 
 static inline int
-init_exception_types (void)
+init_exception_types(void)
 {
     PyObject *docstring;
 
     /* We call it dbus.DBusException because that's where you should import it
     from. */
-    DBusException = PyErr_NewException("dbus.DBusException", NULL, NULL);
-    if (!DBusException) return 0;
+    DBusPyException = PyErr_NewException("dbus.DBusException", NULL, NULL);
+    if (!DBusPyException) return 0;
     docstring = PyString_FromString(DBusException__doc__);
     if (!docstring) return 0;
-    if (PyObject_SetAttrString (DBusException, "__doc__", docstring)) return 0;
-    Py_DECREF (docstring);
+    if (PyObject_SetAttrString(DBusPyException, "__doc__", docstring)) return 0;
+    Py_DECREF(docstring);
     return 1;
 }
 
 static inline int
-insert_exception_types (PyObject *this_module)
+insert_exception_types(PyObject *this_module)
 {
-    if (PyModule_AddObject(this_module, "DBusException", DBusException) < 0) {
+    if (PyModule_AddObject(this_module, "DBusException", DBusPyException) < 0) {
         return 0;
     }
     return 1;

@@ -25,6 +25,7 @@
 #ifndef DBUS_BINDINGS_H
 #define DBUS_BINDINGS_H
 
+#include <Python.h>
 #define DBUS_API_SUBJECT_TO_CHANGE 1
 #include <dbus/dbus.h>
 
@@ -34,8 +35,10 @@ DBUS_BEGIN_DECLS
 
 #ifdef INSIDE_DBUS_BINDINGS
 
-static DBusConnection *Connection_BorrowDBusConnection(PyObject *);
-static PyObject *NativeMainLoop_New4(dbus_bool_t (*)(DBusConnection *, void *),
+#define Connection_BorrowDBusConnection DBusPyConnection_BorrowDBusConnection
+#define NativeMainLoop_New4 DBusPyNativeMainLoop_New4
+extern DBusConnection *DBusPyConnection_BorrowDBusConnection(PyObject *);
+extern PyObject *DBusPyNativeMainLoop_New4(dbus_bool_t (*)(DBusConnection *, void *),
                                      dbus_bool_t (*)(DBusServer *, void *),
                                      void (*)(void *),
                                      void *);

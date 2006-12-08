@@ -23,33 +23,6 @@
  *
  */
 
-#ifdef USING_DBG
-static void _dbg_dump_message(DBusMessage *message)
-{
-    const char *s;
-    fprintf(stderr, "DBusMessage at %p\n", message);
-
-    s = dbus_message_get_destination(message);
-    if (!s) s = "(null)";
-    fprintf(stderr, "\tdestination %s\n", s);
-
-    s = dbus_message_get_interface(message);
-    if (!s) s = "(null)";
-    fprintf(stderr, "\tinterface %s\n", s);
-
-    s = dbus_message_get_member(message);
-    if (!s) s = "(null)";
-    fprintf(stderr, "\tmember %s\n", s);
-
-    s = dbus_message_get_path(message);
-    if (!s) s = "(null)";
-    fprintf(stderr, "\tpath %s\n", s);
-}
-#   define DBG_DUMP_MESSAGE(x) _dbg_dump_message(x)
-#else
-#   define DBG_DUMP_MESSAGE(x) do {} while(0)
-#endif
-
 static PyTypeObject MessageType, SignalMessageType, ErrorMessageType;
 static PyTypeObject MethodReturnMessageType, MethodCallMessageType;
 
@@ -102,10 +75,10 @@ MethodCallMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
                                       &method)) {
         return -1;
     }
-    if (destination && !_validate_bus_name(destination, 1, 1)) return -1;
-    if (!_validate_object_path(path)) return -1;
-    if (interface && !_validate_interface_name(interface)) return -1;
-    if (!_validate_member_name(method)) return -1;
+    if (destination && !dbus_py_validate_bus_name(destination, 1, 1)) return -1;
+    if (!dbus_py_validate_object_path(path)) return -1;
+    if (interface && !dbus_py_validate_interface_name(interface)) return -1;
+    if (!dbus_py_validate_member_name(method)) return -1;
     if (self->msg) {
         dbus_message_unref (self->msg);
         self->msg = NULL;
@@ -155,9 +128,9 @@ SignalMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
                                     &path, &interface, &name)) {
       return -1;
     }
-    if (!_validate_object_path(path)) return -1;
-    if (!_validate_interface_name(interface)) return -1;
-    if (!_validate_member_name(name)) return -1;
+    if (!dbus_py_validate_object_path(path)) return -1;
+    if (!dbus_py_validate_interface_name(interface)) return -1;
+    if (!dbus_py_validate_member_name(name)) return -1;
     if (self->msg) {
         dbus_message_unref (self->msg);
         self->msg = NULL;
@@ -185,7 +158,7 @@ ErrorMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
                                       &error_message)) {
         return -1;
     }
-    if (!_validate_error_name(error_name)) return -1;
+    if (!dbus_py_validate_error_name(error_name)) return -1;
     if (self->msg) {
         dbus_message_unref (self->msg);
         self->msg = NULL;
@@ -198,8 +171,8 @@ ErrorMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
     return 0;
 }
 
-static DBusMessage *
-Message_BorrowDBusMessage (PyObject *msg)
+DBusMessage *
+DBusPyMessage_BorrowDBusMessage(PyObject *msg)
 {
     if (!Message_Check (msg)) {
         PyErr_SetString (PyExc_TypeError,
@@ -443,7 +416,7 @@ Message_set_member (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusException_UnusableMessage();
-    if (!_validate_member_name(name)) return NULL;
+    if (!dbus_py_validate_member_name(name)) return NULL;
     if (!dbus_message_set_member (self->msg, name)) return PyErr_NoMemory();
     Py_RETURN_NONE;
 }
@@ -606,7 +579,7 @@ Message_set_sender (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusException_UnusableMessage();
-    if (!_validate_bus_name(name, 1, 0)) return NULL;
+    if (!dbus_py_validate_bus_name(name, 1, 0)) return NULL;
     if (!dbus_message_set_sender (self->msg, name)) return PyErr_NoMemory();
     Py_RETURN_NONE;
 }
@@ -652,7 +625,7 @@ Message_set_destination (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusException_UnusableMessage();
-    if (!_validate_bus_name(name, 1, 1)) return NULL;
+    if (!dbus_py_validate_bus_name(name, 1, 1)) return NULL;
     if (!dbus_message_set_destination (self->msg, name)) return PyErr_NoMemory();
     Py_RETURN_NONE;
 }
@@ -697,7 +670,7 @@ Message_set_interface (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusException_UnusableMessage();
-    if (!_validate_interface_name(name)) return NULL;
+    if (!dbus_py_validate_interface_name(name)) return NULL;
     if (!dbus_message_set_interface (self->msg, name)) return PyErr_NoMemory();
     Py_RETURN_NONE;
 }
@@ -728,7 +701,7 @@ Message_set_error_name(Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusException_UnusableMessage();
-    if (!_validate_error_name(name)) return NULL;
+    if (!dbus_py_validate_error_name(name)) return NULL;
     if (!dbus_message_set_error_name(self->msg, name)) return PyErr_NoMemory();
     Py_RETURN_NONE;
 }

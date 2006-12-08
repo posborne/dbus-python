@@ -22,9 +22,10 @@
  *
  */
 
-static dbus_bool_t _validate_bus_name(const char *name,
-                                      dbus_bool_t may_be_unique,
-                                      dbus_bool_t may_be_not_unique)
+dbus_bool_t
+dbus_py_validate_bus_name(const char *name,
+                          dbus_bool_t may_be_unique,
+                          dbus_bool_t may_be_not_unique)
 {
     dbus_bool_t dot = FALSE;
     dbus_bool_t unique;
@@ -136,13 +137,14 @@ validate_bus_name(PyObject *unused UNUSED, PyObject *args, PyObject *kwargs)
                                      &allow_well_known)) {
         return NULL;
     }
-    if (!_validate_bus_name(name, !!allow_unique, !!allow_well_known)) {
+    if (!dbus_py_validate_bus_name(name, !!allow_unique, !!allow_well_known)) {
         return NULL;
     }
     Py_RETURN_NONE;
 }
 
-static dbus_bool_t _validate_member_name(const char *name)
+dbus_bool_t
+dbus_py_validate_member_name(const char *name)
 {
     const char *ptr;
 
@@ -191,13 +193,14 @@ validate_member_name(PyObject *unused UNUSED, PyObject *args)
     if (!PyArg_ParseTuple(args, "s:validate_member_name", &name)) {
         return NULL;
     }
-    if (!_validate_member_name(name)) {
+    if (!dbus_py_validate_member_name(name)) {
         return NULL;
     }
     Py_RETURN_NONE;
 }
 
-static dbus_bool_t _validate_interface_name(const char *name)
+dbus_bool_t
+dbus_py_validate_interface_name(const char *name)
 {
     dbus_bool_t dot = FALSE;
     char last;
@@ -283,18 +286,15 @@ validate_interface_name(PyObject *unused UNUSED, PyObject *args)
     if (!PyArg_ParseTuple(args, "s:validate_interface_name", &name)) {
         return NULL;
     }
-    if (!_validate_interface_name(name)) {
+    if (!dbus_py_validate_interface_name(name)) {
         return NULL;
     }
     Py_RETURN_NONE;
 }
 
-static inline dbus_bool_t _validate_error_name(const char *name)
-{
-    return _validate_interface_name(name);
-}
 
-static dbus_bool_t _validate_object_path(const char *path)
+dbus_bool_t
+dbus_py_validate_object_path(const char *path)
 {
     const char *ptr;
 
@@ -343,7 +343,7 @@ validate_object_path(PyObject *unused UNUSED, PyObject *args)
     if (!PyArg_ParseTuple(args, "s:validate_object_path", &name)) {
         return NULL;
     }
-    if (!_validate_object_path(name)) {
+    if (!dbus_py_validate_object_path(name)) {
         return NULL;
     }
     Py_RETURN_NONE;

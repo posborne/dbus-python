@@ -139,8 +139,9 @@ PendingCall_get_completed(PendingCall *self, PyObject *unused UNUSED)
 }
 
 /* Steals the reference to the pending call. */
-static PyObject *
-PendingCall_ConsumeDBusPendingCall (DBusPendingCall *pc, PyObject *callable)
+PyObject *
+DBusPyPendingCall_ConsumeDBusPendingCall(DBusPendingCall *pc,
+                                         PyObject *callable)
 {
     dbus_bool_t ret;
     PyObject *list = PyList_New(1);
@@ -166,7 +167,7 @@ PendingCall_ConsumeDBusPendingCall (DBusPendingCall *pc, PyObject *callable)
     Py_BEGIN_ALLOW_THREADS
     ret = dbus_pending_call_set_notify(pc,
         (DBusPendingCallNotifyFunction)_pending_call_notify_function,
-        (void *)list, (DBusFreeFunction)Glue_TakeGILAndXDecref);
+        (void *)list, (DBusFreeFunction)dbus_py_take_gil_and_xdecref);
     Py_END_ALLOW_THREADS
 
     if (!ret) {
