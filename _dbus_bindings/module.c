@@ -36,7 +36,6 @@ PyDoc_STRVAR(module_doc,
 ":NewField SupportedUsage: Supported usage\n"
 );
 
-#include "debug-impl.h"              /* DBG, USING_DBG, DBG_EXC */
 #include "generic-impl.h"            /* Non D-Bus support code */
 #include "validation-impl.h"         /* Interface name, etc., validation */
 #include "exceptions-impl.h"         /* Exception base classes */

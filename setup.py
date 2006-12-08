@@ -159,6 +159,8 @@ setup(
                 "_dbus_bindings/module.c",
                 "_dbus_bindings/conn.c",
                 "_dbus_bindings/conn-methods.c",
+                "_dbus_bindings/debug.c",
+                "_dbus_bindings/bus.c",
             ],
             include_dirs=dbus_includes,
             library_dirs=dbus_libs,
