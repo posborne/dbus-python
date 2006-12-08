@@ -243,11 +243,19 @@ static dbus_int32_t _connection_python_slot;
 static DBusConnection *
 Connection_BorrowDBusConnection(PyObject *self)
 {
+    DBusConnection *dbc;
+
     if (!Connection_Check(self)) {
         PyErr_SetString(PyExc_TypeError, "A dbus.Connection is required");
         return NULL;
     }
-    return ((Connection *)self)->conn;
+    dbc = ((Connection *)self)->conn;
+    if (!dbc) {
+        PyErr_SetString(PyExc_RuntimeError, "Connection is in an invalid "
+                        "state: no DBusConnection");
+        return NULL;
+    }
+    return dbc;
 }
 
 /* Internal C API =================================================== */
@@ -480,10 +488,22 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 static void Connection_tp_dealloc(Connection *self)
 {
     DBusConnection *conn = self->conn;
-    self->conn = NULL;
+    PyObject *filters = self->filters;
+    PyObject *object_paths = self->object_paths;
 
     DBG("Deallocating Connection at %p (DBusConnection at %p)", self, conn);
 
+    self->filters = NULL;
+    Py_XDECREF(filters);
+    self->object_paths = NULL;
+    Py_XDECREF(object_paths);
+
+    /* make sure to do this last to preserve the invariant that 
+     * self->conn is always non-NULL for any referenced Connection
+     * (until the filters and object paths were freed, we might have been
+     * in a reference cycle!)
+     */
+    self->conn = NULL;
     if (conn) {
         Py_BEGIN_ALLOW_THREADS
         dbus_connection_close(conn);
@@ -492,8 +512,6 @@ static void Connection_tp_dealloc(Connection *self)
         dbus_connection_unref(conn);
     }
 
-    Py_XDECREF(self->filters);
-    Py_XDECREF(self->object_paths);
     (self->ob_type->tp_free)((PyObject *)self);
 }
 
