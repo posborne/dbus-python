@@ -68,6 +68,8 @@ Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
             Py_DECREF(self);
             return NULL;
         }
+
+        return self;
     }
 
     /* If the first argument isn't a string, it must be an integer
