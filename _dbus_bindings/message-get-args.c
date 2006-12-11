@@ -78,7 +78,7 @@ _message_iter_append_all_to_list(DBusMessageIter *iter, PyObject *list,
                                  Message_get_args_options *opts)
 {
     int ret, type;
-    while ((type = dbus_message_iter_get_arg_type (iter))
+    while ((type = dbus_message_iter_get_arg_type(iter))
             != DBUS_TYPE_INVALID) {
         PyObject *item;
         DBG("type == %d '%c'", type, type);
@@ -417,7 +417,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 DBG("%s", "found a struct...");
                 if (!list) break;
                 dbus_message_iter_recurse(iter, &sub);
-                if (_message_iter_append_all_to_list (&sub, list, opts) < 0) {
+                if (_message_iter_append_all_to_list(&sub, list, opts) < 0) {
                     Py_DECREF(list);
                     break;
                 }

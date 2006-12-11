@@ -40,7 +40,7 @@ static PyTypeObject BusType;
 /* Bus methods ====================================================== */
 
 static PyObject *
-Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
+Bus_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     PyObject *first = NULL, *mainloop = NULL;
     DBusConnection *conn;
@@ -50,12 +50,12 @@ Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     long type;
     static char *argnames[] = {"address_or_type", "mainloop", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords (args, kwargs, "|OO", argnames,
-                                      &first, &mainloop)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO", argnames,
+                                     &first, &mainloop)) {
         return NULL;
     }
 
-    dbus_error_init (&error);
+    dbus_error_init(&error);
 
     if (first && PyString_Check(first)) {
         /* It's a custom address. First connect to it, then register. */
@@ -78,13 +78,13 @@ Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     /* If the first argument isn't a string, it must be an integer
     representing one of the well-known bus types. */
 
-    if (first && !PyInt_Check (first)) {
+    if (first && !PyInt_Check(first)) {
         PyErr_SetString(PyExc_TypeError, "A string address or an integer "
                                          "bus type is required");
         return NULL;
     }
     if (first) {
-        type = PyInt_AsLong (first);
+        type = PyInt_AsLong(first);
     }
     else {
         type = DBUS_BUS_SESSION;
@@ -97,11 +97,11 @@ Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     }
 
     Py_BEGIN_ALLOW_THREADS
-    conn = dbus_bus_get_private (type, &error);
+    conn = dbus_bus_get_private(type, &error);
     Py_END_ALLOW_THREADS
 
     if (!conn) {
-        DBusPyException_ConsumeError (&error);
+        DBusPyException_ConsumeError(&error);
         return NULL;
     }
     return DBusPyConnection_NewConsumingDBusConnection(cls, conn, mainloop);
@@ -111,19 +111,19 @@ PyDoc_STRVAR(Bus_get_unique_name__doc__,
 "get_unique_name() -> str\n\n"
 "Return this application's unique name on this bus.\n");
 static PyObject *
-Bus_get_unique_name (Connection *self, PyObject *args UNUSED)
+Bus_get_unique_name(Connection *self, PyObject *args UNUSED)
 {
     const char *name;
 
     Py_BEGIN_ALLOW_THREADS
-    name = dbus_bus_get_unique_name (self->conn);
+    name = dbus_bus_get_unique_name(self->conn);
     Py_END_ALLOW_THREADS
     if (!name) {
         /* shouldn't happen, but C subtypes could have done something stupid */
         PyErr_SetString(DBusPyException, "Unable to retrieve unique name");
         return NULL;
     }
-    return PyString_FromString (name);
+    return PyString_FromString(name);
 }
 
 PyDoc_STRVAR(Bus_get_unix_user__doc__,
@@ -137,7 +137,7 @@ PyDoc_STRVAR(Bus_get_unix_user__doc__,
 "        A bus name (may be either a unique name or a well-known name)\n"
 );
 static PyObject *
-Bus_get_unix_user (Connection *self, PyObject *args)
+Bus_get_unix_user(Connection *self, PyObject *args)
 {
     DBusError error;
     unsigned long uid;
@@ -147,12 +147,12 @@ Bus_get_unix_user (Connection *self, PyObject *args)
         return NULL;
     }
 
-    dbus_error_init (&error);
+    dbus_error_init(&error);
     Py_BEGIN_ALLOW_THREADS
-    uid = dbus_bus_get_unix_user (self->conn, bus_name, &error);
+    uid = dbus_bus_get_unix_user(self->conn, bus_name, &error);
     Py_END_ALLOW_THREADS
     if (uid == (unsigned long)(-1)) return DBusPyException_ConsumeError(&error);
-    return PyLong_FromUnsignedLong (uid);
+    return PyLong_FromUnsignedLong(uid);
 }
 
 PyDoc_STRVAR(Bus_start_service_by_name__doc__,
@@ -173,7 +173,7 @@ Bus.\n\
 FIXME: Fix return signature?\n\
 ");
 static PyObject *
-Bus_start_service_by_name (Connection *self, PyObject *args)
+Bus_start_service_by_name(Connection *self, PyObject *args)
 {
     DBusError error;
     const char *bus_name;
@@ -183,21 +183,21 @@ Bus_start_service_by_name (Connection *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "s:start_service_by_name", &bus_name)) {
         return NULL;
     }
-    dbus_error_init (&error);
+    dbus_error_init(&error);
     Py_BEGIN_ALLOW_THREADS
-    success = dbus_bus_start_service_by_name (self->conn, bus_name,
-                                              0 /* flags */, &ret, &error);
+    success = dbus_bus_start_service_by_name(self->conn, bus_name,
+                                             0 /* flags */, &ret, &error);
     Py_END_ALLOW_THREADS
     if (!success) {
         return DBusPyException_ConsumeError(&error);
     }
-    return Py_BuildValue ("(Ol)", Py_True, (long)ret);
+    return Py_BuildValue("(Ol)", Py_True, (long)ret);
 }
 
 /* FIXME: signal IN_QUEUE, EXISTS by exception? */
 PyDoc_STRVAR(Bus_request_name__doc__, "");
 static PyObject *
-Bus_request_name (Connection *self, PyObject *args)
+Bus_request_name(Connection *self, PyObject *args)
 {
     unsigned int flags = 0;
     const char *bus_name;
@@ -209,7 +209,7 @@ Bus_request_name (Connection *self, PyObject *args)
     }
     if (!dbus_py_validate_bus_name(bus_name, 0, 1)) return NULL;
 
-    dbus_error_init (&error);
+    dbus_error_init(&error);
     Py_BEGIN_ALLOW_THREADS
     ret = dbus_bus_request_name(self->conn, bus_name, flags, &error);
     Py_END_ALLOW_THREADS
@@ -220,7 +220,7 @@ Bus_request_name (Connection *self, PyObject *args)
 
 PyDoc_STRVAR(Bus_release_name__doc__, "");
 static PyObject *
-Bus_release_name (Connection *self, PyObject *args)
+Bus_release_name(Connection *self, PyObject *args)
 {
     const char *bus_name;
     int ret;
@@ -228,7 +228,7 @@ Bus_release_name (Connection *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "s:release_name", &bus_name)) return NULL;
 
-    dbus_error_init (&error);
+    dbus_error_init(&error);
     Py_BEGIN_ALLOW_THREADS
     ret = dbus_bus_release_name(self->conn, bus_name, &error);
     Py_END_ALLOW_THREADS
@@ -237,100 +237,100 @@ Bus_release_name (Connection *self, PyObject *args)
     return PyInt_FromLong(ret);
 }
 
-PyDoc_STRVAR (Bus_name_has_owner__doc__,
+PyDoc_STRVAR(Bus_name_has_owner__doc__,
 "name_has_owner(bus_name: str) -> bool\n\n"
 "Return True if and only if the given bus name has an owner on this bus.\n");
 static PyObject *
-Bus_name_has_owner (Connection *self, PyObject *args)
+Bus_name_has_owner(Connection *self, PyObject *args)
 {
     const char *bus_name;
     int ret;
     DBusError error;
 
     if (!PyArg_ParseTuple(args, "s:name_has_owner", &bus_name)) return NULL;
-    dbus_error_init (&error);
+    dbus_error_init(&error);
     Py_BEGIN_ALLOW_THREADS
     ret = dbus_bus_name_has_owner(self->conn, bus_name, &error);
     Py_END_ALLOW_THREADS
-    if (dbus_error_is_set (&error)) {
+    if (dbus_error_is_set(&error)) {
         return DBusPyException_ConsumeError(&error);
     }
     return PyBool_FromLong(ret);
 }
 
-PyDoc_STRVAR (Bus_add_match_string__doc__,
+PyDoc_STRVAR(Bus_add_match_string__doc__,
 "add_match_string(rule: str)\n\n"
 "Arrange for this application to receive messages on the bus that match\n"
 "the given rule. This version will block and raises DBusException on error.\n");
 static PyObject *
-Bus_add_match_string (Connection *self, PyObject *args)
+Bus_add_match_string(Connection *self, PyObject *args)
 {
     const char *rule;
     DBusError error;
 
     if (!PyArg_ParseTuple(args, "s:add_match", &rule)) return NULL;
-    dbus_error_init (&error);
+    dbus_error_init(&error);
     Py_BEGIN_ALLOW_THREADS
-    dbus_bus_add_match (self->conn, rule, &error);
+    dbus_bus_add_match(self->conn, rule, &error);
     Py_END_ALLOW_THREADS
-    if (dbus_error_is_set (&error)) {
+    if (dbus_error_is_set(&error)) {
         return DBusPyException_ConsumeError(&error);
     }
     Py_RETURN_NONE;
 }
 
-PyDoc_STRVAR (Bus_add_match_string_non_blocking__doc__,
+PyDoc_STRVAR(Bus_add_match_string_non_blocking__doc__,
 "add_match_string_non_blocking(rule: str)\n\n"
 "Arrange for this application to receive messages on the bus that match\n"
 "the given rule. This version does not block, but any errors will be\n"
 "ignored.\n");
 static PyObject *
-Bus_add_match_string_non_blocking (Connection *self, PyObject *args)
+Bus_add_match_string_non_blocking(Connection *self, PyObject *args)
 {
     const char *rule;
 
     if (!PyArg_ParseTuple(args, "s:add_match", &rule)) return NULL;
     Py_BEGIN_ALLOW_THREADS
-    dbus_bus_add_match (self->conn, rule, NULL);
+    dbus_bus_add_match(self->conn, rule, NULL);
     Py_END_ALLOW_THREADS
     Py_RETURN_NONE;
 }
 
-PyDoc_STRVAR (Bus_remove_match_string__doc__,
+PyDoc_STRVAR(Bus_remove_match_string__doc__,
 "remove_match_string(rule: str)\n\n"
 "Remove the given match rule; if it has been added more than once,\n"
 "remove one of the identical copies, leaving the others active.\n"
 "This version blocks, and raises DBusException on error.\n");
 static PyObject *
-Bus_remove_match_string (Connection *self, PyObject *args)
+Bus_remove_match_string(Connection *self, PyObject *args)
 {
     const char *rule;
     DBusError error;
 
     if (!PyArg_ParseTuple(args, "s:remove_match", &rule)) return NULL;
-    dbus_error_init (&error);
+    dbus_error_init(&error);
     Py_BEGIN_ALLOW_THREADS
-    dbus_bus_remove_match (self->conn, rule, &error);
+    dbus_bus_remove_match(self->conn, rule, &error);
     Py_END_ALLOW_THREADS
-    if (dbus_error_is_set (&error)) {
+    if (dbus_error_is_set(&error)) {
         return DBusPyException_ConsumeError(&error);
     }
     Py_RETURN_NONE;
 }
 
-PyDoc_STRVAR (Bus_remove_match_string_non_blocking__doc__,
+PyDoc_STRVAR(Bus_remove_match_string_non_blocking__doc__,
 "remove_match_string_non_blocking(rule: str)\n\n"
 "Remove the given match rule; if it has been added more than once,\n"
 "remove one of the identical copies, leaving the others active.\n"
 "This version does not block, but causes any errors to be ignored.\n");
 static PyObject *
-Bus_remove_match_string_non_blocking (Connection *self, PyObject *args)
+Bus_remove_match_string_non_blocking(Connection *self, PyObject *args)
 {
     const char *rule;
 
     if (!PyArg_ParseTuple(args, "s:remove_match", &rule)) return NULL;
     Py_BEGIN_ALLOW_THREADS
-    dbus_bus_remove_match (self->conn, rule, NULL);
+    dbus_bus_remove_match(self->conn, rule, NULL);
     Py_END_ALLOW_THREADS
     Py_RETURN_NONE;
 }
@@ -399,18 +399,18 @@ static PyTypeObject BusType = {
 };
 
 dbus_bool_t
-dbus_py_init_bus_types (void)
+dbus_py_init_bus_types(void)
 {
     BusType.tp_base = &DBusPyConnection_Type;
-    if (PyType_Ready (&BusType) < 0) return 0;
+    if (PyType_Ready(&BusType) < 0) return 0;
     return 1;
 }
 
 dbus_bool_t
-dbus_py_insert_bus_types (PyObject *this_module)
+dbus_py_insert_bus_types(PyObject *this_module)
 {
-    if (PyModule_AddObject (this_module, "BusImplementation",
-                            (PyObject *)&BusType) < 0) return 0;
+    if (PyModule_AddObject(this_module, "BusImplementation",
+                           (PyObject *)&BusType) < 0) return 0;
     return 1;
 }
 

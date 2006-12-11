@@ -29,7 +29,7 @@
 static PyTypeObject MessageType, SignalMessageType, ErrorMessageType;
 static PyTypeObject MethodReturnMessageType, MethodCallMessageType;
 
-static inline int Message_Check (PyObject *o)
+static inline int Message_Check(PyObject *o)
 {
     return (o->ob_type == &MessageType)
             || PyObject_IsInstance(o, (PyObject *)&MessageType);
@@ -47,22 +47,22 @@ DBusPy_RaiseUnusableMessage(void)
 PyDoc_STRVAR(Message_tp_doc,
 "A message to be sent or received over a D-Bus Connection.\n");
 
-static void Message_tp_dealloc (Message *self)
+static void Message_tp_dealloc(Message *self)
 {
     if (self->msg) {
-        dbus_message_unref (self->msg);
+        dbus_message_unref(self->msg);
     }
-    self->ob_type->tp_free ((PyObject *)self);
+    self->ob_type->tp_free((PyObject *)self);
 }
 
 static PyObject *
-Message_tp_new (PyTypeObject *type,
-                PyObject *args UNUSED,
-                PyObject *kwargs UNUSED)
+Message_tp_new(PyTypeObject *type,
+               PyObject *args UNUSED,
+               PyObject *kwargs UNUSED)
 {
     Message *self;
 
-    self = (Message *)type->tp_alloc (type, 0);
+    self = (Message *)type->tp_alloc(type, 0);
     if (!self) return NULL;
     self->msg = NULL;
     return (PyObject *)self;
@@ -72,14 +72,14 @@ PyDoc_STRVAR(MethodCallMessage_tp_doc, "A method-call message.\n\n"
 "MethodCallMessage(destination: str or None, path: str,\n"
 "                  interface: str or None, method: str)\n");
 static int
-MethodCallMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
+MethodCallMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 {
     const char *destination, *path, *interface, *method;
     static char *kwlist[] = {"destination", "path", "interface", "method", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords (args, kwargs, "zszs:__init__", kwlist,
-                                      &destination, &path, &interface,
-                                      &method)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "zszs:__init__", kwlist,
+                                     &destination, &path, &interface,
+                                     &method)) {
         return -1;
     }
     if (destination && !dbus_py_validate_bus_name(destination, 1, 1)) return -1;
@@ -87,11 +87,11 @@ MethodCallMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
     if (interface && !dbus_py_validate_interface_name(interface)) return -1;
     if (!dbus_py_validate_member_name(method)) return -1;
     if (self->msg) {
-        dbus_message_unref (self->msg);
+        dbus_message_unref(self->msg);
         self->msg = NULL;
     }
-    self->msg = dbus_message_new_method_call (destination, path, interface,
-                                              method);
+    self->msg = dbus_message_new_method_call(destination, path, interface,
+                                             method);
     if (!self->msg) {
         PyErr_NoMemory();
         return -1;
@@ -102,20 +102,20 @@ MethodCallMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
 PyDoc_STRVAR(MethodReturnMessage_tp_doc, "A method-return message.\n\n"
 "MethodReturnMessage(method_call: MethodCallMessage)\n");
 static int
-MethodReturnMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
+MethodReturnMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 {
     Message *other;
     static char *kwlist[] = {"method_call", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords (args, kwargs, "O!:__init__", kwlist,
-                                      &MessageType, &other)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!:__init__", kwlist,
+                                     &MessageType, &other)) {
         return -1;
     }
     if (self->msg) {
-        dbus_message_unref (self->msg);
+        dbus_message_unref(self->msg);
         self->msg = NULL;
     }
-    self->msg = dbus_message_new_method_return (other->msg);
+    self->msg = dbus_message_new_method_return(other->msg);
     if (!self->msg) {
         PyErr_NoMemory();
         return -1;
@@ -126,12 +126,12 @@ MethodReturnMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
 PyDoc_STRVAR(SignalMessage_tp_doc, "A signal message.\n\n"
 "SignalMessage(path: str, interface: str, method: str)\n");
 static int
-SignalMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
+SignalMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 {
     const char *path, *interface, *name;
     static char *kwlist[] = {"path", "interface", "name", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords (args, kwargs, "sss:__init__", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sss:__init__", kwlist,
                                     &path, &interface, &name)) {
       return -1;
     }
@@ -139,10 +139,10 @@ SignalMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
     if (!dbus_py_validate_interface_name(interface)) return -1;
     if (!dbus_py_validate_member_name(name)) return -1;
     if (self->msg) {
-        dbus_message_unref (self->msg);
+        dbus_message_unref(self->msg);
         self->msg = NULL;
     }
-    self->msg = dbus_message_new_signal (path, interface, name);
+    self->msg = dbus_message_new_signal(path, interface, name);
     if (!self->msg) {
         PyErr_NoMemory();
         return -1;
@@ -154,23 +154,23 @@ PyDoc_STRVAR(ErrorMessage_tp_doc, "An error message.\n\n"
 "ErrorMessage(reply_to: Message, error_name: str,\n"
 "             error_message: str or None)\n");
 static int
-ErrorMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
+ErrorMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 {
     Message *reply_to;
     const char *error_name, *error_message;
     static char *kwlist[] = {"reply_to", "error_name", "error_message", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords (args, kwargs, "O!sz:__init__", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!sz:__init__", kwlist,
                                       &MessageType, &reply_to, &error_name,
                                       &error_message)) {
         return -1;
     }
     if (!dbus_py_validate_error_name(error_name)) return -1;
     if (self->msg) {
-        dbus_message_unref (self->msg);
+        dbus_message_unref(self->msg);
         self->msg = NULL;
     }
-    self->msg = dbus_message_new_error (reply_to->msg, error_name, error_message);
+    self->msg = dbus_message_new_error(reply_to->msg, error_name, error_message);
     if (!self->msg) {
         PyErr_NoMemory();
         return -1;
@@ -181,8 +181,8 @@ ErrorMessage_tp_init (Message *self, PyObject *args, PyObject *kwargs)
 DBusMessage *
 DBusPyMessage_BorrowDBusMessage(PyObject *msg)
 {
-    if (!Message_Check (msg)) {
-        PyErr_SetString (PyExc_TypeError,
+    if (!Message_Check(msg)) {
+        PyErr_SetString(PyExc_TypeError,
                        "A _dbus_bindings.Message instance is required");
         return NULL;
     }
@@ -199,7 +199,7 @@ DBusPyMessage_ConsumeDBusMessage(DBusMessage *msg)
     PyTypeObject *type;
     Message *self;
 
-    switch (dbus_message_get_type (msg)) {
+    switch (dbus_message_get_type(msg)) {
     case DBUS_MESSAGE_TYPE_METHOD_CALL:
         type = &MethodCallMessageType;
         break;
@@ -229,7 +229,7 @@ PyDoc_STRVAR(Message_copy__doc__,
 "message.copy() -> Message (or subclass)\n"
 "Deep-copy the message, resetting the serial number to zero.\n");
 static PyObject *
-Message_copy (Message *self, PyObject *args UNUSED)
+Message_copy(Message *self, PyObject *args UNUSED)
 {
     DBusMessage *msg;
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
@@ -243,10 +243,10 @@ PyDoc_STRVAR(Message_get_auto_start__doc__,
 "Return true if this message will cause an owner for the destination name\n"
 "to be auto-started.\n");
 static PyObject *
-Message_get_auto_start (Message *self, PyObject *unused UNUSED)
+Message_get_auto_start(Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyBool_FromLong (dbus_message_get_auto_start (self->msg));
+    return PyBool_FromLong(dbus_message_get_auto_start(self->msg));
 }
 
 PyDoc_STRVAR(Message_set_auto_start__doc__,
@@ -254,12 +254,12 @@ PyDoc_STRVAR(Message_set_auto_start__doc__,
 "Set whether this message will cause an owner for the destination name\n"
 "to be auto-started.\n");
 static PyObject *
-Message_set_auto_start (Message *self, PyObject *args)
+Message_set_auto_start(Message *self, PyObject *args)
 {
     int value;
-    if (!PyArg_ParseTuple (args, "i", &value)) return NULL;
+    if (!PyArg_ParseTuple(args, "i", &value)) return NULL;
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    dbus_message_set_auto_start (self->msg, value ? TRUE : FALSE);
+    dbus_message_set_auto_start(self->msg, value ? TRUE : FALSE);
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -268,22 +268,22 @@ PyDoc_STRVAR(Message_get_no_reply__doc__,
 "message.get_no_reply() -> bool\n"
 "Return true if this message need not be replied to.\n");
 static PyObject *
-Message_get_no_reply (Message *self, PyObject *unused UNUSED)
+Message_get_no_reply(Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyBool_FromLong (dbus_message_get_no_reply (self->msg));
+    return PyBool_FromLong(dbus_message_get_no_reply(self->msg));
 }
 
 PyDoc_STRVAR(Message_set_no_reply__doc__,
 "message.set_no_reply(bool) -> None\n"
 "Set whether no reply to this message is required.\n");
 static PyObject *
-Message_set_no_reply (Message *self, PyObject *args)
+Message_set_no_reply(Message *self, PyObject *args)
 {
     int value;
-    if (!PyArg_ParseTuple (args, "i", &value)) return NULL;
+    if (!PyArg_ParseTuple(args, "i", &value)) return NULL;
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    dbus_message_set_no_reply (self->msg, value ? TRUE : FALSE);
+    dbus_message_set_no_reply(self->msg, value ? TRUE : FALSE);
     Py_RETURN_NONE;
 }
 
@@ -291,23 +291,23 @@ PyDoc_STRVAR(Message_get_reply_serial__doc__,
 "message.get_reply_serial() -> long\n"
 "Returns the serial that the message is a reply to or 0 if none.\n");
 static PyObject *
-Message_get_reply_serial (Message *self, PyObject *unused UNUSED)
+Message_get_reply_serial(Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyLong_FromUnsignedLong (dbus_message_get_reply_serial (self->msg));
+    return PyLong_FromUnsignedLong(dbus_message_get_reply_serial(self->msg));
 }
 
 PyDoc_STRVAR(Message_set_reply_serial__doc__,
 "message.set_reply_serial(bool) -> None\n"
 "Set the serial that this message is a reply to.\n");
 static PyObject *
-Message_set_reply_serial (Message *self, PyObject *args)
+Message_set_reply_serial(Message *self, PyObject *args)
 {
     dbus_uint32_t value;
 
-    if (!PyArg_ParseTuple (args, "k", &value)) return NULL;
+    if (!PyArg_ParseTuple(args, "k", &value)) return NULL;
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    if (!dbus_message_set_reply_serial (self->msg, value)) {
+    if (!dbus_message_set_reply_serial(self->msg, value)) {
         return PyErr_NoMemory();
     }
     Py_INCREF(Py_None);
@@ -318,10 +318,10 @@ PyDoc_STRVAR(Message_get_type__doc__,
 "message.get_type() -> int\n\n"
 "Returns the type of the message.\n");
 static PyObject *
-Message_get_type (Message *self, PyObject *unused UNUSED)
+Message_get_type(Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyInt_FromLong (dbus_message_get_type (self->msg));
+    return PyInt_FromLong(dbus_message_get_type(self->msg));
 }
 
 PyDoc_STRVAR(Message_get_serial__doc__,
@@ -333,16 +333,16 @@ PyDoc_STRVAR(Message_get_serial__doc__,
 "received on a connection will have a serial, but messages you haven't\n"
 "sent yet may return 0.\n");
 static PyObject *
-Message_get_serial (Message *self, PyObject *unused UNUSED)
+Message_get_serial(Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyLong_FromUnsignedLong (dbus_message_get_serial (self->msg));
+    return PyLong_FromUnsignedLong(dbus_message_get_serial(self->msg));
 }
 
 PyDoc_STRVAR(Message_is_method_call__doc__,
 "is_method_call(interface: str, member: str) -> bool");
 static PyObject *
-Message_is_method_call (Message *self, PyObject *args)
+Message_is_method_call(Message *self, PyObject *args)
 {
     const char *interface, *method;
 
@@ -350,14 +350,14 @@ Message_is_method_call (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyBool_FromLong (dbus_message_is_method_call (self->msg, interface,
-                                                         method));
+    return PyBool_FromLong(dbus_message_is_method_call(self->msg, interface,
+                                                       method));
 }
 
 PyDoc_STRVAR(Message_is_error__doc__,
 "is_error(error: str) -> bool");
 static PyObject *
-Message_is_error (Message *self, PyObject *args)
+Message_is_error(Message *self, PyObject *args)
 {
     const char *error_name;
 
@@ -365,13 +365,13 @@ Message_is_error (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyBool_FromLong (dbus_message_is_error (self->msg, error_name));
+    return PyBool_FromLong(dbus_message_is_error(self->msg, error_name));
 }
 
 PyDoc_STRVAR(Message_is_signal__doc__,
 "is_signal(interface: str, member: str) -> bool");
 static PyObject *
-Message_is_signal (Message *self, PyObject *args)
+Message_is_signal(Message *self, PyObject *args)
 {
     const char *interface, *signal_name;
 
@@ -379,19 +379,19 @@ Message_is_signal (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyBool_FromLong (dbus_message_is_signal (self->msg, interface,
+    return PyBool_FromLong(dbus_message_is_signal(self->msg, interface,
                                                     signal_name));
 }
 
 PyDoc_STRVAR(Message_get_member__doc__,
 "get_member() -> str or None");
 static PyObject *
-Message_get_member (Message *self, PyObject *unused UNUSED)
+Message_get_member(Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    c_str = dbus_message_get_member (self->msg);
+    c_str = dbus_message_get_member(self->msg);
     if (!c_str) {
         Py_RETURN_NONE;
     }
@@ -401,7 +401,7 @@ Message_get_member (Message *self, PyObject *unused UNUSED)
 PyDoc_STRVAR(Message_has_member__doc__,
 "has_member(name: str or None) -> bool");
 static PyObject *
-Message_has_member (Message *self, PyObject *args)
+Message_has_member(Message *self, PyObject *args)
 {
     const char *name;
 
@@ -409,13 +409,13 @@ Message_has_member (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyBool_FromLong (dbus_message_has_member(self->msg, name));
+    return PyBool_FromLong(dbus_message_has_member(self->msg, name));
 }
 
 PyDoc_STRVAR(Message_set_member__doc__,
 "set_member(unique_name: str or None)");
 static PyObject *
-Message_set_member (Message *self, PyObject *args)
+Message_set_member(Message *self, PyObject *args)
 {
     const char *name;
 
@@ -424,7 +424,7 @@ Message_set_member (Message *self, PyObject *args)
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
     if (!dbus_py_validate_member_name(name)) return NULL;
-    if (!dbus_message_set_member (self->msg, name)) return PyErr_NoMemory();
+    if (!dbus_message_set_member(self->msg, name)) return PyErr_NoMemory();
     Py_RETURN_NONE;
 }
 
@@ -434,12 +434,12 @@ PyDoc_STRVAR(Message_get_path__doc__,
 "source object path (if it's a method reply or a signal) or None (if it\n"
 "has no path).\n");
 static PyObject *
-Message_get_path (Message *self, PyObject *unused UNUSED)
+Message_get_path(Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
   
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    c_str = dbus_message_get_path (self->msg);
+    c_str = dbus_message_get_path(self->msg);
     if (!c_str) {
         Py_RETURN_NONE;
     }
@@ -451,48 +451,48 @@ PyDoc_STRVAR(Message_get_path_decomposed__doc__,
 "Return a list of path components (e.g. /foo/bar -> ['foo','bar'], / -> [])\n"
 "or None if the message has no associated path.\n");
 static PyObject *
-Message_get_path_decomposed (Message *self, PyObject *unused UNUSED)
+Message_get_path_decomposed(Message *self, PyObject *unused UNUSED)
 {
     char **paths, **ptr;
     PyObject *ret = PyList_New(0);
 
     if (!ret) return NULL;
     if (!self->msg) {
-        Py_DECREF (ret);
-        return DBusPy_RaiseUnusableMessage ();
+        Py_DECREF(ret);
+        return DBusPy_RaiseUnusableMessage();
     }
-    if (!dbus_message_get_path_decomposed (self->msg, &paths)) {
-        Py_DECREF (ret);
-        return PyErr_NoMemory ();
+    if (!dbus_message_get_path_decomposed(self->msg, &paths)) {
+        Py_DECREF(ret);
+        return PyErr_NoMemory();
     }
     if (!paths) {
         Py_DECREF(ret);
         Py_RETURN_NONE;
     }
     for (ptr = paths; *ptr; ptr++) {
-        PyObject *str = PyString_FromString (*ptr);
+        PyObject *str = PyString_FromString(*ptr);
 
         if (!str) {
-            Py_DECREF (ret);
+            Py_DECREF(ret);
             ret = NULL;
             break;
         }
-        if (PyList_Append (ret, str) < 0) {
-            Py_DECREF (ret);
+        if (PyList_Append(ret, str) < 0) {
+            Py_DECREF(ret);
             ret = NULL;
             break;
         }
-        Py_DECREF (str);
+        Py_DECREF(str);
         str = NULL;
     }
-    dbus_free_string_array (paths);
+    dbus_free_string_array(paths);
     return ret;
 }
 
 PyDoc_STRVAR(Message_has_path__doc__,
 "has_path(name: str or None) -> bool");
 static PyObject *
-Message_has_path (Message *self, PyObject *args)
+Message_has_path(Message *self, PyObject *args)
 {
     const char *name;
 
@@ -500,13 +500,13 @@ Message_has_path (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyBool_FromLong (dbus_message_has_path(self->msg, name));
+    return PyBool_FromLong(dbus_message_has_path(self->msg, name));
 }
 
 PyDoc_STRVAR(Message_set_path__doc__,
 "set_path(name: str or None)");
 static PyObject *
-Message_set_path (Message *self, PyObject *args)
+Message_set_path(Message *self, PyObject *args)
 {
     const char *name;
 
@@ -519,12 +519,12 @@ Message_set_path (Message *self, PyObject *args)
 PyDoc_STRVAR(Message_get_signature__doc__,
 "get_signature() -> Signature or None");
 static PyObject *
-Message_get_signature (Message *self, PyObject *unused UNUSED)
+Message_get_signature(Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    c_str = dbus_message_get_signature (self->msg);
+    c_str = dbus_message_get_signature(self->msg);
     if (!c_str) {
         return PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s)", "");
     }
@@ -534,7 +534,7 @@ Message_get_signature (Message *self, PyObject *unused UNUSED)
 PyDoc_STRVAR(Message_has_signature__doc__,
 "has_signature(signature: str) -> bool");
 static PyObject *
-Message_has_signature (Message *self, PyObject *args)
+Message_has_signature(Message *self, PyObject *args)
 {
     const char *name;
 
@@ -542,19 +542,19 @@ Message_has_signature (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyBool_FromLong (dbus_message_has_signature (self->msg, name));
+    return PyBool_FromLong(dbus_message_has_signature(self->msg, name));
 }
 
 PyDoc_STRVAR(Message_get_sender__doc__,
 "get_sender() -> str or None\n\n"
 "Return the message's sender unique name, or None if none.\n");
 static PyObject *
-Message_get_sender (Message *self, PyObject *unused UNUSED)
+Message_get_sender(Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    c_str = dbus_message_get_sender (self->msg);
+    c_str = dbus_message_get_sender(self->msg);
     if (!c_str) {
         Py_RETURN_NONE;
     }
@@ -564,7 +564,7 @@ Message_get_sender (Message *self, PyObject *unused UNUSED)
 PyDoc_STRVAR(Message_has_sender__doc__,
 "has_sender(unique_name: str) -> bool");
 static PyObject *
-Message_has_sender (Message *self, PyObject *args)
+Message_has_sender(Message *self, PyObject *args)
 {
   const char *name;
 
@@ -572,13 +572,13 @@ Message_has_sender (Message *self, PyObject *args)
       return NULL;
   }
   if (!self->msg) return DBusPy_RaiseUnusableMessage();
-  return PyBool_FromLong (dbus_message_has_sender (self->msg, name));
+  return PyBool_FromLong(dbus_message_has_sender(self->msg, name));
 }
 
 PyDoc_STRVAR(Message_set_sender__doc__,
 "set_sender(unique_name: str or None)");
 static PyObject *
-Message_set_sender (Message *self, PyObject *args)
+Message_set_sender(Message *self, PyObject *args)
 {
     const char *name;
 
@@ -587,7 +587,7 @@ Message_set_sender (Message *self, PyObject *args)
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
     if (!dbus_py_validate_bus_name(name, 1, 0)) return NULL;
-    if (!dbus_message_set_sender (self->msg, name)) return PyErr_NoMemory();
+    if (!dbus_message_set_sender(self->msg, name)) return PyErr_NoMemory();
     Py_RETURN_NONE;
 }
 
@@ -610,7 +610,7 @@ Message_get_destination(Message *self, PyObject *unused UNUSED)
 PyDoc_STRVAR(Message_has_destination__doc__,
 "has_destination(bus_name: str) -> bool");
 static PyObject *
-Message_has_destination (Message *self, PyObject *args)
+Message_has_destination(Message *self, PyObject *args)
 {
     const char *name;
 
@@ -618,13 +618,13 @@ Message_has_destination (Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyBool_FromLong (dbus_message_has_destination (self->msg, name));
+    return PyBool_FromLong(dbus_message_has_destination(self->msg, name));
 }
 
 PyDoc_STRVAR(Message_set_destination__doc__,
 "set_destination(bus_name: str or None)");
 static PyObject *
-Message_set_destination (Message *self, PyObject *args)
+Message_set_destination(Message *self, PyObject *args)
 {
     const char *name;
 
@@ -633,19 +633,19 @@ Message_set_destination (Message *self, PyObject *args)
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
     if (!dbus_py_validate_bus_name(name, 1, 1)) return NULL;
-    if (!dbus_message_set_destination (self->msg, name)) return PyErr_NoMemory();
+    if (!dbus_message_set_destination(self->msg, name)) return PyErr_NoMemory();
     Py_RETURN_NONE;
 }
 
 PyDoc_STRVAR(Message_get_interface__doc__,
 "get_interface() -> str or None");
 static PyObject *
-Message_get_interface (Message *self, PyObject *unused UNUSED)
+Message_get_interface(Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    c_str = dbus_message_get_interface (self->msg);
+    c_str = dbus_message_get_interface(self->msg);
     if (!c_str) {
         Py_RETURN_NONE;
     }
@@ -663,13 +663,13 @@ Message_has_interface(Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyBool_FromLong(dbus_message_has_interface (self->msg, name));
+    return PyBool_FromLong(dbus_message_has_interface(self->msg, name));
 }
 
 PyDoc_STRVAR(Message_set_interface__doc__,
 "set_interface(name: str or None)");
 static PyObject *
-Message_set_interface (Message *self, PyObject *args)
+Message_set_interface(Message *self, PyObject *args)
 {
     const char *name;
 
@@ -678,19 +678,19 @@ Message_set_interface (Message *self, PyObject *args)
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
     if (!dbus_py_validate_interface_name(name)) return NULL;
-    if (!dbus_message_set_interface (self->msg, name)) return PyErr_NoMemory();
+    if (!dbus_message_set_interface(self->msg, name)) return PyErr_NoMemory();
     Py_RETURN_NONE;
 }
 
 PyDoc_STRVAR(Message_get_error_name__doc__,
 "get_error_name() -> str or None");
 static PyObject *
-Message_get_error_name (Message *self, PyObject *unused UNUSED)
+Message_get_error_name(Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
 
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    c_str = dbus_message_get_error_name (self->msg);
+    c_str = dbus_message_get_error_name(self->msg);
     if (!c_str) {
         Py_RETURN_NONE;
     }
