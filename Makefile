@@ -17,6 +17,12 @@ build: warning
 	rm -rf build/lib.*/*.so build/temp.*
 	CFLAGS="$(CFLAGS)" $(PYTHON) setup.py build --debug
 
+quick: warning
+	CFLAGS="$(CFLAGS)" $(PYTHON) setup.py build --debug
+
+check: warning
+	CFLAGS="$(CFLAGS)" $(PYTHON) setup.py check
+
 # This assumes you've only built for one architecture.
 docs: build
 	cd $(shell echo build/lib.*) && PYTHONPATH=. \

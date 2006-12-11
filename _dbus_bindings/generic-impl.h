@@ -48,8 +48,8 @@ Glue_tp_hash_by_pointer(PyObject *self)
     return (hash == -1L ? -2L : hash);
 }
 
-static int
-Glue_immutable_setattro(PyObject *obj UNUSED,
+int
+dbus_py_immutable_setattro(PyObject *obj UNUSED,
                         PyObject *name UNUSED,
                         PyObject *value UNUSED)
 {

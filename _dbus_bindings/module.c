@@ -38,12 +38,6 @@ PyDoc_STRVAR(module_doc,
 
 #include "generic-impl.h"            /* Non D-Bus support code */
 #include "validation-impl.h"         /* Interface name, etc., validation */
-#include "abstract-impl.h"           /* DBusPythonInt, etc. */
-#include "signature-impl.h"          /* Signature and its custom iterator */
-#include "types-impl.h"              /* Boolean, IntNN, UIntNN, ObjectPath */
-#include "floattypes-impl.h"         /* Float, Double */
-#include "containers-impl.h"         /* Array, Dict, Variant */
-#include "bytes-impl.h"              /* Byte, ByteArray */
 #include "mainloop-impl.h"           /* NativeMainLoop */
 
 static PyMethodDef module_functions[] = {
@@ -74,12 +68,13 @@ init_dbus_bindings(void)
 
     if (!init_generic()) return;
     if (!dbus_py_init_exception_types()) return;
-    if (!init_abstract()) return;
-    if (!init_signature()) return;
-    if (!init_types()) return;
-    if (!init_float_types()) return;
-    if (!init_container_types()) return;
-    if (!init_byte_types()) return;
+    if (!dbus_py_init_abstract()) return;
+    if (!dbus_py_init_signature()) return;
+    if (!dbus_py_init_int_types()) return;
+    if (!dbus_py_init_string_types()) return;
+    if (!dbus_py_init_float_types()) return;
+    if (!dbus_py_init_container_types()) return;
+    if (!dbus_py_init_byte_types()) return;
     if (!dbus_py_init_message_types()) return;
     if (!dbus_py_init_pending_call()) return;
     if (!init_mainloop()) return;
@@ -90,12 +85,13 @@ init_dbus_bindings(void)
     if (!this_module) return;
 
     if (!dbus_py_insert_exception_types(this_module)) return;
-    if (!insert_abstract_types(this_module)) return;
-    if (!insert_signature(this_module)) return;
-    if (!insert_types(this_module)) return;
-    if (!insert_float_types(this_module)) return;
-    if (!insert_container_types(this_module)) return;
-    if (!insert_byte_types(this_module)) return;
+    if (!dbus_py_insert_abstract_types(this_module)) return;
+    if (!dbus_py_insert_signature(this_module)) return;
+    if (!dbus_py_insert_int_types(this_module)) return;
+    if (!dbus_py_insert_string_types(this_module)) return;
+    if (!dbus_py_insert_float_types(this_module)) return;
+    if (!dbus_py_insert_container_types(this_module)) return;
+    if (!dbus_py_insert_byte_types(this_module)) return;
     if (!dbus_py_insert_message_types(this_module)) return;
     if (!dbus_py_insert_pending_call(this_module)) return;
     if (!insert_mainloop_types(this_module)) return;

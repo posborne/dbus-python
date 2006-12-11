@@ -22,6 +22,14 @@
  *
  */
 
+#include <Python.h>
+#include <structmember.h>
+
+#include <stdint.h>
+
+#include "dbus_bindings-internal.h"
+#include "types-internal.h"
+
 /* Array ============================================================ */
 
 PyDoc_STRVAR(Array_tp_doc,
@@ -551,7 +559,7 @@ PyTypeObject DBusPyStruct_Type = {
     0,                                      /* tp_call */
     0,                                      /* tp_str */
     PyObject_GenericGetAttr,                /* tp_getattro */
-    Glue_immutable_setattro,                /* tp_setattro */
+    dbus_py_immutable_setattro,             /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
     Struct_tp_doc,                          /* tp_doc */
@@ -574,8 +582,8 @@ PyTypeObject DBusPyStruct_Type = {
     Struct_tp_new,                          /* tp_new */
 };
 
-static inline int
-init_container_types(void)
+dbus_bool_t
+dbus_py_init_container_types(void)
 {
     DBusPyArray_Type.tp_base = &PyList_Type;
     if (PyType_Ready(&DBusPyArray_Type) < 0) return 0;
@@ -596,8 +604,8 @@ init_container_types(void)
     return 1;
 }
 
-static inline int
-insert_container_types(PyObject *this_module)
+dbus_bool_t
+dbus_py_insert_container_types(PyObject *this_module)
 {
     Py_INCREF(&DBusPyArray_Type);
     if (PyModule_AddObject(this_module, "Array",

@@ -22,12 +22,13 @@
  *
  */
 
-#ifndef DBUS_BINDINGS_TYPES_INTERNAL_H
-#define DBUS_BINDINGS_TYPES_INTERNAL_H
-
+#include <Python.h>
 #include <stdint.h>
 
 #include "dbus_bindings-internal.h"
+
+#ifndef DBUS_BINDINGS_TYPES_INTERNAL_H
+#define DBUS_BINDINGS_TYPES_INTERNAL_H
 
 extern PyTypeObject DBusPyIntBase_Type;
 DEFINE_CHECK(DBusPyIntBase)
@@ -64,7 +65,8 @@ dbus_uint64_t dbus_py_uint64_range_check(PyObject *);
 #   undef DBUS_PYTHON_64_BIT_WORKS
 #endif /* defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG) */
 
-PyObject *dbus_py_variant_level_const, *dbus_py_signature_const;
+extern PyObject *dbus_py_variant_level_const;
+extern PyObject *dbus_py_signature_const;
 
 typedef struct {
     PyListObject super;

@@ -22,6 +22,12 @@
  *
  */
 
+#include <Python.h>
+#include <structmember.h>
+
+#include <stdint.h>
+
+#include "dbus_bindings-internal.h"
 #include "types-internal.h"
 
 /* Support code for int subclasses. ================================== */
@@ -313,7 +319,7 @@ PyTypeObject DBusPyStrBase_Type = {
     0,                                      /* tp_call */
     0,                                      /* tp_str */
     PyObject_GenericGetAttr,                /* tp_getattro */
-    Glue_immutable_setattro,                /* tp_setattro */
+    dbus_py_immutable_setattro,             /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
     "",                                     /* tp_doc */
@@ -416,7 +422,7 @@ PyTypeObject DBusPyLongBase_Type = {
     0,                                      /* tp_call */
     0,                                      /* tp_str */
     PyObject_GenericGetAttr,                /* tp_getattro */
-    Glue_immutable_setattro,                /* tp_setattro */
+    dbus_py_immutable_setattro,             /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
     "",                                     /* tp_doc */
@@ -439,8 +445,11 @@ PyTypeObject DBusPyLongBase_Type = {
     DBusPythonLong_tp_new,                  /* tp_new */
 };
 
-static inline int
-init_abstract(void)
+PyObject *dbus_py_variant_level_const = NULL;
+PyObject *dbus_py_signature_const = NULL;
+
+dbus_bool_t
+dbus_py_init_abstract(void)
 {
     dbus_py_variant_level_const = PyString_InternFromString("variant_level");
     if (!dbus_py_variant_level_const) return 0;
@@ -479,8 +488,8 @@ init_abstract(void)
     return 1;
 }
 
-static inline int
-insert_abstract_types(PyObject *this_module)
+dbus_bool_t
+dbus_py_insert_abstract_types(PyObject *this_module)
 {
     Py_INCREF(&DBusPyIntBase_Type);
     Py_INCREF(&DBusPyLongBase_Type);

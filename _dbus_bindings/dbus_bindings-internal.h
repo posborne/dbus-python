@@ -87,9 +87,24 @@ DEFINE_CHECK(DBusPyUInt32)
 extern PyTypeObject DBusPyInt64_Type, DBusPyUInt64_Type;
 DEFINE_CHECK(DBusPyInt64)
 DEFINE_CHECK(DBusPyUInt64)
+extern dbus_bool_t dbus_py_init_abstract(void);
+extern dbus_bool_t dbus_py_init_signature(void);
+extern dbus_bool_t dbus_py_init_int_types(void);
+extern dbus_bool_t dbus_py_init_string_types(void);
+extern dbus_bool_t dbus_py_init_float_types(void);
+extern dbus_bool_t dbus_py_init_container_types(void);
+extern dbus_bool_t dbus_py_init_byte_types(void);
+extern dbus_bool_t dbus_py_insert_abstract_types(PyObject *this_module);
+extern dbus_bool_t dbus_py_insert_signature(PyObject *this_module);
+extern dbus_bool_t dbus_py_insert_int_types(PyObject *this_module);
+extern dbus_bool_t dbus_py_insert_string_types(PyObject *this_module);
+extern dbus_bool_t dbus_py_insert_float_types(PyObject *this_module);
+extern dbus_bool_t dbus_py_insert_container_types(PyObject *this_module);
+extern dbus_bool_t dbus_py_insert_byte_types(PyObject *this_module);
 
 /* generic */
 extern void dbus_py_take_gil_and_xdecref(PyObject *);
+extern int dbus_py_immutable_setattro(PyObject *, PyObject *, PyObject *);
 extern PyObject *dbus_py_empty_tuple;
 
 /* message.c */

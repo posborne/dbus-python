@@ -22,6 +22,14 @@
  *
  */
 
+#include <Python.h>
+#include <structmember.h>
+
+#include <stdint.h>
+
+#include "dbus_bindings-internal.h"
+#include "types-internal.h"
+
 PyDoc_STRVAR(Byte_tp_doc,
 "Byte(integer or str of length 1[, variant_level])\n"
 "\n"
@@ -115,7 +123,7 @@ PyTypeObject DBusPyByte_Type = {
         0,                                      /* tp_getattr */
         0,                                      /* tp_setattr */
         0,                                      /* tp_compare */
-        DBusPythonInt_tp_repr,                  /* tp_repr */
+        0,                                      /* tp_repr */
         0,                                      /* tp_as_number */
         0,                                      /* tp_as_sequence */
         0,                                      /* tp_as_mapping */
@@ -253,8 +261,8 @@ PyTypeObject DBusPyByteArray_Type = {
         0,                                      /* tp_new */
 };
 
-static inline int
-init_byte_types(void)
+dbus_bool_t
+dbus_py_init_byte_types(void)
 {
     DBusPyByte_Type.tp_base = &DBusPyIntBase_Type;
     if (PyType_Ready(&DBusPyByte_Type) < 0) return 0;
@@ -267,8 +275,8 @@ init_byte_types(void)
     return 1;
 }
 
-static inline int
-insert_byte_types(PyObject *this_module)
+dbus_bool_t
+dbus_py_insert_byte_types(PyObject *this_module)
 {
     Py_INCREF(&DBusPyByte_Type);
     if (PyModule_AddObject(this_module, "Byte",
