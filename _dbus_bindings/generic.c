@@ -23,12 +23,14 @@
  *
  */
 
+#include "dbus_bindings-internal.h"
+
 PyObject *dbus_py_empty_tuple = NULL;
 
-static PyObject *
-Glue_tp_richcompare_by_pointer(PyObject *self,
-                               PyObject *other,
-                               int op)
+PyObject *
+dbus_py_tp_richcompare_by_pointer(PyObject *self,
+                                  PyObject *other,
+                                  int op)
 {
     if (op == Py_EQ || op == Py_NE) {
         if (self == other) {
@@ -41,8 +43,8 @@ Glue_tp_richcompare_by_pointer(PyObject *self,
     return NULL;
 }
 
-static long
-Glue_tp_hash_by_pointer(PyObject *self)
+long
+dbus_py_tp_hash_by_pointer(PyObject *self)
 {
     long hash = (long)self;
     return (hash == -1L ? -2L : hash);
@@ -67,8 +69,8 @@ dbus_py_take_gil_and_xdecref(PyObject *obj)
     PyGILState_Release(gil);
 }
 
-static inline int
-init_generic(void)
+dbus_bool_t
+dbus_py_init_generic(void)
 {
     dbus_py_empty_tuple = PyTuple_New(0);
     if (!dbus_py_empty_tuple) return 0;

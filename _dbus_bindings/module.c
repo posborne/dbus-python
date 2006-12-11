@@ -36,9 +36,186 @@ PyDoc_STRVAR(module_doc,
 ":NewField SupportedUsage: Supported usage\n"
 );
 
-#include "generic-impl.h"            /* Non D-Bus support code */
-#include "validation-impl.h"         /* Interface name, etc., validation */
-#include "mainloop-impl.h"           /* NativeMainLoop */
+/* Global functions - validation wrappers ===========================*/
+
+PyDoc_STRVAR(validate_bus_name__doc__,
+"validate_bus_name(name[, allow_unique=True[, allow_well_known=True]])\n"
+"\n"
+"Raise ValueError if the argument is not a valid bus name.\n"
+"\n"
+"By default both unique and well-known names are accepted.\n"
+"\n"
+":Parameters:\n"
+"   `name` : str\n"
+"       The name to be validated\n"
+"   `allow_unique` : bool\n"
+"       If False, unique names of the form :1.123 will be rejected\n"
+"   `allow_well_known` : bool\n"
+"       If False, well-known names of the form com.example.Foo\n"
+"       will be rejected\n"
+":Since: 0.80\n"
+);
+
+static PyObject *
+validate_bus_name(PyObject *unused UNUSED, PyObject *args, PyObject *kwargs)
+{
+    const char *name;
+    int allow_unique = 1;
+    int allow_well_known = 1;
+    static char *argnames[] = { "name", "allow_unique", "allow_well_known",
+                                NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs,
+                                     "s|ii:validate_bus_name", argnames,
+                                     &name, &allow_unique,
+                                     &allow_well_known)) {
+        return NULL;
+    }
+    if (!dbus_py_validate_bus_name(name, !!allow_unique, !!allow_well_known)) {
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
+PyDoc_STRVAR(validate_member_name__doc__,
+"validate_member_name(name)\n"
+"\n"
+"Raise ValueError if the argument is not a valid member (signal or method) "
+"name.\n"
+"\n"
+":Since: 0.80\n"
+);
+
+static PyObject *
+validate_member_name(PyObject *unused UNUSED, PyObject *args)
+{
+    const char *name;
+
+    if (!PyArg_ParseTuple(args, "s:validate_member_name", &name)) {
+        return NULL;
+    }
+    if (!dbus_py_validate_member_name(name)) {
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
+PyDoc_STRVAR(validate_interface_name__doc__,
+"validate_interface_name(name)\n\n"
+"Raise ValueError if the given string is not a valid interface name.\n"
+"\n"
+":Since: 0.80\n"
+);
+
+PyDoc_STRVAR(validate_error_name__doc__,
+"validate_error_name(name)\n\n"
+"Raise ValueError if the given string is not a valid error name.\n"
+"\n"
+":Since: 0.80\n"
+);
+
+static PyObject *
+validate_interface_name(PyObject *unused UNUSED, PyObject *args)
+{
+    const char *name;
+
+    if (!PyArg_ParseTuple(args, "s:validate_interface_name", &name)) {
+        return NULL;
+    }
+    if (!dbus_py_validate_interface_name(name)) {
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
+PyDoc_STRVAR(validate_object_path__doc__,
+"validate_object_path(name)\n\n"
+"Raise ValueError if the given string is not a valid object path.\n"
+"\n"
+":Since: 0.80\n"
+);
+
+static PyObject *
+validate_object_path(PyObject *unused UNUSED, PyObject *args)
+{
+    const char *name;
+
+    if (!PyArg_ParseTuple(args, "s:validate_object_path", &name)) {
+        return NULL;
+    }
+    if (!dbus_py_validate_object_path(name)) {
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
+/* Global functions - main loop =====================================*/
+
+/* The main loop if none is passed to the constructor */
+static PyObject *default_main_loop = NULL;
+
+/* Return a new reference to the default main loop */
+PyObject *
+dbus_py_get_default_main_loop(void)
+{
+    if (!default_main_loop) {
+        Py_RETURN_NONE;
+    }
+    Py_INCREF(default_main_loop);
+    return default_main_loop;
+}
+
+PyDoc_STRVAR(get_default_main_loop__doc__,
+"get_default_main_loop() -> object\n\n"
+"Return the global default dbus-python main loop wrapper, which is used\n"
+"when no main loop wrapper is passed to the Connection constructor.\n"
+"\n"
+"If None, there is no default and you must always pass the mainloop\n"
+"parameter to the constructor. This will be the case until\n"
+"set_default_main_loop is called.\n");
+static PyObject *
+get_default_main_loop(PyObject *always_null UNUSED,
+                      PyObject *no_args UNUSED)
+{
+    return dbus_py_get_default_main_loop();
+}
+
+PyDoc_STRVAR(set_default_main_loop__doc__,
+"set_default_main_loop(object)\n\n"
+"Change the global default dbus-python main loop wrapper, which is used\n"
+"when no main loop wrapper is passed to the Connection constructor.\n"
+"\n"
+"If None, return to the initial situation: there is no default, and you\n"
+"must always pass the mainloop parameter to the constructor.\n"
+"\n"
+"Two types of main loop wrapper are planned in dbus-python.\n"
+"Native main-loop wrappers are instances of dbus.mainloop.NativeMainLoop\n"
+"supplied by extension modules like `dbus.mainloop.glib`: they have no\n"
+"Python API, but connect themselves to ``libdbus`` using native code.\n"
+
+"Python main-loop wrappers are not yet implemented. They will be objects\n"
+"supporting the interface defined by `dbus.mainloop.MainLoop`, with an\n"
+"API entirely based on Python methods.\n"
+"\n"
+);
+static PyObject *
+set_default_main_loop(PyObject *always_null UNUSED,
+                      PyObject *args)
+{
+    PyObject *new_loop, *old_loop;
+
+    if (!PyArg_ParseTuple(args, "O", &new_loop)) {
+        return NULL;
+    }
+    if (!dbus_py_check_mainloop_sanity(new_loop)) {
+        return NULL;
+    }
+    old_loop = default_main_loop;
+    Py_INCREF(new_loop);
+    default_main_loop = new_loop;
+    Py_XDECREF(old_loop);
+    Py_RETURN_NONE;
+}
 
 static PyMethodDef module_functions[] = {
 #define ENTRY(name,flags) {#name, (PyCFunction)name, flags, name##__doc__}
@@ -66,7 +243,9 @@ init_dbus_bindings(void)
     dbus_bindings_API[1] = (void *)Connection_BorrowDBusConnection;
     dbus_bindings_API[2] = (void *)NativeMainLoop_New4;
 
-    if (!init_generic()) return;
+    default_main_loop = NULL;
+
+    if (!dbus_py_init_generic()) return;
     if (!dbus_py_init_exception_types()) return;
     if (!dbus_py_init_abstract()) return;
     if (!dbus_py_init_signature()) return;
@@ -77,7 +256,7 @@ init_dbus_bindings(void)
     if (!dbus_py_init_byte_types()) return;
     if (!dbus_py_init_message_types()) return;
     if (!dbus_py_init_pending_call()) return;
-    if (!init_mainloop()) return;
+    if (!dbus_py_init_mainloop()) return;
     if (!dbus_py_init_conn_types()) return;
     if (!dbus_py_init_bus_types()) return;
 
@@ -94,7 +273,7 @@ init_dbus_bindings(void)
     if (!dbus_py_insert_byte_types(this_module)) return;
     if (!dbus_py_insert_message_types(this_module)) return;
     if (!dbus_py_insert_pending_call(this_module)) return;
-    if (!insert_mainloop_types(this_module)) return;
+    if (!dbus_py_insert_mainloop_types(this_module)) return;
     if (!dbus_py_insert_conn_types(this_module)) return;
     if (!dbus_py_insert_bus_types(this_module)) return;
 

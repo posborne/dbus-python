@@ -22,6 +22,8 @@
  *
  */
 
+#include "dbus_bindings-internal.h"
+
 /* Watch ============================================================ */
 
 PyDoc_STRVAR(Watch_tp_doc,
@@ -183,7 +185,7 @@ static PyTypeObject Watch_Type = {
     0,                                      /* tp_as_number */
     0,                                      /* tp_as_sequence */
     0,                                      /* tp_as_mapping */
-    Glue_tp_hash_by_pointer,                /* tp_hash */
+    dbus_py_tp_hash_by_pointer,             /* tp_hash */
     0,                                      /* tp_call */
     0,                                      /* tp_str */
     0,                                      /* tp_getattro */
@@ -193,7 +195,7 @@ static PyTypeObject Watch_Type = {
     Watch_tp_doc,                           /* tp_doc */
     0,                                      /* tp_traverse */
     0,                                      /* tp_clear */
-    Glue_tp_richcompare_by_pointer,         /* tp_richcompare */
+    dbus_py_tp_richcompare_by_pointer,      /* tp_richcompare */
     0,                                      /* tp_weaklistoffset */
     0,                                      /* tp_iter */
     0,                                      /* tp_iternext */
@@ -337,7 +339,7 @@ static PyTypeObject Timeout_Type = {
     0,                                      /* tp_as_number */
     0,                                      /* tp_as_sequence */
     0,                                      /* tp_as_mapping */
-    Glue_tp_hash_by_pointer,                /* tp_hash */
+    dbus_py_tp_hash_by_pointer,             /* tp_hash */
     0,                                      /* tp_call */
     0,                                      /* tp_str */
     0,                                      /* tp_getattro */
@@ -347,7 +349,7 @@ static PyTypeObject Timeout_Type = {
     Timeout_tp_doc,                         /* tp_doc */
     0,                                      /* tp_traverse */
     0,                                      /* tp_clear */
-    Glue_tp_richcompare_by_pointer,         /* tp_richcompare */
+    dbus_py_tp_richcompare_by_pointer,      /* tp_richcompare */
     0,                                      /* tp_weaklistoffset */
     0,                                      /* tp_iter */
     0,                                      /* tp_iternext */
@@ -439,8 +441,8 @@ static PyTypeObject NativeMainLoop_Type = {
 
 /* Internal C API for Connection, Bus, Server ======================= */
 
-static dbus_bool_t
-check_mainloop_sanity(PyObject *mainloop)
+dbus_bool_t
+dbus_py_check_mainloop_sanity(PyObject *mainloop)
 {
     if (NativeMainLoop_Check(mainloop)) {
         return TRUE;
@@ -466,74 +468,6 @@ dbus_py_set_up_connection(PyObject *conn, PyObject *mainloop)
     PyErr_SetString(PyExc_TypeError,
                     "A dbus.mainloop.NativeMainLoop instance is required");
     return FALSE;
-}
-
-/* The main loop if none is passed to the constructor */
-static PyObject *default_main_loop;
-
-/* Return a new reference to the default main loop */
-PyObject *
-dbus_py_get_default_main_loop(void)
-{
-    if (!default_main_loop) {
-        Py_RETURN_NONE;
-    }
-    Py_INCREF(default_main_loop);
-    return default_main_loop;
-}
-
-/* Python API ======================================================= */
-
-PyDoc_STRVAR(get_default_main_loop__doc__,
-"get_default_main_loop() -> object\n\n"
-"Return the global default dbus-python main loop wrapper, which is used\n"
-"when no main loop wrapper is passed to the Connection constructor.\n"
-"\n"
-"If None, there is no default and you must always pass the mainloop\n"
-"parameter to the constructor. This will be the case until\n"
-"set_default_main_loop is called.\n");
-static PyObject *
-get_default_main_loop(PyObject *always_null UNUSED,
-                      PyObject *no_args UNUSED)
-{
-    return dbus_py_get_default_main_loop();
-}
-
-PyDoc_STRVAR(set_default_main_loop__doc__,
-"set_default_main_loop(object)\n\n"
-"Change the global default dbus-python main loop wrapper, which is used\n"
-"when no main loop wrapper is passed to the Connection constructor.\n"
-"\n"
-"If None, return to the initial situation: there is no default, and you\n"
-"must always pass the mainloop parameter to the constructor.\n"
-"\n"
-"Two types of main loop wrapper are planned in dbus-python.\n"
-"Native main-loop wrappers are instances of dbus.mainloop.NativeMainLoop\n"
-"supplied by extension modules like `dbus.mainloop.glib`: they have no\n"
-"Python API, but connect themselves to ``libdbus`` using native code.\n"
-
-"Python main-loop wrappers are not yet implemented. They will be objects\n"
-"supporting the interface defined by `dbus.mainloop.MainLoop`, with an\n"
-"API entirely based on Python methods.\n"
-"\n"
-);
-static PyObject *
-set_default_main_loop(PyObject *always_null UNUSED,
-                      PyObject *args)
-{
-    PyObject *new_loop, *old_loop;
-
-    if (!PyArg_ParseTuple(args, "O", &new_loop)) {
-        return NULL;
-    }
-    if (!check_mainloop_sanity(new_loop)) {
-        return NULL;
-    }
-    old_loop = default_main_loop;
-    Py_INCREF(new_loop);
-    default_main_loop = new_loop;
-    Py_XDECREF(old_loop);
-    Py_RETURN_NONE;
 }
 
 /* C API ============================================================ */
@@ -567,11 +501,9 @@ noop_main_loop_cb(void *conn_or_server UNUSED, void *data UNUSED)
 
 /* Initialization =================================================== */
 
-static inline int
-init_mainloop (void)
+dbus_bool_t
+dbus_py_init_mainloop(void)
 {
-    default_main_loop = NULL;
-
     if (PyType_Ready (&Watch_Type) < 0) return 0;
     if (PyType_Ready (&Timeout_Type) < 0) return 0;
     if (PyType_Ready (&NativeMainLoop_Type) < 0) return 0;
@@ -583,8 +515,8 @@ init_mainloop (void)
     return 1;
 }
 
-static inline int
-insert_mainloop_types (PyObject *this_module)
+dbus_bool_t
+dbus_py_insert_mainloop_types(PyObject *this_module)
 {
     PyObject *null_main_loop = DBusPyNativeMainLoop_New4(noop_conn_cb,
                                                          noop_server_cb,

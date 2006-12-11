@@ -24,6 +24,7 @@
  */
 
 #include "types-internal.h"
+#include "message-internal.h"
 
 /* Return the number of variants wrapping the given object. Return 0
  * if the object is not a D-Bus type.
@@ -54,7 +55,7 @@ get_variant_level(PyObject *obj)
     }
 }
 
-PyDoc_STRVAR(Message_append__doc__,
+char dbus_py_Message_append__doc__[] = (
 "set_args(*args[, **kwargs])\n\n"
 "Set the message's arguments from the positional parameter, according to\n"
 "the signature given by the ``signature`` keyword parameter.\n"
@@ -85,7 +86,7 @@ PyDoc_STRVAR(Message_append__doc__,
 "the static method `Message.guess_signature`.\n"
 );
 
-PyDoc_STRVAR(Message_guess_signature__doc__,
+char dbus_py_Message_guess_signature__doc__[] = (
 "guess_signature(*args) -> Signature [static method]\n\n"
 "Guess a D-Bus signature which should be used to encode the given\n"
 "Python objects.\n"
@@ -298,8 +299,8 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
     }
 }
 
-static PyObject *
-Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
+PyObject *
+dbus_py_Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
 {
     PyObject *tmp, *ret = NULL;
 
@@ -900,8 +901,8 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
 }
 
 
-static PyObject *
-Message_append(Message *self, PyObject *args, PyObject *kwargs)
+PyObject *
+dbus_py_Message_append(Message *self, PyObject *args, PyObject *kwargs)
 {
     const char *signature = NULL;
     PyObject *signature_obj = NULL;
@@ -910,7 +911,7 @@ Message_append(Message *self, PyObject *args, PyObject *kwargs)
     int i;
     static char *argnames[] = {"signature", NULL};
 
-    if (!self->msg) return DBusException_UnusableMessage ();
+    if (!self->msg) return DBusPy_RaiseUnusableMessage();
 
 #ifdef USING_DBG
     fprintf(stderr, "DBG/%ld: called Message_append(*", (long)getpid());
@@ -928,7 +929,7 @@ Message_append(Message *self, PyObject *args, PyObject *kwargs)
 
     if (!signature) {
         DBG("%s", "No signature for message, guessing...");
-        signature_obj = Message_guess_signature(NULL, args);
+        signature_obj = dbus_py_Message_guess_signature(NULL, args);
         if (!signature_obj) return NULL;
         signature = PyString_AS_STRING (signature_obj);
     }

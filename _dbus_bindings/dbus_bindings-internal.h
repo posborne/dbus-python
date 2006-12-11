@@ -105,7 +105,12 @@ extern dbus_bool_t dbus_py_insert_byte_types(PyObject *this_module);
 /* generic */
 extern void dbus_py_take_gil_and_xdecref(PyObject *);
 extern int dbus_py_immutable_setattro(PyObject *, PyObject *, PyObject *);
+extern PyObject *dbus_py_tp_richcompare_by_pointer(PyObject *,
+                                                   PyObject *,
+                                                   int);
+extern long dbus_py_tp_hash_by_pointer(PyObject *self);
 extern PyObject *dbus_py_empty_tuple;
+extern dbus_bool_t dbus_py_init_generic(void);
 
 /* message.c */
 extern DBusMessage *DBusPyMessage_BorrowDBusMessage(PyObject *msg);
@@ -123,6 +128,9 @@ extern dbus_bool_t dbus_py_insert_pending_call(PyObject *this_module);
 extern dbus_bool_t dbus_py_set_up_connection(PyObject *conn,
                                              PyObject *mainloop);
 extern PyObject *dbus_py_get_default_main_loop(void);
+extern dbus_bool_t dbus_py_check_mainloop_sanity(PyObject *);
+extern dbus_bool_t dbus_py_init_mainloop(void);
+extern dbus_bool_t dbus_py_insert_mainloop_types(PyObject *);
 
 /* validation.c */
 dbus_bool_t dbus_py_validate_bus_name(const char *name,

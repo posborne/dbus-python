@@ -22,6 +22,8 @@
  *
  */
 
+#include "dbus_bindings-internal.h"
+
 dbus_bool_t
 dbus_py_validate_bus_name(const char *name,
                           dbus_bool_t may_be_unique,
@@ -104,45 +106,6 @@ dbus_py_validate_bus_name(const char *name,
     return TRUE;
 }
 
-PyDoc_STRVAR(validate_bus_name__doc__,
-"validate_bus_name(name[, allow_unique=True[, allow_well_known=True]])\n"
-"\n"
-"Raise ValueError if the argument is not a valid bus name.\n"
-"\n"
-"By default both unique and well-known names are accepted.\n"
-"\n"
-":Parameters:\n"
-"   `name` : str\n"
-"       The name to be validated\n"
-"   `allow_unique` : bool\n"
-"       If False, unique names of the form :1.123 will be rejected\n"
-"   `allow_well_known` : bool\n"
-"       If False, well-known names of the form com.example.Foo\n"
-"       will be rejected\n"
-":Since: 0.80\n"
-);
-
-static PyObject *
-validate_bus_name(PyObject *unused UNUSED, PyObject *args, PyObject *kwargs)
-{
-    const char *name;
-    int allow_unique = 1;
-    int allow_well_known = 1;
-    static char *argnames[] = { "name", "allow_unique", "allow_well_known",
-                                NULL };
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs,
-                                     "s|ii:validate_bus_name", argnames,
-                                     &name, &allow_unique,
-                                     &allow_well_known)) {
-        return NULL;
-    }
-    if (!dbus_py_validate_bus_name(name, !!allow_unique, !!allow_well_known)) {
-        return NULL;
-    }
-    Py_RETURN_NONE;
-}
-
 dbus_bool_t
 dbus_py_validate_member_name(const char *name)
 {
@@ -174,29 +137,6 @@ dbus_py_validate_member_name(const char *name)
         }
     }
     return TRUE;
-}
-
-PyDoc_STRVAR(validate_member_name__doc__,
-"validate_member_name(name)\n"
-"\n"
-"Raise ValueError if the argument is not a valid member (signal or method) "
-"name.\n"
-"\n"
-":Since: 0.80\n"
-);
-
-static PyObject *
-validate_member_name(PyObject *unused UNUSED, PyObject *args)
-{
-    const char *name;
-
-    if (!PyArg_ParseTuple(args, "s:validate_member_name", &name)) {
-        return NULL;
-    }
-    if (!dbus_py_validate_member_name(name)) {
-        return NULL;
-    }
-    Py_RETURN_NONE;
 }
 
 dbus_bool_t
@@ -264,34 +204,6 @@ dbus_py_validate_interface_name(const char *name)
     return TRUE;
 }
 
-PyDoc_STRVAR(validate_interface_name__doc__,
-"validate_interface_name(name)\n\n"
-"Raise ValueError if the given string is not a valid interface name.\n"
-"\n"
-":Since: 0.80\n"
-);
-
-PyDoc_STRVAR(validate_error_name__doc__,
-"validate_error_name(name)\n\n"
-"Raise ValueError if the given string is not a valid error name.\n"
-"\n"
-":Since: 0.80\n"
-);
-
-static PyObject *
-validate_interface_name(PyObject *unused UNUSED, PyObject *args)
-{
-    const char *name;
-
-    if (!PyArg_ParseTuple(args, "s:validate_interface_name", &name)) {
-        return NULL;
-    }
-    if (!dbus_py_validate_interface_name(name)) {
-        return NULL;
-    }
-    Py_RETURN_NONE;
-}
-
 
 dbus_bool_t
 dbus_py_validate_object_path(const char *path)
@@ -326,27 +238,6 @@ dbus_py_validate_object_path(const char *path)
         return FALSE;
     }
     return TRUE;
-}
-
-PyDoc_STRVAR(validate_object_path__doc__,
-"validate_object_path(name)\n\n"
-"Raise ValueError if the given string is not a valid object path.\n"
-"\n"
-":Since: 0.80\n"
-);
-
-static PyObject *
-validate_object_path(PyObject *unused UNUSED, PyObject *args)
-{
-    const char *name;
-
-    if (!PyArg_ParseTuple(args, "s:validate_object_path", &name)) {
-        return NULL;
-    }
-    if (!dbus_py_validate_object_path(name)) {
-        return NULL;
-    }
-    Py_RETURN_NONE;
 }
 
 /* vim:set ft=c cino< sw=4 sts=4 et: */

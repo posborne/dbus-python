@@ -24,8 +24,9 @@
  */
 
 #include "types-internal.h"
+#include "message-internal.h"
 
-PyDoc_STRVAR(Message_get_args_list__doc__,
+char dbus_py_Message_get_args_list__doc__[] = (
 "get_args_list(**kwargs) -> list\n\n"
 "Return the message's arguments. Keyword arguments control the translation\n"
 "of D-Bus types to Python:\n"
@@ -457,8 +458,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
     return ret;
 }
 
-static PyObject *
-Message_get_args_list(Message *self, PyObject *args, PyObject *kwargs)
+PyObject *
+dbus_py_Message_get_args_list(Message *self, PyObject *args, PyObject *kwargs)
 {
     Message_get_args_options opts = { 0, 0 };
     static char *argnames[] = { "byte_arrays", "utf8_strings", NULL };
@@ -485,7 +486,7 @@ Message_get_args_list(Message *self, PyObject *args, PyObject *kwargs)
                                      argnames,
                                      &(opts.byte_arrays),
                                      &(opts.utf8_strings))) return NULL;
-    if (!self->msg) return DBusException_UnusableMessage();
+    if (!self->msg) return DBusPy_RaiseUnusableMessage();
 
     list = PyList_New(0);
     if (!list) return NULL;
