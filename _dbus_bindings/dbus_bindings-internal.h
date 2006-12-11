@@ -35,9 +35,15 @@
 #undef USING_DBG
 /* #define USING_DBG */
 
+#define DEFINE_CHECK(type) \
+static inline int type##_Check (PyObject *o) \
+{ \
+    return (PyObject_TypeCheck (o, &type##_Type)); \
+}
+
 /* conn.c */
-extern PyTypeObject DBusPyConnectionType;
-#define DBusPyConnection_Check(o) PyObject_TypeCheck(o, &DBusPyConnectionType)
+extern PyTypeObject DBusPyConnection_Type;
+DEFINE_CHECK(DBusPyConnection)
 extern PyObject *DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *,
                                                              DBusConnection *,
                                                              PyObject *);
@@ -51,17 +57,52 @@ extern dbus_bool_t dbus_py_insert_bus_types(PyObject *this_module);
 /* exceptions.c */
 extern PyObject *DBusPyException;
 extern PyObject *DBusPyException_ConsumeError(DBusError *error);
+extern dbus_bool_t dbus_py_init_exception_types(void);
+extern dbus_bool_t dbus_py_insert_exception_types(PyObject *this_module);
+
+/* types */
+extern PyTypeObject DBusPyBoolean_Type;
+DEFINE_CHECK(DBusPyBoolean)
+extern PyTypeObject DBusPyObjectPath_Type, DBusPySignature_Type;
+DEFINE_CHECK(DBusPyObjectPath)
+DEFINE_CHECK(DBusPySignature)
+extern PyTypeObject DBusPyArray_Type, DBusPyDict_Type, DBusPyStruct_Type;
+DEFINE_CHECK(DBusPyArray)
+DEFINE_CHECK(DBusPyDict)
+DEFINE_CHECK(DBusPyStruct)
+extern PyTypeObject DBusPyByte_Type, DBusPyByteArray_Type;
+DEFINE_CHECK(DBusPyByteArray)
+DEFINE_CHECK(DBusPyByte)
+extern PyTypeObject DBusPyUTF8String_Type, DBusPyString_Type;
+DEFINE_CHECK(DBusPyUTF8String)
+DEFINE_CHECK(DBusPyString)
+extern PyTypeObject DBusPyDouble_Type;
+DEFINE_CHECK(DBusPyDouble)
+extern PyTypeObject DBusPyInt16_Type, DBusPyUInt16_Type;
+DEFINE_CHECK(DBusPyInt16)
+DEFINE_CHECK(DBusPyUInt16)
+extern PyTypeObject DBusPyInt32_Type, DBusPyUInt32_Type;
+DEFINE_CHECK(DBusPyInt32)
+DEFINE_CHECK(DBusPyUInt32)
+extern PyTypeObject DBusPyInt64_Type, DBusPyUInt64_Type;
+DEFINE_CHECK(DBusPyInt64)
+DEFINE_CHECK(DBusPyUInt64)
 
 /* generic */
 extern void dbus_py_take_gil_and_xdecref(PyObject *);
+extern PyObject *dbus_py_empty_tuple;
 
 /* message.c */
 extern DBusMessage *DBusPyMessage_BorrowDBusMessage(PyObject *msg);
 extern PyObject *DBusPyMessage_ConsumeDBusMessage(DBusMessage *);
+extern dbus_bool_t dbus_py_init_message_types(void);
+extern dbus_bool_t dbus_py_insert_message_types(PyObject *this_module);
 
 /* pending-call.c */
 extern PyObject *DBusPyPendingCall_ConsumeDBusPendingCall(DBusPendingCall *,
                                                           PyObject *);
+extern dbus_bool_t dbus_py_init_pending_call(void);
+extern dbus_bool_t dbus_py_insert_pending_call(PyObject *this_module);
 
 /* mainloop.c */
 extern dbus_bool_t dbus_py_set_up_connection(PyObject *conn,

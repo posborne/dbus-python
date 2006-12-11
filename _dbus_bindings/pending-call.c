@@ -22,6 +22,8 @@
  *
  */
 
+#include "dbus_bindings-internal.h"
+
 PyDoc_STRVAR(PendingCall_tp_doc,
 "Object representing a pending D-Bus call, returned by\n"
 "Connection.send_message_with_reply(). Cannot be instantiated directly.\n"
@@ -103,7 +105,7 @@ _pending_call_notify_function(DBusPendingCall *pc,
         PyErr_Warn(PyExc_UserWarning, "D-Bus notify function was called "
                    "for an incomplete pending call (shouldn't happen)");
     } else {
-        Message *msg_obj = (Message *)Message_ConsumeDBusMessage(msg);
+        PyObject *msg_obj = DBusPyMessage_ConsumeDBusMessage(msg);
 
         if (msg_obj) {
             PyObject *ret = PyObject_CallFunctionObjArgs(handler, msg_obj, NULL);
@@ -272,15 +274,15 @@ static PyTypeObject PendingCallType = {
     0,                                      /* tp_new */
 };
 
-static inline int
-init_pending_call (void)
+dbus_bool_t
+dbus_py_init_pending_call (void)
 {
     if (PyType_Ready (&PendingCallType) < 0) return 0;
     return 1;
 }
 
-static inline int
-insert_pending_call (PyObject *this_module)
+dbus_bool_t
+dbus_py_insert_pending_call (PyObject *this_module)
 {
     if (PyModule_AddObject (this_module, "PendingCall",
                             (PyObject *)&PendingCallType) < 0) return 0;

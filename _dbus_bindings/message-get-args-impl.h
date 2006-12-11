@@ -23,6 +23,8 @@
  *
  */
 
+#include "types-internal.h"
+
 PyDoc_STRVAR(Message_get_args_list__doc__,
 "get_args_list(**kwargs) -> list\n\n"
 "Return the message's arguments. Keyword arguments control the translation\n"
@@ -85,8 +87,7 @@ _message_iter_append_all_to_list(DBusMessageIter *iter, PyObject *list,
 #ifdef USING_DBG
         fprintf(stderr, "DBG/%ld: appending to list: %p == ", (long)getpid(), item);
         PyObject_Print(item, stderr, 0);
-        fprintf(stderr, " of type %p (Byte is %p)\n", item->ob_type,
-                &ByteType);
+        fprintf(stderr, " of type %p\n", item->ob_type);
 #endif
         ret = PyList_Append(list, item);
         Py_DECREF(item);
@@ -113,15 +114,15 @@ _message_iter_get_dict(DBusMessageIter *iter,
     PyObject *ret;
     int status;
 
-    sig = PyObject_CallFunction((PyObject *)&SignatureType,
+    sig = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
                                 "(s#)", sig_str+2, strlen(sig_str)-3);
-    status = PyDict_SetItem(kwargs, signature_const, sig);
+    status = PyDict_SetItem(kwargs, dbus_py_signature_const, sig);
     Py_DECREF(sig);
     if (status < 0) {
         return NULL;
     }
 
-    ret = PyObject_Call((PyObject *)&DictType, empty_tuple, kwargs);
+    ret = PyObject_Call((PyObject *)&DBusPyDict_Type, dbus_py_empty_tuple, kwargs);
     if (!ret) {
         return NULL;
     }
@@ -205,7 +206,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             Py_DECREF(variant_level_int);
             return NULL;
         }
-        if (PyDict_SetItem(kwargs, variant_level_const,
+        if (PyDict_SetItem(kwargs, dbus_py_variant_level_const,
                            variant_level_int) < 0) {
             Py_DECREF(variant_level_int);
             Py_DECREF(kwargs);
@@ -224,7 +225,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             if (opts->utf8_strings) {
                 args = Py_BuildValue("(s)", u.s);
                 if (!args) break;
-                ret = PyObject_Call((PyObject *)&UTF8StringType, args, kwargs);
+                ret = PyObject_Call((PyObject *)&DBusPyUTF8String_Type,
+                                    args, kwargs);
             }
             else {
                 args = Py_BuildValue("(O)", PyUnicode_DecodeUTF8(u.s,
@@ -233,7 +235,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 if (!args) {
                     break;
                 }
-                ret = PyObject_Call((PyObject *)&StringType, args, kwargs);
+                ret = PyObject_Call((PyObject *)&DBusPyString_Type,
+                                    args, kwargs);
             }
             break;
 
@@ -242,7 +245,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.s);
             args = Py_BuildValue("(s)", u.s);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&SignatureType, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPySignature_Type, args, kwargs);
             break;
 
         case DBUS_TYPE_OBJECT_PATH:
@@ -250,7 +253,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.s);
             args = Py_BuildValue("(s)", u.s);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&ObjectPathType, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyObjectPath_Type, args, kwargs);
             break;
 
         case DBUS_TYPE_DOUBLE:
@@ -258,7 +261,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.d);
             args = Py_BuildValue("(f)", u.d);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&DoubleType, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyDouble_Type, args, kwargs);
             break;
 
 #ifdef WITH_DBUS_FLOAT32
@@ -267,7 +270,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.f);
             args = Py_BuildValue("(f)", (double)u.f);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&FloatType, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyFloat_Type, args, kwargs);
             break;
 #endif
 
@@ -276,7 +279,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.i16);
             args = Py_BuildValue("(i)", (int)u.i16);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&Int16Type, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyInt16_Type, args, kwargs);
             break;
 
         case DBUS_TYPE_UINT16:
@@ -284,7 +287,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.u16);
             args = Py_BuildValue("(i)", (int)u.u16);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&UInt16Type, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyUInt16_Type, args, kwargs);
             break;
 
         case DBUS_TYPE_INT32:
@@ -292,7 +295,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.i32);
             args = Py_BuildValue("(l)", (long)u.i32);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&Int32Type, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyInt32_Type, args, kwargs);
             break;
 
         case DBUS_TYPE_UINT32:
@@ -300,7 +303,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.u32);
             args = Py_BuildValue("(k)", (unsigned long)u.u32);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&UInt32Type, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyUInt32_Type, args, kwargs);
             break;
 
 #if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
@@ -309,7 +312,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.i64);
             args = Py_BuildValue("(L)", (PY_LONG_LONG)u.i64);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&Int64Type, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyInt64_Type, args, kwargs);
             break;
 
         case DBUS_TYPE_UINT64:
@@ -317,7 +320,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.u64);
             args = Py_BuildValue("(K)", (unsigned PY_LONG_LONG)u.u64);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&UInt64Type, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyUInt64_Type, args, kwargs);
             break;
 #else
         case DBUS_TYPE_INT64:
@@ -334,7 +337,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             args = Py_BuildValue("(l)", (long)u.y);
             if (!args)
                 break;
-            ret = PyObject_Call((PyObject *)&ByteType, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyByte_Type, args, kwargs);
             break;
 
         case DBUS_TYPE_BOOLEAN:
@@ -343,7 +346,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             args = Py_BuildValue("(l)", (long)u.b);
             if (!args)
                 break;
-            ret = PyObject_Call((PyObject *)&BooleanType, args, kwargs);
+            ret = PyObject_Call((PyObject *)&DBusPyBoolean_Type, args, kwargs);
             break;
 
         case DBUS_TYPE_ARRAY:
@@ -370,7 +373,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                                                   &n);
                 args = Py_BuildValue("(s#)", u.s, n);
                 if (!args) break;
-                ret = PyObject_Call((PyObject *)&ByteArrayType, args, kwargs);
+                ret = PyObject_Call((PyObject *)&DBusPyByteArray_Type,
+                                    args, kwargs);
             }
             else {
                 DBusMessageIter sub;
@@ -386,14 +390,15 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 dbus_message_iter_recurse(iter, &sub);
                 sig = dbus_message_iter_get_signature(&sub);
                 if (!sig) break;
-                sig_obj = PyObject_CallFunction((PyObject *)&SignatureType,
+                sig_obj = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
                                                 "(s)", sig);
                 dbus_free(sig);
                 if (!sig_obj) break;
-                status = PyDict_SetItem(kwargs, signature_const, sig_obj);
+                status = PyDict_SetItem(kwargs, dbus_py_signature_const, sig_obj);
                 Py_DECREF(sig_obj);
                 if (status < 0) break;
-                ret = PyObject_Call((PyObject *)&ArrayType, empty_tuple, kwargs);
+                ret = PyObject_Call((PyObject *)&DBusPyArray_Type,
+                                    dbus_py_empty_tuple, kwargs);
                 if (!ret) break;
                 if (_message_iter_append_all_to_list(&sub, ret, opts) < 0) {
                     Py_DECREF(ret);
@@ -417,7 +422,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 }
                 tuple = Py_BuildValue("(O)", list);
                 if (tuple) {
-                    ret = PyObject_Call((PyObject *)&StructType, tuple, kwargs);
+                    ret = PyObject_Call((PyObject *)&DBusPyStruct_Type, tuple, kwargs);
                 }
                 else {
                     ret = NULL;

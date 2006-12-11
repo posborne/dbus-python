@@ -22,20 +22,6 @@
  *
  */
 
-static PyTypeObject ByteType, ByteArrayType;
-
-static inline int Byte_Check(PyObject *o)
-{
-    return (o->ob_type == &ByteType)
-           || PyObject_IsInstance(o, (PyObject *)&ByteType);
-}
-
-static inline int ByteArray_Check(PyObject *o)
-{
-    return (o->ob_type == &ByteArrayType)
-           || PyObject_IsInstance(o, (PyObject *)&ByteArrayType);
-}
-
 PyDoc_STRVAR(Byte_tp_doc,
 "Byte(integer or str of length 1[, variant_level])\n"
 "\n"
@@ -57,7 +43,7 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
                         "than one positional argument");
         return NULL;
     }
-    if (!PyArg_ParseTupleAndKeywords(empty_tuple, kwargs,
+    if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
                                      "|l:__new__", argnames,
                                      &variantness)) return NULL;
     if (variantness < 0) {
@@ -80,7 +66,7 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         long i = PyInt_AS_LONG(obj);
 
         if (obj->ob_type == cls &&
-            ((DBusPythonInt *)obj)->variant_level == variantness) {
+            ((DBusPyIntBase *)obj)->variant_level == variantness) {
             Py_INCREF(obj);
             return obj;
         }
@@ -97,7 +83,7 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     Py_DECREF(obj);
     obj = NULL;
 
-    obj = DBusPythonIntType.tp_new(cls, tuple, kwargs);
+    obj = DBusPyIntBase_Type.tp_new(cls, tuple, kwargs);
     Py_DECREF(tuple);
     tuple = NULL;
     return obj;
@@ -118,7 +104,7 @@ Byte_tp_str(PyObject *self)
     return PyString_FromStringAndSize((char *)str, 1);
 }
 
-static PyTypeObject ByteType = {
+PyTypeObject DBusPyByte_Type = {
         PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
         0,
         "dbus.Byte",
@@ -184,7 +170,7 @@ ByteArray_sq_item (PyObject *self, int i)
     args = Py_BuildValue("(l)", (long)c);
     if (!args)
         return NULL;
-    return PyObject_Call((PyObject *)&ByteType, args, NULL);
+    return PyObject_Call((PyObject *)&DBusPyByte_Type, args, NULL);
 }
 
 static PyObject *
@@ -225,7 +211,7 @@ static PySequenceMethods ByteArray_tp_as_sequence = {
     0, /* sq_contains */
 };
 
-static PyTypeObject ByteArrayType = {
+PyTypeObject DBusPyByteArray_Type = {
         PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
         0,
         "dbus.ByteArray",
@@ -257,7 +243,7 @@ static PyTypeObject ByteArrayType = {
         0,                                      /* tp_methods */
         0,                                      /* tp_members */
         0,                                      /* tp_getset */
-        DEFERRED_ADDRESS(&DBusPythonStringType), /* tp_base */
+        DEFERRED_ADDRESS(&DBusPyStrBase_Type),  /* tp_base */
         0,                                      /* tp_dict */
         0,                                      /* tp_descr_get */
         0,                                      /* tp_descr_set */
@@ -270,13 +256,13 @@ static PyTypeObject ByteArrayType = {
 static inline int
 init_byte_types(void)
 {
-    ByteType.tp_base = &DBusPythonIntType;
-    if (PyType_Ready(&ByteType) < 0) return 0;
-    ByteType.tp_print = NULL;
+    DBusPyByte_Type.tp_base = &DBusPyIntBase_Type;
+    if (PyType_Ready(&DBusPyByte_Type) < 0) return 0;
+    DBusPyByte_Type.tp_print = NULL;
 
-    ByteArrayType.tp_base = &DBusPythonStringType;
-    if (PyType_Ready(&ByteArrayType) < 0) return 0;
-    ByteArrayType.tp_print = NULL;
+    DBusPyByteArray_Type.tp_base = &DBusPyStrBase_Type;
+    if (PyType_Ready(&DBusPyByteArray_Type) < 0) return 0;
+    DBusPyByteArray_Type.tp_print = NULL;
 
     return 1;
 }
@@ -284,12 +270,12 @@ init_byte_types(void)
 static inline int
 insert_byte_types(PyObject *this_module)
 {
-    Py_INCREF(&ByteType);
+    Py_INCREF(&DBusPyByte_Type);
     if (PyModule_AddObject(this_module, "Byte",
-                           (PyObject *)&ByteType) < 0) return 0;
-    Py_INCREF(&ByteArrayType);
+                           (PyObject *)&DBusPyByte_Type) < 0) return 0;
+    Py_INCREF(&DBusPyByteArray_Type);
     if (PyModule_AddObject(this_module, "ByteArray",
-                           (PyObject *)&ByteArrayType) < 0) return 0;
+                           (PyObject *)&DBusPyByteArray_Type) < 0) return 0;
 
     return 1;
 }

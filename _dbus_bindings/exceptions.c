@@ -22,6 +22,8 @@
  *
  */
 
+#include "dbus_bindings-internal.h"
+
 PyObject *DBusPyException;
 
 PyDoc_STRVAR(DBusException__doc__, "Represents any D-Bus-related error.");
@@ -34,17 +36,8 @@ DBusPyException_ConsumeError(DBusError *error)
     return NULL;
 }
 
-static inline PyObject *
-DBusException_UnusableMessage(void)
-{
-    PyErr_SetString(DBusPyException,
-                    "Message object is uninitialized, or has become unusable "
-                     "due to error while appending arguments");
-    return NULL;
-}
-
-static inline int
-init_exception_types(void)
+dbus_bool_t
+dbus_py_init_exception_types(void)
 {
     PyObject *docstring;
 
@@ -59,8 +52,8 @@ init_exception_types(void)
     return 1;
 }
 
-static inline int
-insert_exception_types(PyObject *this_module)
+dbus_bool_t
+dbus_py_insert_exception_types(PyObject *this_module)
 {
     if (PyModule_AddObject(this_module, "DBusException", DBusPyException) < 0) {
         return 0;

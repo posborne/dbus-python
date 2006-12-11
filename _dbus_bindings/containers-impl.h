@@ -22,13 +22,7 @@
  *
  */
 
-static PyObject *signature_const;
-
 /* Array ============================================================ */
-
-static PyTypeObject ArrayType;
-
-DEFINE_CHECK(Array)
 
 PyDoc_STRVAR(Array_tp_doc,
 "An array of similar items, implemented as a subtype of list.\n"
@@ -57,17 +51,11 @@ PyDoc_STRVAR(Array_tp_doc,
 "    Array with variant_level==2.\n"
 );
 
-typedef struct {
-    PyListObject super;
-    PyObject *signature;
-    long variant_level;
-} Array;
-
 static struct PyMemberDef Array_tp_members[] = {
-    {"signature", T_OBJECT, offsetof(Array, signature), READONLY,
+    {"signature", T_OBJECT, offsetof(DBusPyArray, signature), READONLY,
      "The D-Bus signature of each element of this Array (a Signature "
      "instance)"},
-    {"variant_level", T_LONG, offsetof(Array, variant_level),
+    {"variant_level", T_LONG, offsetof(DBusPyArray, variant_level),
      READONLY,
      "The number of nested variants wrapping the real data. "
      "0 if not in a variant."},
@@ -75,7 +63,7 @@ static struct PyMemberDef Array_tp_members[] = {
 };
 
 static void
-Array_tp_dealloc (Array *self)
+Array_tp_dealloc (DBusPyArray *self)
 {
     Py_XDECREF(self->signature);
     self->signature = NULL;
@@ -83,7 +71,7 @@ Array_tp_dealloc (Array *self)
 }
 
 static PyObject *
-Array_tp_repr(Array *self)
+Array_tp_repr(DBusPyArray *self)
 {
     PyObject *parent_repr = (PyList_Type.tp_repr)((PyObject *)self);
     PyObject *sig_repr = PyObject_Repr(self->signature);
@@ -116,7 +104,7 @@ static PyObject *
 Array_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     PyObject *variant_level = NULL;
-    Array *self = (Array *)(PyList_Type.tp_new)(cls, args, kwargs);
+    DBusPyArray *self = (DBusPyArray *)(PyList_Type.tp_new)(cls, args, kwargs);
 
     /* variant_level is immutable, so handle it in __new__ rather than 
     __init__ */
@@ -125,7 +113,7 @@ Array_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     self->signature = Py_None;
     self->variant_level = 0;
     if (kwargs) {
-        variant_level = PyDict_GetItem(kwargs, variant_level_const);
+        variant_level = PyDict_GetItem(kwargs, dbus_py_variant_level_const);
     }
     if (variant_level) {
         self->variant_level = PyInt_AsLong(variant_level);
@@ -138,9 +126,9 @@ Array_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 static int
-Array_tp_init (Array *self, PyObject *args, PyObject *kwargs)
+Array_tp_init (DBusPyArray *self, PyObject *args, PyObject *kwargs)
 {
-    PyObject *obj = empty_tuple;
+    PyObject *obj = dbus_py_empty_tuple;
     PyObject *signature = NULL;
     PyObject *tuple;
     PyObject *variant_level;
@@ -157,12 +145,12 @@ Array_tp_init (Array *self, PyObject *args, PyObject *kwargs)
   of type Signature (or None) */
     if (!signature) signature = Py_None;
     if (signature == Py_None
-        || PyObject_IsInstance(signature, (PyObject *)&SignatureType)) {
+        || PyObject_IsInstance(signature, (PyObject *)&DBusPySignature_Type)) {
         Py_INCREF(signature);
     }
     else {
-        signature = PyObject_CallFunction((PyObject *)&SignatureType, "(O)",
-                                          signature);
+        signature = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
+                                          "(O)", signature);
         if (!signature) return -1;
     }
 
@@ -183,11 +171,11 @@ Array_tp_init (Array *self, PyObject *args, PyObject *kwargs)
     return 0;
 }
 
-static PyTypeObject ArrayType = {
+PyTypeObject DBusPyArray_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Array",
-    sizeof(Array),
+    sizeof(DBusPyArray),
     0,
     (destructor)Array_tp_dealloc,           /* tp_dealloc */
     0,                                      /* tp_print */
@@ -227,10 +215,6 @@ static PyTypeObject ArrayType = {
 
 /* Dict ============================================================= */
 
-static PyTypeObject DictType;
-
-DEFINE_CHECK(Dict)
-
 PyDoc_STRVAR(Dict_tp_doc,
 "An mapping whose keys are similar and whose values are similar,\n"
 "implemented as a subtype of dict.\n"
@@ -260,17 +244,11 @@ PyDoc_STRVAR(Dict_tp_doc,
 "    Python by a Dictionary with variant_level==2.\n"
 );
 
-typedef struct {
-    PyDictObject super;
-    PyObject *signature;
-    long variant_level;
-} Dict;
-
 static struct PyMemberDef Dict_tp_members[] = {
-    {"signature", T_OBJECT, offsetof(Dict, signature), READONLY,
+    {"signature", T_OBJECT, offsetof(DBusPyDict, signature), READONLY,
      "The D-Bus signature of each key in this Dictionary, followed by "
      "that of each value in this Dictionary, as a Signature instance."},
-    {"variant_level", T_LONG, offsetof(Dict, variant_level),
+    {"variant_level", T_LONG, offsetof(DBusPyDict, variant_level),
      READONLY,
      "The number of nested variants wrapping the real data. "
      "0 if not in a variant."},
@@ -278,7 +256,7 @@ static struct PyMemberDef Dict_tp_members[] = {
 };
 
 static void
-Dict_tp_dealloc (Dict *self)
+Dict_tp_dealloc (DBusPyDict *self)
 {
     Py_XDECREF(self->signature);
     self->signature = NULL;
@@ -286,7 +264,7 @@ Dict_tp_dealloc (Dict *self)
 }
 
 static PyObject *
-Dict_tp_repr(Dict *self)
+Dict_tp_repr(DBusPyDict *self)
 {
     PyObject *parent_repr = (PyDict_Type.tp_repr)((PyObject *)self);
     PyObject *sig_repr = PyObject_Repr(self->signature);
@@ -318,7 +296,7 @@ finally:
 static PyObject *
 Dict_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    Dict *self = (Dict *)(PyDict_Type.tp_new)(cls, args, kwargs);
+    DBusPyDict *self = (DBusPyDict *)(PyDict_Type.tp_new)(cls, args, kwargs);
     PyObject *variant_level = NULL;
 
     /* variant_level is immutable, so handle it in __new__ rather than 
@@ -328,7 +306,7 @@ Dict_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     self->signature = Py_None;
     self->variant_level = 0;
     if (kwargs) {
-        variant_level = PyDict_GetItem(kwargs, variant_level_const);
+        variant_level = PyDict_GetItem(kwargs, dbus_py_variant_level_const);
     }
     if (variant_level) {
         self->variant_level = PyInt_AsLong(variant_level);
@@ -341,9 +319,9 @@ Dict_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 static int
-Dict_tp_init(Dict *self, PyObject *args, PyObject *kwargs)
+Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
 {
-    PyObject *obj = empty_tuple;
+    PyObject *obj = dbus_py_empty_tuple;
     PyObject *signature = NULL;
     PyObject *tuple;
     PyObject *variant_level;    /* ignored here - __new__ uses it */
@@ -359,12 +337,12 @@ Dict_tp_init(Dict *self, PyObject *args, PyObject *kwargs)
   of type Signature (or None) */
     if (!signature) signature = Py_None;
     if (signature == Py_None
-        || PyObject_IsInstance(signature, (PyObject *)&SignatureType)) {
+        || PyObject_IsInstance(signature, (PyObject *)&DBusPySignature_Type)) {
         Py_INCREF(signature);
     }
     else {
-        signature = PyObject_CallFunction((PyObject *)&SignatureType, "(O)",
-                                          signature);
+        signature = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
+                                          "(O)", signature);
         if (!signature) return -1;
     }
 
@@ -386,11 +364,11 @@ Dict_tp_init(Dict *self, PyObject *args, PyObject *kwargs)
     return 0;
 }
 
-static PyTypeObject DictType = {
+PyTypeObject DBusPyDict_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Dictionary",
-    sizeof(Dict),
+    sizeof(DBusPyDict),
     0,
     (destructor)Dict_tp_dealloc,            /* tp_dealloc */
     0,                                      /* tp_print */
@@ -430,10 +408,6 @@ static PyTypeObject DictType = {
 
 /* Struct =========================================================== */
 
-static PyTypeObject StructType;
-
-DEFINE_CHECK(Struct)
-
 PyDoc_STRVAR(Struct_tp_doc,
 "An structure containing items of possibly distinct types.\n"
 "\n"
@@ -468,11 +442,11 @@ Struct_tp_repr(PyObject *self)
     PyObject *my_repr = NULL;
 
     if (!parent_repr) goto finally;
-    sig = PyObject_GetAttr(self, signature_const);
+    sig = PyObject_GetAttr(self, dbus_py_signature_const);
     if (!sig) goto finally;
     sig_repr = PyObject_Repr(sig);
     if (!sig_repr) goto finally;
-    vl_obj = PyObject_GetAttr(self, variant_level_const);
+    vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
     if (!vl_obj) goto finally;
     variant_level = PyInt_AsLong(vl_obj);
     if (variant_level > 0) {
@@ -509,7 +483,7 @@ Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
                         "__new__ takes exactly one positional parameter");
         return NULL;
     }
-    if (!PyArg_ParseTupleAndKeywords(empty_tuple, kwargs,
+    if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
                                      "|OO!:__new__", argnames,
                                      &signature, &PyInt_Type,
                                      &variantness)) {
@@ -528,7 +502,7 @@ Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    if (PyObject_GenericSetAttr(self, variant_level_const, variantness) < 0) {
+    if (PyObject_GenericSetAttr(self, dbus_py_variant_level_const, variantness) < 0) {
         Py_DECREF(self);
         return NULL;
     }
@@ -537,19 +511,19 @@ Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     of type Signature (or None) */
     if (!signature) signature = Py_None;
     if (signature == Py_None
-        || PyObject_IsInstance(signature, (PyObject *)&SignatureType)) {
+        || PyObject_IsInstance(signature, (PyObject *)&DBusPySignature_Type)) {
         Py_INCREF(signature);
     }
     else {
-        signature = PyObject_CallFunction((PyObject *)&SignatureType, "(O)",
-                                          signature);
+        signature = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
+                                          "(O)", signature);
         if (!signature) {
             Py_DECREF(self);
             return NULL;
         }
     }
 
-    if (PyObject_GenericSetAttr(self, signature_const, signature) < 0) {
+    if (PyObject_GenericSetAttr(self, dbus_py_signature_const, signature) < 0) {
         Py_DECREF(self);
         Py_DECREF(signature);
         return NULL;
@@ -558,7 +532,7 @@ Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return self;
 }
 
-static PyTypeObject StructType = {
+PyTypeObject DBusPyStruct_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Struct",
@@ -603,24 +577,21 @@ static PyTypeObject StructType = {
 static inline int
 init_container_types(void)
 {
-    signature_const = PyString_InternFromString("signature");
-    if (!signature_const) return 0;
+    DBusPyArray_Type.tp_base = &PyList_Type;
+    if (PyType_Ready(&DBusPyArray_Type) < 0) return 0;
+    DBusPyArray_Type.tp_print = NULL;
 
-    ArrayType.tp_base = &PyList_Type;
-    if (PyType_Ready(&ArrayType) < 0) return 0;
-    ArrayType.tp_print = NULL;
+    DBusPyDict_Type.tp_base = &PyDict_Type;
+    if (PyType_Ready(&DBusPyDict_Type) < 0) return 0;
+    DBusPyDict_Type.tp_print = NULL;
 
-    DictType.tp_base = &PyDict_Type;
-    if (PyType_Ready(&DictType) < 0) return 0;
-    DictType.tp_print = NULL;
-
-    StructType.tp_basicsize = PyTuple_Type.tp_basicsize
-                              + 2*sizeof(PyObject *) - 1;
-    StructType.tp_basicsize /= sizeof(PyObject *);
-    StructType.tp_basicsize *= sizeof(PyObject *);
-    StructType.tp_base = &PyTuple_Type;
-    if (PyType_Ready(&StructType) < 0) return 0;
-    StructType.tp_print = NULL;
+    DBusPyStruct_Type.tp_basicsize = PyTuple_Type.tp_basicsize
+                                     + 2*sizeof(PyObject *) - 1;
+    DBusPyStruct_Type.tp_basicsize /= sizeof(PyObject *);
+    DBusPyStruct_Type.tp_basicsize *= sizeof(PyObject *);
+    DBusPyStruct_Type.tp_base = &PyTuple_Type;
+    if (PyType_Ready(&DBusPyStruct_Type) < 0) return 0;
+    DBusPyStruct_Type.tp_print = NULL;
 
     return 1;
 }
@@ -628,17 +599,17 @@ init_container_types(void)
 static inline int
 insert_container_types(PyObject *this_module)
 {
-    Py_INCREF(&ArrayType);
+    Py_INCREF(&DBusPyArray_Type);
     if (PyModule_AddObject(this_module, "Array",
-                           (PyObject *)&ArrayType) < 0) return 0;
+                           (PyObject *)&DBusPyArray_Type) < 0) return 0;
 
-    Py_INCREF(&DictType);
+    Py_INCREF(&DBusPyDict_Type);
     if (PyModule_AddObject(this_module, "Dictionary",
-                           (PyObject *)&DictType) < 0) return 0;
+                           (PyObject *)&DBusPyDict_Type) < 0) return 0;
 
-    Py_INCREF(&StructType);
+    Py_INCREF(&DBusPyStruct_Type);
     if (PyModule_AddObject(this_module, "Struct",
-                           (PyObject *)&StructType) < 0) return 0;
+                           (PyObject *)&DBusPyStruct_Type) < 0) return 0;
 
     return 1;
 }

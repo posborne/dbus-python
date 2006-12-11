@@ -22,16 +22,6 @@
  *
  */
 
-static PyTypeObject DoubleType;
-#ifdef WITH_DBUS_FLOAT32
-static PyTypeObject FloatType;
-#endif
-
-DEFINE_CHECK(Double)
-#ifdef WITH_DBUS_FLOAT32
-DEFINE_CHECK(Float)
-#endif
-
 PyDoc_STRVAR(Double_tp_doc,
 "A double-precision floating point number (a subtype of float).");
 
@@ -40,7 +30,7 @@ PyDoc_STRVAR(Float_tp_doc,
 "A single-precision floating point number (a subtype of float).");
 #endif
 
-static PyTypeObject DoubleType = {
+PyTypeObject DBusPyDouble_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Double",
@@ -84,7 +74,7 @@ static PyTypeObject DoubleType = {
 
 #ifdef WITH_DBUS_FLOAT32
 
-static PyTypeObject FloatType = {
+PyTypeObject DBusPyFloat_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Float",
@@ -130,14 +120,14 @@ static PyTypeObject FloatType = {
 static inline int
 init_float_types(void)
 {
-    DoubleType.tp_base = &DBusPythonFloatType;
-    if (PyType_Ready(&DoubleType) < 0) return 0;
-    DoubleType.tp_print = NULL;
+    DBusPyDouble_Type.tp_base = &DBusPyFloatBase_Type;
+    if (PyType_Ready(&DBusPyDouble_Type) < 0) return 0;
+    DBusPyDouble_Type.tp_print = NULL;
 
 #ifdef WITH_DBUS_FLOAT32
-    FloatType.tp_base = &DBusPythonFloatType;
-    if (PyType_Ready(&FloatType) < 0) return 0;
-    FloatType.tp_print = NULL;
+    DBusPyFloat_Type.tp_base = &DBusPyFloatBase_Type;
+    if (PyType_Ready(&DBusPyFloat_Type) < 0) return 0;
+    DBusPyFloat_Type.tp_print = NULL;
 #endif
 
     return 1;
@@ -146,13 +136,13 @@ init_float_types(void)
 static inline int
 insert_float_types(PyObject *this_module)
 {
-    Py_INCREF(&DoubleType);
+    Py_INCREF(&DBusPyDouble_Type);
     if (PyModule_AddObject(this_module, "Double",
-                           (PyObject *)&DoubleType) < 0) return 0;
+                           (PyObject *)&DBusPyDouble_Type) < 0) return 0;
 #ifdef WITH_DBUS_FLOAT32
-    Py_INCREF(&FloatType);
+    Py_INCREF(&DBusPyFloat_Type);
     if (PyModule_AddObject(this_module, "Float",
-                           (PyObject *)&FloatType) < 0) return 0;
+                           (PyObject *)&DBusPyFloat_Type) < 0) return 0;
 #endif
 
     return 1;

@@ -23,6 +23,8 @@
  *
  */
 
+#include "dbus_bindings-internal.h"
+
 static PyTypeObject MessageType, SignalMessageType, ErrorMessageType;
 static PyTypeObject MethodReturnMessageType, MethodCallMessageType;
 
@@ -30,6 +32,15 @@ static inline int Message_Check (PyObject *o)
 {
     return (o->ob_type == &MessageType)
             || PyObject_IsInstance(o, (PyObject *)&MessageType);
+}
+
+static inline PyObject *
+DBusException_UnusableMessage(void)
+{
+    PyErr_SetString(DBusPyException,
+                    "Message object is uninitialized, or has become unusable "
+                     "due to error while appending arguments");
+    return NULL;
 }
 
 typedef struct {
@@ -186,8 +197,8 @@ DBusPyMessage_BorrowDBusMessage(PyObject *msg)
     return ((Message *)msg)->msg;
 }
 
-static PyObject *
-Message_ConsumeDBusMessage (DBusMessage *msg)
+PyObject *
+DBusPyMessage_ConsumeDBusMessage(DBusMessage *msg)
 {
     PyTypeObject *type;
     Message *self;
@@ -209,7 +220,7 @@ Message_ConsumeDBusMessage (DBusMessage *msg)
         type = &MessageType;
     }
 
-    self = (Message *)(type->tp_new) (type, empty_tuple, NULL);
+    self = (Message *)(type->tp_new) (type, dbus_py_empty_tuple, NULL);
     if (!self) {
         dbus_message_unref(msg);
         return NULL;
@@ -228,7 +239,7 @@ Message_copy (Message *self, PyObject *args UNUSED)
     if (!self->msg) return DBusException_UnusableMessage();
     msg = dbus_message_copy(self->msg);
     if (!msg) return PyErr_NoMemory();
-    return Message_ConsumeDBusMessage(msg);
+    return DBusPyMessage_ConsumeDBusMessage(msg);
 }
 
 PyDoc_STRVAR(Message_get_auto_start__doc__,
@@ -436,7 +447,7 @@ Message_get_path (Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyObject_CallFunction((PyObject *)&ObjectPathType, "(s)", c_str);
+    return PyObject_CallFunction((PyObject *)&DBusPyObjectPath_Type, "(s)", c_str);
 }
 
 PyDoc_STRVAR(Message_get_path_decomposed__doc__,
@@ -519,9 +530,9 @@ Message_get_signature (Message *self, PyObject *unused UNUSED)
     if (!self->msg) return DBusException_UnusableMessage();
     c_str = dbus_message_get_signature (self->msg);
     if (!c_str) {
-        return PyObject_CallFunction((PyObject *)&SignatureType, "(s)", "");
+        return PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s)", "");
     }
-    return PyObject_CallFunction((PyObject *)&SignatureType, "(s)", c_str);
+    return PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s)", c_str);
 }
 
 PyDoc_STRVAR(Message_has_signature__doc__,
@@ -995,8 +1006,8 @@ static PyTypeObject ErrorMessageType = {
     0,                         /* tp_new */
 };
 
-static inline int
-init_message_types(void)
+dbus_bool_t
+dbus_py_init_message_types(void)
 {
     if (PyType_Ready(&MessageType) < 0) return 0;
 
@@ -1015,8 +1026,8 @@ init_message_types(void)
     return 1;
 }
 
-static inline int
-insert_message_types(PyObject *this_module)
+dbus_bool_t
+dbus_py_insert_message_types(PyObject *this_module)
 {
     if (PyModule_AddObject(this_module, "Message",
                          (PyObject *)&MessageType) < 0) return 0;

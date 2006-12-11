@@ -22,20 +22,12 @@
  *
  */
 
-static PyObject *variant_level_const;
+#include "types-internal.h"
 
 /* Support code for int subclasses. ================================== */
 
-static PyTypeObject DBusPythonIntType;
-DEFINE_CHECK(DBusPythonInt)
-
-typedef struct {
-    PyIntObject base;
-    long variant_level;
-} DBusPythonInt;
-
 static PyMemberDef DBusPythonInt_tp_members[] = {
-    {"variant_level", T_LONG, offsetof(DBusPythonInt, variant_level),
+    {"variant_level", T_LONG, offsetof(DBusPyIntBase, variant_level),
      READONLY,
      "The number of nested variants wrapping the real data. "
      "0 if not in a variant."},
@@ -54,7 +46,7 @@ DBusPythonInt_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
                         "__new__ takes at most one positional parameter");
         return NULL;
     }
-    if (!PyArg_ParseTupleAndKeywords(empty_tuple, kwargs,
+    if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
                                      "|l:__new__", argnames,
                                      &variantness)) return NULL;
     if (variantness < 0) {
@@ -65,7 +57,7 @@ DBusPythonInt_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
     self = (PyInt_Type.tp_new)(cls, args, NULL);
     if (self) {
-        ((DBusPythonInt *)self)->variant_level = variantness;
+        ((DBusPyIntBase *)self)->variant_level = variantness;
     }
     return self;
 }
@@ -74,7 +66,7 @@ static PyObject *
 DBusPythonInt_tp_repr(PyObject *self)
 {
     PyObject *parent_repr = (PyInt_Type.tp_repr)(self);
-    long variant_level = ((DBusPythonInt *)self)->variant_level;
+    long variant_level = ((DBusPyIntBase *)self)->variant_level;
     PyObject *my_repr;
 
     if (!parent_repr) return NULL;
@@ -93,11 +85,11 @@ DBusPythonInt_tp_repr(PyObject *self)
     return my_repr;
 }
 
-static PyTypeObject DBusPythonIntType = {
+PyTypeObject DBusPyIntBase_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
-    "_dbus_bindings._DBusPythonInt",
-    sizeof(DBusPythonInt),
+    "_dbus_bindings._IntBase",
+    sizeof(DBusPyIntBase),
     0,
     0,                                      /* tp_dealloc */
     0,                                      /* tp_print */
@@ -140,16 +132,8 @@ static PyTypeObject DBusPythonIntType = {
 /* There's only one subclass at the moment (Double) but these are factored
 out to make room for Float later. (Float is implemented and #if'd out) */
 
-static PyTypeObject DBusPythonFloatType;
-DEFINE_CHECK(DBusPythonFloat)
-
-typedef struct {
-    PyFloatObject base;
-    long variant_level;
-} DBusPythonFloat;
-
 static PyMemberDef DBusPythonFloat_tp_members[] = {
-    {"variant_level", T_LONG, offsetof(DBusPythonFloat, variant_level),
+    {"variant_level", T_LONG, offsetof(DBusPyFloatBase, variant_level),
      READONLY,
      "The number of nested variants wrapping the real data. "
      "0 if not in a variant."},
@@ -168,7 +152,7 @@ DBusPythonFloat_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
                         "__new__ takes at most one positional parameter");
         return NULL;
     }
-    if (!PyArg_ParseTupleAndKeywords(empty_tuple, kwargs,
+    if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
                                      "|l:__new__", argnames,
                                      &variantness)) return NULL;
     if (variantness < 0) {
@@ -179,7 +163,7 @@ DBusPythonFloat_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
     self = (PyFloat_Type.tp_new)(cls, args, NULL);
     if (self) {
-        ((DBusPythonFloat *)self)->variant_level = variantness;
+        ((DBusPyFloatBase *)self)->variant_level = variantness;
     }
     return self;
 }
@@ -188,7 +172,7 @@ static PyObject *
 DBusPythonFloat_tp_repr(PyObject *self)
 {
     PyObject *parent_repr = (PyFloat_Type.tp_repr)(self);
-    long variant_level = ((DBusPythonFloat *)self)->variant_level;
+    long variant_level = ((DBusPyFloatBase *)self)->variant_level;
     PyObject *my_repr;
 
     if (!parent_repr) return NULL;
@@ -207,11 +191,11 @@ DBusPythonFloat_tp_repr(PyObject *self)
     return my_repr;
 }
 
-static PyTypeObject DBusPythonFloatType = {
+PyTypeObject DBusPyFloatBase_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
-    "_dbus_bindings._DBusPythonFloat",
-    sizeof(DBusPythonFloat),
+    "_dbus_bindings._FloatBase",
+    sizeof(DBusPyFloatBase),
     0,
     0,                                      /* tp_dealloc */
     0,                                      /* tp_print */
@@ -251,9 +235,6 @@ static PyTypeObject DBusPythonFloatType = {
 
 /* Support code for str subclasses ================================== */
 
-static PyTypeObject DBusPythonStringType;
-DEFINE_CHECK(DBusPythonString)
-
 static PyObject *
 DBusPythonString_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
@@ -266,7 +247,7 @@ DBusPythonString_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
                         "__new__ takes at most one positional parameter");
         return NULL;
     }
-    if (!PyArg_ParseTupleAndKeywords(empty_tuple, kwargs,
+    if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
                                      "|O!:__new__", argnames,
                                      &PyInt_Type, &variantness)) return NULL;
     if (!variantness) {
@@ -281,7 +262,7 @@ DBusPythonString_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
     self = (PyString_Type.tp_new)(cls, args, NULL);
     if (self) {
-        PyObject_GenericSetAttr(self, variant_level_const, variantness);
+        PyObject_GenericSetAttr(self, dbus_py_variant_level_const, variantness);
     }
     return self;
 }
@@ -295,7 +276,7 @@ DBusPythonString_tp_repr(PyObject *self)
     long variant_level;
 
     if (!parent_repr) return NULL;
-    vl_obj = PyObject_GetAttr(self, variant_level_const);
+    vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
     if (!vl_obj) return NULL;
     variant_level = PyInt_AsLong(vl_obj);
     if (variant_level > 0) {
@@ -313,10 +294,10 @@ DBusPythonString_tp_repr(PyObject *self)
     return my_repr;
 }
 
-static PyTypeObject DBusPythonStringType = {
+PyTypeObject DBusPyStrBase_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
-    "_dbus_bindings._DBusPythonString",
+    "_dbus_bindings._StrBase",
     INT_MAX, /* placeholder */
     0,
     0,                                      /* tp_dealloc */
@@ -357,9 +338,6 @@ static PyTypeObject DBusPythonStringType = {
 
 /* Support code for long subclasses ================================= */
 
-static PyTypeObject DBusPythonLongType;
-DEFINE_CHECK(DBusPythonLong)
-
 static PyObject *
 DBusPythonLong_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
@@ -372,7 +350,7 @@ DBusPythonLong_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
                         "__new__ takes at most one positional parameter");
         return NULL;
     }
-    if (!PyArg_ParseTupleAndKeywords(empty_tuple, kwargs,
+    if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
                                      "|O!:__new__", argnames,
                                      &PyInt_Type, &variantness)) return NULL;
     if (!variantness) {
@@ -387,7 +365,7 @@ DBusPythonLong_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
     self = (PyLong_Type.tp_new)(cls, args, NULL);
     if (self) {
-        PyObject_GenericSetAttr(self, variant_level_const, variantness);
+        PyObject_GenericSetAttr(self, dbus_py_variant_level_const, variantness);
     }
     return self;
 }
@@ -401,7 +379,7 @@ DBusPythonLong_tp_repr(PyObject *self)
     long variant_level;
 
     if (!parent_repr) return NULL;
-    vl_obj = PyObject_GetAttr(self, variant_level_const);
+    vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
     if (!vl_obj) return 0;
     variant_level = PyInt_AsLong(vl_obj);
     if (variant_level) {
@@ -419,10 +397,10 @@ DBusPythonLong_tp_repr(PyObject *self)
     return my_repr;
 }
 
-static PyTypeObject DBusPythonLongType = {
+PyTypeObject DBusPyLongBase_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
-    "_dbus_bindings._DBusPythonLong",
+    "_dbus_bindings._LongBase",
     INT_MAX, /* placeholder */
     0,
     0,                                      /* tp_dealloc */
@@ -464,36 +442,39 @@ static PyTypeObject DBusPythonLongType = {
 static inline int
 init_abstract(void)
 {
-    variant_level_const = PyString_InternFromString("variant_level");
-    if (!variant_level_const) return 0;
+    dbus_py_variant_level_const = PyString_InternFromString("variant_level");
+    if (!dbus_py_variant_level_const) return 0;
 
-    DBusPythonIntType.tp_base = &PyInt_Type;
-    if (PyType_Ready(&DBusPythonIntType) < 0) return 0;
+    dbus_py_signature_const = PyString_InternFromString("signature");
+    if (!dbus_py_signature_const) return 0;
+
+    DBusPyIntBase_Type.tp_base = &PyInt_Type;
+    if (PyType_Ready(&DBusPyIntBase_Type) < 0) return 0;
     /* disable the tp_print copied from PyInt_Type, so tp_repr gets called as
     desired */
-    DBusPythonIntType.tp_print = NULL;
+    DBusPyIntBase_Type.tp_print = NULL;
 
-    DBusPythonFloatType.tp_base = &PyFloat_Type;
-    if (PyType_Ready(&DBusPythonFloatType) < 0) return 0;
-    DBusPythonFloatType.tp_print = NULL;
+    DBusPyFloatBase_Type.tp_base = &PyFloat_Type;
+    if (PyType_Ready(&DBusPyFloatBase_Type) < 0) return 0;
+    DBusPyFloatBase_Type.tp_print = NULL;
 
     /* Add a pointer for the instance dict, aligning to sizeof(PyObject *)
      * to make sure the offset of -sizeof(PyObject *) is right. */
-    DBusPythonLongType.tp_basicsize = PyLong_Type.tp_basicsize
-                                      + 2*sizeof(PyObject *) - 1;
-    DBusPythonLongType.tp_basicsize /= sizeof(PyObject *);
-    DBusPythonLongType.tp_basicsize *= sizeof(PyObject *);
-    DBusPythonLongType.tp_base = &PyLong_Type;
-    if (PyType_Ready(&DBusPythonLongType) < 0) return 0;
-    DBusPythonLongType.tp_print = NULL;
+    DBusPyLongBase_Type.tp_basicsize = PyLong_Type.tp_basicsize
+                                       + 2*sizeof(PyObject *) - 1;
+    DBusPyLongBase_Type.tp_basicsize /= sizeof(PyObject *);
+    DBusPyLongBase_Type.tp_basicsize *= sizeof(PyObject *);
+    DBusPyLongBase_Type.tp_base = &PyLong_Type;
+    if (PyType_Ready(&DBusPyLongBase_Type) < 0) return 0;
+    DBusPyLongBase_Type.tp_print = NULL;
 
-    DBusPythonStringType.tp_basicsize = PyString_Type.tp_basicsize
-                                        + 2*sizeof(PyObject *) - 1;
-    DBusPythonStringType.tp_basicsize /= sizeof(PyObject *);
-    DBusPythonStringType.tp_basicsize *= sizeof(PyObject *);
-    DBusPythonStringType.tp_base = &PyString_Type;
-    if (PyType_Ready(&DBusPythonStringType) < 0) return 0;
-    DBusPythonStringType.tp_print = NULL;
+    DBusPyStrBase_Type.tp_basicsize = PyString_Type.tp_basicsize
+                                      + 2*sizeof(PyObject *) - 1;
+    DBusPyStrBase_Type.tp_basicsize /= sizeof(PyObject *);
+    DBusPyStrBase_Type.tp_basicsize *= sizeof(PyObject *);
+    DBusPyStrBase_Type.tp_base = &PyString_Type;
+    if (PyType_Ready(&DBusPyStrBase_Type) < 0) return 0;
+    DBusPyStrBase_Type.tp_print = NULL;
 
     return 1;
 }
@@ -501,18 +482,18 @@ init_abstract(void)
 static inline int
 insert_abstract_types(PyObject *this_module)
 {
-    Py_INCREF(&DBusPythonIntType);
-    Py_INCREF(&DBusPythonLongType);
-    Py_INCREF(&DBusPythonStringType);
-    Py_INCREF(&DBusPythonFloatType);
-    if (PyModule_AddObject(this_module, "_DBusPythonInt",
-                           (PyObject *)&DBusPythonIntType) < 0) return 0;
-    if (PyModule_AddObject(this_module, "_DBusPythonLong",
-                           (PyObject *)&DBusPythonLongType) < 0) return 0;
-    if (PyModule_AddObject(this_module, "_DBusPythonString",
-                           (PyObject *)&DBusPythonStringType) < 0) return 0;
-    if (PyModule_AddObject(this_module, "_DBusPythonFloat",
-                           (PyObject *)&DBusPythonFloatType) < 0) return 0;
+    Py_INCREF(&DBusPyIntBase_Type);
+    Py_INCREF(&DBusPyLongBase_Type);
+    Py_INCREF(&DBusPyStrBase_Type);
+    Py_INCREF(&DBusPyFloatBase_Type);
+    if (PyModule_AddObject(this_module, "_IntBase",
+                           (PyObject *)&DBusPyIntBase_Type) < 0) return 0;
+    if (PyModule_AddObject(this_module, "_LongBase",
+                           (PyObject *)&DBusPyLongBase_Type) < 0) return 0;
+    if (PyModule_AddObject(this_module, "_StrBase",
+                           (PyObject *)&DBusPyStrBase_Type) < 0) return 0;
+    if (PyModule_AddObject(this_module, "_FloatBase",
+                           (PyObject *)&DBusPyFloatBase_Type) < 0) return 0;
 
     return 1;
 }

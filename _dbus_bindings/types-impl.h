@@ -22,15 +22,11 @@
  *
  */
 
-#include <stdint.h>
+#include "types-internal.h"
 
 /* Specific types =================================================== */
 
 /* Boolean, a subclass of DBusPythonInt ============================= */
-
-static PyTypeObject BooleanType;
-
-DEFINE_CHECK(Boolean)
 
 PyDoc_STRVAR(Boolean_tp_doc,
 "A boolean, represented as a subtype of `int` (not `bool`, because `bool`\n"
@@ -70,7 +66,7 @@ Boolean_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     }
     tuple = Py_BuildValue("(i)", PyObject_IsTrue(value) ? 1 : 0);
     if (!tuple) return NULL;
-    self = (DBusPythonIntType.tp_new)(cls, tuple, kwargs);
+    self = (DBusPyIntBase_Type.tp_new)(cls, tuple, kwargs);
     Py_DECREF(tuple);
     return self;
 }
@@ -78,7 +74,7 @@ Boolean_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 static PyObject *
 Boolean_tp_repr (PyObject *self)
 {
-    long variant_level = ((DBusPythonInt *)self)->variant_level;
+    long variant_level = ((DBusPyIntBase *)self)->variant_level;
     if (variant_level > 0) {
         return PyString_FromFormat("%s(%s, variant_level=%ld)",
                                    self->ob_type->tp_name,
@@ -90,7 +86,7 @@ Boolean_tp_repr (PyObject *self)
                                PyInt_AsLong(self) ? "True" : "False");
 }
 
-static PyTypeObject BooleanType = {
+PyTypeObject DBusPyBoolean_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Boolean",
@@ -122,7 +118,7 @@ static PyTypeObject BooleanType = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPythonInt_Type),  /* tp_base */
+    DEFERRED_ADDRESS(&DBusPyIntBase_Type),  /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -133,10 +129,6 @@ static PyTypeObject BooleanType = {
 };
 
 /* Int16 ============================================================ */
-
-static PyTypeObject Int16Type;
-
-DEFINE_CHECK(Int16)
 
 PyDoc_STRVAR(Int16_tp_doc,
 "A signed 16-bit integer between -0x8000 and +0x7FFF, represented as\n"
@@ -159,8 +151,8 @@ PyDoc_STRVAR(Int16_tp_doc,
 "    Int16 with variant_level==2.\n"
 );
 
-static dbus_int16_t
-int16_range_check(PyObject *obj)
+dbus_int16_t
+dbus_py_int16_range_check(PyObject *obj)
 {
     long i = PyInt_AsLong (obj);
     if (i == -1 && PyErr_Occurred ()) return -1;
@@ -175,15 +167,15 @@ int16_range_check(PyObject *obj)
 static PyObject *
 Int16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    PyObject *self = (DBusPythonIntType.tp_new)(cls, args, kwargs);
-    if (self && int16_range_check(self) == -1 && PyErr_Occurred()) {
+    PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
+    if (self && dbus_py_int16_range_check(self) == -1 && PyErr_Occurred()) {
         Py_DECREF(self);
         return NULL;
     }
     return self;
 }
 
-static PyTypeObject Int16Type = {
+PyTypeObject DBusPyInt16_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Int16",
@@ -215,7 +207,7 @@ static PyTypeObject Int16Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPythonIntType),   /* tp_base */
+    DEFERRED_ADDRESS(&DBusPyIntBase_Type),  /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -226,10 +218,6 @@ static PyTypeObject Int16Type = {
 };
 
 /* UInt16 =========================================================== */
-
-static PyTypeObject UInt16Type;
-
-DEFINE_CHECK(UInt16)
 
 PyDoc_STRVAR(UInt16_tp_doc,
 "An unsigned 16-bit integer between 0 and 0xFFFF, represented as\n"
@@ -252,8 +240,8 @@ PyDoc_STRVAR(UInt16_tp_doc,
 "    UInt16 with variant_level==2.\n"
 );
 
-static dbus_uint16_t
-uint16_range_check(PyObject *obj)
+dbus_uint16_t
+dbus_py_uint16_range_check(PyObject *obj)
 {
     long i = PyInt_AsLong(obj);
     if (i == -1 && PyErr_Occurred()) return (dbus_uint16_t)(-1);
@@ -268,8 +256,8 @@ uint16_range_check(PyObject *obj)
 static PyObject *
 UInt16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    PyObject *self = (DBusPythonIntType.tp_new)(cls, args, kwargs);
-    if (self && uint16_range_check(self) == (dbus_uint16_t)(-1)
+    PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
+    if (self && dbus_py_uint16_range_check(self) == (dbus_uint16_t)(-1)
         && PyErr_Occurred()) {
         Py_DECREF (self);
         return NULL;
@@ -277,7 +265,7 @@ UInt16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return self;
 }
 
-static PyTypeObject UInt16Type = {
+PyTypeObject DBusPyUInt16_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.UInt16",
@@ -309,7 +297,7 @@ static PyTypeObject UInt16Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPythonIntType),   /* tp_base */
+    DEFERRED_ADDRESS(&DBusPyIntBase_Type),   /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -320,10 +308,6 @@ static PyTypeObject UInt16Type = {
 };
 
 /* Int32 ============================================================ */
-
-static PyTypeObject Int32Type;
-
-DEFINE_CHECK(Int32)
 
 PyDoc_STRVAR(Int32_tp_doc,
 "A signed 32-bit integer between -0x8000 0000 and +0x7FFF FFFF, represented as\n"
@@ -346,8 +330,8 @@ PyDoc_STRVAR(Int32_tp_doc,
 "    Int32 with variant_level==2.\n"
 );
 
-static dbus_int32_t
-int32_range_check(PyObject *obj)
+dbus_int32_t
+dbus_py_int32_range_check(PyObject *obj)
 {
     long i = PyInt_AsLong(obj);
     if (i == -1 && PyErr_Occurred()) return -1;
@@ -362,15 +346,15 @@ int32_range_check(PyObject *obj)
 static PyObject *
 Int32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    PyObject *self = (DBusPythonIntType.tp_new)(cls, args, kwargs);
-    if (self && int32_range_check(self) == -1 && PyErr_Occurred()) {
+    PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
+    if (self && dbus_py_int32_range_check(self) == -1 && PyErr_Occurred()) {
         Py_DECREF(self);
         return NULL;
     }
     return self;
 }
 
-static PyTypeObject Int32Type = {
+PyTypeObject DBusPyInt32_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Int32",
@@ -402,7 +386,7 @@ static PyTypeObject Int32Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPythonIntType),   /* tp_base */
+    DEFERRED_ADDRESS(&DBusPyIntBase_Type),   /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -413,10 +397,6 @@ static PyTypeObject Int32Type = {
 };
 
 /* UInt32 =========================================================== */
-
-static PyTypeObject UInt32Type;
-
-DEFINE_CHECK(UInt32)
 
 PyDoc_STRVAR(UInt32_tp_doc,
 "An unsigned 32-bit integer between 0 and 0xFFFF FFFF, represented as a\n"
@@ -442,8 +422,8 @@ PyDoc_STRVAR(UInt32_tp_doc,
 "    UInt32 with variant_level==2.\n"
 );
 
-static dbus_uint32_t
-uint32_range_check(PyObject *obj)
+dbus_uint32_t
+dbus_py_uint32_range_check(PyObject *obj)
 {
     unsigned long i;
     PyObject *long_obj = PyNumber_Long(obj);
@@ -467,8 +447,8 @@ uint32_range_check(PyObject *obj)
 static PyObject *
 UInt32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    PyObject *self = (DBusPythonLongType.tp_new)(cls, args, kwargs);
-    if (self && uint32_range_check(self) == (dbus_uint32_t)(-1)
+    PyObject *self = (DBusPyLongBase_Type.tp_new)(cls, args, kwargs);
+    if (self && dbus_py_uint32_range_check(self) == (dbus_uint32_t)(-1)
         && PyErr_Occurred()) {
         Py_DECREF(self);
         return NULL;
@@ -476,7 +456,7 @@ UInt32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return self;
 }
 
-static PyTypeObject UInt32Type = {
+PyTypeObject DBusPyUInt32_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.UInt32",
@@ -508,7 +488,7 @@ static PyTypeObject UInt32Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPythonLongType),  /* tp_base */
+    DEFERRED_ADDRESS(&DBusPyLongBase_Type),  /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -519,16 +499,6 @@ static PyTypeObject UInt32Type = {
 };
 
 /* Int64 =========================================================== */
-
-#if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
-#   define DBUS_PYTHON_64_BIT_WORKS 1
-#else
-#   undef DBUS_PYTHON_64_BIT_WORKS
-#endif /* defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG) */
-
-static PyTypeObject Int64Type;
-
-DEFINE_CHECK(Int64)
 
 PyDoc_STRVAR(Int64_tp_doc,
 "A signed 64-bit integer between -0x8000 0000 0000 0000 and\n"
@@ -565,8 +535,8 @@ PyDoc_STRVAR(Int64_tp_doc,
 );
 
 #ifdef DBUS_PYTHON_64_BIT_WORKS
-static dbus_int64_t
-int64_range_check(PyObject *obj)
+dbus_int64_t
+dbus_py_int64_range_check(PyObject *obj)
 {
     PY_LONG_LONG i;
     PyObject *long_obj = PyNumber_Long(obj);
@@ -591,8 +561,8 @@ static PyObject *
 Int64_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
 #ifdef DBUS_PYTHON_64_BIT_WORKS
-    PyObject *self = (DBusPythonLongType.tp_new)(cls, args, kwargs);
-    if (self && int64_range_check(self) == -1 && PyErr_Occurred()) {
+    PyObject *self = (DBusPyLongBase_Type.tp_new)(cls, args, kwargs);
+    if (self && dbus_py_int64_range_check(self) == -1 && PyErr_Occurred()) {
         Py_DECREF(self);
         return NULL;
     }
@@ -604,7 +574,7 @@ Int64_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 #endif
 }
 
-static PyTypeObject Int64Type = {
+PyTypeObject DBusPyInt64_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Int64",
@@ -636,7 +606,7 @@ static PyTypeObject Int64Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPythonLongType),  /* tp_base */
+    DEFERRED_ADDRESS(&DBusPyLongBase_Type),  /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -647,10 +617,6 @@ static PyTypeObject Int64Type = {
 };
 
 /* UInt64 =========================================================== */
-
-static PyTypeObject UInt64Type;
-
-DEFINE_CHECK(UInt64)
 
 PyDoc_STRVAR(UInt64_tp_doc,
 "An unsigned 64-bit integer between 0 and 0xFFFF FFFF FFFF FFFF,\n"
@@ -680,8 +646,8 @@ PyDoc_STRVAR(UInt64_tp_doc,
 "    UInt64 with variant_level==2.\n"
 );
 
-static dbus_uint64_t
-uint64_range_check(PyObject *obj)
+dbus_uint64_t
+dbus_py_uint64_range_check(PyObject *obj)
 {
     unsigned PY_LONG_LONG i;
     PyObject *long_obj = PyNumber_Long(obj);
@@ -705,8 +671,8 @@ static PyObject *
 UInt64_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
 #ifdef DBUS_PYTHON_64_BIT_WORKS
-    PyObject *self = (DBusPythonLongType.tp_new)(cls, args, kwargs);
-    if (self && uint64_range_check(self) == (dbus_uint64_t)(-1)
+    PyObject *self = (DBusPyLongBase_Type.tp_new)(cls, args, kwargs);
+    if (self && dbus_py_uint64_range_check(self) == (dbus_uint64_t)(-1)
         && PyErr_Occurred()) {
         Py_DECREF(self);
         return NULL;
@@ -719,7 +685,7 @@ UInt64_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 #endif
 }
 
-static PyTypeObject UInt64Type = {
+PyTypeObject DBusPyUInt64_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.UInt64",
@@ -751,7 +717,7 @@ static PyTypeObject UInt64Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPythonLongType),  /* tp_base */
+    DEFERRED_ADDRESS(&DBusPyLongBase_Type),  /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -762,10 +728,6 @@ static PyTypeObject UInt64Type = {
 };
 
 /* UTF-8 string representation ====================================== */
-
-static PyTypeObject UTF8StringType;
-
-DEFINE_CHECK(UTF8String)
 
 PyDoc_STRVAR(UTF8String_tp_doc,
 "A string represented using UTF-8 - a subtype of `str`.\n"
@@ -798,10 +760,10 @@ UTF8String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     unicode = PyUnicode_DecodeUTF8(str, strlen(str), NULL);
     if (!unicode) return NULL;
     Py_DECREF(unicode);
-    return (DBusPythonStringType.tp_new)(cls, args, kwargs);
+    return (DBusPyStrBase_Type.tp_new)(cls, args, kwargs);
 }
 
-static PyTypeObject UTF8StringType = {
+PyTypeObject DBusPyUTF8String_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.UTF8String",
@@ -833,7 +795,7 @@ static PyTypeObject UTF8StringType = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPythonStringType),   /* tp_base */
+    DEFERRED_ADDRESS(&DBusPyStrBase_Type),   /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -844,10 +806,6 @@ static PyTypeObject UTF8StringType = {
 };
 
 /* Object path ====================================================== */
-
-static PyTypeObject ObjectPathType;
-
-DEFINE_CHECK(ObjectPath)
 
 PyDoc_STRVAR(ObjectPath_tp_doc,
 "A D-Bus object path, such as '/com/example/MyApp/Documents/abc'.\n"
@@ -879,10 +837,10 @@ ObjectPath_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     if (!dbus_py_validate_object_path(str)) {
         return NULL;
     }
-    return (DBusPythonStringType.tp_new)(cls, args, kwargs);
+    return (DBusPyStrBase_Type.tp_new)(cls, args, kwargs);
 }
 
-static PyTypeObject ObjectPathType = {
+PyTypeObject DBusPyObjectPath_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.ObjectPath",
@@ -914,7 +872,7 @@ static PyTypeObject ObjectPathType = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPythonStringType),   /* tp_base */
+    DEFERRED_ADDRESS(&DBusPyStrBase_Type),   /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -925,9 +883,6 @@ static PyTypeObject ObjectPathType = {
 };
 
 /* Unicode string representation ==================================== */
-
-static PyTypeObject StringType;
-DEFINE_CHECK(String)
 
 PyDoc_STRVAR(String_tp_doc,
 "A string represented using Unicode - a subtype of `unicode`.\n"
@@ -957,7 +912,7 @@ String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
                         "__new__ takes at most one positional parameter");
         return NULL;
     }
-    if (!PyArg_ParseTupleAndKeywords(empty_tuple, kwargs,
+    if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
                                      "|O!:__new__", argnames,
                                      &PyInt_Type, &variantness)) return NULL;
     if (!variantness) {
@@ -972,7 +927,7 @@ String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
     self = (PyUnicode_Type.tp_new)(cls, args, NULL);
     if (self) {
-        PyObject_GenericSetAttr(self, variant_level_const, variantness);
+        PyObject_GenericSetAttr(self, dbus_py_variant_level_const, variantness);
     }
     return self;
 }
@@ -986,7 +941,7 @@ String_tp_repr(PyObject *self)
     long variant_level;
 
     if (!parent_repr) return NULL;
-    vl_obj = PyObject_GetAttr(self, variant_level_const);
+    vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
     if (!vl_obj) return NULL;
     variant_level = PyInt_AsLong(vl_obj);
     if (variant_level > 0) {
@@ -1004,7 +959,7 @@ String_tp_repr(PyObject *self)
     return my_repr;
 }
 
-static PyTypeObject StringType = {
+PyTypeObject DBusPyString_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.String",
@@ -1049,57 +1004,57 @@ static PyTypeObject StringType = {
 static inline int
 init_types(void)
 {
-    Int16Type.tp_base = &DBusPythonIntType;
-    if (PyType_Ready(&Int16Type) < 0) return 0;
+    DBusPyInt16_Type.tp_base = &DBusPyIntBase_Type;
+    if (PyType_Ready(&DBusPyInt16_Type) < 0) return 0;
     /* disable the tp_print copied from PyInt_Type, so tp_repr gets called as
     desired */
-    Int16Type.tp_print = NULL;
+    DBusPyInt16_Type.tp_print = NULL;
 
-    UInt16Type.tp_base = &DBusPythonIntType;
-    if (PyType_Ready(&UInt16Type) < 0) return 0;
-    UInt16Type.tp_print = NULL;
+    DBusPyUInt16_Type.tp_base = &DBusPyIntBase_Type;
+    if (PyType_Ready(&DBusPyUInt16_Type) < 0) return 0;
+    DBusPyUInt16_Type.tp_print = NULL;
 
-    Int32Type.tp_base = &DBusPythonIntType;
-    if (PyType_Ready(&Int32Type) < 0) return 0;
-    Int32Type.tp_print = NULL;
+    DBusPyInt32_Type.tp_base = &DBusPyIntBase_Type;
+    if (PyType_Ready(&DBusPyInt32_Type) < 0) return 0;
+    DBusPyInt32_Type.tp_print = NULL;
 
-    UInt32Type.tp_base = &DBusPythonLongType;
-    if (PyType_Ready(&UInt32Type) < 0) return 0;
-    UInt32Type.tp_print = NULL;
+    DBusPyUInt32_Type.tp_base = &DBusPyLongBase_Type;
+    if (PyType_Ready(&DBusPyUInt32_Type) < 0) return 0;
+    DBusPyUInt32_Type.tp_print = NULL;
 
 #if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
-    Int64Type.tp_base = &DBusPythonLongType;
-    if (PyType_Ready(&Int64Type) < 0) return 0;
-    Int64Type.tp_print = NULL;
+    DBusPyInt64_Type.tp_base = &DBusPyLongBase_Type;
+    if (PyType_Ready(&DBusPyInt64_Type) < 0) return 0;
+    DBusPyInt64_Type.tp_print = NULL;
 
-    UInt64Type.tp_base = &DBusPythonLongType;
-    if (PyType_Ready(&UInt64Type) < 0) return 0;
-    UInt64Type.tp_print = NULL;
+    DBusPyUInt64_Type.tp_base = &DBusPyLongBase_Type;
+    if (PyType_Ready(&DBusPyUInt64_Type) < 0) return 0;
+    DBusPyUInt64_Type.tp_print = NULL;
 #endif
 
-    StringType.tp_basicsize = PyUnicode_Type.tp_basicsize
-                              + 2*sizeof(PyObject *) - 1;
-    StringType.tp_basicsize /= sizeof(PyObject *);
-    StringType.tp_basicsize *= sizeof(PyObject *);
-    StringType.tp_base = &PyUnicode_Type;
-    if (PyType_Ready(&StringType) < 0) return 0;
-    StringType.tp_print = NULL;
+    DBusPyString_Type.tp_basicsize = PyUnicode_Type.tp_basicsize
+                                     + 2*sizeof(PyObject *) - 1;
+    DBusPyString_Type.tp_basicsize /= sizeof(PyObject *);
+    DBusPyString_Type.tp_basicsize *= sizeof(PyObject *);
+    DBusPyString_Type.tp_base = &PyUnicode_Type;
+    if (PyType_Ready(&DBusPyString_Type) < 0) return 0;
+    DBusPyString_Type.tp_print = NULL;
 
-    UTF8StringType.tp_basicsize = PyUnicode_Type.tp_basicsize
+    DBusPyUTF8String_Type.tp_basicsize = PyUnicode_Type.tp_basicsize
                                   + 2*sizeof(PyObject *) - 1;
-    UTF8StringType.tp_basicsize /= sizeof(PyObject *);
-    UTF8StringType.tp_basicsize *= sizeof(PyObject *);
-    UTF8StringType.tp_base = &DBusPythonStringType;
-    if (PyType_Ready(&UTF8StringType) < 0) return 0;
-    UTF8StringType.tp_print = NULL;
+    DBusPyUTF8String_Type.tp_basicsize /= sizeof(PyObject *);
+    DBusPyUTF8String_Type.tp_basicsize *= sizeof(PyObject *);
+    DBusPyUTF8String_Type.tp_base = &DBusPyStrBase_Type;
+    if (PyType_Ready(&DBusPyUTF8String_Type) < 0) return 0;
+    DBusPyUTF8String_Type.tp_print = NULL;
 
-    ObjectPathType.tp_base = &DBusPythonStringType;
-    if (PyType_Ready(&ObjectPathType) < 0) return 0;
-    ObjectPathType.tp_print = NULL;
+    DBusPyObjectPath_Type.tp_base = &DBusPyStrBase_Type;
+    if (PyType_Ready(&DBusPyObjectPath_Type) < 0) return 0;
+    DBusPyObjectPath_Type.tp_print = NULL;
 
-    BooleanType.tp_base = &DBusPythonIntType;
-    if (PyType_Ready(&BooleanType) < 0) return 0;
-    BooleanType.tp_print = NULL;
+    DBusPyBoolean_Type.tp_base = &DBusPyIntBase_Type;
+    if (PyType_Ready(&DBusPyBoolean_Type) < 0) return 0;
+    DBusPyBoolean_Type.tp_print = NULL;
 
     return 1;
 }
@@ -1107,37 +1062,37 @@ init_types(void)
 static inline int
 insert_types(PyObject *this_module)
 {
-    Py_INCREF(&Int16Type);
-    Py_INCREF(&UInt16Type);
-    Py_INCREF(&Int32Type);
-    Py_INCREF(&UInt32Type);
-    Py_INCREF(&Int64Type);
-    Py_INCREF(&UInt64Type);
-    Py_INCREF(&BooleanType);
+    Py_INCREF(&DBusPyInt16_Type);
+    Py_INCREF(&DBusPyUInt16_Type);
+    Py_INCREF(&DBusPyInt32_Type);
+    Py_INCREF(&DBusPyUInt32_Type);
+    Py_INCREF(&DBusPyInt64_Type);
+    Py_INCREF(&DBusPyUInt64_Type);
+    Py_INCREF(&DBusPyBoolean_Type);
     if (PyModule_AddObject(this_module, "Int16",
-                           (PyObject *)&Int16Type) < 0) return 0;
+                           (PyObject *)&DBusPyInt16_Type) < 0) return 0;
     if (PyModule_AddObject(this_module, "UInt16",
-                           (PyObject *)&UInt16Type) < 0) return 0;
+                           (PyObject *)&DBusPyUInt16_Type) < 0) return 0;
     if (PyModule_AddObject(this_module, "Int32",
-                           (PyObject *)&Int32Type) < 0) return 0;
+                           (PyObject *)&DBusPyInt32_Type) < 0) return 0;
     if (PyModule_AddObject(this_module, "UInt32",
-                           (PyObject *)&UInt32Type) < 0) return 0;
+                           (PyObject *)&DBusPyUInt32_Type) < 0) return 0;
     if (PyModule_AddObject(this_module, "Int64",
-                           (PyObject *)&Int64Type) < 0) return 0;
+                           (PyObject *)&DBusPyInt64_Type) < 0) return 0;
     if (PyModule_AddObject(this_module, "UInt64",
-                           (PyObject *)&UInt64Type) < 0) return 0;
+                           (PyObject *)&DBusPyUInt64_Type) < 0) return 0;
     if (PyModule_AddObject(this_module, "Boolean",
-                           (PyObject *)&BooleanType) < 0) return 0;
+                           (PyObject *)&DBusPyBoolean_Type) < 0) return 0;
 
-    Py_INCREF(&ObjectPathType);
-    Py_INCREF(&UTF8StringType);
-    Py_INCREF(&StringType);
+    Py_INCREF(&DBusPyObjectPath_Type);
+    Py_INCREF(&DBusPyUTF8String_Type);
+    Py_INCREF(&DBusPyString_Type);
     if (PyModule_AddObject(this_module, "ObjectPath",
-                           (PyObject *)&ObjectPathType) < 0) return 0;
+                           (PyObject *)&DBusPyObjectPath_Type) < 0) return 0;
     if (PyModule_AddObject(this_module, "UTF8String",
-                           (PyObject *)&UTF8StringType) < 0) return 0;
+                           (PyObject *)&DBusPyUTF8String_Type) < 0) return 0;
     if (PyModule_AddObject(this_module, "String",
-                           (PyObject *)&StringType) < 0) return 0;
+                           (PyObject *)&DBusPyString_Type) < 0) return 0;
 
     return 1;
 }

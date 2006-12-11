@@ -29,7 +29,7 @@ PyDoc_STRVAR(Watch_tp_doc,
 "Cannot be instantiated from Python.\n"
 );
 
-static PyTypeObject WatchType;
+static PyTypeObject Watch_Type;
 
 DEFINE_CHECK(Watch)
 
@@ -139,7 +139,7 @@ Watch_BorrowFromDBusWatch(DBusWatch *watch, PyObject *mainloop)
         return NULL;
     }
 
-    self = PyObject_New(Watch, &WatchType);
+    self = PyObject_New(Watch, &Watch_Type);
     if (!self) {
         return NULL;
     }
@@ -168,7 +168,7 @@ static void Watch_tp_dealloc(PyObject *self)
     PyObject_Del(self);
 }
 
-static PyTypeObject WatchType = {
+static PyTypeObject Watch_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "_dbus_bindings.Watch",
@@ -218,7 +218,7 @@ PyDoc_STRVAR(Timeout_tp_doc,
 "Cannot be instantiated from Python.\n"
 );
 
-static PyTypeObject TimeoutType;
+static PyTypeObject Timeout_Type;
 
 DEFINE_CHECK(Timeout)
 
@@ -295,7 +295,7 @@ Timeout_BorrowFromDBusTimeout(DBusTimeout *timeout, PyObject *mainloop)
         return NULL;
     }
 
-    self = PyObject_New(Timeout, &TimeoutType);
+    self = PyObject_New(Timeout, &Timeout_Type);
     if (!self) {
         return NULL;
     }
@@ -322,7 +322,7 @@ static void Timeout_tp_dealloc(PyObject *self)
     PyObject_Del(self);
 }
 
-static PyTypeObject TimeoutType = {
+static PyTypeObject Timeout_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "_dbus_bindings.Timeout",
@@ -372,7 +372,7 @@ PyDoc_STRVAR(NativeMainLoop_tp_doc,
 "Cannot be instantiated directly.\n"
 );
 
-static PyTypeObject NativeMainLoopType;
+static PyTypeObject NativeMainLoop_Type;
 
 DEFINE_CHECK(NativeMainLoop)
 
@@ -394,7 +394,7 @@ static void NativeMainLoop_tp_dealloc(NativeMainLoop *self)
     PyObject_Del((PyObject *)self);
 }
 
-static PyTypeObject NativeMainLoopType = {
+static PyTypeObject NativeMainLoop_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.mainloop.NativeMainLoop",
@@ -544,7 +544,7 @@ DBusPyNativeMainLoop_New4(dbus_bool_t (*conn_cb)(DBusConnection *, void *),
                           void (*free_cb)(void *),
                           void *data)
 {
-    NativeMainLoop *self = PyObject_New(NativeMainLoop, &NativeMainLoopType);
+    NativeMainLoop *self = PyObject_New(NativeMainLoop, &NativeMainLoop_Type);
     if (self) {
         self->data = data;
         self->free_cb = free_cb;
@@ -572,9 +572,9 @@ init_mainloop (void)
 {
     default_main_loop = NULL;
 
-    if (PyType_Ready (&WatchType) < 0) return 0;
-    if (PyType_Ready (&TimeoutType) < 0) return 0;
-    if (PyType_Ready (&NativeMainLoopType) < 0) return 0;
+    if (PyType_Ready (&Watch_Type) < 0) return 0;
+    if (PyType_Ready (&Timeout_Type) < 0) return 0;
+    if (PyType_Ready (&NativeMainLoop_Type) < 0) return 0;
 
     /* placate -Wunused */
     (void)&Watch_BorrowFromDBusWatch;
@@ -593,11 +593,11 @@ insert_mainloop_types (PyObject *this_module)
     if (!null_main_loop) return 0;
 
     if (PyModule_AddObject (this_module, "Watch",
-                            (PyObject *)&WatchType) < 0) return 0;
+                            (PyObject *)&Watch_Type) < 0) return 0;
     if (PyModule_AddObject (this_module, "Timeout",
-                            (PyObject *)&TimeoutType) < 0) return 0;
+                            (PyObject *)&Timeout_Type) < 0) return 0;
     if (PyModule_AddObject (this_module, "NativeMainLoop",
-                            (PyObject *)&NativeMainLoopType) < 0) return 0;
+                            (PyObject *)&NativeMainLoop_Type) < 0) return 0;
     if (PyModule_AddObject (this_module, "NULL_MAIN_LOOP",
                             null_main_loop) < 0) return 0;
     return 1;

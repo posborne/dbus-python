@@ -60,7 +60,7 @@ Bus_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     if (first && PyString_Check(first)) {
         /* It's a custom address. First connect to it, then register. */
 
-        self = (Connection *)(DBusPyConnectionType.tp_new)(cls, args, kwargs);
+        self = (Connection *)(DBusPyConnection_Type.tp_new)(cls, args, kwargs);
         if (!self) return NULL;
 
         Py_BEGIN_ALLOW_THREADS
@@ -401,7 +401,7 @@ static PyTypeObject BusType = {
 dbus_bool_t
 dbus_py_init_bus_types (void)
 {
-    BusType.tp_base = &DBusPyConnectionType;
+    BusType.tp_base = &DBusPyConnection_Type;
     if (PyType_Ready (&BusType) < 0) return 0;
     return 1;
 }

@@ -43,14 +43,6 @@ PyDoc_STRVAR(Signature_tp_doc,
 "    Signature with variant_level==2.\n"
 );
 
-static PyTypeObject SignatureType;
-
-static inline int Signature_Check(PyObject *o)
-{
-    return (o->ob_type == &SignatureType)
-            || PyObject_IsInstance(o, (PyObject *)&SignatureType);
-}
-
 typedef struct {
     PyObject_HEAD
     PyObject *string;
@@ -76,7 +68,7 @@ SignatureIter_tp_iternext (SignatureIter *self)
 
     sig = dbus_signature_iter_get_signature(&(self->iter));
     if (!sig) return PyErr_NoMemory();
-    obj = PyObject_CallFunction((PyObject *)&SignatureType, "s", sig);
+    obj = PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "s", sig);
     dbus_free(sig);
     if (!obj) return NULL;
 
@@ -171,10 +163,10 @@ Signature_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         PyErr_SetString(PyExc_ValueError, "Corrupt type signature");
         return NULL;
     }
-    return (DBusPythonStringType.tp_new)(cls, args, kwargs);
+    return (DBusPyStrBase_Type.tp_new)(cls, args, kwargs);
 }
 
-static PyTypeObject SignatureType = {
+PyTypeObject DBusPySignature_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Signature",
@@ -222,9 +214,9 @@ init_signature(void)
 {
     if (PyType_Ready(&SignatureIterType) < 0) return 0;
 
-    SignatureType.tp_base = &DBusPythonStringType;
-    if (PyType_Ready(&SignatureType) < 0) return 0;
-    SignatureType.tp_print = NULL;
+    DBusPySignature_Type.tp_base = &DBusPyStrBase_Type;
+    if (PyType_Ready(&DBusPySignature_Type) < 0) return 0;
+    DBusPySignature_Type.tp_print = NULL;
 
     return 1;
 }
@@ -232,9 +224,9 @@ init_signature(void)
 static inline int
 insert_signature (PyObject *this_module)
 {
-    Py_INCREF(&SignatureType);
+    Py_INCREF(&DBusPySignature_Type);
     if (PyModule_AddObject(this_module, "Signature",
-                           (PyObject *)&SignatureType) < 0) return 0;
+                           (PyObject *)&DBusPySignature_Type) < 0) return 0;
     Py_INCREF(&SignatureIterType);
     if (PyModule_AddObject(this_module, "_SignatureIter",
                            (PyObject *)&SignatureIterType) < 0) return 0;

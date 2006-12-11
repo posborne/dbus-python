@@ -23,14 +23,7 @@
  *
  */
 
-#define DEFINE_CHECK(type) \
-static inline int type##_Check (PyObject *o) \
-{ \
-    return (o->ob_type == &type##Type) \
-            || PyObject_IsInstance(o, (PyObject *)&type##Type); \
-}
-
-static PyObject *empty_tuple = NULL;
+PyObject *dbus_py_empty_tuple = NULL;
 
 static PyObject *
 Glue_tp_richcompare_by_pointer(PyObject *self,
@@ -77,8 +70,8 @@ dbus_py_take_gil_and_xdecref(PyObject *obj)
 static inline int
 init_generic(void)
 {
-    empty_tuple = PyTuple_New(0);
-    if (!empty_tuple) return 0;
+    dbus_py_empty_tuple = PyTuple_New(0);
+    if (!dbus_py_empty_tuple) return 0;
     return 1;
 }
 

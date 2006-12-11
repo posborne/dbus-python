@@ -322,7 +322,7 @@ static void Connection_tp_dealloc(Connection *self)
 
 /* Connection type object =========================================== */
 
-static PyTypeObject ConnectionType = {
+PyTypeObject DBusPyConnection_Type = {
     PyObject_HEAD_INIT(NULL)
     0,                      /*ob_size*/
     "_dbus_bindings.Connection", /*tp_name*/
@@ -367,23 +367,23 @@ static PyTypeObject ConnectionType = {
     0,                      /*tp_is_gc*/
 };
 
-static inline dbus_bool_t
-init_conn_types(void)
+dbus_bool_t
+dbus_py_init_conn_types(void)
 {
     /* Get a slot to store our weakref on DBus Connections */
     _connection_python_slot = -1;
     if (!dbus_connection_allocate_data_slot(&_connection_python_slot))
         return FALSE;
-    if (PyType_Ready(&ConnectionType) < 0)
+    if (PyType_Ready(&DBusPyConnection_Type) < 0)
         return FALSE;
     return TRUE;
 }
 
-static inline dbus_bool_t
-insert_conn_types(PyObject *this_module)
+dbus_bool_t
+dbus_py_insert_conn_types(PyObject *this_module)
 {
     if (PyModule_AddObject(this_module, "Connection",
-                           (PyObject *)&ConnectionType) < 0) return FALSE;
+                           (PyObject *)&DBusPyConnection_Type) < 0) return FALSE;
     return TRUE;
 }
 
