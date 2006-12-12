@@ -22,8 +22,42 @@
  *
  */
 
+#include "dbus_bindings-internal.h"
+#include <stdlib.h>
+
+void
+_dbus_py_assertion_failed(const char *assertion)
+{
+    PyErr_SetString(PyExc_AssertionError, assertion);
+#if 1 || defined(USING_DBG) || defined(FATAL_ASSERTIONS)
+    /* print the Python stack, and dump core so we can see the C stack too */
+    PyErr_Print();
+    abort();
+#endif
+}
+
 #ifdef USING_DBG
-void _dbus_py_dbg_exc(void)
+void
+_dbus_py_whereami(void)
+{
+    PyObject *c, *v, *t;
+    /* This is a little mad. We want to get the traceback without
+    clearing the error indicator, if any. */
+    PyErr_Fetch(&c, &v, &t); /* 3 new refs */
+    Py_XINCREF(c); Py_XINCREF(v); Py_XINCREF(t); /* now we own 6 refs */
+    PyErr_Restore(c, v, t); /* steals 3 refs */
+
+    if (!PyErr_Occurred()) {
+        PyErr_SetString(PyExc_AssertionError,
+                        "No error, but plz provide traceback kthx");
+    }
+    PyErr_Print();
+
+    PyErr_Restore(c, v, t); /* steals another 3 refs */
+}
+
+void
+_dbus_py_dbg_exc(void)
 {
     PyObject *c, *v, *t;
     /* This is a little mad. We want to get the traceback without
@@ -35,7 +69,7 @@ void _dbus_py_dbg_exc(void)
     PyErr_Restore(c, v, t); /* steals another 3 refs */
 }
 
-static void
+void
 _dbus_py_dbg_dump_message(DBusMessage *message)
 {
     const char *s;

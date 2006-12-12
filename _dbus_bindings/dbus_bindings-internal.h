@@ -33,7 +33,7 @@
 
 /* on/off switch for debugging support (see below) */
 #undef USING_DBG
-/* #define USING_DBG */
+/* #define USING_DBG 1 */
 
 #define DEFINE_CHECK(type) \
 static inline int type##_Check (PyObject *o) \
@@ -142,19 +142,43 @@ dbus_bool_t dbus_py_validate_object_path(const char *path);
 #define dbus_py_validate_error_name dbus_py_validate_interface_name
 
 /* debugging support */
+void _dbus_py_assertion_failed(const char *);
+#define DBUS_PY_RAISE_VIA_NULL_IF_FAIL(assertion) \
+    do { if (!(assertion)) { \
+            _dbus_py_assertion_failed(#assertion); \
+            return NULL; \
+        } \
+    } while (0)
+
+#define DBUS_PY_RAISE_VIA_GOTO_IF_FAIL(assertion, label) \
+    do { if (!(assertion)) { \
+            _dbus_py_assertion_failed(#assertion); \
+            goto label; \
+        } \
+    } while (0)
+
+#define DBUS_PY_RAISE_VIA_RETURN_IF_FAIL(assertion, value) \
+    do { if (!(assertion)) { \
+            _dbus_py_assertion_failed(#assertion); \
+            return value; \
+        } \
+    } while (0)
+
+/* verbose debugging support */
 #ifdef USING_DBG
 
 #   include <sys/types.h>
 #   include <unistd.h>
 
 void _dbus_py_dbg_exc(void);
+void _dbus_py_whereami(void);
 void _dbus_py_dbg_dump_message(DBusMessage *);
 
 #   define DBG(format, ...) fprintf(stderr, "DEBUG: " format "\n",\
                                     __VA_ARGS__)
 #   define DBG_EXC(format, ...) do {DBG(format, __VA_ARGS__); \
                                     _dbus_py_dbg_exc();} while (0)
-#   define DBG_DUMP_MESSAGE(x) _dbg_dump_message(x)
+#   define DBG_DUMP_MESSAGE(x) _dbus_py_dbg_dump_message(x)
 
 #else /* !defined(USING_DBG) */
 
