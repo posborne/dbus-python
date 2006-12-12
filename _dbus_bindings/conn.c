@@ -174,7 +174,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
     PyObject *ref;
     dbus_bool_t ok;
 
-    DBG("%s(cls=%p, conn=%p, mainloop=%p)", __FUNC__, cls, conn, mainloop);
+    DBG("%s(cls=%p, conn=%p, mainloop=%p)", __func__, cls, conn, mainloop);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(conn);
 
     Py_BEGIN_ALLOW_THREADS
@@ -189,7 +189,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
             PyErr_SetString(PyExc_AssertionError,
                             "Newly created D-Bus connection already has a "
                             "Connection instance associated with it");
-            DBG("%s() fail - assertion failed, DBusPyConn has a DBusConn already", __FUNC__);
+            DBG("%s() fail - assertion failed, DBusPyConn has a DBusConn already", __func__);
             DBG_WHEREAMI;
             return NULL;
         }
@@ -246,7 +246,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
 
     Py_DECREF(mainloop);
 
-    DBG("%s() -> %p", __FUNC__, self);
+    DBG("%s() -> %p", __func__, self);
     return (PyObject *)self;
 
 err:
@@ -260,7 +260,7 @@ err:
         dbus_connection_unref(conn);
         Py_END_ALLOW_THREADS
     }
-    DBG("%s() fail", __FUNC__, self);
+    DBG("%s() fail", __func__, self);
     DBG_WHEREAMI;
     return NULL;
 }
