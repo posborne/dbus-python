@@ -174,6 +174,9 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
     PyObject *ref;
     dbus_bool_t ok;
 
+    DBG("%s(cls=%p, conn=%p, mainloop=%p)", __FUNC__, cls, conn, mainloop);
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(conn);
+
     Py_BEGIN_ALLOW_THREADS
     ref = (PyObject *)dbus_connection_get_data(conn,
                                                _connection_python_slot);
@@ -186,6 +189,8 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
             PyErr_SetString(PyExc_AssertionError,
                             "Newly created D-Bus connection already has a "
                             "Connection instance associated with it");
+            DBG("%s() fail - assertion failed, DBusPyConn has a DBusConn already", __FUNC__);
+            DBG_WHEREAMI;
             return NULL;
         }
     }
@@ -210,6 +215,8 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
     self = (Connection *)(cls->tp_alloc(cls, 0));
     if (!self) goto err;
 
+    DBG_WHEREAMI;
+
     self->conn = NULL;
     self->filters = PyList_New(0);
     if (!self->filters) goto err;
@@ -230,6 +237,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
         goto err;
     }
 
+    DBUS_PY_RAISE_VIA_GOTO_IF_FAIL(conn, err);
     self->conn = conn;
 
     if (!dbus_py_set_up_connection((PyObject *)self, mainloop)) {
@@ -238,6 +246,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
 
     Py_DECREF(mainloop);
 
+    DBG("%s() -> %p", __FUNC__, self);
     return (PyObject *)self;
 
 err:
@@ -251,6 +260,8 @@ err:
         dbus_connection_unref(conn);
         Py_END_ALLOW_THREADS
     }
+    DBG("%s() fail", __FUNC__, self);
+    DBG_WHEREAMI;
     return NULL;
 }
 
@@ -297,7 +308,17 @@ static void Connection_tp_dealloc(Connection *self)
     PyObject *object_paths = self->object_paths;
 
     DBG("Deallocating Connection at %p (DBusConnection at %p)", self, conn);
+    DBG_WHEREAMI;
 
+    if (conn) {
+        /* Might trigger callbacks if we're unlucky... */
+        DBG("Connection at %p has a conn, closing it...", self);
+        Py_BEGIN_ALLOW_THREADS
+        dbus_connection_close(conn);
+        Py_END_ALLOW_THREADS
+    }
+
+    DBG("Connection at %p: deleting callbacks", self);
     self->filters = NULL;
     Py_XDECREF(filters);
     self->object_paths = NULL;
@@ -308,15 +329,13 @@ static void Connection_tp_dealloc(Connection *self)
      * (until the filters and object paths were freed, we might have been
      * in a reference cycle!)
      */
+    DBG("Connection at %p: nulling self->conn", self);
     self->conn = NULL;
-    if (conn) {
-        Py_BEGIN_ALLOW_THREADS
-        dbus_connection_close(conn);
-        Py_END_ALLOW_THREADS
 
-        dbus_connection_unref(conn);
-    }
+    DBG("Connection at %p: unreffing conn", self);
+    dbus_connection_unref(conn);
 
+    DBG("Connection at %p: freeing self", self);
     (self->ob_type->tp_free)((PyObject *)self);
 }
 

@@ -209,7 +209,7 @@ Connection_close (Connection *self, PyObject *args)
     let them close shared connections. */
     if (self->conn) {
         Py_BEGIN_ALLOW_THREADS
-        dbus_connection_close (self->conn);
+        dbus_connection_close(self->conn);
         Py_END_ALLOW_THREADS
     }
     Py_RETURN_NONE;
@@ -222,11 +222,12 @@ static PyObject *
 Connection_get_is_connected (Connection *self, PyObject *args)
 {
     dbus_bool_t ret;
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, ":get_is_connected")) return NULL;
     Py_BEGIN_ALLOW_THREADS
-    ret = dbus_connection_get_is_connected (self->conn);
+    ret = dbus_connection_get_is_connected(self->conn);
     Py_END_ALLOW_THREADS
-    return PyBool_FromLong (ret);
+    return PyBool_FromLong(ret);
 }
 
 PyDoc_STRVAR(Connection_get_is_authenticated__doc__,
@@ -236,11 +237,12 @@ static PyObject *
 Connection_get_is_authenticated (Connection *self, PyObject *args)
 {
     dbus_bool_t ret;
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, ":get_is_authenticated")) return NULL;
     Py_BEGIN_ALLOW_THREADS
-    ret = dbus_connection_get_is_authenticated (self->conn);
+    ret = dbus_connection_get_is_authenticated(self->conn);
     Py_END_ALLOW_THREADS
-    return PyBool_FromLong (ret);
+    return PyBool_FromLong(ret);
 }
 
 PyDoc_STRVAR(Connection_set_exit_on_disconnect__doc__,
@@ -255,13 +257,14 @@ static PyObject *
 Connection_set_exit_on_disconnect (Connection *self, PyObject *args)
 {
     int exit_on_disconnect;
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "i:set_exit_on_disconnect",
                           &exit_on_disconnect)) {
         return NULL;
     }
     Py_BEGIN_ALLOW_THREADS
-    dbus_connection_set_exit_on_disconnect (self->conn,
-                                            exit_on_disconnect ? 1 : 0);
+    dbus_connection_set_exit_on_disconnect(self->conn,
+                                           exit_on_disconnect ? 1 : 0);
     Py_END_ALLOW_THREADS
     Py_RETURN_NONE;
 }
@@ -282,6 +285,7 @@ Connection_send_message(Connection *self, PyObject *args)
     DBusMessage *msg;
     dbus_uint32_t serial;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "O", &obj)) return NULL;
 
     msg = DBusPyMessage_BorrowDBusMessage(obj);
@@ -328,6 +332,7 @@ Connection_send_message_with_reply(Connection *self, PyObject *args)
     DBusMessage *msg;
     DBusPendingCall *pending;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "OO|f:send_message_with_reply", &obj, &callable,
                           &timeout_s)) {
         return NULL;
@@ -392,6 +397,7 @@ Connection_send_message_with_reply_and_block(Connection *self, PyObject *args)
     DBusMessage *msg, *reply;
     DBusError error;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "O|f:send_message_with_reply_and_block", &obj,
                           &timeout_s)) {
         return NULL;
@@ -429,6 +435,7 @@ PyDoc_STRVAR(Connection_flush__doc__,
 static PyObject *
 Connection_flush (Connection *self, PyObject *args UNUSED)
 {
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     Py_BEGIN_ALLOW_THREADS
     dbus_connection_flush (self->conn);
     Py_END_ALLOW_THREADS
@@ -471,6 +478,7 @@ Connection_get_unix_fd (Connection *self, PyObject *unused UNUSED)
     int fd;
     dbus_bool_t ok;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     Py_BEGIN_ALLOW_THREADS
     ok = dbus_connection_get_unix_fd (self->conn, &fd);
     Py_END_ALLOW_THREADS
@@ -489,6 +497,7 @@ Connection_get_peer_unix_user (Connection *self, PyObject *unused UNUSED)
     unsigned long uid;
     dbus_bool_t ok;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     Py_BEGIN_ALLOW_THREADS
     ok = dbus_connection_get_unix_user (self->conn, &uid);
     Py_END_ALLOW_THREADS
@@ -507,6 +516,7 @@ Connection_get_peer_unix_process_id (Connection *self, PyObject *unused UNUSED)
     unsigned long pid;
     dbus_bool_t ok;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     Py_BEGIN_ALLOW_THREADS
     ok = dbus_connection_get_unix_process_id (self->conn, &pid);
     Py_END_ALLOW_THREADS
@@ -532,6 +542,7 @@ Connection_add_message_filter(Connection *self, PyObject *callable)
 {
     dbus_bool_t ok;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     /* The callable must be referenced by ->filters *before* it is
      * given to libdbus, which does not own a reference to it.
      */
@@ -564,6 +575,7 @@ Connection_remove_message_filter(Connection *self, PyObject *callable)
 {
     PyObject *obj;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     /* It's safe to do this before removing it from libdbus, because
      * the presence of callable in our arguments means we have a ref
      * to it. */
@@ -610,6 +622,7 @@ Connection__register_object_path(Connection *self, PyObject *args,
     static char *argnames[] = {"path", "on_message", "on_unregister",
                                "fallback", NULL};
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTupleAndKeywords(args, kwargs,
                                      "OO|Oi:_register_object_path",
                                      argnames, 
@@ -732,6 +745,7 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
     PyObject *callbacks;
     static char *argnames[] = {"path", NULL};
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTupleAndKeywords(args, kwargs,
                                      "O:_unregister_object_path",
                                      argnames, &path)) return NULL;

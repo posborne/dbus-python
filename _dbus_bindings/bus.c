@@ -115,6 +115,7 @@ Bus_get_unique_name(Connection *self, PyObject *args UNUSED)
 {
     const char *name;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     Py_BEGIN_ALLOW_THREADS
     name = dbus_bus_get_unique_name(self->conn);
     Py_END_ALLOW_THREADS
@@ -143,6 +144,7 @@ Bus_get_unix_user(Connection *self, PyObject *args)
     unsigned long uid;
     const char *bus_name;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:get_unix_user", &bus_name)) {
         return NULL;
     }
@@ -180,6 +182,7 @@ Bus_start_service_by_name(Connection *self, PyObject *args)
     dbus_uint32_t ret;
     dbus_bool_t success;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:start_service_by_name", &bus_name)) {
         return NULL;
     }
@@ -204,6 +207,7 @@ Bus_request_name(Connection *self, PyObject *args)
     int ret;
     DBusError error;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s|I:request_name", &bus_name, &flags)) {
         return NULL;
     }
@@ -226,6 +230,7 @@ Bus_release_name(Connection *self, PyObject *args)
     int ret;
     DBusError error;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:release_name", &bus_name)) return NULL;
 
     dbus_error_init(&error);
@@ -268,6 +273,7 @@ Bus_add_match_string(Connection *self, PyObject *args)
     const char *rule;
     DBusError error;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:add_match", &rule)) return NULL;
     dbus_error_init(&error);
     Py_BEGIN_ALLOW_THREADS
@@ -289,6 +295,7 @@ Bus_add_match_string_non_blocking(Connection *self, PyObject *args)
 {
     const char *rule;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:add_match", &rule)) return NULL;
     Py_BEGIN_ALLOW_THREADS
     dbus_bus_add_match(self->conn, rule, NULL);
@@ -307,6 +314,7 @@ Bus_remove_match_string(Connection *self, PyObject *args)
     const char *rule;
     DBusError error;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:remove_match", &rule)) return NULL;
     dbus_error_init(&error);
     Py_BEGIN_ALLOW_THREADS
@@ -328,6 +336,7 @@ Bus_remove_match_string_non_blocking(Connection *self, PyObject *args)
 {
     const char *rule;
 
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:remove_match", &rule)) return NULL;
     Py_BEGIN_ALLOW_THREADS
     dbus_bus_remove_match(self->conn, rule, NULL);
