@@ -179,12 +179,14 @@ void _dbus_py_dbg_dump_message(DBusMessage *);
 #   define DBG_EXC(format, ...) do {DBG(format, __VA_ARGS__); \
                                     _dbus_py_dbg_exc();} while (0)
 #   define DBG_DUMP_MESSAGE(x) _dbus_py_dbg_dump_message(x)
+#   define DBG_WHEREAMI _dbus_py_whereami()
 
 #else /* !defined(USING_DBG) */
 
 #   define DBG(format, ...) do {} while (0)
 #   define DBG_EXC(format, ...) do {} while (0)
-#   define DBG_DUMP_MESSAGE(x) do {} while(0)
+#   define DBG_DUMP_MESSAGE(x) do {} while (0)
+#   define DBG_WHEREAMI do {} while (0)
 
 #endif /* !defined(USING_DBG) */
 
