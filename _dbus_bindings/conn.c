@@ -260,7 +260,7 @@ err:
         dbus_connection_unref(conn);
         Py_END_ALLOW_THREADS
     }
-    DBG("%s() fail", __func__, self);
+    DBG("%s() fail", __func__);
     DBG_WHEREAMI;
     return NULL;
 }
