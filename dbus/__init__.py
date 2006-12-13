@@ -174,6 +174,9 @@ __docformat__ = 'restructuredtext'
 version = (0, 79, 91)
 __version__ = '.'.join(map(str, version))
 
+# OLPC Sugar compatibility
+import dbus.types as types
+
 from _dbus_bindings import get_default_main_loop, set_default_main_loop,\
                            validate_interface_name, validate_member_name,\
                            validate_bus_name, validate_object_path,\
