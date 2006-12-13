@@ -38,6 +38,7 @@ typedef struct {
      */
     PyObject *object_paths;
 
+    /* Weak-references list to make Connections weakly referenceable */
     PyObject *weaklist;
 } Connection;
 
