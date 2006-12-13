@@ -175,6 +175,7 @@ version = (0, 79, 91)
 __version__ = '.'.join(map(str, version))
 
 # OLPC Sugar compatibility
+import dbus.exceptions as exceptions
 import dbus.types as types
 
 from _dbus_bindings import get_default_main_loop, set_default_main_loop,\
