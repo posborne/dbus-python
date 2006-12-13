@@ -36,7 +36,7 @@ BusImplementation = _dbus_bindings.BusImplementation
 import logging
 import weakref
 
-from proxies import ProxyObject
+from dbus.proxies import ProxyObject
 
 try:
     import thread
