@@ -245,7 +245,7 @@ class Bus(BusImplementation):
     START_REPLY_SUCCESS = _dbus_bindings.DBUS_START_REPLY_SUCCESS
     START_REPLY_ALREADY_RUNNING = _dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING
 
-    _shared_instances = weakref.WeakValueDictionary()
+    _shared_instances = {}
 
     def __new__(cls, bus_type=TYPE_SESSION, private=False, mainloop=None):
         """Constructor, returning an existing instance where appropriate.
@@ -315,6 +315,12 @@ class Bus(BusImplementation):
             cls._shared_instances[bus_type] = bus
 
         return bus
+
+    def close(self):
+        t = self._bus_type
+        if self.__class__._shared_instances[t] is self:
+            del self.__class__._shared_instances[t]
+        BusImplementation.close(self)
 
     def get_connection(self):
         """(Deprecated - in new code, just use self)
