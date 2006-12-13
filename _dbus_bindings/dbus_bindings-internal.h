@@ -33,7 +33,9 @@
 
 /* on/off switch for debugging support (see below) */
 #undef USING_DBG
-/* #define USING_DBG 1 */
+#if 0 && !defined(DBG_IS_TOO_VERBOSE)
+#   define USING_DBG 1
+#endif
 
 #define DEFINE_CHECK(type) \
 static inline int type##_Check (PyObject *o) \
@@ -174,6 +176,11 @@ void _dbus_py_dbg_exc(void);
 void _dbus_py_whereami(void);
 void _dbus_py_dbg_dump_message(DBusMessage *);
 
+#   define TRACE(self) do { fprintf(stderr, "TRACE: <%s at %p> in %s, " \
+                                    "%d refs\n", \
+                                    self->ob_type->tp_name, \
+                                    self, __func__, \
+                                    self->ob_refcnt); } while (0)
 #   define DBG(format, ...) fprintf(stderr, "DEBUG: " format "\n",\
                                     __VA_ARGS__)
 #   define DBG_EXC(format, ...) do {DBG(format, __VA_ARGS__); \
@@ -183,6 +190,7 @@ void _dbus_py_dbg_dump_message(DBusMessage *);
 
 #else /* !defined(USING_DBG) */
 
+#   define TRACE(self) do {} while (0)
 #   define DBG(format, ...) do {} while (0)
 #   define DBG_EXC(format, ...) do {} while (0)
 #   define DBG_DUMP_MESSAGE(x) do {} while (0)
