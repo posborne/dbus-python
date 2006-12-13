@@ -23,6 +23,7 @@
  *
  */
 
+#define DBG_IS_TOO_VERBOSE
 #include "types-internal.h"
 #include "message-internal.h"
 
