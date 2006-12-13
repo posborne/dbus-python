@@ -6,6 +6,7 @@ List services on the system bus (default) or the session bus."""
 import sys
 
 import dbus
+from dbus.mainloop import NULL_MAIN_LOOP
 
 def main(argv):
     factory = dbus.SystemBus
@@ -19,7 +20,8 @@ def main(argv):
             sys.exit(__doc__)
 
     # Get a connection to the system or session bus as appropriate
-    bus = factory()
+    # We're only using blocking calls, so don't actually need a main loop here
+    bus = factory(mainloop=NULL_MAIN_LOOP)
 
     # Get a reference to the desktop bus' standard object, denoted
     # by the path /org/freedesktop/DBus. 
