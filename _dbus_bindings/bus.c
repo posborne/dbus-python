@@ -62,6 +62,7 @@ Bus_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
         self = (Connection *)(DBusPyConnection_Type.tp_new)(cls, args, kwargs);
         if (!self) return NULL;
+        TRACE(self);
 
         Py_BEGIN_ALLOW_THREADS
         ret = dbus_bus_register(self->conn, &error);
@@ -115,6 +116,7 @@ Bus_get_unique_name(Connection *self, PyObject *args UNUSED)
 {
     const char *name;
 
+    TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     Py_BEGIN_ALLOW_THREADS
     name = dbus_bus_get_unique_name(self->conn);
@@ -144,6 +146,7 @@ Bus_get_unix_user(Connection *self, PyObject *args)
     unsigned long uid;
     const char *bus_name;
 
+    TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:get_unix_user", &bus_name)) {
         return NULL;
@@ -182,6 +185,7 @@ Bus_start_service_by_name(Connection *self, PyObject *args)
     dbus_uint32_t ret;
     dbus_bool_t success;
 
+    TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:start_service_by_name", &bus_name)) {
         return NULL;
@@ -207,6 +211,7 @@ Bus_request_name(Connection *self, PyObject *args)
     int ret;
     DBusError error;
 
+    TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s|I:request_name", &bus_name, &flags)) {
         return NULL;
@@ -230,6 +235,7 @@ Bus_release_name(Connection *self, PyObject *args)
     int ret;
     DBusError error;
 
+    TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:release_name", &bus_name)) return NULL;
 
@@ -252,6 +258,8 @@ Bus_name_has_owner(Connection *self, PyObject *args)
     int ret;
     DBusError error;
 
+    TRACE(self);
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:name_has_owner", &bus_name)) return NULL;
     dbus_error_init(&error);
     Py_BEGIN_ALLOW_THREADS
@@ -273,6 +281,7 @@ Bus_add_match_string(Connection *self, PyObject *args)
     const char *rule;
     DBusError error;
 
+    TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:add_match", &rule)) return NULL;
     dbus_error_init(&error);
@@ -314,6 +323,7 @@ Bus_remove_match_string(Connection *self, PyObject *args)
     const char *rule;
     DBusError error;
 
+    TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:remove_match", &rule)) return NULL;
     dbus_error_init(&error);
@@ -336,6 +346,7 @@ Bus_remove_match_string_non_blocking(Connection *self, PyObject *args)
 {
     const char *rule;
 
+    TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTuple(args, "s:remove_match", &rule)) return NULL;
     Py_BEGIN_ALLOW_THREADS
