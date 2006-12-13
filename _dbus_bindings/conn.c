@@ -47,6 +47,7 @@ DBusPyConnection_BorrowDBusConnection(PyObject *self)
 {
     DBusConnection *dbc;
 
+    TRACE(self);
     if (!DBusPyConnection_Check(self)) {
         PyErr_SetString(PyExc_TypeError, "A dbus.Connection is required");
         return NULL;
@@ -68,7 +69,10 @@ DBusPyConnection_HandleMessage(Connection *conn,
                                PyObject *msg,
                                PyObject *callable)
 {
-    PyObject *obj = PyObject_CallFunctionObjArgs(callable, conn, msg,
+    PyObject *obj;
+
+    TRACE(conn);
+    obj = PyObject_CallFunctionObjArgs(callable, conn, msg,
                                                  NULL);
     if (obj == Py_None) {
         DBG("%p: OK, handler %p returned None", conn, callable);
@@ -119,8 +123,10 @@ DBusPyConnection_HandleMessage(Connection *conn,
 PyObject *
 DBusPyConnection_GetObjectPathHandlers(PyObject *self, PyObject *path)
 {
-    PyObject *callbacks = PyDict_GetItem(((Connection *)self)->object_paths,
-                                         path);
+    PyObject *callbacks;
+
+    TRACE(self);
+    callbacks = PyDict_GetItem(((Connection *)self)->object_paths, path);
     if (!callbacks) {
         if (PyErr_ExceptionMatches(PyExc_KeyError)) {
             PyErr_Clear();
@@ -146,9 +152,14 @@ DBusPyConnection_ExistingFromDBusConnection(DBusConnection *conn)
                                                _connection_python_slot);
     Py_END_ALLOW_THREADS
     if (ref) {
+        DBG("(DBusConnection *)%p has weak reference at %p", conn, ref);
         self = PyWeakref_GetObject(ref);   /* still a borrowed ref */
         if (self && self != Py_None && DBusPyConnection_Check(self)) {
+            DBG("(DBusConnection *)%p has weak reference at %p pointing to %p",
+                conn, ref, self);
+            TRACE(self);
             Py_INCREF(self);
+            TRACE(self);
             return self;
         }
     }
@@ -196,6 +207,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
     }
     ref = NULL;
 
+    /* Change mainloop from a borrowed reference to an owned reference */
     if (!mainloop || mainloop == Py_None) {
         mainloop = dbus_py_get_default_main_loop();
         if (!mainloop || mainloop == Py_None) {
@@ -214,6 +226,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
 
     self = (Connection *)(cls->tp_alloc(cls, 0));
     if (!self) goto err;
+    TRACE(self);
 
     DBG_WHEREAMI;
 
@@ -225,6 +238,8 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
 
     ref = PyWeakref_NewRef((PyObject *)self, NULL);
     if (!ref) goto err;
+    DBG("Created weak ref %p to (Connection *)%p for (DBusConnection *)%p",
+        ref, self, conn);
 
     Py_BEGIN_ALLOW_THREADS
     ok = dbus_connection_set_data(conn, _connection_python_slot,
@@ -232,7 +247,14 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
                                   (DBusFreeFunction)dbus_py_take_gil_and_xdecref);
     Py_END_ALLOW_THREADS
 
-    if (!ok) {
+    if (ok) {
+        DBG("Attached weak ref %p ((Connection *)%p) to (DBusConnection *)%p",
+            ref, self, conn);
+        ref = NULL;     /* don't DECREF it - the DBusConnection owns it now */
+    }
+    else {
+        DBG("Failed to attached weak ref %p ((Connection *)%p) to "
+            "(DBusConnection *)%p - will dispose of it", ref, self, conn);
         PyErr_NoMemory();
         goto err;
     }
@@ -247,6 +269,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
     Py_DECREF(mainloop);
 
     DBG("%s() -> %p", __func__, self);
+    TRACE(self);
     return (PyObject *)self;
 
 err:
@@ -296,6 +319,7 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     self = DBusPyConnection_NewConsumingDBusConnection(cls, conn, mainloop);
+    TRACE(self);
 
     return self;
 }
@@ -307,8 +331,19 @@ static void Connection_tp_dealloc(Connection *self)
     PyObject *filters = self->filters;
     PyObject *object_paths = self->object_paths;
 
+    if (self->weaklist) {
+        PyObject_ClearWeakRefs((PyObject *)self);
+    }
+
+    TRACE(self);
     DBG("Deallocating Connection at %p (DBusConnection at %p)", self, conn);
     DBG_WHEREAMI;
+
+    DBG("Connection at %p: deleting callbacks", self);
+    self->filters = NULL;
+    Py_XDECREF(filters);
+    self->object_paths = NULL;
+    Py_XDECREF(object_paths);
 
     if (conn) {
         /* Might trigger callbacks if we're unlucky... */
@@ -318,12 +353,6 @@ static void Connection_tp_dealloc(Connection *self)
         Py_END_ALLOW_THREADS
     }
 
-    DBG("Connection at %p: deleting callbacks", self);
-    self->filters = NULL;
-    Py_XDECREF(filters);
-    self->object_paths = NULL;
-    Py_XDECREF(object_paths);
-
     /* make sure to do this last to preserve the invariant that 
      * self->conn is always non-NULL for any referenced Connection
      * (until the filters and object paths were freed, we might have been
@@ -332,8 +361,10 @@ static void Connection_tp_dealloc(Connection *self)
     DBG("Connection at %p: nulling self->conn", self);
     self->conn = NULL;
 
-    DBG("Connection at %p: unreffing conn", self);
-    dbus_connection_unref(conn);
+    if (conn) {
+        DBG("Connection at %p: unreffing conn", self);
+        dbus_connection_unref(conn);
+    }
 
     DBG("Connection at %p: freeing self", self);
     (self->ob_type->tp_free)((PyObject *)self);
