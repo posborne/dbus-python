@@ -1,4 +1,4 @@
-D-Bus Python Bindings 0.80rc1 (aka 0.79.91) (5 December 2006)
+D-Bus Python Bindings 0.80rc2 (aka 0.79.92) (13 December 2006)
 ==
 - The "break the world" release
 - Rewrite dbus_bindings (Pyrex) as _dbus_bindings (C) - API changes!

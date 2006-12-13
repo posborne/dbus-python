@@ -170,8 +170,8 @@ __all__ = (
            'service', 'mainloop', 'lowlevel'
            )
 __docformat__ = 'restructuredtext'
-# version is really 0.80rc1, but you can't represent that in this form
-version = (0, 79, 91)
+# version is really 0.80rc2, but you can't represent that in this form
+version = (0, 79, 92)
 __version__ = '.'.join(map(str, version))
 
 # OLPC Sugar compatibility
