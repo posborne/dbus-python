@@ -27,6 +27,7 @@ import os
 import unittest
 import time
 import logging
+import weakref
 
 builddir = os.environ["DBUS_TOP_BUILDDIR"]
 pydir = builddir
@@ -69,6 +70,15 @@ class TestDBusBindings(unittest.TestCase):
         self.bus = dbus.SessionBus()
         self.remote_object = self.bus.get_object("org.freedesktop.DBus.TestSuitePythonService", "/org/freedesktop/DBus/TestSuitePythonObject")
         self.iface = dbus.Interface(self.remote_object, "org.freedesktop.DBus.TestSuiteInterface")
+
+    def testWeakRefs(self):
+        # regression test for Sugar crash caused by smcv getting weak refs
+        # wrong - pre-bugfix, this would segfault
+        bus = dbus.SessionBus(private=True)
+        ref = weakref.ref(bus)
+        self.assert_(ref() is bus)
+        del bus
+        self.assert_(ref() is None)
 
     def testInterfaceKeyword(self):
         #test dbus_interface parameter
