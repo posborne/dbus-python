@@ -10,10 +10,10 @@ hal-device-manager
 
 * String lists are presented poorly in the info view due to the changed
   repr() - near line 443
-  * patched - smcv
+  * patch submitted, bugs.fd.o #9343
 * Everything appears as a 'strlist' because of equality tests on types
   near line 443
-  * patched - smcv
+  * patch submitted, bugs.fd.o #9343
 * Unregistering object paths is done with callback=None. This won't
   actually unregister, currently (should be fixed in dbus-python)
 
@@ -21,19 +21,19 @@ gajim
 ~~~~~
 
 * Uses name ``dbus.dbus_bindings.DBusException`` - will fail
-  * glue in dbus-python -smcv
+  * glue in dbus-python, patch sent upstream,
+    http://trac.gajim.org/ticket/2784
 * RemoteInterface will need fixing up - uses Variant and tries to
   represent None
+  * patch sent upstream, http://trac.gajim.org/ticket/2784
 * Uses ``dbus_bindings.Signal`` to emit signals!
+  * patch sent upstream, http://trac.gajim.org/ticket/2784
 
 gnome-osd
 ~~~~~~~~~
 
 * eventbridge: Uses ``dbus.dbus_bindings.bus_request_name`` to get a name
-  * glue in dbus-python -smcv
-* server: Old API, but looks OK
-* capplet: correctly uses ``SessionBus().start_service_by_name``
-* client: nicely simple
+  * glue in dbus-python, patch sent upstream by email
 
 jokosher
 ~~~~~~~~
@@ -41,8 +41,7 @@ Looks OK.
 
 listen
 ~~~~~~
-* Uses BusName - need to keep compatible.
-* Doesn't provide signatures.
+Looks OK.
 
 ..
   vim:set sw=2 sts=2 et ft=rst tw=72:
