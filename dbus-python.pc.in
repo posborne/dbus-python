@@ -1,0 +1,11 @@
+# This file is currently Python-version-independent.
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+includedir=@includedir@
+datarootdir=@datarootdir@
+datadir=@datadir@
+
+Name: dbus-python
+Description: Python bindings for D-Bus
+Requires: dbus-1
+Version: @VERSION@

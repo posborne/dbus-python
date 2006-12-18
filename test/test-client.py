@@ -29,11 +29,8 @@ import time
 import logging
 import weakref
 
-builddir = os.environ["DBUS_TOP_BUILDDIR"]
-pydir = builddir
-
-sys.path.insert(0, pydir)
-sys.path.insert(0, pydir + 'dbus')
+builddir = os.path.normpath(os.environ["DBUS_TOP_BUILDDIR"])
+pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
 
 import dbus
 import _dbus_bindings
@@ -49,7 +46,7 @@ pkg = dbus.__file__
 if not pkg.startswith(pydir):
     raise Exception("DBus modules (%s) are not being picked up from the package"%pkg)
 
-if not _dbus_bindings.__file__.startswith(pydir):
+if not _dbus_bindings.__file__.startswith(builddir):
     raise Exception("DBus modules (%s) are not being picked up from the package"%_dbus_bindings.__file__)
 
 test_types_vals = [1, 12323231, 3.14159265, 99999999.99,

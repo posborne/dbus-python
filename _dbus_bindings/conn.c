@@ -29,8 +29,10 @@
 /* Connection definition ============================================ */
 
 PyDoc_STRVAR(Connection_tp_doc,
-"A D-Bus connection.\n\n"
+"A D-Bus connection.\n"
+"\n"
 "::\n"
+"\n"
 "   Connection(address, mainloop=None) -> Connection\n"
 );
 

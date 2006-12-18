@@ -161,7 +161,7 @@ Bus_get_unix_user(Connection *self, PyObject *args)
 }
 
 PyDoc_STRVAR(Bus_start_service_by_name__doc__,
-"start_service_by_name(bus_name) -> (True, int)\n\
+"start_service_by_name(bus_name)\n\
 \n\
 Start a service which will implement the given bus name on this\n\
 Bus.\n\

@@ -1,16 +1,12 @@
-<!-- This configuration file controls the per-user-login-session message bus.
-     Add a session-local.conf and edit that rather than changing this 
-     file directly. -->
-
+<!-- @configure_input@ -->
 <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
  "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
 <busconfig>
   <!-- Our well-known bus type, don't change this -->
   <type>session</type>
+  <listen>unix:tmpdir=@abs_top_builddir@/test</listen>
 
-  <listen>unix:tmpdir=./</listen>
-
-  <servicedir></servicedir>
+  <servicedir>@abs_top_builddir@/test</servicedir>
 
   <policy context="default">
     <!-- Allow everything to be sent -->
@@ -22,3 +18,4 @@
   </policy>
 
 </busconfig>
+<!-- vim:set ft=xml sts=2 sw=2 et: -->

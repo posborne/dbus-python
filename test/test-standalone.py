@@ -26,22 +26,27 @@ import unittest
 import time
 from traceback import print_exc
 
-builddir = os.environ["DBUS_TOP_BUILDDIR"]
-pydir = builddir
-
-sys.path.insert(0, pydir)
-sys.path.insert(0, pydir + 'dbus')
+builddir = os.path.normpath(os.environ["DBUS_TOP_BUILDDIR"])
+pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
 
 import _dbus_bindings
 import dbus
 import dbus.types as types
 
-pkg = dbus.__file__
-if not pkg.startswith(pydir):
-    raise Exception("DBus modules (%s) are not being picked up from the package"%pkg)
-
-if not _dbus_bindings.__file__.startswith(pydir):
+# Check that we're using the right versions
+if not dbus.__file__.startswith(pydir):
+    raise Exception("DBus modules (%s) are not being picked up from the package"%dbus.__file__)
+if not _dbus_bindings.__file__.startswith(builddir):
     raise Exception("DBus modules (%s) are not being picked up from the package"%_dbus_bindings.__file__)
+assert (_dbus_bindings._python_version & 0xffff0000
+        == sys.hexversion & 0xffff0000), \
+        '_dbus_bindings was compiled for Python %x but this is Python %x, '\
+        'a different major version'\
+        % (_dbus_bindings._python_version, sys.hexversion)
+assert _dbus_bindings.__version__ == os.environ['DBUS_PYTHON_VERSION'], \
+        '_dbus_bindings was compiled as version %s but Automake says '\
+        'we should be version %s' \
+        % (_dbus_bindings.__version__, os.environ['DBUS_PYTHON_VERSION'])
 
 class TestTypes(unittest.TestCase):
 

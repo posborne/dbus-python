@@ -317,7 +317,8 @@ Connection_send_message(Connection *self, PyObject *args)
 PyDoc_STRVAR(Connection_send_message_with_reply__doc__,
 "send_message_with_reply(msg, reply_handler, timeout_s=-1)"
 " -> dbus.lowlevel.PendingCall\n\n"
-"Queue the message for sending; expect a reply via the returned PendingCall.\n"
+"Queue the message for sending; expect a reply via the returned PendingCall,\n"
+"which can also be used to cancel the pending call.\n"
 "\n"
 ":Parameters:\n"
 "   `msg` : dbus.lowlevel.Message\n"
@@ -329,8 +330,6 @@ PyDoc_STRVAR(Connection_send_message_with_reply__doc__,
 "       If the reply takes more than this many seconds, a timeout error\n"
 "       will be created locally and raised instead. If this timeout is\n"
 "       negative (default), a sane default (supplied by libdbus) is used.\n"
-":Returns:\n"
-"   A `dbus.lowlevel.PendingCall` instance which can be used to cancel the pending call.\n"
 "\n"
 );
 static PyObject *

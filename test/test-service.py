@@ -25,11 +25,8 @@ import sys
 import os
 import logging
 
-builddir = os.environ["DBUS_TOP_BUILDDIR"]
-pydir = builddir
-
-sys.path.insert(0, pydir)
-sys.path.insert(0, pydir + 'dbus')
+builddir = os.path.normpath(os.environ["DBUS_TOP_BUILDDIR"])
+pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
 
 import dbus
 
@@ -42,7 +39,7 @@ import gobject
 import random
 
 
-logging.basicConfig(filename=pydir + '/test-service.log', filemode='w')
+logging.basicConfig(filename=builddir + '/test/test-service.log', filemode='w')
 logging.getLogger().setLevel(1)
 logger = logging.getLogger('test-service')
 

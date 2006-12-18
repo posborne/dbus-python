@@ -4,7 +4,7 @@ to export objects or claim well-known names.
 
 The first thing you need to do is connect dbus-python to a main loop
 implementation. Currently, the only working implementation is (still)
-to use pygobject and libdbus-glib:
+to use pygobject and libdbus-glib::
 
     from gobject import MainLoop, idle_add
     from dbus.mainloop.glib import DBusGMainLoop
@@ -97,8 +97,8 @@ in the same way as above, and call its ``connect_to_signal`` method.
 You can also connect to signals in a generic way using the
 `Bus.add_signal_receiver` method.
 
-Either way, a `SignalMatch` object is returned - this object has a `remove`
-method which you can call to stop receiving that signal.
+Either way, a ``SignalMatch`` object is returned - this object has a
+``remove`` method which you can call to stop receiving that signal.
 
 Receiving signals happens asynchronously, so it only works while the
 main loop is running.
@@ -170,9 +170,11 @@ __all__ = (
            'service', 'mainloop', 'lowlevel'
            )
 __docformat__ = 'restructuredtext'
-# version is really 0.80rc2, but you can't represent that in this form
-version = (0, 79, 92)
-__version__ = '.'.join(map(str, version))
+
+try:
+    from dbus._version import version, __version__
+except ImportError:
+    pass
 
 # OLPC Sugar compatibility
 import dbus.exceptions as exceptions

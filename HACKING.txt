@@ -2,16 +2,43 @@
 D-Bus Python bindings - notes for hackers
 =========================================
 
-:Author: Simon McVittie
-:Date: 2006-09-26
+:Author: Simon McVittie, `Collabora`_
+:Date: 2006-12-18
 
-Code organisation
-=================
+.. Collabora: http://www.collabora.co.uk/
 
-Python wants everything except the init function to be declared static, so the
-whole of _dbus_bindings is a single translation unit - module.c #includes
-various files *-impl.h, which define static (sometimes static inline)
-functions. Even so, it compiles quicker than the old Pyrex implementation :-p
+Upstream development
+====================
+
+dbus-python is developed at freedesktop.org using ``git``.
+See `UsingGit`_ for some details.
+
+.. UsingGit: http://www.freedesktop.org/wiki/UsingGit
+
+Anonymous access
+    ``git clone git://anongit.freedesktop.org/git/dbus/dbus-python``
+Committer access (requires freedesktop.org shell account)
+    ``git clone git+ssh://git.freedesktop.org/git/dbus/dbus-python``
+
+Modules
+=======
+
+``dbus``, ``dbus.service`` and ``dbus.mainloop`` are core public API.
+
+``dbus.lowlevel`` provides a lower-level public API for advanced use.
+
+``dbus.mainloop.glib`` is the public API for the GLib main loop integration.
+
+``dbus.types`` and ``dbus.exceptions`` are mainly for backwards
+compatibility - use ``dbus`` instead in new code.
+
+``dbus._dbus``, ``dbus.introspect_parser``, ``dbus.proxies`` are internal
+implementation details.
+
+``_dbus_bindings`` is the real implementation of the Python/libdbus
+integration, while ``_dbus_bindings`` is the real implementation of
+Python/libdbus-glib integration. Neither is public API, although some
+of the classes and functions are exposed as public API in other modules.
 
 Threading/locking model
 =======================

@@ -1,4 +1,5 @@
 /* C API for _dbus_bindings, used by _dbus_glib_bindings.
+ * This file is currently Python-version-independent.
  *
  * Copyright (C) 2006 Collabora Ltd.
  *
@@ -31,30 +32,32 @@
 
 DBUS_BEGIN_DECLS
 
+typedef void (*_dbus_py_func_ptr)(void);
+
+typedef dbus_bool_t (*_dbus_py_conn_setup_func)(DBusConnection *, void *);
+typedef dbus_bool_t (*_dbus_py_srv_setup_func)(DBusServer *, void *);
+typedef void (*_dbus_py_free_func)(void *);
+
 #define DBUS_BINDINGS_API_COUNT 3
 
 #ifdef INSIDE_DBUS_PYTHON_BINDINGS
 
-#define Connection_BorrowDBusConnection DBusPyConnection_BorrowDBusConnection
-#define NativeMainLoop_New4 DBusPyNativeMainLoop_New4
 extern DBusConnection *DBusPyConnection_BorrowDBusConnection(PyObject *);
-extern PyObject *DBusPyNativeMainLoop_New4(dbus_bool_t (*)(DBusConnection *, void *),
-                                     dbus_bool_t (*)(DBusServer *, void *),
-                                     void (*)(void *),
-                                     void *);
+extern PyObject *DBusPyNativeMainLoop_New4(_dbus_py_conn_setup_func,
+                                           _dbus_py_srv_setup_func,
+                                           _dbus_py_free_func,
+                                           void *);
 
 #else
 
 static PyObject *_dbus_bindings_module = NULL;
-static void **dbus_bindings_API;
+static _dbus_py_func_ptr *dbus_bindings_API;
 
 #define DBusPyConnection_BorrowDBusConnection \
         (*(DBusConnection *(*)(PyObject *))dbus_bindings_API[1])
 #define DBusPyNativeMainLoop_New4 \
-    ((PyObject *(*)(dbus_bool_t (*)(DBusConnection *, void *),\
-                    dbus_bool_t (*)(DBusServer *, void *),\
-                    void (*)(void *),\
-                    void *))dbus_bindings_API[2])
+    ((PyObject *(*)(_dbus_py_conn_setup_func, _dbus_py_srv_setup_func, \
+                    _dbus_py_free_func, void *))dbus_bindings_API[2])
 
 static int
 import_dbus_bindings(const char *this_module_name)
@@ -69,7 +72,7 @@ import_dbus_bindings(const char *this_module_name)
     c_api = PyObject_GetAttrString(_dbus_bindings_module, "_C_API");
     if (c_api == NULL) return -1;
     if (PyCObject_Check(c_api)) {
-        dbus_bindings_API = (void **)PyCObject_AsVoidPtr(c_api);
+        dbus_bindings_API = (_dbus_py_func_ptr *)PyCObject_AsVoidPtr(c_api);
     }
     else {
         Py_DECREF(c_api);

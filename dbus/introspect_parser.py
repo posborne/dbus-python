@@ -31,12 +31,12 @@ def process_introspection_data(data):
     ``interface.signal`` strings to the concatenation of all their
     parameters.
 
-    Example::
+    Example output::
 
-    {
-        'com.example.SignalEmitter.OneString': 's',
-        'com.example.MethodImplementor.OneInt32Argument': 'i',
-    }
+        {
+            'com.example.SignalEmitter.OneString': 's',
+            'com.example.MethodImplementor.OneInt32Argument': 'i',
+        }
     """
     method_map = {}
 

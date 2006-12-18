@@ -21,6 +21,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+#include "config.h"
 
 #include <Python.h>
 #include <structmember.h>
@@ -237,11 +238,11 @@ init_dbus_bindings(void)
 {
     PyObject *this_module, *c_api;
     static const int API_count = DBUS_BINDINGS_API_COUNT;
-    static void *dbus_bindings_API[DBUS_BINDINGS_API_COUNT];
+    static _dbus_py_func_ptr dbus_bindings_API[DBUS_BINDINGS_API_COUNT];
 
-    dbus_bindings_API[0] = (void *)&API_count;
-    dbus_bindings_API[1] = (void *)Connection_BorrowDBusConnection;
-    dbus_bindings_API[2] = (void *)NativeMainLoop_New4;
+    dbus_bindings_API[0] = (_dbus_py_func_ptr)&API_count;
+    dbus_bindings_API[1] = (_dbus_py_func_ptr)DBusPyConnection_BorrowDBusConnection;
+    dbus_bindings_API[2] = (_dbus_py_func_ptr)DBusPyNativeMainLoop_New4;
 
     default_main_loop = NULL;
 
@@ -353,6 +354,12 @@ init_dbus_bindings(void)
 
     if (PyModule_AddStringConstant(this_module, "__docformat__",
                                    "restructuredtext") < 0) return;
+
+    if (PyModule_AddStringConstant(this_module, "__version__",
+                                   PACKAGE_VERSION) < 0) return;
+
+    if (PyModule_AddIntConstant(this_module, "_python_version",
+                                PY_VERSION_HEX) < 0) return;
 
     c_api = PyCObject_FromVoidPtr ((void *)dbus_bindings_API, NULL);
     if (!c_api) {

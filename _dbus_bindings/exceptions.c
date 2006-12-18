@@ -31,7 +31,8 @@ PyDoc_STRVAR(DBusException__doc__, "Represents any D-Bus-related error.");
 PyObject *
 DBusPyException_ConsumeError(DBusError *error)
 {
-    PyErr_Format(DBusPyException, "%s: %s", error->name, error->message);
+    PyErr_Format(DBusPyException, "%s: %s",
+                 error->name, error->message);
     dbus_error_free(error);
     return NULL;
 }
@@ -39,16 +40,34 @@ DBusPyException_ConsumeError(DBusError *error)
 dbus_bool_t
 dbus_py_init_exception_types(void)
 {
-    PyObject *docstring;
+    PyObject *bases;
+    PyObject *dict = PyDict_New();
+    PyObject *name;
 
-    /* We call it dbus.DBusException because that's where you should import it
-    from. */
-    DBusPyException = PyErr_NewException("dbus.DBusException", NULL, NULL);
-    if (!DBusPyException) return 0;
-    docstring = PyString_FromString(DBusException__doc__);
-    if (!docstring) return 0;
-    if (PyObject_SetAttrString(DBusPyException, "__doc__", docstring)) return 0;
-    Py_DECREF(docstring);
+    if (!dict)
+        return 0;
+    if (PyDict_SetItemString(dict, "__doc__",
+                             PyString_FromString(DBusException__doc__)) < 0)
+        return 0;
+    if (PyDict_SetItemString(dict, "__module__",
+                             PyString_FromString("dbus")) < 0)
+        return 0;
+    bases = Py_BuildValue("(O)", (PyObject *)PyExc_Exception);
+    if (!bases) {
+        Py_DECREF(dict);
+        return 0;
+    }
+    name = PyString_FromString("DBusException");
+    if (!name) {
+        Py_DECREF(dict);
+        Py_DECREF(bases);
+        return 0;
+    }
+    DBusPyException = PyClass_New(bases, dict, name);
+    Py_DECREF(bases);
+    Py_DECREF(dict);
+    if (!DBusPyException)
+        return 0;
     return 1;
 }
 
