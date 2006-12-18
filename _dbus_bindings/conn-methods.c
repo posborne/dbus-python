@@ -315,7 +315,7 @@ Connection_send_message(Connection *self, PyObject *args)
 
 /* The timeout is in seconds here, since that's conventional in Python. */
 PyDoc_STRVAR(Connection_send_message_with_reply__doc__,
-"send_message_with_reply(msg: Message, reply_handler: callable[, timeout_s: float])"
+"send_message_with_reply(msg, reply_handler, timeout_s=-1)"
 " -> dbus.lowlevel.PendingCall\n\n"
 "Queue the message for sending; expect a reply via the returned PendingCall.\n"
 "\n"
@@ -378,7 +378,7 @@ Connection_send_message_with_reply(Connection *self, PyObject *args)
 
 /* Again, the timeout is in seconds, since that's conventional in Python. */
 PyDoc_STRVAR(Connection_send_message_with_reply_and_block__doc__,
-"send_message_with_reply_and_block(msg: dbus.lowlevel.Message, [, timeout_s: float])"
+"send_message_with_reply_and_block(msg, timeout_s=-1)"
 " -> dbus.lowlevel.Message\n\n"
 "Send the message and block while waiting for a reply.\n"
 "\n"
@@ -610,8 +610,7 @@ Connection_remove_message_filter(Connection *self, PyObject *callable)
 }
 
 PyDoc_STRVAR(Connection__register_object_path__doc__,
-"register_object_path(path: str, on_message: callable[, on_unregister: "
-"callable[, fallback: bool]])\n"
+"register_object_path(path, on_message, on_unregister=None, fallback=False)\n"
 "\n"
 "Register a callback to be called when messages arrive at the given\n"
 "object-path. Used to export objects' methods on the bus in a low-level\n"
@@ -625,6 +624,8 @@ PyDoc_STRVAR(Connection__register_object_path__doc__,
 "       Called when a message arrives at the given object-path, with\n"
 "       two positional parameters: the first is this Connection,\n"
 "       the second is the incoming `dbus.lowlevel.Message`.\n"
+"   `on_unregister` : callable or None\n"
+"       If not None, called when the callback is unregistered.\n"
 "   `fallback` : bool\n"
 "       If True (the default is False), when a message arrives for a\n"
 "       'subdirectory' of the given path and there is no more specific\n"
@@ -747,7 +748,7 @@ Connection__register_object_path(Connection *self, PyObject *args,
 }
 
 PyDoc_STRVAR(Connection__unregister_object_path__doc__,
-"unregister_object_path(path: str)\n\n"
+"unregister_object_path(path)\n\n"
 "Remove a previously registered handler for the given object path.\n"
 "\n"
 ":Parameters:\n"

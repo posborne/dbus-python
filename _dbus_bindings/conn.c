@@ -1,5 +1,5 @@
 /* Implementation of the _dbus_bindings Connection type, a Python wrapper
- * for DBusConnection. See also conn-methods-impl.h.
+ * for DBusConnection. See also conn-methods.c.
  *
  * Copyright (C) 2006 Collabora Ltd. <http://www.collabora.co.uk/>
  *
@@ -30,7 +30,8 @@
 
 PyDoc_STRVAR(Connection_tp_doc,
 "A D-Bus connection.\n\n"
-"Connection(address: str, mainloop=None) -> Connection\n"
+"::\n"
+"   Connection(address, mainloop=None) -> Connection\n"
 );
 
 /* D-Bus Connection user data slot, containing an owned reference to either

@@ -130,7 +130,7 @@ Bus_get_unique_name(Connection *self, PyObject *args UNUSED)
 }
 
 PyDoc_STRVAR(Bus_get_unix_user__doc__,
-"get_unix_user(bus_name: str) -> int\n"
+"get_unix_user(bus_name) -> int\n"
 "\n"
 "Get the numeric uid of the process which owns the given bus name\n"
 "on the connected bus daemon.\n"
@@ -161,7 +161,7 @@ Bus_get_unix_user(Connection *self, PyObject *args)
 }
 
 PyDoc_STRVAR(Bus_start_service_by_name__doc__,
-"start_service_by_name(bus_name: str) -> (True, int)\n\
+"start_service_by_name(bus_name) -> (True, int)\n\
 \n\
 Start a service which will implement the given bus name on this\n\
 Bus.\n\
@@ -249,7 +249,7 @@ Bus_release_name(Connection *self, PyObject *args)
 }
 
 PyDoc_STRVAR(Bus_name_has_owner__doc__,
-"name_has_owner(bus_name: str) -> bool\n\n"
+"name_has_owner(bus_name) -> bool\n\n"
 "Return True if and only if the given bus name has an owner on this bus.\n");
 static PyObject *
 Bus_name_has_owner(Connection *self, PyObject *args)
@@ -272,7 +272,7 @@ Bus_name_has_owner(Connection *self, PyObject *args)
 }
 
 PyDoc_STRVAR(Bus_add_match_string__doc__,
-"add_match_string(rule: str)\n\n"
+"add_match_string(rule)\n\n"
 "Arrange for this application to receive messages on the bus that match\n"
 "the given rule. This version will block and raises DBusException on error.\n");
 static PyObject *
@@ -295,7 +295,7 @@ Bus_add_match_string(Connection *self, PyObject *args)
 }
 
 PyDoc_STRVAR(Bus_add_match_string_non_blocking__doc__,
-"add_match_string_non_blocking(rule: str)\n\n"
+"add_match_string_non_blocking(rule)\n\n"
 "Arrange for this application to receive messages on the bus that match\n"
 "the given rule. This version does not block, but any errors will be\n"
 "ignored.\n");
@@ -313,7 +313,7 @@ Bus_add_match_string_non_blocking(Connection *self, PyObject *args)
 }
 
 PyDoc_STRVAR(Bus_remove_match_string__doc__,
-"remove_match_string(rule: str)\n\n"
+"remove_match_string(rule)\n\n"
 "Remove the given match rule; if it has been added more than once,\n"
 "remove one of the identical copies, leaving the others active.\n"
 "This version blocks, and raises DBusException on error.\n");
@@ -337,7 +337,7 @@ Bus_remove_match_string(Connection *self, PyObject *args)
 }
 
 PyDoc_STRVAR(Bus_remove_match_string_non_blocking__doc__,
-"remove_match_string_non_blocking(rule: str)\n\n"
+"remove_match_string_non_blocking(rule)\n\n"
 "Remove the given match rule; if it has been added more than once,\n"
 "remove one of the identical copies, leaving the others active.\n"
 "This version does not block, but causes any errors to be ignored.\n");
