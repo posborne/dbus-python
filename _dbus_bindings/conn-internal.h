@@ -24,7 +24,7 @@
 #ifndef DBUS_BINDINGS_CONN_H
 #define DBUS_BINDINGS_CONN_H
 
-#include "dbus_bindings.h"
+#include "dbus_bindings-internal.h"
 
 typedef struct {
     PyObject_HEAD

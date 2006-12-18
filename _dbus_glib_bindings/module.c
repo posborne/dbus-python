@@ -23,7 +23,7 @@
  */
 
 #include <Python.h>
-#include "dbus_bindings.h"
+#include "dbus-python.h"
 #include <dbus/dbus-glib.h>
 #include <dbus/dbus-glib-lowlevel.h>
 
@@ -68,10 +68,11 @@ dbus_py_glib_unref_mainctx(void *data)
 static PyObject *
 dbus_glib_native_mainloop(GMainContext *ctx)
 {
-    PyObject *loop = NativeMainLoop_New4(dbus_py_glib_set_up_conn,
-                                         dbus_py_glib_set_up_srv,
-                                         dbus_py_glib_unref_mainctx,
-                                         ctx ? g_main_context_ref(ctx) : NULL);
+    PyObject *loop = DBusPyNativeMainLoop_New4(dbus_py_glib_set_up_conn,
+                                               dbus_py_glib_set_up_srv,
+                                               dbus_py_glib_unref_mainctx,
+                                               ctx ? g_main_context_ref(ctx)
+                                                   : NULL);
     if (!loop && ctx) {
         g_main_context_unref(ctx);
     }
@@ -141,7 +142,7 @@ setup_with_g_main (PyObject *always_null UNUSED, PyObject *args)
     PyObject *conn;
     if (!PyArg_ParseTuple(args, "O:setup_with_g_main", &conn)) return NULL;
 
-    dbc = Connection_BorrowDBusConnection (conn);
+    dbc = DBusPyConnection_BorrowDBusConnection (conn);
     if (!dbc) return NULL;
     dbus_py_glib_set_up_conn(dbc, NULL);
     Py_RETURN_NONE;

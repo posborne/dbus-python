@@ -33,7 +33,7 @@ DBUS_BEGIN_DECLS
 
 #define DBUS_BINDINGS_API_COUNT 3
 
-#ifdef INSIDE_DBUS_BINDINGS
+#ifdef INSIDE_DBUS_PYTHON_BINDINGS
 
 #define Connection_BorrowDBusConnection DBusPyConnection_BorrowDBusConnection
 #define NativeMainLoop_New4 DBusPyNativeMainLoop_New4
@@ -48,9 +48,9 @@ extern PyObject *DBusPyNativeMainLoop_New4(dbus_bool_t (*)(DBusConnection *, voi
 static PyObject *_dbus_bindings_module = NULL;
 static void **dbus_bindings_API;
 
-#define Connection_BorrowDBusConnection \
+#define DBusPyConnection_BorrowDBusConnection \
         (*(DBusConnection *(*)(PyObject *))dbus_bindings_API[1])
-#define NativeMainLoop_New4 \
+#define DBusPyNativeMainLoop_New4 \
     ((PyObject *(*)(dbus_bool_t (*)(DBusConnection *, void *),\
                     dbus_bool_t (*)(DBusServer *, void *),\
                     void (*)(void *),\

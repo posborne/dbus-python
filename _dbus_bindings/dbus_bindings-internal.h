@@ -26,8 +26,8 @@
 #define DBUS_BINDINGS_INTERNAL_H
 
 #include <Python.h>
-#define INSIDE_DBUS_BINDINGS
-#include "dbus_bindings.h"
+#define INSIDE_DBUS_PYTHON_BINDINGS
+#include "dbus-python.h"
 
 /* no need for extern "C", this is only for internal use */
 
