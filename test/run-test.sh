@@ -40,5 +40,35 @@ $PYTHON "$DBUS_TOP_SRCDIR"/test/test-client.py || die "test-client.py failed"
 echo "running test-signals.py"
 $PYTHON "$DBUS_TOP_SRCDIR"/test/test-signals.py || die "test-signals.py failed"
 
+echo "running cross-test (for better diagnostics use mjj29's dbus-test)"
+
+${MAKE:-make} -s cross-test-server > "$DBUS_TOP_BUILDDIR"/test/cross-server.log&
+sleep 1
+${MAKE:-make} -s cross-test-client > "$DBUS_TOP_BUILDDIR"/test/cross-client.log
+
+if grep . "$DBUS_TOP_BUILDDIR"/test/cross-client.log >/dev/null; then
+  :     # OK
+else
+  die "cross-test client produced no output"
+fi
+if grep . "$DBUS_TOP_BUILDDIR"/test/cross-server.log >/dev/null; then
+  :     # OK
+else
+  die "cross-test server produced no output"
+fi
+
+if grep fail "$DBUS_TOP_BUILDDIR"/test/cross-client.log; then
+  die "^^^ Cross-test client reports failures, see test/cross-client.log"
+else
+  echo "  - cross-test client reported no failures"
+fi
+if grep untested "$DBUS_TOP_BUILDDIR"/test/cross-server.log; then
+  die "^^^ Cross-test server reports incomplete test coverage"
+else
+  echo "  - cross-test server reported no untested functions"
+fi
+
 rm -f "$DBUS_TOP_BUILDDIR"/test/test-service.log
+rm -f "$DBUS_TOP_BUILDDIR"/test/cross-client.log
+rm -f "$DBUS_TOP_BUILDDIR"/test/cross-server.log
 exit 0
