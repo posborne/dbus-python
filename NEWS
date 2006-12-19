@@ -1,4 +1,4 @@
-D-Bus Python Bindings 0.80rc2 (aka 0.79.92) (13 December 2006)
+D-Bus Python Bindings 0.80rc3 (aka 0.79.93) (19 December 2006)
 ==
 - The "break the world" release
 - Rewrite dbus_bindings (Pyrex) as _dbus_bindings (C) - API changes!
@@ -15,6 +15,11 @@ D-Bus Python Bindings 0.80rc2 (aka 0.79.92) (13 December 2006)
   API breakage
 - Allow construction of a dbus.service.Object if you don't have a BusName
   (or even a Bus)
+- Port introspection XML parser from libxml2 (external package) to expat
+  (included with Python)
+- Port build system from distutils to autoconf/automake/libtool
+- Install a header file for third-party main loop integration
+- Make compatible with Python 2.5
 - Add docstrings throughout
 - Add more tests
 - Add interoperability tests (which interoperate with Java)
