@@ -289,7 +289,7 @@ class ProxyObject:
         message = _dbus_bindings.MethodCallMessage(None, self._object_path, 'org.freedesktop.DBus.Introspectable', 'Introspect')
         message.set_destination(self._named_service)
         
-        result = self._bus.get_connection().send_message_with_reply(message, _ReplyHandler(self._introspect_reply_handler, self._introspect_error_handler), -1)
+        result = self._bus.get_connection().send_message_with_reply(message, _ReplyHandler(self._introspect_reply_handler, self._introspect_error_handler, utf8_strings=True), -1)
         return result
     
     def _introspect_execute_queue(self):

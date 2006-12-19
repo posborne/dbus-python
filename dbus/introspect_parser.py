@@ -37,13 +37,17 @@ def process_introspection_data(data):
             'com.example.SignalEmitter.OneString': 's',
             'com.example.MethodImplementor.OneInt32Argument': 'i',
         }
+
+    :Parameters:
+        `data` : str
+            The introspection XML. Must be an 8-bit string of UTF-8.
     """
     method_map = {}
 
     XMLREADER_START_ELEMENT_NODE_TYPE = 1
     XMLREADER_END_ELEMENT_NODE_TYPE = 15
 
-    stream = cStringIO.StringIO(data.encode('utf-8'))
+    stream = cStringIO.StringIO(data)
     input_source = libxml2.inputBuffer(stream)
     reader = input_source.newTextReader("urn:introspect")
 
