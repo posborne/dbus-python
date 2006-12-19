@@ -33,6 +33,7 @@ nobase_python_PYTHON = dbus_bindings.py \
 		       dbus/_dbus.py \
 		       dbus/decorators.py \
 		       dbus/exceptions.py \
+		       dbus/_expat_introspect_parser.py \
 		       dbus/glib.py \
 		       dbus/__init__.py \
 		       dbus/introspect_parser.py \
@@ -101,9 +102,9 @@ TESTS = test/run-test.sh
 
 cross-test-compile: all
 cross-test-server:
-	$(TESTS_ENVIRONMENT) $(PYTHON) test/cross-test-server.py
+	$(TESTS_ENVIRONMENT) $(PYTHON) $(top_srcdir)/test/cross-test-server.py
 cross-test-client:
-	$(TESTS_ENVIRONMENT) $(PYTHON) test/cross-test-client.py
+	$(TESTS_ENVIRONMENT) $(PYTHON) $(top_srcdir)/test/cross-test-client.py
 
 # === Documentation ===
 
