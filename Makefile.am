@@ -2,7 +2,7 @@
 
 CLEANFILES =
 EXTRA_DIST = API_CHANGES.txt dbus-python.pc.in HACKING.txt \
-	     AUTHORS COPYING ChangeLog NEWS TODO \
+	     AUTHORS COPYING NEWS ChangeLog TODO \
 	     examples/example-client.py \
 	     examples/example-service.py \
 	     examples/example-signal-emitter.py \
@@ -107,6 +107,15 @@ cross-test-client:
 
 # === Documentation ===
 
+ChangeLog: always-rebuild
+	@if test -d $(top_srcdir)/.git; then \
+		if git-log --stat > ChangeLog; then \
+			: ; \
+		else
+			git-log > Changelog || exit 1; \
+		fi; \
+	fi
+
 if ENABLE_API_DOCS
 all: api/index.html
 
@@ -121,4 +130,4 @@ api api/index.html: $(nobase_python_PYTHON) _dbus_bindings.la _dbus_glib_binding
 	|| { rm -rf api; exit 1; }
 endif
 
-.PHONY: cross-test-compile cross-test-server cross-test-client
+.PHONY: cross-test-compile cross-test-server cross-test-client always-rebuild
