@@ -25,7 +25,7 @@ import sys
 import logging
 
 import _dbus_bindings
-from dbus.introspect_parser import process_introspection_data
+from dbus._expat_introspect_parser import process_introspection_data
 from dbus.exceptions import MissingReplyHandlerException, MissingErrorHandlerException, IntrospectionParserException, DBusException
 
 __docformat__ = 'restructuredtext'
