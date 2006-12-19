@@ -111,7 +111,7 @@ ChangeLog: always-rebuild
 	@if test -d $(top_srcdir)/.git; then \
 		if git-log --stat > ChangeLog; then \
 			: ; \
-		else
+		else \
 			git-log > Changelog || exit 1; \
 		fi; \
 	fi
