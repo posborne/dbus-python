@@ -35,14 +35,15 @@ _logger = logging.getLogger('dbus.proxies')
 
 
 class _ReplyHandler(object):
-    __slots__ = ('_on_error', '_on_reply')
-    def __init__(self, on_reply, on_error):
+    __slots__ = ('_on_error', '_on_reply', '_get_args_options')
+    def __init__(self, on_reply, on_error, **get_args_options):
         self._on_error = on_error
         self._on_reply = on_reply
+        self._get_args_options = get_args_options
 
     def __call__(self, message):
         if isinstance(message, _dbus_bindings.MethodReturnMessage):
-            self._on_reply(*message.get_args_list())
+            self._on_reply(*message.get_args_list(**self._get_args_options))
         elif isinstance(message, _dbus_bindings.ErrorMessage):
             args = message.get_args_list()
             if len(args) > 0:
@@ -154,7 +155,7 @@ class ProxyMethod:
             self._connection.send_message(message)
             return None
         elif reply_handler:
-            result = self._connection.send_message_with_reply(message, _ReplyHandler(reply_handler, error_handler), timeout/1000.0)
+            result = self._connection.send_message_with_reply(message, _ReplyHandler(reply_handler, error_handler, **get_args_options), timeout/1000.0)
             return None
         else:
             reply_message = self._connection.send_message_with_reply_and_block(message, timeout)

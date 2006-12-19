@@ -110,6 +110,15 @@ class TestDBusBindings(unittest.TestCase):
             self.assertEquals(send_val, recv_val)
             self.assertEquals(recv_val.variant_level, 1)
 
+    def testUtf8StringsSync(self):
+        send_val = u'foo'
+        recv_val = self.iface.Echo(send_val, utf8_strings=True)
+        self.assert_(isinstance(recv_val, str))
+        self.assert_(isinstance(recv_val, dbus.UTF8String))
+        recv_val = self.iface.Echo(send_val, utf8_strings=False)
+        self.assert_(isinstance(recv_val, unicode))
+        self.assert_(isinstance(recv_val, dbus.String))
+
     def testBenchmarkIntrospect(self):
         print "\n********* Benchmark Introspect ************"
 	a = time.time()
@@ -124,12 +133,14 @@ class TestDBusBindings(unittest.TestCase):
         #test sending python types and getting them back async
         print "\n********* Testing Async Calls ***********"
 
-        
+        failures = []
         main_loop = gobject.MainLoop()
+
         class async_check:
-            def __init__(self, test_controler, expected_result, do_exit):
+            def __init__(self, test_controler, expected_result, do_exit, utf8):
                 self.expected_result = expected_result
                 self.do_exit = do_exit
+                self.utf8 = utf8
                 self.test_controler = test_controler
 
             def callback(self, val):
@@ -139,26 +150,35 @@ class TestDBusBindings(unittest.TestCase):
 
                     self.test_controler.assertEquals(val, self.expected_result)
                     self.test_controler.assertEquals(val.variant_level, 1)
+                    if self.utf8 and not isinstance(val, dbus.UTF8String):
+                        failures.append('%r should have been utf8 but was not' % val)
+                        return
+                    elif not self.utf8 and isinstance(val, dbus.UTF8String):
+                        failures.append('%r should not have been utf8' % val)
+                        return
                 except Exception, e:
-                    print "%s:\n%s" % (e.__class__, e)
+                    failures.append("%s:\n%s" % (e.__class__, e))
 
             def error_handler(self, error):
                 print error
                 if self.do_exit:
                     main_loop.quit()
 
-                self.test_controler.assert_(False, '%s: %s' % (error.__class__,
-                                                               error))
+                failures.append('%s: %s' % (error.__class__, error))
         
         last_type = test_types_vals[-1]
         for send_val in test_types_vals:
             print "Testing %s" % str(send_val)
-            check = async_check(self, send_val, last_type == send_val)
+            utf8 = (send_val == 'gob@gob.com')
+            check = async_check(self, send_val, last_type == send_val,
+                                utf8)
             recv_val = self.iface.Echo(send_val,
-                                       reply_handler = check.callback,
-                                       error_handler = check.error_handler)
-            
+                                       reply_handler=check.callback,
+                                       error_handler=check.error_handler,
+                                       utf8_strings=utf8)
         main_loop.run()
+        if failures:
+            self.assert_(False, failures)
 
     def testStrictMarshalling(self):
         print "\n********* Testing strict return & signal marshalling ***********"
