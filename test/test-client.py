@@ -225,18 +225,19 @@ class TestDBusBindings(unittest.TestCase):
 
     def testAsyncMethods(self):
         print "\n********* Testing asynchronous method implementation *******"
-        for (async, fail) in ((False, False), (False, True), (True, False), (True, True)):
-            try:
-                val = ('a', 1, False, [1,2], {1:2})
-                print "calling AsynchronousMethod with %s %s %s" % (async, fail, val)
-                ret = self.iface.AsynchronousMethod(async, fail, val)
-            except Exception, e:
-                self.assert_(fail, '%s: %s' % (e.__class__, e))
-                print "Expected failure: %s: %s" % (e.__class__, e)
-            else:
-                self.assert_(not fail, 'Expected failure but succeeded?!')
-                self.assertEquals(val, ret)
-                self.assertEquals(1, ret.variant_level)
+        for async in (True, False):
+            for fail in (True, False):
+                try:
+                    val = ('a', 1, False, [1,2], {1:2})
+                    print "calling AsynchronousMethod with %s %s %s" % (async, fail, val)
+                    ret = self.iface.AsynchronousMethod(async, fail, val)
+                except Exception, e:
+                    self.assert_(fail, '%s: %s' % (e.__class__, e))
+                    print "Expected failure: %s: %s" % (e.__class__, e)
+                else:
+                    self.assert_(not fail, 'Expected failure but succeeded?!')
+                    self.assertEquals(val, ret)
+                    self.assertEquals(1, ret.variant_level)
 
     def testBusInstanceCaching(self):
         print "\n********* Testing dbus.Bus instance sharing *********"
