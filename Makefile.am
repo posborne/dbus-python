@@ -36,7 +36,6 @@ nobase_python_PYTHON = dbus_bindings.py \
 		       dbus/_expat_introspect_parser.py \
 		       dbus/glib.py \
 		       dbus/__init__.py \
-		       dbus/introspect_parser.py \
 		       dbus/lowlevel.py \
 		       dbus/mainloop/__init__.py \
 		       dbus/mainloop/glib.py \
