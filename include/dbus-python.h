@@ -1,5 +1,7 @@
-/* C API for _dbus_bindings, used by _dbus_glib_bindings.
- * This file is currently Python-version-independent.
+/* C API for _dbus_bindings, used by _dbus_glib_bindings and any third-party
+ * main loop integration which might happen in future.
+ *
+ * This file is currently Python-version-independent - please keep it that way.
  *
  * Copyright (C) 2006 Collabora Ltd.
  *
@@ -23,8 +25,8 @@
  *
  */
 
-#ifndef DBUS_BINDINGS_H
-#define DBUS_BINDINGS_H
+#ifndef DBUS_PYTHON_H
+#define DBUS_PYTHON_H
 
 #include <Python.h>
 #define DBUS_API_SUBJECT_TO_CHANGE 1
