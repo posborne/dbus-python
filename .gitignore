@@ -33,3 +33,4 @@ libtool
 stamp-h1
 test/TestSuitePythonService.service
 test/tmp-session-bus.conf
+Makefile
