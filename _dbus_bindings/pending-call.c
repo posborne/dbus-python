@@ -61,8 +61,7 @@ PyDoc_STRVAR(PendingCall_block__doc__,
 "reply handler has been called.\n"
 "\n"
 "This can lead to a deadlock, if the called method tries to make a\n"
-"synchronous call to a method in this application. As a result, it's\n"
-"probably a bad idea.\n");
+"synchronous call to a method in this application.\n");
 static PyObject *
 PendingCall_block(PendingCall *self, PyObject *unused UNUSED)
 {

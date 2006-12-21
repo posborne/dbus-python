@@ -31,16 +31,14 @@
 PyDoc_STRVAR(module_doc,
 "Low-level Python bindings for libdbus. Don't use this module directly -\n"
 "the public API is provided by the `dbus`, `dbus.service`, `dbus.mainloop`\n"
-"and `dbus.mainloop.glib` modules.\n"
-"\n"
-":NewField Constructor: Constructor\n"
-":NewField SupportedUsage: Supported usage\n"
+"and `dbus.mainloop.glib` modules, with a lower-level API provided by the\n"
+"`dbus.lowlevel` module.\n"
 );
 
 /* Global functions - validation wrappers ===========================*/
 
 PyDoc_STRVAR(validate_bus_name__doc__,
-"validate_bus_name(name[, allow_unique=True[, allow_well_known=True]])\n"
+"validate_bus_name(name, allow_unique=True, allow_well_known=True)\n"
 "\n"
 "Raise ValueError if the argument is not a valid bus name.\n"
 "\n"
@@ -190,7 +188,7 @@ PyDoc_STRVAR(set_default_main_loop__doc__,
 "must always pass the mainloop parameter to the constructor.\n"
 "\n"
 "Two types of main loop wrapper are planned in dbus-python.\n"
-"Native main-loop wrappers are instances of dbus.mainloop.NativeMainLoop\n"
+"Native main-loop wrappers are instances of `dbus.mainloop.NativeMainLoop`\n"
 "supplied by extension modules like `dbus.mainloop.glib`: they have no\n"
 "Python API, but connect themselves to ``libdbus`` using native code.\n"
 

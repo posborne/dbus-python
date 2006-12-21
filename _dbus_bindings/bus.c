@@ -26,9 +26,13 @@
 #include "conn-internal.h"
 
 PyDoc_STRVAR(Bus_tp_doc,
-"BusImplementation([address: str or int])\n\n"
 "If the address is an int it must be one of the constants BUS_SESSION,\n"
-"BUS_SYSTEM, BUS_STARTER. The default is BUS_SESSION.\n"
+"BUS_SYSTEM, BUS_STARTER; if a string, it must be a D-Bus address.\n"
+"The default is BUS_SESSION.\n"
+"\n"
+"Constructor::\n"
+"\n"
+"   BusImplementation([address: str or int])\n"
 );
 
 /* Bus definition =================================================== */

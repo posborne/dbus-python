@@ -68,9 +68,24 @@ Message_tp_new(PyTypeObject *type,
     return (PyObject *)self;
 }
 
-PyDoc_STRVAR(MethodCallMessage_tp_doc, "A method-call message.\n\n"
-"MethodCallMessage(destination: str or None, path: str,\n"
-"                  interface: str or None, method: str)\n");
+PyDoc_STRVAR(MethodCallMessage_tp_doc, "A method-call message.\n"
+"\n"
+"Constructor::\n"
+"\n"
+"    dbus.lowlevel.MethodCallMessage(destination: str or None, path: str,\n"
+"                                    interface: str or None, method: str)\n"
+"\n"
+"``destination`` is the destination bus name, or None to send the\n"
+"message directly to the peer (usually the bus daemon).\n"
+"\n"
+"``path`` is the object-path of the object whose method is to be called.\n"
+"\n"
+"``interface`` is the interface qualifying the method name, or None to omit\n"
+"the interface from the message header.\n"
+"\n"
+"``method`` is the method name (member name).\n"
+);
+
 static int
 MethodCallMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 {
@@ -100,7 +115,9 @@ MethodCallMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 }
 
 PyDoc_STRVAR(MethodReturnMessage_tp_doc, "A method-return message.\n\n"
-"MethodReturnMessage(method_call: MethodCallMessage)\n");
+"Constructor::\n\n"
+"    dbus.lowlevel.MethodReturnMessage(method_call: MethodCallMessage)\n");
+
 static int
 MethodReturnMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 {
@@ -124,7 +141,8 @@ MethodReturnMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 }
 
 PyDoc_STRVAR(SignalMessage_tp_doc, "A signal message.\n\n"
-"SignalMessage(path: str, interface: str, method: str)\n");
+"Constructor::\n\n"
+"   dbus.lowlevel.SignalMessage(path: str, interface: str, method: str)\n");
 static int
 SignalMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 {
@@ -151,8 +169,9 @@ SignalMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 }
 
 PyDoc_STRVAR(ErrorMessage_tp_doc, "An error message.\n\n"
-"ErrorMessage(reply_to: Message, error_name: str,\n"
-"             error_message: str or None)\n");
+"Constructor::\n\n"
+"   dbus.lowlevel.ErrorMessage(reply_to: Message, error_name: str,\n"
+"                              error_message: str or None)\n");
 static int
 ErrorMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
 {
@@ -183,7 +202,7 @@ DBusPyMessage_BorrowDBusMessage(PyObject *msg)
 {
     if (!Message_Check(msg)) {
         PyErr_SetString(PyExc_TypeError,
-                       "A _dbus_bindings.Message instance is required");
+                       "A dbus.lowlevel.Message instance is required");
         return NULL;
     }
     if (!((Message *)msg)->msg) {

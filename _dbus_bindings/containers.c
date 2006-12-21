@@ -40,16 +40,19 @@ PyDoc_STRVAR(Array_tp_doc,
 "conversion of its items to D-Bus types is only done when it's sent in\n"
 "a Message. This might change in future so validation is done earlier.\n"
 "\n"
-":SupportedUsage:\n"
-"   ``from dbus import Array`` or ``from dbus.types import Array``\n"
+"Constructor::\n"
 "\n"
-":Constructor:\n"
-"    Array([iterable][, signature][, variant_level])\n"
+"    dbus.Array([iterable][, signature][, variant_level])\n"
 "\n"
-"    variant_level must be non-negative; the default is 0.\n"
+"``variant_level`` must be non-negative; the default is 0.\n"
 "\n"
-"    The signature may be None, in which case when the Array is sent over\n"
-"    D-Bus, the item signature will be guessed from the first element.\n"
+"``signature`` is the D-Bus signature string for a single element of the\n"
+"array, or None. If not None it must represent a single complete type, the\n"
+"type of a single array item; the signature of the whole Array may be\n"
+"obtained by prepending ``a`` to the given signature.\n"
+"\n"
+"If None (the default), when the Array is sent over\n"
+"D-Bus, the item signature will be guessed from the first element.\n"
 "\n"
 ":IVariables:\n"
 "  `variant_level` : int\n"
@@ -161,6 +164,8 @@ Array_tp_init (DBusPyArray *self, PyObject *args, PyObject *kwargs)
                                           "(O)", signature);
         if (!signature) return -1;
     }
+    /* FIXME: if the signature does not represent exactly one complete type,
+     * raise exception */
 
     tuple = Py_BuildValue("(O)", obj);
     if (!tuple) {
@@ -232,17 +237,20 @@ PyDoc_STRVAR(Dict_tp_doc,
 "conversion of its items to D-Bus types is only done when it's sent in\n"
 "a Message. This may change in future so validation is done earlier.\n"
 "\n"
-":SupportedUsage:\n"
-"   ``from dbus import Dictionary`` or ``from dbus.types import Dictionary``\n"
+"Constructor::\n"
 "\n"
-":Constructor:\n"
-"    Dictionary([mapping_or_iterable][, signature][, variant_level])\n"
+"    Dictionary(mapping_or_iterable=(), signature=None, variant_level=0)\n"
 "\n"
-"    variant_level must be non-negative; the default is 0.\n"
+"``variant_level`` must be non-negative; the default is 0.\n"
 "\n"
-"    The signature may be None, in which case when the Dictionary is sent over\n"
-"    D-Bus, the key and value signatures will be guessed from some arbitrary.\n"
-"    element.\n"
+"``signature`` is either a string or None. If a string, it must consist\n"
+"of exactly two complete type signatures, representing the 'key' type\n"
+"and the 'value' type. The signature of the whole Dictionary will be\n"
+"``a{xx}`` where ``xx`` is replaced by the given signature.\n"
+"\n"
+"If it is None (the default), when the Dictionary is sent over\n"
+"D-Bus, the key and value signatures will be guessed from an arbitrary\n"
+"element of the Dictionary.\n"
 "\n"
 ":IVariables:\n"
 "  `variant_level` : int\n"
@@ -353,6 +361,8 @@ Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
                                           "(O)", signature);
         if (!signature) return -1;
     }
+    /* FIXME: if the signature does not represent exactly two complete types,
+     * or if the first type is a container, raise exception */
 
     tuple = Py_BuildValue("(O)", obj);
     if (!tuple) {
@@ -419,18 +429,21 @@ PyTypeObject DBusPyDict_Type = {
 PyDoc_STRVAR(Struct_tp_doc,
 "An structure containing items of possibly distinct types.\n"
 "\n"
-":SupportedUsage:\n"
-"   ``from dbus import Struct`` or ``from dbus.types import Struct``\n"
+"Constructor::\n"
 "\n"
-":Constructor:\n"
-"    ``Struct(iterable[, signature: str][, variant_level: int]) -> Struct``\n"
+"    dbus.Struct(iterable, signature=None, variant_level=0) -> Struct\n"
 "\n"
-"    D-Bus structs may not be empty, so the iterable argument is required.\n"
+"D-Bus structs may not be empty, so the iterable argument is required and\n"
+"may not be an empty iterable.\n"
 "\n"
-"    The signature may be omitted or None, in which case it will be guessed\n"
-"    from the types of the items during construction.\n"
+"``signature`` is either None, or a string representing the contents of the\n"
+"struct as one or more complete type signatures. The overall signature of\n"
+"the struct will be the given signature enclosed in parentheses, ``()``.\n"
 "\n"
-"    variant_level must be non-negative; the default is 0.\n"
+"If the signature is None (default) it will be guessed\n"
+"from the types of the items during construction.\n"
+"\n"
+"``variant_level`` must be non-negative; the default is 0.\n"
 "\n"
 ":IVariables:\n"
 "  `variant_level` : int\n"

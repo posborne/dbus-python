@@ -32,6 +32,11 @@
 
 /* Support code for int subclasses. ================================== */
 
+PyDoc_STRVAR(DBusPythonInt_tp_doc,\
+"Base class for int subclasses with a ``variant_level`` attribute.\n"
+"Do not rely on the existence of this class outside dbus-python.\n"
+);
+
 static PyMemberDef DBusPythonInt_tp_members[] = {
     {"variant_level", T_LONG, offsetof(DBusPyIntBase, variant_level),
      READONLY,
@@ -113,7 +118,7 @@ PyTypeObject DBusPyIntBase_Type = {
     0,                                      /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    "",                                     /* tp_doc */
+    DBusPythonInt_tp_doc,                   /* tp_doc */
     0,                                      /* tp_traverse */
     0,                                      /* tp_clear */
     0,                                      /* tp_richcompare */
@@ -137,6 +142,11 @@ PyTypeObject DBusPyIntBase_Type = {
 
 /* There's only one subclass at the moment (Double) but these are factored
 out to make room for Float later. (Float is implemented and #if'd out) */
+
+PyDoc_STRVAR(DBusPythonFloat_tp_doc,\
+"Base class for float subclasses with a ``variant_level`` attribute.\n"
+"Do not rely on the existence of this class outside dbus-python.\n"
+);
 
 static PyMemberDef DBusPythonFloat_tp_members[] = {
     {"variant_level", T_LONG, offsetof(DBusPyFloatBase, variant_level),
@@ -219,7 +229,7 @@ PyTypeObject DBusPyFloatBase_Type = {
     0,                                      /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    "",                                     /* tp_doc */
+    DBusPythonFloat_tp_doc,                 /* tp_doc */
     0,                                      /* tp_traverse */
     0,                                      /* tp_clear */
     0,                                      /* tp_richcompare */
@@ -240,6 +250,11 @@ PyTypeObject DBusPyFloatBase_Type = {
 };
 
 /* Support code for str subclasses ================================== */
+
+PyDoc_STRVAR(DBusPythonString_tp_doc,\
+"Base class for str subclasses with a ``variant_level`` attribute.\n"
+"Do not rely on the existence of this class outside dbus-python.\n"
+);
 
 static PyObject *
 DBusPythonString_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
@@ -322,7 +337,7 @@ PyTypeObject DBusPyStrBase_Type = {
     dbus_py_immutable_setattro,             /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    "",                                     /* tp_doc */
+    DBusPythonString_tp_doc,                /* tp_doc */
     0,                                      /* tp_traverse */
     0,                                      /* tp_clear */
     0,                                      /* tp_richcompare */
@@ -343,6 +358,11 @@ PyTypeObject DBusPyStrBase_Type = {
 };
 
 /* Support code for long subclasses ================================= */
+
+PyDoc_STRVAR(DBusPythonLong_tp_doc,\
+"Base class for ``long`` subclasses with a ``variant_level`` attribute.\n"
+"Do not rely on the existence of this class outside dbus-python.\n"
+);
 
 static PyObject *
 DBusPythonLong_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
@@ -425,7 +445,7 @@ PyTypeObject DBusPyLongBase_Type = {
     dbus_py_immutable_setattro,             /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    "",                                     /* tp_doc */
+    DBusPythonLong_tp_doc,                  /* tp_doc */
     0,                                      /* tp_traverse */
     0,                                      /* tp_clear */
     0,                                      /* tp_richcompare */

@@ -31,11 +31,22 @@
 #include "types-internal.h"
 
 PyDoc_STRVAR(Byte_tp_doc,
-"Byte(integer or str of length 1[, variant_level])\n"
-"\n"
-"Byte is a subtype of int, with range restricted to [0, 255].\n"
+"An unsigned byte: a subtype of int, with range restricted to [0, 255].\n"
 "\n"
 "A Byte b may be converted to a str of length 1 via str(b) == chr(b).\n"
+"\n"
+"Constructor::\n"
+"\n"
+"   dbus.Byte(integer or str of length 1[, variant_level])\n"
+"\n"
+"``variant_level`` must be non-negative; the default is 0.\n"
+"\n"
+":IVariables:\n"
+"  `variant_level` : int\n"
+"    Indicates how many nested Variant containers this object\n"
+"    is contained in: if a message's wire format has a variant containing a\n"
+"    variant containing a byte, this is represented in Python by a\n"
+"    Byte with variant_level==2.\n"
 );
 
 static PyObject *
@@ -155,13 +166,16 @@ PyTypeObject DBusPyByte_Type = {
 };
 
 PyDoc_STRVAR(ByteArray_tp_doc,
-"ByteArray(str)\n"
-"\n"
 "ByteArray is a subtype of str which can be used when you want an\n"
 "efficient immutable representation of a D-Bus byte array (signature 'ay').\n"
 "\n"
-"The subscript operation byte_array[i] returns Byte instances. Otherwise,\n"
-"it's just a string.\n"
+"Import via::\n"
+"\n"
+"   from dbus import ByteArray\n"
+"\n"
+"Constructor::\n"
+"\n"
+"   ByteArray(str)\n"
 );
 
 static PyObject *

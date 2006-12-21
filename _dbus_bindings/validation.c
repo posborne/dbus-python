@@ -161,44 +161,45 @@ dbus_py_validate_interface_name(const char *name)
         if (*ptr == '.') {
             dot = TRUE;
             if (last == '.') {
-                PyErr_Format(PyExc_ValueError, "Invalid interface or error name '%s': "
-                             "contains substring '..'", name);
+                PyErr_Format(PyExc_ValueError, "Invalid interface or "
+                             "error name '%s': contains substring '..'", name);
                 return FALSE;
             }
             else if (last == '\0') {
-                PyErr_Format(PyExc_ValueError, "Invalid interface or error name '%s': "
-                             "must not start with '.'", name);
+                PyErr_Format(PyExc_ValueError, "Invalid interface or error "
+                             "name '%s': must not start with '.'", name);
                 return FALSE;
             }
         }
         else if (*ptr >= '0' && *ptr <= '9') {
             if (last == '.') {
-                PyErr_Format(PyExc_ValueError, "Invalid interface or error name '%s': "
-                             "a digit may not follow '.'", name);
+                PyErr_Format(PyExc_ValueError, "Invalid interface or error "
+                             "name '%s': a digit may not follow '.'", name);
                 return FALSE;
             }
             else if (last == '\0') {
-                PyErr_Format(PyExc_ValueError, "Invalid interface or error name '%s': "
-                             "must not start with a digit", name);
+                PyErr_Format(PyExc_ValueError, "Invalid interface or error "
+                             "name '%s': must not start with a digit", name);
                 return FALSE;
             }
         }
         else if ((*ptr < 'a' || *ptr > 'z') &&
                  (*ptr < 'A' || *ptr > 'Z') && *ptr != '_') {
-            PyErr_Format(PyExc_ValueError, "Invalid interface or error name '%s': "
-                         "contains invalid character '%c'", name, *ptr);
+            PyErr_Format(PyExc_ValueError, "Invalid interface or error "
+                         "name '%s': contains invalid character '%c'",
+                         name, *ptr);
             return FALSE;
         }
         last = *ptr;
     }
     if (last == '.') {
-        PyErr_Format(PyExc_ValueError, "Invalid interface or error name '%s': must "
-                        "not end with '.'", name);
+        PyErr_Format(PyExc_ValueError, "Invalid interface or error name "
+                     "'%s': must not end with '.'", name);
         return FALSE;
     }
     if (!dot) {
-        PyErr_Format(PyExc_ValueError, "Invalid interface or error name '%s': must "
-                        "contain '.'", name);
+        PyErr_Format(PyExc_ValueError, "Invalid interface or error name "
+                     "'%s': must contain '.'", name);
         return FALSE;
     }
     return TRUE;

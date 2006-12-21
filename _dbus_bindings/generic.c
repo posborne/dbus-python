@@ -25,6 +25,9 @@
 
 #include "dbus_bindings-internal.h"
 
+/* The empty tuple, held globally since dbus-python turns out to use it quite
+ * a lot
+ */
 PyObject *dbus_py_empty_tuple = NULL;
 
 PyObject *

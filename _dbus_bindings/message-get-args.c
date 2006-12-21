@@ -34,7 +34,7 @@ char dbus_py_Message_get_args_list__doc__[] = (
 "\n"
 ":Keywords:\n"
 "   `byte_arrays` : bool\n"
-"       If true, convert arrays of byte (signature 'ay') into ByteArray,\n"
+"       If true, convert arrays of byte (signature 'ay') into dbus.ByteArray,\n"
 "       a str subclass. In practice, this is usually what you want, but\n"
 "       it's off by default for consistency.\n"
 "\n"
