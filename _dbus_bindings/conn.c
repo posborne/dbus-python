@@ -217,7 +217,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
             PyErr_SetString(PyExc_ValueError,
                             "D-Bus connections must be attached to a main "
                             "loop by passing mainloop=... to the constructor "
-                            "or calling dbus.Bus.set_default_main_loop(...)");
+                            "or calling dbus.set_default_main_loop(...)");
             goto err;
         }
     }
