@@ -40,6 +40,12 @@ def main():
 
     print hello_reply_dict
 
+    # D-Bus exceptions are mapped to Python exceptions
+    try:
+        iface.RaiseException()
+    except dbus.DBusException, e:
+        print str(e)
+
     # introspection is automatically supported
     print remote_object.Introspect(dbus_interface="org.freedesktop.DBus.Introspectable")
 

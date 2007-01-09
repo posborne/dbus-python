@@ -12,7 +12,6 @@ import traceback
 import gobject
 
 import dbus
-import dbus.decorators
 import dbus.mainloop.glib
 
 def handle_reply(msg):

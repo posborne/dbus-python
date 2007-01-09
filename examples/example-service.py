@@ -3,6 +3,7 @@
 usage = """Usage:
 python example-service.py &
 python example-client.py
+python example-async-client.py
 python example-client.py --exit-service
 """
 
@@ -12,6 +13,9 @@ import dbus
 import dbus.service
 import dbus.mainloop.glib
 
+class DemoException(dbus.DBusException):
+    _dbus_error_name = 'com.example.DemoException'
+
 class SomeObject(dbus.service.Object):
 
     @dbus.service.method("com.example.SampleInterface",
@@ -20,6 +24,12 @@ class SomeObject(dbus.service.Object):
         print (str(hello_message))
         return ["Hello", " from example-service.py", "with unique name",
                 session_bus.get_unique_name()]
+
+    @dbus.service.method("com.example.SampleInterface",
+                         in_signature='', out_signature='')
+    def RaiseException(self):
+        raise DemoException('The RaiseException method does what you might '
+                            'expect')
 
     @dbus.service.method("com.example.SampleInterface",
                          in_signature='', out_signature='(ss)')

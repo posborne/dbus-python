@@ -68,6 +68,19 @@ else
   echo "  - cross-test server reported no untested functions"
 fi
 
+echo "running the examples"
+
+$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-service.py &
+$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-signal-emitter.py &
+$PYTHON "$DBUS_TOP_SRCDIR"/examples/list-system-services.py --session ||
+  die "list-system-services.py --session failed!"
+$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-async-client.py ||
+  die "example-async-client failed!"
+$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-client.py --exit-service ||
+  die "example-client failed!"
+$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-signal-recipient.py --exit-service ||
+  die "example-signal-recipient failed!"
+
 rm -f "$DBUS_TOP_BUILDDIR"/test/test-service.log
 rm -f "$DBUS_TOP_BUILDDIR"/test/cross-client.log
 rm -f "$DBUS_TOP_BUILDDIR"/test/cross-server.log
