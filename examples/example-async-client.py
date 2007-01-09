@@ -3,7 +3,7 @@
 usage = """Usage:
 python example-service.py &
 python example-async-client.py
-python example-async-client.py --exit-service
+python example-client.py --exit-service
 """
 
 import sys
