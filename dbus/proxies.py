@@ -309,8 +309,8 @@ class ProxyObject:
             
             call_object = self.ProxyMethodClass(self._bus.get_connection(),
                                                 self._named_service,
-                                                self._object_path, 
-                                                iface, 
+                                                self._object_path,
+                                                iface,
                                                 member,
                                                 introspect_sig)
                                                                        
@@ -337,15 +337,40 @@ class ProxyObject:
         elif member.startswith('__') and member.endswith('__'):
             raise AttributeError(member)
         else:
-            ret = self.ProxyMethodClass(self, self._bus.get_connection(),
-                                        self._named_service,
-                                        self._object_path, member, 
-                                        dbus_interface)
-        
-            if self._introspect_state == self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS:
-                ret = self.DeferedMethodClass(ret)
-                    
-            return ret
+            return self.get_dbus_method(member, dbus_interface)
+
+    def get_dbus_method(self, member, dbus_interface=None):
+        """Return a proxy method representing the given D-Bus method. The
+        returned proxy method can be called in the usual way. For instance, ::
+
+            proxy.get_dbus_method("Foo", dbus_interface='com.example.Bar')(123)
+
+        is equivalent to::
+
+            proxy.Foo(123, dbus_interface='com.example.Bar')
+
+        or even::
+
+            getattr(proxy, "Foo")(123, dbus_interface='com.example.Bar')
+
+        However, using `get_dbus_method` is the only way to call D-Bus
+        methods with certain awkward names - if the author of a service
+        implements a method called ``connect_to_signal`` or even
+        ``__getattr__``, you'll need to use `get_dbus_method` to call them.
+
+        For services which follow the D-Bus convention of CamelCaseMethodNames
+        this won't be a problem.
+        """
+
+        ret = self.ProxyMethodClass(self, self._bus.get_connection(),
+                                    self._named_service,
+                                    self._object_path, member,
+                                    dbus_interface)
+    
+        if self._introspect_state == self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS:
+            ret = self.DeferedMethodClass(ret)
+
+        return ret
 
     def __repr__(self):
         return '<ProxyObject wrapping %s %s %s at %#x>'%(

@@ -83,6 +83,10 @@ class TestDBusBindings(unittest.TestCase):
         print self.iface.Echo("dbus_interface on Interface test Passed", dbus_interface = "org.freedesktop.DBus.TestSuiteInterface")
         self.assert_(True)
 
+    def testGetDBusMethod(self):
+        self.assertEquals(self.iface.get_dbus_method('AcceptListOfByte')('\1\2\3'), [1,2,3])
+        self.assertEquals(self.remote_object.get_dbus_method('AcceptListOfByte', dbus_interface='org.freedesktop.DBus.TestSuiteInterface')('\1\2\3'), [1,2,3])
+
     def testCallingConventionOptions(self):
         self.assertEquals(self.iface.AcceptListOfByte('\1\2\3'), [1,2,3])
         self.assertEquals(self.iface.AcceptListOfByte('\1\2\3', byte_arrays=True), '\1\2\3')

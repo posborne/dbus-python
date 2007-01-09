@@ -813,6 +813,32 @@ class Interface:
             ret = self._obj.__getattr__(member, dbus_interface=_dbus_interface)
             return ret
 
+    def get_dbus_method(self, member, dbus_interface=None):
+        """Return a proxy method representing the given D-Bus method. The
+        returned proxy method can be called in the usual way. For instance, ::
+
+            iface.get_dbus_method("Foo")(123)
+
+        is equivalent to::
+
+            iface.Foo(123)
+
+        or even::
+
+            getattr(iface, "Foo")(123)
+
+        However, using `get_dbus_method` is the only way to call D-Bus
+        methods with certain awkward names - if the author of a service
+        implements a method called ``connect_to_signal`` or even
+        ``__getattr__``, you'll need to use `get_dbus_method` to call them.
+
+        For services which follow the D-Bus convention of CamelCaseMethodNames
+        this won't be a problem.
+        """
+        if dbus_interface is None:
+            dbus_interface = self._dbus_interface
+        return self._obj.get_dbus_method(member, dbus_interface=dbus_interface)
+
     def __repr__(self):
         return '<Interface %r implementing %r at %#x>'%(
         self._obj, self._dbus_interface, id(self))
