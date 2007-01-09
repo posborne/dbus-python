@@ -35,6 +35,10 @@ PyDoc_STRVAR(Byte_tp_doc,
 "\n"
 "A Byte b may be converted to a str of length 1 via str(b) == chr(b).\n"
 "\n"
+"Most of the time you don't want to use this class - it mainly exists\n"
+"for symmetry with the other D-Bus types. See `dbus.ByteArray` for a\n"
+"better way to handle arrays of Byte.\n"
+"\n"
 "Constructor::\n"
 "\n"
 "   dbus.Byte(integer or str of length 1[, variant_level])\n"
@@ -169,6 +173,18 @@ PyDoc_STRVAR(ByteArray_tp_doc,
 "ByteArray is a subtype of str which can be used when you want an\n"
 "efficient immutable representation of a D-Bus byte array (signature 'ay').\n"
 "\n"
+"By default, when byte arrays are converted from D-Bus to Python, they\n"
+"come out as a `dbus.Array` of `dbus.Byte`. This is just for symmetry with\n"
+"the other D-Bus types - in practice, what you usually want is the byte\n"
+"array represented as a string, using this class. To get this, pass the\n"
+"``byte_arrays=True`` keyword argument to any of these methods:\n"
+"\n"
+"* any D-Bus method proxy, or ``connect_to_signal``, on the objects returned\n"
+"  by `Bus.get_object` and `Bus.get_object_by_unique_name`\n"
+"* any D-Bus method on a `dbus.Interface`\n"
+"* `dbus.Interface.connect_to_signal`\n"
+"* `Bus.add_signal_receiver`\n"
+"\n"
 "Import via::\n"
 "\n"
 "   from dbus import ByteArray\n"
@@ -177,61 +193,6 @@ PyDoc_STRVAR(ByteArray_tp_doc,
 "\n"
 "   ByteArray(str)\n"
 );
-
-static PyObject *
-ByteArray_sq_item (PyObject *self, int i)
-{
-    unsigned char c;
-    PyObject *args;
-
-    if (i < 0 || i >= PyString_GET_SIZE(self)) {
-        PyErr_SetString(PyExc_IndexError, "ByteArray index out of range");
-        return NULL;
-    }
-    c = ((unsigned char *)PyString_AS_STRING(self))[i];
-    args = Py_BuildValue("(l)", (long)c);
-    if (!args)
-        return NULL;
-    return PyObject_Call((PyObject *)&DBusPyByte_Type, args, NULL);
-}
-
-static PyObject *
-ByteArray_mp_subscript(PyObject *self, PyObject *other)
-{
-    long i;
-    if (PyInt_Check(other)) {
-        i = PyInt_AS_LONG(other);
-        if (i < 0) i += PyString_GET_SIZE (self);
-        return ByteArray_sq_item(self, i);
-    }
-    else if (PyLong_Check(other)) {
-        i = PyLong_AsLong(other);
-        if (i == -1 && PyErr_Occurred()) return NULL;
-        if (i < 0) i += PyString_GET_SIZE(self);
-        return ByteArray_sq_item(self, i);
-    }
-    else {
-        /* slices just return strings */
-        return (PyString_Type.tp_as_mapping->mp_subscript)(self, other);
-    }
-}
-
-static PyMappingMethods ByteArray_tp_as_mapping = {
-    0, /* mp_length */
-    ByteArray_mp_subscript, /* mp_subscript */
-    0, /* mp_ass_subscript */
-};
-
-static PySequenceMethods ByteArray_tp_as_sequence = {
-    0, /* sq_length */
-    0, /* sq_concat */
-    0, /* sq_repeat */
-    ByteArray_sq_item, /* sq_item */
-    0, /* sq_slice */
-    0, /* sq_ass_item */
-    0, /* sq_ass_slice */
-    0, /* sq_contains */
-};
 
 PyTypeObject DBusPyByteArray_Type = {
         PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
@@ -246,8 +207,8 @@ PyTypeObject DBusPyByteArray_Type = {
         0,                                      /* tp_compare */
         0,                                      /* tp_repr */
         0,                                      /* tp_as_number */
-        &ByteArray_tp_as_sequence,              /* tp_as_sequence */
-        &ByteArray_tp_as_mapping,               /* tp_as_mapping */
+        0,                                      /* tp_as_sequence */
+        0,                                      /* tp_as_mapping */
         0,                                      /* tp_hash */
         0,                                      /* tp_call */
         0,                                      /* tp_str */
