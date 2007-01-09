@@ -379,7 +379,8 @@ class Bus(BusImplementation):
         communication, meaning that if the owner of the well-known
         name changes, the proxy will point to the new owner.
 
-        If state needs to be maintained between 
+        If state needs to be maintained between calls, use
+        `get_object_by_unique_name` instead.
 
         :Parameters:
             `named_service` : str
@@ -392,6 +393,10 @@ class Bus(BusImplementation):
                 object to find out supported methods and their signatures
         :Returns: a `dbus.proxies.ProxyObject`
         """
+        # FIXME: would be good to call _require_main_loop() here, since the
+        # name owner tracking won't work unless we're running a main loop,
+        # but since legacy code will call this method rather than
+        # _by_unique_name, that's not really feasible yet
         return self.ProxyObjectClass(self, named_service, object_path, introspect=introspect)
 
     def get_object_by_unique_name(self, named_service, object_path, introspect=True):
@@ -503,6 +508,7 @@ class Bus(BusImplementation):
                 time only string arguments can be matched (in particular,
                 object paths and signatures can't).
         """
+        self._require_main_loop()
 
         match = SignalMatch(self, named_service, path, dbus_interface,
                             signal_name, handler_function, **keywords)
@@ -790,7 +796,7 @@ class Interface:
         """
         if not dbus_interface:
             dbus_interface = self._dbus_interface
-            
+
         return self._obj.connect_to_signal(signal_name, handler_function, dbus_interface, **keywords)
 
     def __getattr__(self, member, **keywords):

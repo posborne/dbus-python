@@ -40,6 +40,8 @@ typedef struct {
 
     /* Weak-references list to make Connections weakly referenceable */
     PyObject *weaklist;
+
+    dbus_bool_t has_mainloop;
 } Connection;
 
 extern struct PyMethodDef DBusPyConnection_tp_methods[];

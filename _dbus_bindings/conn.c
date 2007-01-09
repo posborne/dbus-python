@@ -213,13 +213,8 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
     /* Change mainloop from a borrowed reference to an owned reference */
     if (!mainloop || mainloop == Py_None) {
         mainloop = dbus_py_get_default_main_loop();
-        if (!mainloop || mainloop == Py_None) {
-            PyErr_SetString(PyExc_ValueError,
-                            "D-Bus connections must be attached to a main "
-                            "loop by passing mainloop=... to the constructor "
-                            "or calling dbus.set_default_main_loop(...)");
+        if (!mainloop)
             goto err;
-        }
     }
     else {
         Py_INCREF(mainloop);
@@ -233,6 +228,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
 
     DBG_WHEREAMI;
 
+    self->has_mainloop = (mainloop != Py_None);
     self->conn = NULL;
     self->filters = PyList_New(0);
     if (!self->filters) goto err;

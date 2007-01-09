@@ -169,9 +169,10 @@ PyDoc_STRVAR(get_default_main_loop__doc__,
 "Return the global default dbus-python main loop wrapper, which is used\n"
 "when no main loop wrapper is passed to the Connection constructor.\n"
 "\n"
-"If None, there is no default and you must always pass the mainloop\n"
-"parameter to the constructor. This will be the case until\n"
-"set_default_main_loop is called.\n");
+"If None, there is no default and you should always pass the mainloop\n"
+"parameter to the constructor - if you don't, then asynchronous calls,\n"
+"connecting to signals and exporting objects will raise an exception.\n"
+"There is no default until set_default_main_loop is called.\n");
 static PyObject *
 get_default_main_loop(PyObject *always_null UNUSED,
                       PyObject *no_args UNUSED)

@@ -201,6 +201,29 @@ out:
     return ret;
 }
 
+PyDoc_STRVAR(Connection__require_main_loop__doc__,
+"_require_main_loop()\n\n"
+"Raise an exception if this Connection is not bound to any main loop -\n"
+"in this state, asynchronous calls, receiving signals and exporting objects\n"
+"will not work.\n"
+"\n"
+"`dbus.mainloop.NULL_MAIN_LOOP` is treated like a valid main loop - if you're\n"
+"using that, you presumably know what you're doing.\n");
+static PyObject *
+Connection__require_main_loop (Connection *self, PyObject *args UNUSED)
+{
+    if (!self->has_mainloop) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "To make asynchronous calls, receive signals or "
+                        "export objects, D-Bus connections must be attached "
+                        "to a main loop by passing mainloop=... to the "
+                        "constructor or calling "
+                        "dbus.set_default_main_loop(...)");
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
 PyDoc_STRVAR(Connection_close__doc__,
 "close()\n\n"
 "Close the connection.");
@@ -344,6 +367,9 @@ Connection_send_message_with_reply(Connection *self, PyObject *args)
 
     TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
+    if (!Connection__require_main_loop(self, NULL)) {
+        return NULL;
+    }
     if (!PyArg_ParseTuple(args, "OO|f:send_message_with_reply", &obj, &callable,
                           &timeout_s)) {
         return NULL;
@@ -643,6 +669,9 @@ Connection__register_object_path(Connection *self, PyObject *args,
 
     TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
+    if (!Connection__require_main_loop(self, NULL)) {
+        return NULL;
+    }
     if (!PyArg_ParseTupleAndKeywords(args, kwargs,
                                      "OO|Oi:_register_object_path",
                                      argnames, 
@@ -875,6 +904,7 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
 
 struct PyMethodDef DBusPyConnection_tp_methods[] = {
 #define ENTRY(name, flags) {#name, (PyCFunction)Connection_##name, flags, Connection_##name##__doc__}
+    ENTRY(_require_main_loop, METH_NOARGS),
     ENTRY(close, METH_NOARGS),
     ENTRY(flush, METH_NOARGS),
     ENTRY(get_is_connected, METH_NOARGS),
