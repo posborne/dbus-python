@@ -164,8 +164,18 @@ Array_tp_init (DBusPyArray *self, PyObject *args, PyObject *kwargs)
                                           "(O)", signature);
         if (!signature) return -1;
     }
-    /* FIXME: if the signature does not represent exactly one complete type,
-     * raise exception */
+
+    if (signature != Py_None) {
+        const char *c_str = PyString_AS_STRING(signature);
+
+        if (!dbus_signature_validate_single(c_str, NULL)) {
+            Py_DECREF(signature);
+            PyErr_SetString(PyExc_ValueError,
+                            "There must be exactly one complete type in "
+                            "an Array's signature parameter");
+            return -1;
+        }
+    }
 
     tuple = Py_BuildValue("(O)", obj);
     if (!tuple) {
@@ -245,6 +255,11 @@ PyDoc_STRVAR(Dict_tp_doc,
 "\n"
 "``signature`` is either a string or None. If a string, it must consist\n"
 "of exactly two complete type signatures, representing the 'key' type\n"
+"(which must be a primitive type, i.e. one of \"bd"
+#ifdef WITH_DBUS_FLOAT32
+"f"
+#endif
+"ginoqstuxy\")\n"
 "and the 'value' type. The signature of the whole Dictionary will be\n"
 "``a{xx}`` where ``xx`` is replaced by the given signature.\n"
 "\n"
@@ -361,8 +376,43 @@ Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
                                           "(O)", signature);
         if (!signature) return -1;
     }
-    /* FIXME: if the signature does not represent exactly two complete types,
-     * or if the first type is a container, raise exception */
+
+    if (signature != Py_None) {
+        const char *c_str = PyString_AS_STRING(signature);
+
+        switch (c_str[0]) {
+            case DBUS_TYPE_BYTE:
+            case DBUS_TYPE_BOOLEAN:
+            case DBUS_TYPE_INT16:
+            case DBUS_TYPE_UINT16:
+            case DBUS_TYPE_INT32:
+            case DBUS_TYPE_UINT32:
+            case DBUS_TYPE_INT64:
+            case DBUS_TYPE_UINT64:
+            case DBUS_TYPE_DOUBLE:
+#ifdef WITH_DBUS_FLOAT32
+            case DBUS_TYPE_FLOAT:
+#endif
+            case DBUS_TYPE_STRING:
+            case DBUS_TYPE_OBJECT_PATH:
+            case DBUS_TYPE_SIGNATURE:
+                break;
+            default:
+                Py_DECREF(signature);
+                PyErr_SetString(PyExc_ValueError,
+                                "The key type in a Dictionary's signature "
+                                "must be a primitive type");
+                return -1;
+        }
+
+        if (!dbus_signature_validate_single(c_str + 1, NULL)) {
+            Py_DECREF(signature);
+            PyErr_SetString(PyExc_ValueError,
+                            "There must be exactly two complete types in "
+                            "a Dictionary's signature parameter");
+            return -1;
+        }
+    }
 
     tuple = Py_BuildValue("(O)", obj);
     if (!tuple) {
