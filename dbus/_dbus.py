@@ -368,7 +368,7 @@ class Bus(BusImplementation):
 
     get_starter = staticmethod(get_starter)
 
-    def get_object(self, named_service, object_path):
+    def get_object(self, named_service, object_path, introspect=True):
         """Return a local proxy for the given remote object.
 
         Method calls on the proxy are translated into method calls on the
@@ -387,11 +387,14 @@ class Bus(BusImplementation):
                 of the application owning the object
             `object_path` : str
                 The object path of the desired object
+            `introspect` : bool
+                If true (default), attempt to introspect the remote
+                object to find out supported methods and their signatures
         :Returns: a `dbus.proxies.ProxyObject`
         """
-        return self.ProxyObjectClass(self, named_service, object_path)
+        return self.ProxyObjectClass(self, named_service, object_path, introspect=introspect)
 
-    def get_object_by_unique_name(self, named_service, object_path):
+    def get_object_by_unique_name(self, named_service, object_path, introspect=True):
         """Return a local proxy for the given remote object,
         first resolving the given bus name to the unique name of
         the current owner of that name.
@@ -411,6 +414,9 @@ class Bus(BusImplementation):
                 will be converted to the owning unique name immediately
             `object_path` : str
                 The object path of the desired object
+            `introspect` : bool
+                If true (default), attempt to introspect the remote
+                object to find out supported methods and their signatures
         :Returns: a `dbus.proxies.ProxyObject`
         :Raises `DBusException`: if resolving the well-known name to a
             unique name fails
@@ -426,7 +432,7 @@ class Bus(BusImplementation):
                 raise DBusException('Well-known name %r is not '
                                     'present on %r', named_service, self)
 
-        return self.ProxyObjectClass(self, unique, object_path)
+        return self.ProxyObjectClass(self, unique, object_path, introspect=introspect)
 
     def add_signal_receiver(self, handler_function,
                                   signal_name=None,
