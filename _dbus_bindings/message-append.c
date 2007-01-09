@@ -357,6 +357,8 @@ dbus_py_Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
 static int _message_iter_append_pyobject(DBusMessageIter *appender,
                                          DBusSignatureIter *sig_iter,
                                          PyObject *obj);
+static int _message_iter_append_variant(DBusMessageIter *appender, 
+                                        PyObject *obj);
 
 static int
 _message_iter_append_string(DBusMessageIter *appender,
@@ -431,7 +433,7 @@ _message_iter_append_byte(DBusMessageIter *appender, PyObject *obj)
         }
         y = i;
     }
-    DBG("Performing actual append: byte (from unicode) \\x%02x", (unsigned)y);
+    DBG("Performing actual append: byte \\x%02x", (unsigned)y);
     if (!dbus_message_iter_append_basic(appender, DBUS_TYPE_BYTE, &y)) {
         PyErr_NoMemory();
         return -1;
@@ -505,6 +507,8 @@ _message_iter_append_multi(DBusMessageIter *appender,
     PyObject *iterator = PyObject_GetIter(obj);
     char *sig = NULL;
     int container = mode;
+    dbus_bool_t is_byte_array = DBusPyByteArray_Check(obj);
+    int inner_type;
 
 #ifdef USING_DBG
     fprintf(stderr, "Appending multiple: ");
@@ -528,6 +532,7 @@ _message_iter_append_multi(DBusMessageIter *appender,
         dbus_free(s);
     }
 #endif
+    inner_type = dbus_signature_iter_get_current_type(&sub_sig_iter);
 
     if (mode == DBUS_TYPE_ARRAY || mode == DBUS_TYPE_DICT_ENTRY) {
         sig = dbus_signature_iter_get_signature(&sub_sig_iter);
@@ -568,6 +573,25 @@ _message_iter_append_multi(DBusMessageIter *appender,
         if (mode == DBUS_TYPE_DICT_ENTRY) {
             ret = _message_iter_append_dictentry(&sub_appender, &sub_sig_iter,
                                                  obj, contents);
+        }
+        else if (mode == DBUS_TYPE_ARRAY && is_byte_array
+                 && inner_type == DBUS_TYPE_VARIANT) {
+            /* Subscripting a ByteArray gives a str of length 1, but if the
+             * container is a ByteArray and the parameter is an array of
+             * variants, we want to produce an array of variants containing
+             * bytes, not strings.
+             */
+            PyObject *args = Py_BuildValue("(O)", contents);
+            PyObject *byte;
+            
+            if (!args)
+                break;
+            byte = PyObject_Call((PyObject *)&DBusPyByte_Type, args, NULL);
+            Py_DECREF(args);
+            if (!byte)
+                break;
+            ret = _message_iter_append_variant(&sub_appender, byte);
+            Py_DECREF(byte);
         }
         else {
             ret = _message_iter_append_pyobject(&sub_appender, &sub_sig_iter,
