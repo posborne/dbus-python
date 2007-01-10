@@ -198,7 +198,7 @@ class ProxyObject:
         """
         self._bus           = bus
         self._named_service = named_service
-        self._object_path   = object_path
+        self.__dbus_object_path__ = object_path
 
         #PendingCall object for Introspect call
         self._pending_introspect = None
@@ -282,11 +282,11 @@ class ProxyObject:
                                       signal_name=signal_name,
                                       dbus_interface=dbus_interface,
                                       named_service=self._named_service,
-                                      path=self._object_path,
+                                      path=self.__dbus_object_path__,
                                       **keywords)
 
     def _Introspect(self):
-        message = _dbus_bindings.MethodCallMessage(None, self._object_path, 'org.freedesktop.DBus.Introspectable', 'Introspect')
+        message = _dbus_bindings.MethodCallMessage(None, self.__dbus_object_path__, 'org.freedesktop.DBus.Introspectable', 'Introspect')
         message.set_destination(self._named_service)
         
         result = self._bus.get_connection().send_message_with_reply(message, _ReplyHandler(self._introspect_reply_handler, self._introspect_error_handler, utf8_strings=True), -1)
@@ -309,7 +309,7 @@ class ProxyObject:
             
             call_object = self.ProxyMethodClass(self._bus.get_connection(),
                                                 self._named_service,
-                                                self._object_path,
+                                                self.__dbus_object_path__,
                                                 iface,
                                                 member,
                                                 introspect_sig)
@@ -364,7 +364,7 @@ class ProxyObject:
 
         ret = self.ProxyMethodClass(self, self._bus.get_connection(),
                                     self._named_service,
-                                    self._object_path, member,
+                                    self.__dbus_object_path__, member,
                                     dbus_interface)
     
         if self._introspect_state == self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS:
@@ -374,6 +374,6 @@ class ProxyObject:
 
     def __repr__(self):
         return '<ProxyObject wrapping %s %s %s at %#x>'%(
-            self._bus, self._named_service, self._object_path , id(self))
+            self._bus, self._named_service, self.__dbus_object_path__, id(self))
     __str__ = __repr__
 

@@ -70,12 +70,12 @@ char dbus_py_Message_append__doc__[] = (
 "                                any integer\n"
 "any integer type                any integer\n"
 "double (d)                      any float\n"
-"variant                         Variant\n"
-"                                any object (guess type as below)\n"
+"object path                     anything with a __dbus_object_path__ attribute\n"
 "string, signature, object path  str (must be UTF-8) or unicode\n"
 "dict (a{...})                   any mapping\n"
 "array (a...)                    any iterable over appropriate objects\n"
 "struct ((...))                  any iterable over appropriate objects\n"
+"variant                         any object above (guess type as below)\n"
 "=============================== ===========================\n"
 "\n"
 "Here 'any integer' means anything on which int() or long()\n"
@@ -93,25 +93,68 @@ char dbus_py_Message_guess_signature__doc__[] = (
 "Python objects.\n"
 "\n"
 "The signature is constructed as follows:\n\n"
-"=============================== ===========================\n"
-"Python                          D-Bus\n"
-"=============================== ===========================\n"
-"D-Bus type, variant_level > 0   variant (v)\n"
-"D-Bus type, variant_level == 0  the corresponding type\n"
-"bool                            boolean (y)\n"
-"any other int subclass          int32 (i) (FIXME: make this error?)\n"
-"any other long subclass         int64 (x) (FIXME: make this error?)\n"
-"any other float subclass        double (d)\n"
-"any other str subclass          string (s)\n"
-"any other unicode subclass      string (s)\n"
-"any other tuple subclass        struct ((...)), guess contents' types\n"
-"any other list subclass         array (a...), guess contents' type\n"
-"                                according to type of first item\n"
-"any other dict subclass         dict (a{...}), guess key, value type\n"
-"                                according to types for an arbitrary item\n"
-"anything else                   raise TypeError\n"
-"=============================== ===========================\n"
+"+-------------------------------+---------------------------+\n"
+"|Python                         |D-Bus                      |\n"
+"+===============================+===========================+\n"
+"|D-Bus type, variant_level > 0  |variant (v)                |\n"
+"+-------------------------------+---------------------------+\n"
+"|D-Bus type, variant_level == 0 |the corresponding type     |\n"
+"+-------------------------------+---------------------------+\n"
+"|anything with a                |object path                |\n"
+"|__dbus_object_path__ attribute |                           |\n"
+"+-------------------------------+---------------------------+\n"
+"|bool                           |boolean (y)                |\n"
+"+-------------------------------+---------------------------+\n"
+"|any other int subclass         |int32 (i)                  |\n"
+"+-------------------------------+---------------------------+\n"
+"|any other long subclass        |int64 (x)                  |\n"
+"+-------------------------------+---------------------------+\n"
+"|any other float subclass       |double (d)                 |\n"
+"+-------------------------------+---------------------------+\n"
+"|any other str subclass         |string (s)                 |\n"
+"+-------------------------------+---------------------------+\n"
+"|any other unicode subclass     |string (s)                 |\n"
+"+-------------------------------+---------------------------+\n"
+"|any other tuple subclass       |struct ((...))             |\n"
+"+-------------------------------+---------------------------+\n"
+"|any other list subclass        |array (a...), guess        |\n"
+"|                               |contents' type according to|\n"
+"|                               |type of first item         |\n"
+"+-------------------------------+---------------------------+\n"
+"|any other dict subclass        |dict (a{...}), guess key,  |\n"
+"|                               |value type according to    |\n"
+"|                               |types for an arbitrary item|\n"
+"+-------------------------------+---------------------------+\n"
+"|anything else                  |raise TypeError            |\n"
+"+-------------------------------+---------------------------+\n"
 );
+
+/* return a new reference, possibly to None */
+static PyObject *
+get_object_path(PyObject *obj)
+{
+    PyObject *magic_attr = PyObject_GetAttr(obj, dbus_py__dbus_object_path__const);
+
+    if (magic_attr) {
+        if (PyString_Check(magic_attr)) {
+            return magic_attr;
+        }
+        else {
+            Py_DECREF(magic_attr);
+            PyErr_SetString(PyExc_TypeError, "__dbus_object_path__ must be "
+                            "a string");
+            return NULL;
+        }
+    }
+    else {
+        /* Ignore exceptions, except for SystemExit and KeyboardInterrupt */
+        if (PyErr_ExceptionMatches(PyExc_SystemExit) ||
+            PyErr_ExceptionMatches(PyExc_KeyboardInterrupt))
+            return NULL;
+        PyErr_Clear();
+        Py_RETURN_NONE;
+    }
+}
 
 /* Return a new reference. If the object is a variant and variant_level_ptr
  * is not NULL, put the variant level in the variable pointed to, and
@@ -119,6 +162,7 @@ char dbus_py_Message_guess_signature__doc__[] = (
 static PyObject *
 _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
 {
+    PyObject *magic_attr;
     long variant_level = get_variant_level(obj);
     if (variant_level_ptr) {
         *variant_level_ptr = variant_level;
@@ -127,11 +171,21 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         return PyString_FromString(DBUS_TYPE_VARIANT_AS_STRING);
     }
 
-    /* Ordering is important: some of these are subclasses of each other. */
     if (obj == Py_True || obj == Py_False) {
       return PyString_FromString(DBUS_TYPE_BOOLEAN_AS_STRING);
     }
-    else if (PyInt_Check(obj)) {
+
+    magic_attr = get_object_path(obj);
+    if (!magic_attr)
+        return NULL;
+    if (magic_attr != Py_None) {
+        Py_DECREF(magic_attr);
+        return PyString_FromString(DBUS_TYPE_OBJECT_PATH_AS_STRING);
+    }
+    Py_DECREF(magic_attr);
+
+    /* Ordering is important: some of these are subclasses of each other. */
+    if (PyInt_Check(obj)) {
         if (DBusPyInt16_Check(obj))
             return PyString_FromString(DBUS_TYPE_INT16_AS_STRING);
         else if (DBusPyInt32_Check(obj))
@@ -362,9 +416,27 @@ static int _message_iter_append_variant(DBusMessageIter *appender,
 
 static int
 _message_iter_append_string(DBusMessageIter *appender,
-                            int sig_type, PyObject *obj)
+                            int sig_type, PyObject *obj,
+                            dbus_bool_t allow_object_path_attr)
 {
     char *s;
+
+    if (sig_type == DBUS_TYPE_OBJECT_PATH && allow_object_path_attr) {
+        PyObject *object_path = get_object_path (obj);
+
+        if (object_path == Py_None) {
+            Py_DECREF(object_path);
+        }
+        else if (!object_path) {
+            return -1;
+        }
+        else {
+            int ret = _message_iter_append_string(appender, sig_type,
+                                                  object_path, FALSE);
+            Py_DECREF(object_path);
+            return ret;
+        }
+    }
 
     if (PyString_Check(obj)) {
         PyObject *unicode;
@@ -864,7 +936,7 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
       case DBUS_TYPE_STRING:
       case DBUS_TYPE_SIGNATURE:
       case DBUS_TYPE_OBJECT_PATH:
-          ret = _message_iter_append_string(appender, sig_type, obj);
+          ret = _message_iter_append_string(appender, sig_type, obj, TRUE);
           break;
 
       case DBUS_TYPE_BYTE:

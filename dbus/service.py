@@ -417,6 +417,9 @@ class Object(Interface):
 
         self._connection._register_object_path(object_path, self._message_cb, self._unregister_cb)
 
+    __dbus_object_path__ = property(lambda self: self._object_path, None, None,
+                                    "The D-Bus object path of this object")
+
     def _unregister_cb(self, connection):
         _logger.info('Unregistering exported object %r', self)
 

@@ -467,10 +467,14 @@ PyTypeObject DBusPyLongBase_Type = {
 
 PyObject *dbus_py_variant_level_const = NULL;
 PyObject *dbus_py_signature_const = NULL;
+PyObject *dbus_py__dbus_object_path__const = NULL;
 
 dbus_bool_t
 dbus_py_init_abstract(void)
 {
+    dbus_py__dbus_object_path__const = PyString_InternFromString("__dbus_object_path__");
+    if (!dbus_py__dbus_object_path__const) return 0;
+
     dbus_py_variant_level_const = PyString_InternFromString("variant_level");
     if (!dbus_py_variant_level_const) return 0;
 

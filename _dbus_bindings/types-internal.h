@@ -67,6 +67,7 @@ dbus_uint64_t dbus_py_uint64_range_check(PyObject *);
 
 extern PyObject *dbus_py_variant_level_const;
 extern PyObject *dbus_py_signature_const;
+extern PyObject *dbus_py__dbus_object_path__const;
 
 typedef struct {
     PyListObject super;

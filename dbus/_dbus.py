@@ -736,6 +736,11 @@ class Interface:
         """
         self._obj = object
         self._dbus_interface = dbus_interface
+    
+    __dbus_object_path__ = property (lambda self: self._obj.__dbus_object_path__,
+                                     None, None,
+                                     "The D-Bus object path of the "
+                                     "underlying object")
 
     def connect_to_signal(self, signal_name, handler_function, dbus_interface = None, **keywords):
         """Arrange for a function to be called when the given signal is

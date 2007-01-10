@@ -76,6 +76,12 @@ class TestTypes(unittest.TestCase):
     def test_Byte(self):
         self.assertEquals(types.Byte('x', variant_level=2), types.Byte(ord('x')))
 
+    def test_object_path_attr(self):
+        class MyObject(object):
+            __dbus_object_path__ = '/foo'
+        from _dbus_bindings import SignalMessage
+        self.assertEquals(SignalMessage.guess_signature(MyObject()), 'o')
+
     def test_integers(self):
         # This is an API guarantee. Note that exactly which of these types
         # are ints and which of them are longs is *not* guaranteed.
@@ -232,6 +238,15 @@ class TestMessageMarshalling(unittest.TestCase):
         aeq(variant.__class__, types.UTF8String)
         aeq(variant.variant_level, 1)
         aeq(variant, 'var')
+
+    def test_object_path_attr(self):
+        from _dbus_bindings import SignalMessage
+        class MyObject(object):
+            __dbus_object_path__ = '/foo'
+        s = SignalMessage('/', 'foo.bar', 'baz')
+        s.append(MyObject(), signature='o')
+        s.append(MyObject())
+        self.assertEquals(s.get_args_list(), ['/foo', '/foo'])
 
 
 if __name__ == '__main__':
