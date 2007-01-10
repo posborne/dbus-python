@@ -1,0 +1,399 @@
+.. @configure_input@
+
+====================
+dbus-python tutorial
+====================
+
+:Author: Simon McVittie, `Collabora`_
+:Date: 2006-01-10
+:``dbus-python`` version: @VERSION@
+
+.. _`Collabora`: http://www.collabora.co.uk/
+
+Connecting to the Bus
+=====================
+
+Applications that use D-Bus typically connect to a *bus daemon*, which
+forwards messages between the applications. To use D-Bus, you need to create a
+``Bus`` object representing the connection to the bus daemon.
+
+There are generally two bus daemons you may be interested in. Each user
+login session should have a *session bus*, which is local to that
+session. It's used to communicate between desktop applications. Connect
+to the session bus by creating a ``SessionBus`` object::
+
+    import dbus
+
+    session_bus = dbus.SessionBus()
+
+The *system bus* is global and usually started during boot; it's used to
+communicate with system services like udev_, NetworkManager_, and the
+`Hardware Abstraction Layer daemon (hald)`_. To connect to the system
+bus, create a ``SystemBus`` object::
+
+    import dbus
+
+    system_bus = dbus.SystemBus()
+
+Of course, you can connect to both in the same application.
+
+.. _udev:
+    http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev.html
+.. _NetworkManager:
+    http://www.gnome.org/projects/NetworkManager/
+.. _Hardware Abstraction Layer daemon (hald):
+    http://www.freedesktop.org/wiki/Software/hal
+
+Making method calls
+===================
+
+D-Bus applications can export objects for other applications' use. To
+start working with an object in another application, you need to know:
+
+* The *bus name*. This identifies which application you want to
+  communicate with. You'll usually identify applications by a
+  *well-known name*, which is a dot-separated string starting with a
+  reversed domain name, such as ``org.freedesktop.NetworkManager``
+  or ``com.example.WordProcessor``.
+
+* The *object path*. Applications can export many objects - for
+  instance, example.com's word processor might provide an object
+  representing the word processor application itself and an object for
+  each document window opened, or it might also provide an object for
+  each paragraph within a document.
+  
+  To identify which one you want to interact with, you use an object path,
+  a slash-separated string resembling a filename. For instance, example.com's
+  word processor might provide an object at ``/`` representing the word
+  processor itself, and objects at ``/documents/123`` and
+  ``/documents/345`` representing opened document windows.
+
+As you'd expect, one of the main things you can do with remote objects
+is to call their methods. As in Python, methods may have parameters,
+and they may return one or more values.
+
+.. _proxy object:
+
+Proxy objects
+-------------
+
+To interact with a remote object, you use a *proxy object*. This is a
+Python object which acts as a proxy or "stand-in" for the remote object -
+when you call a method on a proxy object, this causes dbus-python to make
+a method call on the remote object, passing back any return values from
+the remote object's method as the return values of the proxy method call.
+
+To obtain a proxy object, call the ``get_object`` method on the ``Bus``.
+For example, NetworkManager_ has the well-known name
+``org.freedesktop.NetworkManager`` and exports an object whose object
+path is ``/org/freedesktop/NetworkManager``, plus an object per network
+interface at object paths like
+``/org/freedesktop/NetworkManager/Devices/eth0``. You can get a proxy
+for the object representing eth0 like this::
+
+    >>> import dbus
+    >>> bus = dbus.SystemBus()
+    >>> bus.get_object('org.freedesktop.NetworkManager',
+    ...                '/org/freedesktop/NetworkManager/Devices/eth0')
+    <ProxyObject wrapping <dbus.Bus on SYSTEM at 0x3007e150>
+    org.freedesktop.NetworkManager
+    /org/freedesktop/NetworkManager/Devices/eth0 at 0x301f0ad0>
+    >>>
+
+Interfaces and methods
+----------------------
+
+D-Bus uses *interfaces* to provide a namespacing mechanism for methods.
+An interface is a group of related methods and signals (more on signals
+later), identified by a name which is a series of dot-separated components
+starting with a reversed domain name. For instance, each NetworkManager_
+object representing a network interface implements the interface
+``org.freedesktop.NetworkManager.Devices``, which has methods like
+``getProperties``.
+
+To call a method, call the method of the same name on the proxy object,
+passing in the interface name via the ``dbus_interface`` keyword argument::
+
+    >>> import dbus
+    >>> bus = dbus.SystemBus()
+    >>> eth0 = bus.get_object('org.freedesktop.NetworkManager',
+    ...                       '/org/freedesktop/NetworkManager/Devices/eth0')
+    >>> eth0.getProperties(dbus_interface='org.freedesktop.NetworkManager.Devices')
+    (dbus.ObjectPath('/org/freedesktop/NetworkManager/Devices/eth0'), [...])
+    >>>
+
+(I've truncated the list of properties here.)
+
+.. _dbus.Interface:
+
+As a short cut, if you're going to be calling many methods with the same
+interface, you can construct a ``dbus.Interface`` object and call
+methods on that, without needing to specify the interface again::
+
+    >>> import dbus
+    >>> bus = dbus.SystemBus()
+    >>> eth0 = bus.get_object('org.freedesktop.NetworkManager',
+    ...                       '/org/freedesktop/NetworkManager/Devices/eth0')
+    >>> eth0_dev_iface = dbus.Interface(eth0,
+    ...     dbus_interface='org.freedesktop.NetworkManager.Devices')
+    >>> eth0_dev_iface.getProperties()
+    (dbus.ObjectPath('/org/freedesktop/NetworkManager/Devices/eth0'), [...])
+    >>>
+
+See also
+~~~~~~~~
+
+See the example in ``examples/example-client.py``. Before running it,
+you'll need to run ``examples/example-service.py`` in the background or
+in another shell.
+
+Data types
+----------
+
+Unlike Python, D-Bus is statically typed - each method has a certain
+*signature* representing the types of its arguments, and will not accept
+arguments of other types.
+
+D-Bus has an introspection mechanism, which ``dbus-python`` tries to use
+to discover the correct argument types. If this succeeds, Python types
+are converted into the right D-Bus data types automatically, if possible;
+``TypeError`` is raised if the type is inappropriate.
+
+If the introspection mechanism fails (or the argument's type is
+variant - see below), you have to provide arguments of
+the correct type. ``dbus-python`` provides Python types corresponding to
+the D-Bus data types, and a few native Python types are also converted to
+D-Bus data types automatically. If you use a type which isn't among these,
+a ``TypeError`` will be raised telling you that ``dbus-python`` was
+unable to guess the D-Bus signature.
+
+Basic types
+~~~~~~~~~~~
+
+The following basic data types are supported.
+
+==========================  =============================  =====
+Python type                 converted to D-Bus type        notes
+==========================  =============================  =====
+D-Bus `proxy object`_       ObjectPath (signature 'o')     `(+)`_
+`dbus.Interface`_           ObjectPath (signature 'o')     `(+)`_
+`dbus.service.Object`_      ObjectPath (signature 'o')     `(+)`_
+``dbus.Boolean``            Boolean (signature 'b')        a subclass of ``int``
+``dbus.Byte``               byte (signature 'y')           a subclass of ``int``
+``dbus.Int16``              16-bit signed integer ('?')    a subclass of ``int``
+``dbus.Int32``              32-bit signed integer ('i')    a subclass of ``int``
+``dbus.Int64``              64-bit signed integer ('x')    `(*)`_
+``dbus.UInt16``             16-bit unsigned integer ('?')  a subclass of ``int``
+``dbus.UInt32``             32-bit unsigned integer ('u')  `(*)_`
+``dbus.UInt64``             64-bit unsigned integer ('t')  `(*)_`
+``dbus.Double``             double-precision float ('d')   a subclass of ``float``
+``dbus.ObjectPath``         object path ('o')              a subclass of ``str``
+``dbus.Signature``          signature ('g')                a subclass of ``str``
+``dbus.String``             string ('s')                   a subclass of 
+                                                           ``unicode``
+``dbus.UTF8String``         string ('s')                   a subclass of ``str``
+``bool``                    Boolean ('b')
+``int`` or subclass         32-bit signed integer ('i')
+``long`` or subclass        64-bit signed integer ('x')
+``float`` or subclass       double-precision float ('d')
+``str`` or subclass         string ('s')                   must be valid UTF-8
+``unicode`` or subclass     string ('s')
+==========================  =============================  =====
+
+.. _(*):
+
+Types marked (*) may be a subclass of either ``int`` or ``long``, depending
+on platform.
+
+.. _(+):
+
+(+): D-Bus proxy objects, exported D-Bus service objects and anything
+else with the special attribute ``__dbus_object_path__``, which
+must be a string, are converted to their object-path.
+
+Basic type conversions
+~~~~~~~~~~~~~~~~~~~~~~
+
+If introspection succeeded, ``dbus-python`` will also accept:
+
+* for Boolean parameters, any object (converted as if via ``int(bool(...))``)
+* for byte parameters, a single-character string (converted as if via ``ord()``)
+* for byte and integer parameters, any integer (must be in the correct range)
+* for object-path and signature parameters, any ``str`` or ``unicode``
+  subclass (the value must follow the appropriate syntax)
+
+Container types
+~~~~~~~~~~~~~~~
+
+D-Bus supports four container types: array (a variable-length sequence of the
+same type), struct (a fixed-length sequence whose members may have
+different types), dictionary (a mapping from values of the same basic type to
+values of the same type), and variant (a container which may hold any
+D-Bus type, including another variant).
+
+Arrays are represented by Python lists, or by ``dbus.Array``, a subclass
+of ``list``. When sending an array, if an introspected signature is
+available, that will be used; otherwise, if the ``signature`` keyword
+parameter was passed to the ``Array`` constructor, that will be used to
+determine the contents' signature; otherwise, ``dbus-python`` will guess
+from the array's first item.
+
+There's also a type ``dbus.ByteArray`` which is a subclass of ``str``,
+used as a more efficient representation of a D-Bus array of bytes.
+
+Structs are represented by Python tuples, or by ``dbus.Struct``, a
+subclass of ``tuple``. When sending a struct, if an introspected signature is
+available, that will be used; otherwise, if the ``signature`` keyword
+parameter was passed to the ``Array`` constructor, that will be used to
+determine the contents' signature; otherwise, ``dbus-python`` will guess
+from the array's first item.
+
+Dictionaries are represented by Python dictionaries, or by
+``dbus.Dictionary``, a subclass of ``dict``. When sending a dictionary,
+if an introspected signature is available, that will be used; otherwise,
+if the ``signature`` keyword parameter was passed to the ``Dictionary``
+constructor, that will be used to determine the contents' key and value
+signatures; otherwise, ``dbus-python`` will guess from an arbitrary item
+of the ``dict``.
+
+Variants are represented by setting the ``variant_level`` keyword
+argument in the constructor of any D-Bus data type to a value greater
+than 0 (``variant_level`` 1 means a variant containing some other data type,
+``variant_level`` 2 means a variant containing a variant containing some
+other data type, and so on). If a non-variant is passed as an argument
+but introspection indicates that a variant is expected, it'll
+automatically be wrapped in a variant.
+
+Return values, and the ``byte_arrays`` and ``utf8_strings`` options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If a D-Bus method returns no value, the Python proxy method will return
+``None``.
+
+If a D-Bus method returns one value, the Python proxy method will return
+that value as one of the ``dbus.`` types - by default, strings are
+returned as ``dbus.String`` (a subclass of Unicode) and byte arrays are
+returned as a ``dbus.Array`` of ``dbus.Byte``.
+
+If you want strings returned as ``dbus.UTF8String`` (a subclass of
+``str``) pass the keyword parameter ``utf8_strings=True`` to the proxy
+method.
+
+If you want byte arrays returned as ``dbus.ByteArray`` (also a
+subclass of ``str`` - in practice, this is often what you want) pass
+the keyword parameter ``byte_arrays=True`` to the proxy method.
+
+Making asynchronous method calls
+================================
+
+FIXME intro about how you need an event loop
+
+Setting up an event loop
+------------------------
+
+FIXME describe how to use at least GLib
+
+Making asynchronous calls
+-------------------------
+
+FIXME describe ``reply_handler`` and ``error_handler``
+
+See also
+~~~~~~~~
+
+``examples/example-async-client.py`` makes asynchronous method calls to
+the service provided by ``examples/example-service.py``.
+
+Receiving signals
+=================
+
+To receive signals, the Bus needs to be connected to an event loop - see
+section `Setting up an event loop`_. Signals will only be received while
+the event loop is running.
+
+Receiving signals from a proxy object
+-------------------------------------
+
+FIXME describe ``connect_to_signal``
+
+See also
+~~~~~~~~
+
+``examples/signal-recipient.py`` receives signals. Before running it,
+you'll need to run ``examples/signal-emitter.py`` in the background or
+in another shell. As well as ``connect_to_signal`` it demonstrates more
+general signal matching, described next.
+
+General signal matching
+-----------------------
+
+FIXME describe ``Bus.add_signal_receiver``
+
+See also
+~~~~~~~~
+
+As before, ``examples/signal-recipient.py`` receives signals - it demonstrates
+general signal matching as well as ``connect_to_signal``. Before running it,
+you'll need to run ``examples/signal-emitter.py`` in the background or
+in another shell.
+
+.. _BusName:
+
+Claiming a bus name
+===================
+
+FIXME describe `BusName`_ - perhaps fix its API first?
+
+The unique-instance idiom
+-------------------------
+
+FIXME provide exemplary code, put it in examples
+
+.. _exported object:
+.. _exported objects:
+
+Exporting objects
+=================
+
+Objects made available to other applications over D-Bus are said to be
+*exported*. All subclasses of ``dbus.service.Object`` are automatically
+exported.
+
+To export objects, the Bus needs to be connected to an event loop - see
+section `Setting up an event loop`_. Exported methods will only be called,
+and queued signals will only be sent, while the event loop is running.
+
+.. _dbus.service.Object:
+
+Inheriting from ``dbus.service.Object``
+---------------------------------------
+
+FIXME also mention dbus.gobject.ExportedGObject once I've written it
+
+Exporting methods with ``dbus.service.method``
+----------------------------------------------
+
+FIXME - example is ``examples/example-service.py``
+
+Asynchronous method implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+FIXME and also add an example, perhaps examples/example-async-service.py
+
+Emitting signals with ``dbus.service.signal``
+---------------------------------------------
+
+FIXME brief intro here
+
+The signal will be queued for sending when the decorated method returns -
+you can prevent the signal from being sent by raising an exception
+from the decorated method. The signal will only actually be sent when
+the event loop next runs.
+
+Example
+~~~~~~~
+
+``examples/example-signal-emitter.py`` emits some signals on demand.
+
+..
+  vim:set ft=rst sw=4 sts=4 et tw=72:
