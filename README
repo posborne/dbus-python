@@ -6,7 +6,7 @@ dbus-python: Python bindings for D-Bus
 :Date: 2006-12-18
 :Version: 0.80rc3 (internally, 0.79.93)
 
-.. Collabora: http://www.collabora.co.uk/
+.. _Collabora: http://www.collabora.co.uk/
 
 Usage
 =====
@@ -25,8 +25,8 @@ epydoc, it's not currently built by default. To do so, install
 `epydoc`_ 3 alpha and `docutils`_, and run ``./configure`` with the
 ``--enable-api-docs`` option. Documentation starts from ``api/index.html``.
 
-.. epydoc: http://epydoc.sourceforge.net/
-.. python-docutils: http://docutils.sourceforge.net/
+.. _epydoc: http://epydoc.sourceforge.net/
+.. _docutils: http://docutils.sourceforge.net/
 
 For now, a copy of the documentation (updated for each release candidate)
 can be found here: `dbus-python API documentation on people.freedesktop.org`__

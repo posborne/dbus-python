@@ -7,7 +7,7 @@ API changes in dbus-python 0.80
 :Organization: `Collabora Ltd`_
 :Date: 2006-11-23
 
-.. _ Collabora Ltd: http://www.collabora.co.uk/
+.. _Collabora Ltd: http://www.collabora.co.uk/
 
 Type changes
 ============
