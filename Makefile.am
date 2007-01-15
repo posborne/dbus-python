@@ -3,6 +3,7 @@
 CLEANFILES =
 EXTRA_DIST = API_CHANGES.txt dbus-python.pc.in HACKING.txt \
 	     AUTHORS COPYING NEWS ChangeLog TODO \
+	     examples/example-async-client.py \
 	     examples/example-client.py \
 	     examples/example-service.py \
 	     examples/example-signal-emitter.py \
