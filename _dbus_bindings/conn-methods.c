@@ -338,8 +338,8 @@ Connection_send_message(Connection *self, PyObject *args)
 
 /* The timeout is in seconds here, since that's conventional in Python. */
 PyDoc_STRVAR(Connection_send_message_with_reply__doc__,
-"send_message_with_reply(msg, reply_handler, timeout_s=-1)"
-" -> dbus.lowlevel.PendingCall\n\n"
+"send_message_with_reply(msg, reply_handler, timeout_s=-1, "
+"require_main_loop=False) -> dbus.lowlevel.PendingCall\n\n"
 "Queue the message for sending; expect a reply via the returned PendingCall,\n"
 "which can also be used to cancel the pending call.\n"
 "\n"
@@ -353,10 +353,14 @@ PyDoc_STRVAR(Connection_send_message_with_reply__doc__,
 "       If the reply takes more than this many seconds, a timeout error\n"
 "       will be created locally and raised instead. If this timeout is\n"
 "       negative (default), a sane default (supplied by libdbus) is used.\n"
+"   `require_main_loop` : bool\n"
+"       If True, raise RuntimeError if this Connection does not have a main\n"
+"       loop configured. If False (default) and there is no main loop, you are\n"
+"       responsible for calling block() on the PendingCall.\n"
 "\n"
 );
 static PyObject *
-Connection_send_message_with_reply(Connection *self, PyObject *args)
+Connection_send_message_with_reply(Connection *self, PyObject *args, PyObject *kw)
 {
     dbus_bool_t ok;
     double timeout_s = -1.0;
@@ -364,14 +368,20 @@ Connection_send_message_with_reply(Connection *self, PyObject *args)
     PyObject *obj, *callable;
     DBusMessage *msg;
     DBusPendingCall *pending;
+    int require_main_loop = 0;
+    static char *argnames[] = {"msg", "reply_handler", "timeout_s",
+                               "require_main_loop", NULL};
 
     TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
-    if (!Connection__require_main_loop(self, NULL)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kw,
+                                     "OO|fi:send_message_with_reply",
+                                     argnames,
+                                     &obj, &callable, &timeout_s,
+                                     &require_main_loop)) {
         return NULL;
     }
-    if (!PyArg_ParseTuple(args, "OO|f:send_message_with_reply", &obj, &callable,
-                          &timeout_s)) {
+    if (require_main_loop && !Connection__require_main_loop(self, NULL)) {
         return NULL;
     }
 
@@ -917,7 +927,7 @@ struct PyMethodDef DBusPyConnection_tp_methods[] = {
     ENTRY(_register_object_path, METH_VARARGS|METH_KEYWORDS),
     ENTRY(remove_message_filter, METH_O),
     ENTRY(send_message, METH_VARARGS),
-    ENTRY(send_message_with_reply, METH_VARARGS),
+    ENTRY(send_message_with_reply, METH_VARARGS|METH_KEYWORDS),
     ENTRY(send_message_with_reply_and_block, METH_VARARGS),
     ENTRY(_unregister_object_path, METH_VARARGS|METH_KEYWORDS),
     {NULL},

@@ -160,7 +160,7 @@ class ProxyMethod:
             self._connection.send_message(message)
             return None
         elif reply_handler:
-            result = self._connection.send_message_with_reply(message, _ReplyHandler(reply_handler, error_handler, **get_args_options), timeout/1000.0)
+            self._connection.send_message_with_reply(message, _ReplyHandler(reply_handler, error_handler, **get_args_options), timeout/1000.0, require_main_loop=1)
             return None
         else:
             reply_message = self._connection.send_message_with_reply_and_block(message, timeout)
