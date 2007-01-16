@@ -1,5 +1,8 @@
 #! /bin/bash
 
+export DBUS_FATAL_WARNINGS=1
+ulimit -c unlimited
+
 function die() 
 {
     if ! test -z "$DBUS_SESSION_BUS_PID" ; then
@@ -36,6 +39,9 @@ fi
 
 echo "running test-standalone.py"
 $PYTHON "$DBUS_TOP_SRCDIR"/test/test-standalone.py || die "test-standalone.py failed"
+
+echo "running test-unusable-main-loop.py"
+$PYTHON "$DBUS_TOP_SRCDIR"/test/test-unusable-main-loop.py || die "... failed"
 
 echo "running the examples"
 

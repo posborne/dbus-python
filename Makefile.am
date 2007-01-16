@@ -19,6 +19,7 @@ EXTRA_DIST = API_CHANGES.txt dbus-python.pc.in HACKING.txt \
 	     test/test-service.py \
 	     test/test-signals.py \
 	     test/test-standalone.py \
+	     test/test-unusable-main-loop.py \
 	     test/TestSuitePythonService.service.in \
 	     test/tmp-session-bus.conf.in
 # miss out the gconf examples for now - they don't work
@@ -47,7 +48,8 @@ nobase_python_PYTHON = dbus_bindings.py \
 
 # === Python C extensions ===
 
-pyexec_LTLIBRARIES = _dbus_bindings.la _dbus_glib_bindings.la
+pyexec_LTLIBRARIES = _dbus_bindings.la _dbus_glib_bindings.la \
+		     dbus_py_test.la
 _dbus_bindings_la_CPPFLAGS = -I$(srcdir)/include \
 			     $(DBUS_CFLAGS) \
 			     $(PYTHON_INCLUDES)
@@ -90,6 +92,13 @@ _dbus_glib_bindings_la_LDFLAGS = -module -avoid-version \
 			 $(DBUS_LIBS) $(DBUS_GLIB_LIBS)
 _dbus_glib_bindings_la_SOURCES = _dbus_glib_bindings/module.c \
 				 include/dbus-python.h
+
+dbus_py_test_la_CPPFLAGS = -I$(top_srcdir)/include $(DBUS_CFLAGS) \
+			   $(PYTHON_INCLUDES)
+dbus_py_test_la_LDFLAGS = -module -avoid-version \
+			  $(DBUS_LIBS)
+dbus_py_test_la_SOURCES = test/dbus_py_test.c \
+			  include/dbus-python.h
 
 # === Tests ===
 
