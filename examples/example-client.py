@@ -10,7 +10,6 @@ import sys
 from traceback import print_exc
 
 import dbus
-import dbus.mainloop.glib
 
 def main():
     bus = dbus.SessionBus()
@@ -53,5 +52,4 @@ def main():
         iface.Exit()
 
 if __name__ == '__main__':
-    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     main()
