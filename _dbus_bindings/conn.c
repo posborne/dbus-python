@@ -260,8 +260,11 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
 
     DBUS_PY_RAISE_VIA_GOTO_IF_FAIL(conn, err);
     self->conn = conn;
+    /* the DBusPyConnection will close it now */
+    conn = NULL;
 
-    if (!dbus_py_set_up_connection((PyObject *)self, mainloop)) {
+    if (self->has_mainloop
+        && !dbus_py_set_up_connection((PyObject *)self, mainloop)) {
         goto err;
     }
 
