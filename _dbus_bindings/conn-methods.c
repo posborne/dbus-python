@@ -141,7 +141,7 @@ _filter_message(DBusConnection *conn, DBusMessage *message, void *user_data)
     PyObject *callable = NULL;
     PyObject *msg_obj;
 #ifndef DBUS_PYTHON_DISABLE_CHECKS
-    int i, size;
+    Py_ssize_t i, size;
 #endif
 
     dbus_message_ref(message);

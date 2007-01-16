@@ -233,12 +233,12 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
             return PyString_FromString(DBUS_TYPE_STRING_AS_STRING);
     }
     else if (PyTuple_Check(obj)) {
-        int len = PyTuple_GET_SIZE(obj);
+        Py_ssize_t len = PyTuple_GET_SIZE(obj);
         PyObject *list = PyList_New(len + 2);   /* new ref */
         PyObject *item;                         /* temporary new ref */
         PyObject *empty_str;                    /* temporary new ref */
         PyObject *ret;
-        int i;
+        Py_ssize_t i;
 
         if (!list) return NULL;
         if (len == 0) {
@@ -314,7 +314,7 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
     }
     else if (PyDict_Check(obj)) {
         PyObject *key, *value, *keysig, *valuesig;
-        int pos = 0;
+        Py_ssize_t pos = 0;
         PyObject *ret = NULL;
 
         if (DBusPyDict_Check(obj) && PyString_Check(((DBusPyDict *)obj)->signature)) {
@@ -708,7 +708,7 @@ _message_iter_append_string_as_byte_array(DBusMessageIter *appender,
                                           PyObject *obj)
 {
     /* a bit of a faster path for byte arrays that are strings */
-    int len = PyString_GET_SIZE(obj);
+    Py_ssize_t len = PyString_GET_SIZE(obj);
     const char *s;
     DBusMessageIter sub;
     int ret;

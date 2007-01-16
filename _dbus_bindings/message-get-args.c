@@ -23,6 +23,8 @@
  *
  */
 
+#define PY_SIZE_T_CLEAN 1
+
 #define DBG_IS_TOO_VERBOSE
 #include "types-internal.h"
 #include "message-internal.h"
@@ -119,7 +121,8 @@ _message_iter_get_dict(DBusMessageIter *iter,
     int status;
 
     sig = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
-                                "(s#)", sig_str+2, strlen(sig_str)-3);
+                                "(s#)", sig_str+2,
+                                (Py_ssize_t)strlen(sig_str)-3);
     status = PyDict_SetItem(kwargs, dbus_py_signature_const, sig);
     Py_DECREF(sig);
     if (status < 0) {
@@ -375,7 +378,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 dbus_message_iter_get_fixed_array(&sub,
                                                   (const unsigned char **)&u.s,
                                                   &n);
-                args = Py_BuildValue("(s#)", u.s, n);
+                args = Py_BuildValue("(s#)", u.s, (Py_ssize_t)n);
                 if (!args) break;
                 ret = PyObject_Call((PyObject *)&DBusPyByteArray_Type,
                                     args, kwargs);
