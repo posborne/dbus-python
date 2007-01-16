@@ -141,6 +141,9 @@ endif
 if ENABLE_API_DOCS
 all: api/index.html
 
+clean-local:
+	rm -rf api
+
 api api/index.html: $(nobase_python_PYTHON) _dbus_bindings.la _dbus_glib_bindings.la
 	rm -rf api
 	mkdir api
