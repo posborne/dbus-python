@@ -40,7 +40,7 @@ PyDoc_STRVAR(UTF8String_tp_doc,
 "keyword argument to any of these methods:\n"
 "\n"
 "* any D-Bus method proxy, or ``connect_to_signal``, on the objects returned\n"
-"  by `Bus.get_object` and `Bus.get_object_by_unique_name`\n"
+"  by `Bus.get_object`\n"
 "* any D-Bus method on a `dbus.Interface`\n"
 "* `dbus.Interface.connect_to_signal`\n"
 "* `Bus.add_signal_receiver`\n"
