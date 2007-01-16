@@ -34,6 +34,11 @@ __docformat__ = 'restructuredtext'
 _logger = logging.getLogger('dbus.proxies')
 
 
+BUS_DAEMON_NAME = 'org.freedesktop.DBus'
+BUS_DAEMON_PATH = '/org/freedesktop/DBus'
+BUS_DAEMON_IFACE = BUS_DAEMON_NAME
+
+
 class _ReplyHandler(object):
     __slots__ = ('_on_error', '_on_reply', '_get_args_options')
     def __init__(self, on_reply, on_error, **get_args_options):
@@ -181,7 +186,8 @@ class ProxyObject:
     INTROSPECT_STATE_INTROSPECT_IN_PROGRESS = 1
     INTROSPECT_STATE_INTROSPECT_DONE = 2
 
-    def __init__(self, bus, named_service, object_path, introspect=True):
+    def __init__(self, bus, named_service, object_path, introspect=True,
+                 follow_name_owner_changes=False):
         """Initialize the proxy object.
 
         :Parameters:
@@ -195,10 +201,32 @@ class ProxyObject:
             `introspect` : bool
                 If true (default), attempt to introspect the remote
                 object to find out supported methods and their signatures
+            `follow_name_owner_changes` : bool
+                If true (default is false) and the `named_service` is a
+                well-known name, follow ownership changes for that name
         """
+        if follow_name_owner_changes:
+            bus._require_main_loop()   # we don't get the signals otherwise
+
         self._bus           = bus
         self._named_service = named_service
         self.__dbus_object_path__ = object_path
+
+        if (named_service[:1] != ':' and named_service != BUS_DAEMON_NAME
+            and not follow_name_owner_changes):
+            bus_object = bus.get_object(BUS_DAEMON_NAME, BUS_DAEMON_PATH)
+            try:
+                self._named_service = bus_object.GetNameOwner(named_service,
+                        dbus_interface=BUS_DAEMON_IFACE)
+            except DBusException, e:
+                # FIXME: detect whether it's NameHasNoOwner
+                #if not str(e).startswith('org.freedesktop.DBus.Error.NameHasNoOwner:'):
+                #    raise
+                # it might not exist: try to start it
+                bus_object.StartServiceByName(named_service,
+                                              _dbus_bindings.UInt32(0))
+                self._named_service = bus_object.GetNameOwner(named_service,
+                        dbus_interface=BUS_DAEMON_IFACE)
 
         #PendingCall object for Introspect call
         self._pending_introspect = None
@@ -213,14 +241,10 @@ class ProxyObject:
             self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS
             
             self._pending_introspect = self._Introspect()
-            
 
     def connect_to_signal(self, signal_name, handler_function, dbus_interface=None, **keywords):
         """Arrange for the given function to be called when the given signal
         is received.
-
-        FIXME: this binds to the unique name regardless of whether this is a
-        by-unique-name or by-well-known-name proxy.
 
         :Parameters:
             `signal_name` : str

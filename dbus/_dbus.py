@@ -36,7 +36,8 @@ BusImplementation = _dbus_bindings.BusImplementation
 import logging
 import weakref
 
-from dbus.proxies import ProxyObject
+from dbus.proxies import ProxyObject, BUS_DAEMON_NAME, BUS_DAEMON_PATH, \
+        BUS_DAEMON_IFACE
 
 try:
     import thread
@@ -368,19 +369,12 @@ class Bus(BusImplementation):
 
     get_starter = staticmethod(get_starter)
 
-    def get_object(self, named_service, object_path, introspect=True):
+    def get_object(self, named_service, object_path, introspect=True,
+                   follow_name_owner_changes=False):
         """Return a local proxy for the given remote object.
 
         Method calls on the proxy are translated into method calls on the
         remote object.
-
-        If the given object path is a well-known name (as opposed to a
-        unique name) the proxy will use the well-known name for
-        communication, meaning that if the owner of the well-known
-        name changes, the proxy will point to the new owner.
-
-        If state needs to be maintained between calls, use
-        `get_object_by_unique_name` instead.
 
         :Parameters:
             `named_service` : str
@@ -391,53 +385,30 @@ class Bus(BusImplementation):
             `introspect` : bool
                 If true (default), attempt to introspect the remote
                 object to find out supported methods and their signatures
-        :Returns: a `dbus.proxies.ProxyObject`
-        """
-        # FIXME: would be good to call _require_main_loop() here, since the
-        # name owner tracking won't work unless we're running a main loop,
-        # but since legacy code will call this method rather than
-        # _by_unique_name, that's not really feasible yet
-        return self.ProxyObjectClass(self, named_service, object_path, introspect=introspect)
+            `follow_name_owner_changes` : bool
+                If the object path is a well-known name and this parameter
+                is false (default), resolve the well-known name to the unique
+                name of its current owner and bind to that instead; if the
+                ownership of the well-known name changes in future,
+                keep communicating with the original owner.
+                This is necessary if the D-Bus API used is stateful.
 
-    def get_object_by_unique_name(self, named_service, object_path, introspect=True):
-        """Return a local proxy for the given remote object,
-        first resolving the given bus name to the unique name of
-        the current owner of that name.
+                If the object path is a well-known name and this parameter
+                is true, whenever the well-known name changes ownership in
+                future, bind to the new owner, if any.
 
-        Method calls on the proxy are translated into method calls on the
-        remote object.
+                If the given object path is a unique name, this parameter
+                has no effect.
 
-        If the given object path is a well-known name (as opposed to a
-        unique name) query the bus for the unique name of the application
-        currently owning that well-known name, and use that for
-        communication.
-
-        :Parameters:
-            `named_service` : str
-                A bus name (either the unique name or a well-known name)
-                of the application owning the object; if a well-known name,
-                will be converted to the owning unique name immediately
-            `object_path` : str
-                The object path of the desired object
-            `introspect` : bool
-                If true (default), attempt to introspect the remote
-                object to find out supported methods and their signatures
         :Returns: a `dbus.proxies.ProxyObject`
         :Raises `DBusException`: if resolving the well-known name to a
             unique name fails
         """
-
-        if named_service[:1] == ':' or named_service == BUS_DAEMON_NAME:
-            unique = named_service
-        else:
-            bus_object = self.ProxyObjectClass(self, BUS_DAEMON_NAME, BUS_DAEMON_PATH)
-            unique = bus_object.GetNameOwner(named_service,
-                                             dbus_interface=BUS_DAEMON_IFACE)
-            if not unique:
-                raise DBusException('Well-known name %r is not '
-                                    'present on %r', named_service, self)
-
-        return self.ProxyObjectClass(self, unique, object_path, introspect=introspect)
+        if follow_name_owner_changes:
+            self._require_main_loop()   # we don't get the signals otherwise
+        return self.ProxyObjectClass(self, named_service, object_path,
+                                     introspect=introspect,
+                                     follow_name_owner_changes=follow_name_owner_changes)
 
     def add_signal_receiver(self, handler_function,
                                   signal_name=None,
