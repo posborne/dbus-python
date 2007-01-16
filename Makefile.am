@@ -1,6 +1,3 @@
-docdir = $(datadir)/doc
-pkgdocdir = $(datadir)/doc/dbus-python
-
 # === Miscellaneous ===
 
 CLEANFILES =
@@ -127,8 +124,8 @@ HTML_TXT_RSTDOCS = doc/tutorial.html API_CHANGES.html HACKING.html
 RSTDOCS = README NEWS TODO
 HTML_RSTDOCS = README.html NEWS.html TODO.html
 
-dist_pkgdoc_DATA = $(TXT_RSTDOCS) $(RSTDOCS)
-nodist_pkgdoc_DATA = $(HTML_TXT_RSTDOCS) $(HTML_RSTDOCS)
+dist_doc_DATA = $(TXT_RSTDOCS) $(RSTDOCS)
+nodist_doc_DATA = $(HTML_TXT_RSTDOCS) $(HTML_RSTDOCS)
 
 RST2HTMLFLAGS = --generator --date --time --exit-status=2 \
 		--cloak-email-addresses --no-raw --no-file-insertion
