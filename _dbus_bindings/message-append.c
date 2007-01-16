@@ -410,7 +410,8 @@ dbus_py_Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
 
 static int _message_iter_append_pyobject(DBusMessageIter *appender,
                                          DBusSignatureIter *sig_iter,
-                                         PyObject *obj);
+                                         PyObject *obj,
+                                         dbus_bool_t *more);
 static int _message_iter_append_variant(DBusMessageIter *appender, 
                                         PyObject *obj);
 
@@ -522,6 +523,7 @@ _message_iter_append_dictentry(DBusMessageIter *appender,
     DBusMessageIter sub;
     int ret = -1;
     PyObject *value = PyObject_GetItem(dict, key);
+    dbus_bool_t more;
 
     if (!value) return -1;
 
@@ -553,9 +555,9 @@ _message_iter_append_dictentry(DBusMessageIter *appender,
         PyErr_NoMemory();
         goto out;
     }
-    ret = _message_iter_append_pyobject(&sub, &sub_sig_iter, key);
+    ret = _message_iter_append_pyobject(&sub, &sub_sig_iter, key, &more);
     if (ret == 0) {
-        ret = _message_iter_append_pyobject(&sub, &sub_sig_iter, value);
+        ret = _message_iter_append_pyobject(&sub, &sub_sig_iter, value, &more);
     }
     DBG("%s", "Closing DICT_ENTRY container");
     if (!dbus_message_iter_close_container(appender, &sub)) {
@@ -581,6 +583,7 @@ _message_iter_append_multi(DBusMessageIter *appender,
     int container = mode;
     dbus_bool_t is_byte_array = DBusPyByteArray_Check(obj);
     int inner_type;
+    dbus_bool_t more;
 
 #ifdef USING_DBG
     fprintf(stderr, "Appending multiple: ");
@@ -666,15 +669,27 @@ _message_iter_append_multi(DBusMessageIter *appender,
             Py_DECREF(byte);
         }
         else {
+            /* advances sub_sig_iter and sets more on success - for array
+             * this doesn't matter, for struct it's essential */
             ret = _message_iter_append_pyobject(&sub_appender, &sub_sig_iter,
-                                                contents);
+                                                contents, &more);
         }
+
         Py_DECREF(contents);
         if (ret < 0) {
             break;
         }
     }
-    if (PyErr_Occurred()) ret = -1;
+
+    if (PyErr_Occurred()) {
+        ret = -1;
+    }
+    else if (mode == DBUS_TYPE_STRUCT && more) {
+        PyErr_Format(PyExc_TypeError, "More items found in struct's D-Bus "
+                     "signature than in Python arguments ");
+        ret = -1;
+    }
+
     /* This must be run as cleanup, even on failure. */
     DBG("Closing %c container", container);
     if (!dbus_message_iter_close_container(appender, &sub_appender)) {
@@ -730,6 +745,7 @@ _message_iter_append_variant(DBusMessageIter *appender, PyObject *obj)
     PyObject *obj_sig;
     int ret;
     long variant_level;
+    dbus_bool_t dummy;
 
     /* Separate the object into the contained object, and the number of
      * variants it's wrapped in. */
@@ -777,7 +793,7 @@ _message_iter_append_variant(DBusMessageIter *appender, PyObject *obj)
 
         /* Put the object itself into the innermost variant */
         ret = _message_iter_append_pyobject(&variant_iters[variant_level-1],
-                                            &obj_sig_iter, obj);
+                                            &obj_sig_iter, obj, &dummy);
 
         /* here we rely on i (and variant_level) being a signed long */
         for (i = variant_level - 1; i >= 0; i--) {
@@ -804,10 +820,12 @@ out:
     return ret;
 }
 
+/* On success, *more is set to whether there's more in the signature. */
 static int
 _message_iter_append_pyobject(DBusMessageIter *appender,
                               DBusSignatureIter *sig_iter,
-                              PyObject *obj)
+                              PyObject *obj,
+                              dbus_bool_t *more)
 {
     int sig_type = dbus_signature_iter_get_current_type(sig_iter);
     union {
@@ -983,16 +1001,11 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
     if (ret < 0) return -1;
   
     DBG("Advancing signature iter at %p", sig_iter);
+    *more = dbus_signature_iter_next(sig_iter);
 #ifdef USING_DBG
-    {
-        dbus_bool_t b =
-#endif
-        dbus_signature_iter_next(sig_iter);
-#ifdef USING_DBG
-        DBG("- result: %ld, type %02x '%c'", (long)b,
-            (int)dbus_signature_iter_get_current_type(sig_iter),
-            (int)dbus_signature_iter_get_current_type(sig_iter));
-    }
+    DBG("- result: %ld, type %02x '%c'", (long)(*more),
+        (int)dbus_signature_iter_get_current_type(sig_iter),
+        (int)dbus_signature_iter_get_current_type(sig_iter));
 #endif
     return 0;
 }
@@ -1007,6 +1020,9 @@ dbus_py_Message_append(Message *self, PyObject *args, PyObject *kwargs)
     DBusMessageIter appender;
     int i;
     static char *argnames[] = {"signature", NULL};
+    /* must start FALSE for the case where there's nothing there and we
+     * never iterate at all */
+    dbus_bool_t more;
 
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
 
@@ -1040,14 +1056,15 @@ dbus_py_Message_append(Message *self, PyObject *args, PyObject *kwargs)
     }
     dbus_signature_iter_init(&sig_iter, signature);
     dbus_message_iter_init_append(self->msg, &appender);
+    more = (signature[0] != '\0');
     for (i = 0; i < PyTuple_GET_SIZE(args); i++) {
         if (_message_iter_append_pyobject(&appender, &sig_iter,
-                                          PyTuple_GET_ITEM(args, i)) < 0) {
+                                          PyTuple_GET_ITEM(args, i),
+                                          &more) < 0) {
             goto hosed;
         }
     }
-    if (dbus_signature_iter_get_current_type(&sig_iter)
-        != DBUS_TYPE_INVALID) {
+    if (more) {
         PyErr_SetString(PyExc_TypeError, "More items found in D-Bus "
                         "signature than in Python arguments");
         goto hosed;

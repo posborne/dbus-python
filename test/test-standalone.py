@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2006 Collabora Ltd. <http://www.collabora.co.uk/>
+"""Tests that don't need an active D-Bus connection to run, but can be
+run in isolation.
+"""
+
+# Copyright (C) 2006, 2007 Collabora Ltd. <http://www.collabora.co.uk/>
 #
 # Licensed under the Academic Free License version 2.1
 #
@@ -129,6 +133,25 @@ class TestTypes(unittest.TestCase):
 
 class TestMessageMarshalling(unittest.TestCase):
 
+    def test_count(self):
+        from _dbus_bindings import SignalMessage
+        s = SignalMessage('/', 'foo.bar', 'baz')
+        try:
+            s.append('a', signature='ss')
+        except TypeError:
+            pass
+        else:
+            raise AssertionError('Appending too few things in a message '
+                                 'should fail')
+        s = SignalMessage('/', 'foo.bar', 'baz')
+        try:
+            s.append('a','b','c', signature='ss')
+        except TypeError:
+            pass
+        else:
+            raise AssertionError('Appending too many things in a message '
+                                 'should fail')
+
     def test_append(self):
         aeq = self.assertEquals
         from _dbus_bindings import SignalMessage
@@ -247,6 +270,25 @@ class TestMessageMarshalling(unittest.TestCase):
         s.append(MyObject(), signature='o')
         s.append(MyObject())
         self.assertEquals(s.get_args_list(), ['/foo', '/foo'])
+
+    def test_struct(self):
+        from _dbus_bindings import SignalMessage
+        s = SignalMessage('/', 'foo.bar', 'baz')
+        try:
+            s.append(('a',), signature='(ss)')
+        except TypeError:
+            pass
+        else:
+            raise AssertionError('Appending too few things in a struct '
+                                 'should fail')
+        s = SignalMessage('/', 'foo.bar', 'baz')
+        try:
+            s.append(('a','b','c'), signature='(ss)')
+        except TypeError:
+            pass
+        else:
+            raise AssertionError('Appending too many things in a struct '
+                                 'should fail')
 
 
 if __name__ == '__main__':
