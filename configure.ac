@@ -62,7 +62,7 @@ AM_CONDITIONAL([ENABLE_API_DOCS], [test x$enable_api_docs != xno])
 
 AC_CHECK_PROGS([RST2HTML], [rst2html rst2html.py], [])
 AC_SUBST([RST2HTML])
-AM_CONDITIONAL([ENABLE_DOCS], [test x$RST2HTML != xno])
+AM_CONDITIONAL([ENABLE_DOCS], [test x$RST2HTML != x])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1 >= 1.0 dbus-glib-1 >= 0.70])
 PKG_CHECK_MODULES(DBUS_GLIB, [dbus-1 >= 1.0 dbus-glib-1 >= 0.70])
