@@ -382,6 +382,8 @@ if __name__ == '__main__':
     if 0:
         client = Client(bus_name, '/Client')
     else:
+        # the Java cross test's interpretation is that the client should be
+        # at /Test too
         client = Client(bus_name, '/Test')
     gobject.idle_add(client.run_client)
 
