@@ -4,11 +4,20 @@
 dbus-python tutorial
 ====================
 
-:Author: Simon McVittie, `Collabora`_
-:Date: 2006-01-10
+:Author: Simon McVittie, `Collabora Ltd.`_
+:Date: 2006-01-16
 :``dbus-python`` version: @VERSION@
 
-.. _`Collabora`: http://www.collabora.co.uk/
+.. _`Collabora Ltd.`: http://www.collabora.co.uk/
+
+This tutorial requires Python 2.4 or up, and ``dbus-python`` 0.80rc4 or up.
+
+.. contents::
+
+.. --------------------------------------------------------------------
+
+.. _Bus object:
+.. _Bus objects:
 
 Connecting to the Bus
 =====================
@@ -43,6 +52,8 @@ Of course, you can connect to both in the same application.
     http://www.gnome.org/projects/NetworkManager/
 .. _Hardware Abstraction Layer daemon (hald):
     http://www.freedesktop.org/wiki/Software/hal
+
+.. --------------------------------------------------------------------
 
 Making method calls
 ===================
@@ -180,10 +191,10 @@ D-Bus `proxy object`_       ObjectPath (signature 'o')     `(+)`_
 `dbus.service.Object`_      ObjectPath (signature 'o')     `(+)`_
 ``dbus.Boolean``            Boolean (signature 'b')        a subclass of ``int``
 ``dbus.Byte``               byte (signature 'y')           a subclass of ``int``
-``dbus.Int16``              16-bit signed integer ('?')    a subclass of ``int``
+``dbus.Int16``              16-bit signed integer ('n')    a subclass of ``int``
 ``dbus.Int32``              32-bit signed integer ('i')    a subclass of ``int``
 ``dbus.Int64``              64-bit signed integer ('x')    `(*)`_
-``dbus.UInt16``             16-bit unsigned integer ('?')  a subclass of ``int``
+``dbus.UInt16``             16-bit unsigned integer ('q')  a subclass of ``int``
 ``dbus.UInt32``             32-bit unsigned integer ('u')  `(*)_`
 ``dbus.UInt64``             64-bit unsigned integer ('t')  `(*)_`
 ``dbus.Double``             double-precision float ('d')   a subclass of ``float``
@@ -209,7 +220,8 @@ on platform.
 
 (+): D-Bus proxy objects, exported D-Bus service objects and anything
 else with the special attribute ``__dbus_object_path__``, which
-must be a string, are converted to their object-path.
+must be a string, are converted to their object-path. This might be
+useful if you're writing an object-oriented API using dbus-python.
 
 Basic type conversions
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -238,8 +250,13 @@ parameter was passed to the ``Array`` constructor, that will be used to
 determine the contents' signature; otherwise, ``dbus-python`` will guess
 from the array's first item.
 
+The signature of an array is 'ax' where 'x' represents the signature of
+one item. For instance, you could also have 'as' (array of strings) or
+'a(ii)' (array of structs each containing two 32-bit integers).
+
 There's also a type ``dbus.ByteArray`` which is a subclass of ``str``,
-used as a more efficient representation of a D-Bus array of bytes.
+used as a more efficient representation of a D-Bus array of bytes
+(signature 'ay').
 
 Structs are represented by Python tuples, or by ``dbus.Struct``, a
 subclass of ``tuple``. When sending a struct, if an introspected signature is
@@ -247,6 +264,10 @@ available, that will be used; otherwise, if the ``signature`` keyword
 parameter was passed to the ``Array`` constructor, that will be used to
 determine the contents' signature; otherwise, ``dbus-python`` will guess
 from the array's first item.
+
+The signature of a struct consists of the signatures of the contents,
+in parentheses - for instance '(is)' is the signature of a struct
+containing a 32-bit integer and a string.
 
 Dictionaries are represented by Python dictionaries, or by
 ``dbus.Dictionary``, a subclass of ``dict``. When sending a dictionary,
@@ -256,6 +277,12 @@ constructor, that will be used to determine the contents' key and value
 signatures; otherwise, ``dbus-python`` will guess from an arbitrary item
 of the ``dict``.
 
+The signature of a dictionary is 'a{xy}' where 'x' represents the
+signature of the keys (which may not be a container type) and 'y'
+represents the signature of the values. For instance,
+'a{s(ii)}' is a dictionary where the keys are strings and the values are
+structs containing two 32-bit integers.
+
 Variants are represented by setting the ``variant_level`` keyword
 argument in the constructor of any D-Bus data type to a value greater
 than 0 (``variant_level`` 1 means a variant containing some other data type,
@@ -263,6 +290,10 @@ than 0 (``variant_level`` 1 means a variant containing some other data type,
 other data type, and so on). If a non-variant is passed as an argument
 but introspection indicates that a variant is expected, it'll
 automatically be wrapped in a variant.
+
+The signature of a variant is 'v'.
+
+.. _byte_arrays and utf8_strings:
 
 Return values, and the ``byte_arrays`` and ``utf8_strings`` options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -275,6 +306,9 @@ that value as one of the ``dbus.`` types - by default, strings are
 returned as ``dbus.String`` (a subclass of Unicode) and byte arrays are
 returned as a ``dbus.Array`` of ``dbus.Byte``.
 
+If a D-Bus method returns multiple values, the Python proxy method
+will return a tuple containing those values.
+
 If you want strings returned as ``dbus.UTF8String`` (a subclass of
 ``str``) pass the keyword parameter ``utf8_strings=True`` to the proxy
 method.
@@ -283,26 +317,95 @@ If you want byte arrays returned as ``dbus.ByteArray`` (also a
 subclass of ``str`` - in practice, this is often what you want) pass
 the keyword parameter ``byte_arrays=True`` to the proxy method.
 
+.. --------------------------------------------------------------------
+
 Making asynchronous method calls
 ================================
 
-FIXME intro about how you need an event loop
+Asynchronous (non-blocking) method calls allow multiple method calls to
+be in progress simultaneously, and allow your application to do other
+work while it's waiting for the results. To make asynchronous calls,
+you first need an event loop or "main loop".
 
 Setting up an event loop
 ------------------------
 
-FIXME describe how to use at least GLib
+Currently, the only main loop supported by ``dbus-python`` is GLib.
+
+``dbus-python`` has a global default main loop, which is the easiest way
+to use this functionality. To arrange for the GLib main loop to be the
+default, use::
+
+    from dbus.mainloop.glib import DBusGMainLoop
+
+    DBusGMainLoop(set_as_default=True)
+
+You must do this before `connecting to the bus`_.
+
+Actually starting the main loop is as usual for ``pygobject``::
+
+    import gobject
+
+    loop = gobject.MainLoop()
+    loop.run()
+
+While ``loop.run()`` is executing, GLib will run your callbacks when
+appropriate. To stop, call ``loop.quit()``.
+
+You can also set a main loop on a per-connection basis, by passing a
+main loop to the Bus constructor::
+
+    import dbus
+    from dbus.mainloop.glib import DBusGMainLoop
+
+    dbus_loop = DBusGMainLoop()
+
+    bus = dbus.SessionBus(mainloop=dbus_loop)
+
+This isn't very useful until we support more than one main loop, though.
+
+Backwards compatibility: ``dbus.glib``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In versions of ``dbus-python`` prior to 0.80, the way to set GLib as the
+default main loop was::
+
+    import dbus.glib
+
+Executing that import statement would automatically load the GLib main
+loop and make this the default. This is now deprecated, since it's
+highly non-obvious, but may be useful if you want to write or understand
+backwards-compatible code.
+
+The Qt main loop
+~~~~~~~~~~~~~~~~
+
+FIXME: describe how to use the Qt event loop too (requires recent pyqt)
 
 Making asynchronous calls
 -------------------------
 
-FIXME describe ``reply_handler`` and ``error_handler``
+To make a call asynchronous, pass two callables as keyword arguments
+``reply_handler`` and ``error_handler`` to the proxy method. The proxy
+method will immediately return `None`. At some later time, when the event
+loop is running, one of these will happen: either
+
+* the ``reply_handler`` will be called with the method's return values
+  as arguments; or
+
+* the ``error_handler`` will be called with one argument, an instance of
+  ``DBusException`` representing a remote exception.
 
 See also
 ~~~~~~~~
 
 ``examples/example-async-client.py`` makes asynchronous method calls to
-the service provided by ``examples/example-service.py``.
+the service provided by ``examples/example-service.py`` which return
+either a value or an exception. As for ``examples/example-client.py``,
+you need to run ``examples/example-service.py`` in the background or
+in another shell first.
+
+.. --------------------------------------------------------------------
 
 Receiving signals
 =================
@@ -314,20 +417,85 @@ the event loop is running.
 Receiving signals from a proxy object
 -------------------------------------
 
-FIXME describe ``connect_to_signal``
+`Proxy objects`_ have a special method ``connect_to_signal`` which
+arranges for a callback to be called when a signal is received
+from the corresponding remote object. The parameters are:
 
-See also
-~~~~~~~~
+* the name of the signal
 
-``examples/signal-recipient.py`` receives signals. Before running it,
-you'll need to run ``examples/signal-emitter.py`` in the background or
+* a callable (the handler function) which will be called by the event loop
+  when the signal is received - its parameters will be the arguments of
+  the signal
+
+* the keyword argument ``dbus_interface`` qualifies the name with its
+  interface
+
+`dbus.Interface` objects have a similar ``connect_to_signal`` method,
+but in this case you don't need the ``dbus_interface`` keyword argument
+since the interface to use is already known.
+
+``connect_to_signal`` has keyword arguments ``utf8_strings`` and
+``byte_arrays`` which influence the types used when calling the
+handler function, in the same way as the `byte_arrays and utf8_strings`_
+options on proxy methods.
+
+Example
+~~~~~~~
+
+``examples/example-signal-recipient.py`` receives signals. Before running it,
+you'll need to run ``examples/example-signal-emitter.py`` in the background or
 in another shell. As well as ``connect_to_signal`` it demonstrates more
 general signal matching, described next.
+
+Getting more information from a signal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also arrange for more information to be passed to the handler
+function. If you pass the keyword arguments ``sender_keyword``,
+``destination_keyword``, ``interface_keyword``, ``member_keyword`` or
+``path_keyword`` to the ``connect_to_signal`` method, the appropriate
+part of the signal message will be passed to the handler function as a
+keyword argument: for instance if you use ::
+
+    def handler(sender=None):
+        print "got signal from %r" % sender
+
+    iface.connect_to_signal("Hello", handler, sender_keyword='sender')
+
+and a signal ``Hello`` with no arguments is received from
+``com.example.Foo``, the ``handler`` function will be called with
+``sender='com.example.Foo'``.
+
+String argument matching
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+If there are keyword parameters for the form ``arg``\ *n* where n is a
+small non-negative number, their values must be ``unicode`` objects
+or UTF-8 strings. The handler will only be called if that argument
+of the signal (numbered from zero) is a D-Bus string (in particular,
+not an object-path or a signature) with that value.
+
+.. *this comment is to stop the above breaking vim syntax highlighting*
 
 General signal matching
 -----------------------
 
-FIXME describe ``Bus.add_signal_receiver``
+To match signals in a more general way, you can use the
+``add_signal_receiver`` method on `Bus objects`_. This behaves rather
+like ``connect_to_signal``, but has the following parameters:
+
+* the handler function ``handler_function``, a callable: the same as for
+  ``connect_to_signal``
+* the signal name, ``signal_name``: here None (the default) matches all names
+* the D-Bus interface, ``dbus_interface``: again None is the default,
+  and matches all interfaces
+* a sender bus name (well-known or unique), ``named_service``: None is again
+  the default, and matches all senders
+* a sender object path, ``path``: once again None is the default and
+  matches all object paths
+
+The same extra keyword arguments as for ``connect_to_signal`` are also
+available.
 
 See also
 ~~~~~~~~
@@ -338,6 +506,8 @@ you'll need to run ``examples/signal-emitter.py`` in the background or
 in another shell.
 
 .. _BusName:
+
+.. --------------------------------------------------------------------
 
 Claiming a bus name
 ===================
@@ -351,6 +521,8 @@ FIXME provide exemplary code, put it in examples
 
 .. _exported object:
 .. _exported objects:
+
+.. --------------------------------------------------------------------
 
 Exporting objects
 =================
@@ -368,12 +540,65 @@ and queued signals will only be sent, while the event loop is running.
 Inheriting from ``dbus.service.Object``
 ---------------------------------------
 
+To export an object onto the Bus, just subclass
+``dbus.service.Object``. Object expects either a `BusName`_ or a `Bus
+object`_, and an object-path, to be passed to its constructor: arrange
+for this information to be available. For example::
+
+    class Example(dbus.service.Object):
+        def __init__(self, object_path):
+            dbus.service.Object.__init__(self, dbus.SessionBus(), path)
+
+This object will automatically support introspection, but won't do
+anything particularly interesting. To fix that, you'll need to export some
+methods and signals too.
+
 FIXME also mention dbus.gobject.ExportedGObject once I've written it
 
 Exporting methods with ``dbus.service.method``
 ----------------------------------------------
 
-FIXME - example is ``examples/example-service.py``
+To export a method, use the decorator ``dbus.service.method``. For
+example::
+
+    class Example(dbus.service.Object):
+        def __init__(self, object_path):
+            dbus.service.Object.__init__(self, dbus.SessionBus(), path)
+
+        @dbus.service.method(interface='com.example.Sample',
+                             in_signature='v', out_signature='s')
+        def StringifyVariant(self, variant):
+            return str(variant)
+
+The ``in_signature`` and ``out_signature`` are D-Bus signature strings
+as described in `Data Types`_.
+
+As well as the keywords shown, you can pass ``utf8_strings`` and
+``byte_arrays`` keyword arguments, which influence the types which will
+be passed to the decorated method when it's called via D-Bus, in the
+same way that the `byte_arrays and utf8_strings`_ options affect the
+return value of a proxy method.
+
+You can find a simple example in ``examples/example-service.py``, which
+we used earlier to demonstrate ``examples/example-client.py``.
+
+Finding out the caller's bus name
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``method`` decorator accepts a ``sender_keyword`` keyword argument.
+If you set that to a string, the unique bus name of the sender will be
+passed to the decorated method as a keyword argument of that name::
+
+    class Example(dbus.service.Object):
+        def __init__(self, object_path):
+            dbus.service.Object.__init__(self, dbus.SessionBus(), path)
+
+        @dbus.service.method(interface='com.example.Sample',
+                             in_signature='', out_signature='s',
+                             sender_keyword='sender')
+        def SayHello(self, sender=None):
+            return 'Hello, %s!' % sender
+            # -> something like 'Hello, :1.1!'
 
 Asynchronous method implementations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -383,17 +608,37 @@ FIXME and also add an example, perhaps examples/example-async-service.py
 Emitting signals with ``dbus.service.signal``
 ---------------------------------------------
 
-FIXME brief intro here
+To export a signal, use the decorator ``dbus.service.signal``; to emit
+that signal, call the decorated method. The decorated method can also
+contain code which will be run when called, as usual. For example::
+
+    class Example(dbus.service.Object):
+        def __init__(self, object_path):
+            dbus.service.Object.__init__(self, dbus.SessionBus(), path)
+
+        @dbus.service.signal(interface='com.example.Sample',
+                             signature='us')
+        def NumberOfBottlesChanged(self, number, contents):
+            print "%d bottles of %s on the wall" % (number, contents)
+
+    e = Example('/bottle-counter')
+    e.NumberOfBottlesChanged(100, 'beer')
+    # -> emits com.example.Sample.NumberOfBottlesChanged(100, 'beer')
+    #    and prints "100 bottles of beer on the wall"
 
 The signal will be queued for sending when the decorated method returns -
 you can prevent the signal from being sent by raising an exception
-from the decorated method. The signal will only actually be sent when
-the event loop next runs.
+from the decorated method (for instance, if the parameters are
+inappropriate). The signal will only actually be sent when the event loop
+next runs.
 
 Example
 ~~~~~~~
 
-``examples/example-signal-emitter.py`` emits some signals on demand.
+``examples/example-signal-emitter.py`` emits some signals on demand when
+one of its methods is called. (In reality, you'd emit a signal when some
+sort of internal state changed, which may or may not be triggered by a
+D-Bus method call.)
 
 ..
   vim:set ft=rst sw=4 sts=4 et tw=72:
