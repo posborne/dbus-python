@@ -118,13 +118,13 @@ ChangeLog: always-rebuild
 		fi; \
 	fi
 
-if ENABLE_DOCS
 TXT_RSTDOCS = doc/tutorial.txt API_CHANGES.txt HACKING.txt
-HTML_TXT_RSTDOCS = doc/tutorial.html API_CHANGES.html HACKING.html
 RSTDOCS = README NEWS TODO
-HTML_RSTDOCS = README.html NEWS.html TODO.html
-
 dist_doc_DATA = $(TXT_RSTDOCS) $(RSTDOCS)
+
+if ENABLE_DOCS
+HTML_TXT_RSTDOCS = doc/tutorial.html API_CHANGES.html HACKING.html
+HTML_RSTDOCS = README.html NEWS.html TODO.html
 nodist_doc_DATA = $(HTML_TXT_RSTDOCS) $(HTML_RSTDOCS)
 
 CLEANFILES += $(nodist_doc_DATA)
