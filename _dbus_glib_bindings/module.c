@@ -127,6 +127,7 @@ DBusGMainLoop (PyObject *always_null UNUSED, PyObject *args, PyObject *kwargs)
             Py_DECREF(mainloop);
             return NULL;
         }
+        Py_DECREF(result);
     }
     return mainloop;
 }
