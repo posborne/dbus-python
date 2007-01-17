@@ -248,9 +248,9 @@ def _method_reply_return(connection, message, method_name, signature, *retval):
 
 
 def _method_reply_error(connection, message, exception):
-    if '_dbus_error_name' in exception.__dict__:
+    if hasattr(exception, '_dbus_error_name'):
         name = exception._dbus_error_name
-    elif exception.__module__ == '__main__':
+    elif getattr(exception, '__module__', '') in ('', '__main__'):
         name = 'org.freedesktop.DBus.Python.%s' % exception.__class__.__name__
     else:
         name = 'org.freedesktop.DBus.Python.%s.%s' % (exception.__module__, exception.__class__.__name__)
