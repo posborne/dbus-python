@@ -1,7 +1,7 @@
-# Copyright (C) 2003, 2004, 2005, 2006 Red Hat Inc. <http://www.redhat.com/>
+# Copyright (C) 2003, 2004, 2005, 2006, 2007 Red Hat Inc. <http://www.redhat.com/>
 # Copyright (C) 2003 David Zeuthen
 # Copyright (C) 2004 Rob Taylor
-# Copyright (C) 2005, 2006 Collabora Ltd. <http://www.collabora.co.uk/>
+# Copyright (C) 2005, 2006, 2007 Collabora Ltd. <http://www.collabora.co.uk/>
 #
 # Licensed under the Academic Free License version 2.1
 #
@@ -23,6 +23,11 @@
 
 import sys
 import logging
+
+try:
+    from threading import RLock
+except ImportError:
+    from dummy_threading import RLock
 
 import _dbus_bindings
 from dbus._expat_introspect_parser import process_introspection_data
@@ -60,31 +65,30 @@ class _ReplyHandler(object):
                                         % message))
 
 
-class DeferedMethod:
-    """A DeferedMethod
-    
-    This is returned instead of ProxyMethod when we are defering DBus calls
-    while waiting for introspection data to be returned
+class _DeferredMethod:
+    """A proxy method which will only get called once we have its
+    introspection reply.
     """
-    def __init__(self, proxy_method):
+    def __init__(self, proxy_method, append, block):
         self._proxy_method = proxy_method
-        self._method_name  = proxy_method._method_name
-    
+        # the test suite relies on the existence of this property
+        self._method_name = proxy_method._method_name
+        self._append = append
+        self._block = block
+
     def __call__(self, *args, **keywords):
-        reply_handler = None
         if keywords.has_key('reply_handler'):
-            reply_handler = keywords['reply_handler']
+            # defer the async call til introspection finishes
+            self._append(self._proxy_method, args, keywords)
+            return None
+        else:
+            # we're being synchronous, so block
+            self._block()
+            return self._proxy_method(*args, **keywords)
 
-        #block for now even on async
-        # FIXME: put ret in async queue in future if we have a reply handler
 
-        self._proxy_method._proxy._pending_introspect.block()
-        ret = self._proxy_method (*args, **keywords)
-        
-        return ret
-
-class ProxyMethod:
-    """A proxy Method.
+class _ProxyMethod:
+    """A proxy method.
 
     Typically a member of a ProxyObject. Calls to the
     method produce messages that travel over the Bus and are routed
@@ -95,6 +99,7 @@ class ProxyMethod:
         self._connection     = connection
         self._named_service  = named_service
         self._object_path    = object_path
+        # the test suite relies on the existence of this property
         self._method_name    = method_name
         self._dbus_interface = iface
 
@@ -179,8 +184,8 @@ class ProxyObject:
     A ProxyObject is provided by the Bus. ProxyObjects
     have member functions, and can be called like normal Python objects.
     """
-    ProxyMethodClass = ProxyMethod
-    DeferedMethodClass = DeferedMethod
+    ProxyMethodClass = _ProxyMethod
+    DeferredMethodClass = _DeferredMethod
 
     INTROSPECT_STATE_DONT_INTROSPECT = 0
     INTROSPECT_STATE_INTROSPECT_IN_PROGRESS = 1
@@ -219,7 +224,7 @@ class ProxyObject:
                 self._named_service = bus_object.GetNameOwner(named_service,
                         dbus_interface=BUS_DAEMON_IFACE)
             except DBusException, e:
-                # FIXME: detect whether it's NameHasNoOwner
+                # FIXME: detect whether it's NameHasNoOwner, but properly
                 #if not str(e).startswith('org.freedesktop.DBus.Error.NameHasNoOwner:'):
                 #    raise
                 # it might not exist: try to start it
@@ -234,6 +239,10 @@ class ProxyObject:
         self._pending_introspect_queue = []
         #dictionary mapping method names to their input signatures
         self._introspect_method_map = {}
+
+        # must be a recursive lock because block() is called while locked,
+        # and calls the callback which re-takes the lock
+        self._introspect_lock = RLock()
 
         if not introspect:
             self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
@@ -317,43 +326,58 @@ class ProxyObject:
         return result
     
     def _introspect_execute_queue(self):
-        for call in self._pending_introspect_queue:
-            (member, iface, args, keywords) = call
-
-            introspect_sig = None
-
-            tmp_iface = ''
-            if iface:
-                tmp_iface = iface + '.'
-                    
-            key = tmp_iface + '.' + member
-            if self._introspect_method_map.has_key (key):
-                introspect_sig = self._introspect_method_map[key]
-
-            
-            call_object = self.ProxyMethodClass(self._bus.get_connection(),
-                                                self._named_service,
-                                                self.__dbus_object_path__,
-                                                iface,
-                                                member,
-                                                introspect_sig)
-                                                                       
-            call_object(args, keywords)
+        # FIXME: potential to flood the bus
+        # We should make sure mainloops all have idle handlers
+        # and do one message per idle
+        for (proxy_method, args, keywords) in self._pending_introspect_queue:
+            proxy_method(*args, **keywords)
 
     def _introspect_reply_handler(self, data):
+        self._introspect_lock.acquire()
         try:
-            self._introspect_method_map = process_introspection_data(data)
-        except IntrospectionParserException, e:
-            self._introspect_error_handler(e)
-            return
-        
-        self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_DONE
-        #self._introspect_execute_queue()
+            try:
+                self._introspect_method_map = process_introspection_data(data)
+            except IntrospectionParserException, e:
+                self._introspect_error_handler(e)
+                return
+
+            self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_DONE
+            self._pending_introspect = None
+            self._introspect_execute_queue()
+        finally:
+            self._introspect_lock.release()
 
     def _introspect_error_handler(self, error):
-        self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
-        self._introspect_execute_queue()
-        sys.stderr.write("Introspect error: " + str(error) + "\n")
+        self._introspect_lock.acquire()
+        try:
+            self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
+            self._pending_introspect = None
+            self._introspect_execute_queue()
+            sys.stderr.write("Introspect error: " + str(error) + "\n")
+        finally:
+            self._introspect_lock.release()
+
+    def _introspect_block(self):
+        self._introspect_lock.acquire()
+        try:
+            if self._pending_introspect is not None:
+                self._pending_introspect.block()
+            # else someone still has a _DeferredMethod from before we
+            # finished introspection: no need to do anything special any more
+        finally:
+            self._introspect_lock.release()
+
+    def _introspect_add_to_queue(self, callback, args, kwargs):
+        self._introspect_lock.acquire()
+        try:
+            if self._introspect_state == self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS:
+                self._pending_introspect_queue.append((callback, args, kwargs))
+            else:
+                # someone still has a _DeferredMethod from before we
+                # finished introspection
+                callback(*args, **kwargs)
+        finally:
+            self._introspect_lock.release()
 
     def __getattr__(self, member, dbus_interface=None):
         if member == '__call__':
@@ -390,9 +414,14 @@ class ProxyObject:
                                     self._named_service,
                                     self.__dbus_object_path__, member,
                                     dbus_interface)
-    
+
+        # this can be done without taking the lock - the worst that can
+        # happen is that we accidentally return a _DeferredMethod just after
+        # finishing introspection, in which case _introspect_add_to_queue and
+        # _introspect_block will do the right thing anyway
         if self._introspect_state == self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS:
-            ret = self.DeferedMethodClass(ret)
+            ret = self.DeferredMethodClass(ret, self._introspect_add_to_queue,
+                                           self._introspect_block)
 
         return ret
 
