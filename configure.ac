@@ -1,11 +1,17 @@
 -*- mode: m4 -*-
 AC_PREREQ(2.52)
 
+dnl If 1, append datestamp to the version number
+m4_define(dbus_python_released, 0)
 dnl The dbus-python version number (must actually be numeric at the moment)
 m4_define(dbus_python_major_version, 0)
 m4_define(dbus_python_minor_version, 79)
 m4_define(dbus_python_micro_version, 93)
-m4_define(dbus_python_version, dbus_python_major_version.dbus_python_minor_version.dbus_python_micro_version)
+
+m4_define(dbus_python_maybe_datestamp,
+	  m4_esyscmd([if test x]dbus_python_released[ != x1; then date +.%Y%m%d | tr -d '\n\r'; fi]))
+
+m4_define(dbus_python_version, dbus_python_major_version.dbus_python_minor_version.dbus_python_micro_version[]dbus_python_maybe_datestamp)
 
 dnl versions of packages we require ...
 dnl m4_define(glib_required_version, 2.8.0)
