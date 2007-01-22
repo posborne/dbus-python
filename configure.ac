@@ -1,7 +1,7 @@
 -*- mode: m4 -*-
 AC_PREREQ(2.52)
 
-dnl If 1, append datestamp to the version number
+dnl If not 1, append datestamp to the version number and build with -Werror
 m4_define(dbus_python_released, 0)
 dnl The dbus-python version number (must actually be numeric at the moment)
 m4_define(dbus_python_major_version, 0)
@@ -80,6 +80,9 @@ JH_ADD_CFLAG([-Wno-missing-field-initializers])
 JH_ADD_CFLAG([-Wdeclaration-after-statement])
 JH_ADD_CFLAG([-std=c9x])
 JH_ADD_CFLAG([-fno-strict-aliasing])
+[if test x]dbus_python_released[ != x1; then]
+  JH_ADD_CFLAG([-Werror])
+[fi]
 
 AC_CONFIG_FILES(
   Makefile
