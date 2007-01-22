@@ -86,9 +86,14 @@ JH_ADD_CFLAG([-fno-strict-aliasing])
 
 AC_CONFIG_FILES(
   Makefile
+  _dbus_bindings/Makefile
+  _dbus_glib_bindings/Makefile
+  dbus/Makefile
   dbus-python.pc
   dbus/_version.py
   doc/tutorial.txt
+  examples/Makefile
+  test/Makefile
   test/tmp-session-bus.conf
   test/TestSuitePythonService.service)
 AC_OUTPUT

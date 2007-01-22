@@ -29,6 +29,7 @@ config.log
 config.status
 dbus-python.pc
 dbus/_version.py
+dbus/.doc-needs-rebuild-stamp
 libtool
 stamp-h1
 test/TestSuitePythonService.service
