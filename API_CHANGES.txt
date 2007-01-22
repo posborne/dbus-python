@@ -77,10 +77,6 @@ Calling conventions
   * Bus is a subclass of Connection rather than being a wrapper object
     which has-a Connection
 
-  * Some relatively internal methods have been renamed starting with
-    an underscore - most Python code shouldn't need to use them, and
-    they expose the full complexity of Messages etc.
-
   * The timeouts in _send_with_reply and in _send_with_reply_and_block
     are in (possibly fractional) seconds, as is conventional in Python
 

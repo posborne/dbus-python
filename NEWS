@@ -1,5 +1,5 @@
-D-Bus Python Bindings 0.80rc3 (aka 0.79.93) (19 December 2006)
-==============================================================
+D-Bus Python Bindings 0.79.94 (a.k.a. 0.80rc4) (22 January 2007)
+================================================================
 - The "break the world" release
 - Rewrite dbus_bindings (Pyrex) as _dbus_bindings (C) - API changes!
 - Define what's public API
@@ -11,6 +11,9 @@ D-Bus Python Bindings 0.80rc3 (aka 0.79.93) (19 December 2006)
 - Add utf8_strings and byte_arrays options in various places, so a user
   can tweak the calling conventions to be more efficient
 - Raise RuntimeError if user tries to use a connection with no main loop
+  to do something that won't work without one
+- Make asynchronous method calls actually asynchronous when made before
+  introspection results come back
 - Redo main loop machinery so we can add pure-Python main loops later without
   API breakage
 - Allow construction of a dbus.service.Object if you don't have a BusName
@@ -19,9 +22,9 @@ D-Bus Python Bindings 0.80rc3 (aka 0.79.93) (19 December 2006)
   (included with Python)
 - Port build system from distutils to autoconf/automake/libtool
 - Install a header file for third-party main loop integration
-- Make compatible with Python 2.5
+- Make compatible with Python 2.5, including on 64-bit platforms
 - Add docstrings throughout
-- Add more tests
+- Add more tests and examples
 - Add interoperability tests (which interoperate with Java)
 - Add copyright notices!
 
