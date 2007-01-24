@@ -2,6 +2,7 @@ pythondbusdir = $(pythondir)/dbus
 
 nobase_pythondbus_PYTHON = dbus_bindings.py \
 			   _dbus.py \
+			   _version.py \
 			   decorators.py \
 			   exceptions.py \
 			   _expat_introspect_parser.py \
