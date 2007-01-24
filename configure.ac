@@ -1,5 +1,5 @@
 -*- mode: m4 -*-
-AC_PREREQ(2.52)
+AC_PREREQ(2.59c)
 
 dnl If not 1, append datestamp to the version number and build with -Werror
 m4_define(dbus_python_released, 0)
