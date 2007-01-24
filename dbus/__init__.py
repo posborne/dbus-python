@@ -143,6 +143,8 @@ See `dbus.service.Object`.
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+import os
+
 __all__ = (
            # from _dbus
            'Bus', 'SystemBus', 'SessionBus', 'StarterBus',
@@ -196,4 +198,7 @@ from _dbus_bindings import ObjectPath, ByteArray, Signature, Byte, Boolean,\
                            Double, String, Array, Struct, Dictionary, \
                            UTF8String
 from dbus._dbus import Bus, SystemBus, SessionBus, StarterBus, Interface
-from dbus._dbus import dbus_bindings    # for backwards compat
+
+
+if 'DBUS_PYTHON_NO_DEPRECATED' not in os.environ:
+    from dbus._dbus import dbus_bindings    # for backwards compat

@@ -34,12 +34,20 @@ ChangeLog: always-rebuild
 		fi; \
 	fi
 
-TXT_RSTDOCS = doc/tutorial.txt API_CHANGES.txt HACKING.txt
+TXT_RSTDOCS = doc/tutorial.txt doc/API_CHANGES.txt doc/HACKING.txt
 RSTDOCS = README NEWS TODO
 dist_doc_DATA = $(TXT_RSTDOCS) $(RSTDOCS)
 
+maintainer-update-website: _maintainer-update-apidocs \
+	_maintainer-update-htmldocs
+
 if ENABLE_DOCS
-HTML_TXT_RSTDOCS = doc/tutorial.html API_CHANGES.html HACKING.html
+_maintainer-update-htmldocs: $(HTML_TXT_RSTDOCS) $(HTML_RSTDOCS)
+	rsync -rtvzPp --chmod=Dg+s,ug+rwX,o=rX doc \
+	$(RSTDOCS) $(HTML_RSTDOCS) \
+	dbus.freedesktop.org:/srv/dbus.freedesktop.org/www/doc/dbus-python/
+
+HTML_TXT_RSTDOCS = doc/tutorial.html doc/API_CHANGES.html doc/HACKING.html
 HTML_RSTDOCS = README.html NEWS.html TODO.html
 nodist_doc_DATA = $(HTML_TXT_RSTDOCS) $(HTML_RSTDOCS)
 
@@ -49,6 +57,11 @@ $(HTML_TXT_RSTDOCS) : %.html: %.txt
 		$(RST2HTML) $(RST2HTMLFLAGS) $< $@
 $(HTML_RSTDOCS) : %.html: %
 		$(RST2HTML) $(RST2HTMLFLAGS) $< $@
+else
+_maintainer-update-htmldocs:
+	@echo "*** Not updating the HTML docs on the website - install rst2html"
+	@echo "*** from http://docutils.sourceforge.net/ and configure with "
+	@echo "*** --enable-html-docs"
 endif
 
 if ENABLE_API_DOCS
@@ -72,12 +85,22 @@ api api/index.html: $(python_PYTHON) dbus/.doc-needs-rebuild-stamp \
 		    _dbus_glib_bindings/_dbus_glib_bindings.la
 	rm -rf api
 	mkdir api
-	PYTHONPATH=$(APIDOC_PYTHONPATH) $(EPYDOC) -o api --html \
+	PYTHONPATH=$(APIDOC_PYTHONPATH) DBUS_PYTHON_NO_DEPRECATED=1 $(PYTHON) -Wignore::DeprecationWarning $(EPYDOC) -o api --html \
 		--docformat restructuredtext -v \
-		`find dbus -name '*.py' \
+		`find dbus -name '*.py' | grep -v dbus_bindings \
 			| sed -e 's#/__init__\.py##g' \
 				-e 's/\.py\>//g' -e 's#/#.#'g` \
-	|| { rm -rf api; exit 1; }
+		|| { rm -rf api; exit 1; }
+
+_maintainer-update-apidocs: api
+	rsync -rtvzPp --chmod=Dg+s,ug+rwX,o=rX api/ \
+	dbus.freedesktop.org:/srv/dbus.freedesktop.org/www/doc/dbus-python/api/
+else
+_maintainer-update-apidocs:
+	@echo "*** Not updating the API docs on the website - install epydoc 3"
+	@echo "*** alpha (or newer) and configure with --enable-api-docs"
 endif
 
-.PHONY: cross-test-compile cross-test-server cross-test-client always-rebuild
+.PHONY: cross-test-compile cross-test-server cross-test-client \
+	always-rebuild maintainer-update-website \
+	_maintainer-update-apidocs _maintainer-update-htmldocs

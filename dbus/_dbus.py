@@ -33,6 +33,7 @@ UTF8String = _dbus_bindings.UTF8String
 DBusException = _dbus_bindings.DBusException
 BusImplementation = _dbus_bindings.BusImplementation
 
+import os
 import logging
 import weakref
 
@@ -835,21 +836,23 @@ If you need additional public API, please contact the maintainers via
 <dbus@lists.freedesktop.org>.
 """)
 
-class _DBusBindingsEmulation:
-    """A partial emulation of the dbus_bindings module."""
-    _module = None
-    def __str__(self):
-        return '_DBusBindingsEmulation()'
-    def __repr__(self):
-        return '_DBusBindingsEmulation()'
-    def __getattr__(self, attr):
-        if self._module is None:
-            from warnings import warn as _warn
-            _warn(_dbus_bindings_warning, DeprecationWarning, stacklevel=2)
+if 'DBUS_PYTHON_NO_DEPRECATED' not in os.environ:
 
-            import dbus.dbus_bindings as m
-            self._module = m
-        return getattr(self._module, attr)
+    class _DBusBindingsEmulation:
+        """A partial emulation of the dbus_bindings module."""
+        _module = None
+        def __str__(self):
+            return '_DBusBindingsEmulation()'
+        def __repr__(self):
+            return '_DBusBindingsEmulation()'
+        def __getattr__(self, attr):
+            if self._module is None:
+                from warnings import warn as _warn
+                _warn(_dbus_bindings_warning, DeprecationWarning, stacklevel=2)
 
-dbus_bindings = _DBusBindingsEmulation()
-"""Deprecated, don't use."""
+                import dbus.dbus_bindings as m
+                self._module = m
+            return getattr(self._module, attr)
+
+    dbus_bindings = _DBusBindingsEmulation()
+    """Deprecated, don't use."""

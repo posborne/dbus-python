@@ -3,7 +3,7 @@ D-Bus Python bindings - notes for hackers
 =========================================
 
 :Author: Simon McVittie, `Collabora`_
-:Date: 2006-12-18
+:Date: 2007-01-24
 
 .. _Collabora: http://www.collabora.co.uk/
 
@@ -30,7 +30,7 @@ Modules
 ``dbus.mainloop.glib`` is the public API for the GLib main loop integration.
 
 ``dbus.types`` and ``dbus.exceptions`` are mainly for backwards
-compatibility - use ``dbus`` instead in new code.
+compatibility - use ``dbus`` instead in new code. Ditto ``dbus.glib``.
 
 ``dbus._dbus``, ``dbus.introspect_parser``, ``dbus.proxies`` are internal
 implementation details.
@@ -49,6 +49,12 @@ Before calling into any D-Bus function that can block, release the GIL;
 as well as the usual "be nice to other threads", D-Bus does its own
 locking and we don't want to deadlock with it. Most Connection methods
 can block.
+
+Other notes
+===========
+
+Code needs to be Python 2.5 compatible - use Py_ssize_t where appropriate.
+See http://www.python.org/dev/peps/pep-0353/ for details.
 
 Indentation and other holy wars
 ===============================
