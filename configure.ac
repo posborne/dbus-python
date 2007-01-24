@@ -2,7 +2,7 @@
 AC_PREREQ(2.52)
 
 dnl If not 1, append datestamp to the version number and build with -Werror
-m4_define(dbus_python_released, 1)
+m4_define(dbus_python_released, 0)
 dnl The dbus-python version number (must actually be numeric at the moment)
 m4_define(dbus_python_major_version, 0)
 m4_define(dbus_python_minor_version, 79)
@@ -54,21 +54,44 @@ PLATFORM=`$PYTHON -c "from distutils import util; print util.get_platform()"`
 AC_SUBST(PLATFORM)
 
 dnl Building documentation
-enable_html_docs=yes
-enable_api_docs=no
 
+AC_MSG_CHECKING([whether you want to build HTML docs...])
 AC_ARG_ENABLE(html-docs,
-AC_HELP_STRING([--disable-html-docs], [Disable HTML documentation building (requires docutils)]),, enable_html_docs=no)
+AC_HELP_STRING([--disable-html-docs], [Disable HTML documentation building (requires docutils)]), enable_html_docs=$enableval, enable_html_docs="if possible")
+AC_MSG_RESULT(["$enable_html_docs"])
 
+AC_MSG_CHECKING([whether you want to build API docs...])
 AC_ARG_ENABLE(api-docs,
-AC_HELP_STRING([--enable-api-docs], [Enable API documentation building (requires epydoc 3 and docutils)]),, enable_api_docs=no)
+AC_HELP_STRING([--enable-api-docs], [Enable API documentation building (requires epydoc 3 and docutils)]), enable_api_docs=$enableval, enable_api_docs="if possible")
+AC_MSG_RESULT(["$enable_api_docs"])
 
-AM_CHECK_PYMOD([docutils], [__version__], [:], [enable_api_docs=no ; enable_html_docs=no])
+
+if test "$enable_api_docs" != no || test "$enable_html_docs" != no; then
+  AM_CHECK_PYMOD([docutils], [__version__], [have_docutils=yes], [have_docutils=no])
+  if test "$have_docutils" = no; then
+    if test "$enable_api_docs" = "if possible"; then
+       enable_api_docs=no
+    fi
+    if test "$enable_html_docs" = "if possible"; then
+       enable_html_docs=no
+    fi
+    if test "$enable_api_docs" != no || test "$enable_html_docs" != no; then
+      AC_MSG_ERROR([cannot compile HTML documentation or API documentation without python-docutils installed])
+    fi
+  fi
+fi
 
 if test "${enable_api_docs}" != no; then
   AC_PATH_PROG([EPYDOC], [epydoc])
   if test -z "$EPYDOC"; then
-    enable_api_docs=no
+    case "$enable_api_docs" in
+      if*possible)
+        enable_api_docs=no
+	;;
+      *)
+        AC_MSG_ERROR([cannot compile API documentation without epydoc installed])
+        ;;
+    esac
   fi
 fi
 
@@ -76,7 +99,14 @@ RST2HTMLFLAGS=
 if test "${enable_html_docs}" != no; then
   AC_CHECK_PROGS([RST2HTML], [rst2html rst2html.py], [])
   if test -z "$RST2HTML"; then
-    enable_api_docs=no
+    case "$enable_html_docs" in
+      if*possible)
+      	enable_html_docs=no
+	;;
+      *)
+        AC_MSG_ERROR([cannot compile HTML documentation without rst2html installed])
+	;;
+    esac
   else
     DBUS_PY_ADD_RST2HTMLFLAG([--generator])
     DBUS_PY_ADD_RST2HTMLFLAG([--date])
