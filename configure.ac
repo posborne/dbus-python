@@ -54,9 +54,17 @@ PLATFORM=`$PYTHON -c "from distutils import util; print util.get_platform()"`
 AC_SUBST(PLATFORM)
 
 dnl Building documentation
+enable_html_docs=yes
+enable_api_docs=no
+
+AC_ARG_ENABLE(html-docs,
+AC_HELP_STRING([--disable-html-docs], [Disable HTML documentation building (requires docutils)]),, enable_html_docs=no)
+
 AC_ARG_ENABLE(api-docs,
-AC_HELP_STRING([--enable-api-docs], [Enable documentation building (requires epydoc 3 and docutils)]),, enable_api_docs=no)
-AM_CHECK_PYMOD([docutils], [__version__], [:], [enable_api_docs=no])
+AC_HELP_STRING([--enable-api-docs], [Enable API documentation building (requires epydoc 3 and docutils)]),, enable_api_docs=no)
+
+AM_CHECK_PYMOD([docutils], [__version__], [:], [enable_api_docs=no ; enable_html_docs=no])
+
 if test "${enable_api_docs}" != no; then
   AC_PATH_PROG([EPYDOC], [epydoc])
   if test -z "$EPYDOC"; then
@@ -64,11 +72,26 @@ if test "${enable_api_docs}" != no; then
   fi
 fi
 
-AM_CONDITIONAL([ENABLE_API_DOCS], [test x$enable_api_docs != xno])
-
-AC_CHECK_PROGS([RST2HTML], [rst2html rst2html.py], [])
+RST2HTMLFLAGS=
+if test "${enable_html_docs}" != no; then
+  AC_CHECK_PROGS([RST2HTML], [rst2html rst2html.py], [])
+  if test -z "$RST2HTML"; then
+    enable_api_docs=no
+  else
+    DBUS_PY_ADD_RST2HTMLFLAG([--generator])
+    DBUS_PY_ADD_RST2HTMLFLAG([--date])
+    DBUS_PY_ADD_RST2HTMLFLAG([--time])
+    DBUS_PY_ADD_RST2HTMLFLAG([--exit-status=2])
+    DBUS_PY_ADD_RST2HTMLFLAG([--no-raw])
+    DBUS_PY_ADD_RST2HTMLFLAG([--no-file-insertion])
+    DBUS_PY_ADD_RST2HTMLFLAG([--cloak-email-addresses])
+  fi
+fi
 AC_SUBST([RST2HTML])
-AM_CONDITIONAL([ENABLE_DOCS], [test x$RST2HTML != x])
+AC_SUBST([RST2HTMLFLAGS])
+
+AM_CONDITIONAL([ENABLE_API_DOCS], [test x$enable_api_docs != xno])
+AM_CONDITIONAL([ENABLE_DOCS], [test x$enable_html_docs != xno])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1 >= 1.0 dbus-glib-1 >= 0.70])
 PKG_CHECK_MODULES(DBUS_GLIB, [dbus-1 >= 1.0 dbus-glib-1 >= 0.70])

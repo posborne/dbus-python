@@ -44,9 +44,6 @@ nodist_doc_DATA = $(HTML_TXT_RSTDOCS) $(HTML_RSTDOCS)
 
 CLEANFILES += $(nodist_doc_DATA)
 
-RST2HTMLFLAGS = --generator --date --time --exit-status=2 \
-		--cloak-email-addresses --no-raw --no-file-insertion
-
 $(HTML_TXT_RSTDOCS) : %.html: %.txt
 		$(RST2HTML) $(RST2HTMLFLAGS) $< $@
 $(HTML_RSTDOCS) : %.html: %
