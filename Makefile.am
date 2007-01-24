@@ -2,9 +2,7 @@
 SUBDIRS = _dbus_bindings _dbus_glib_bindings dbus examples test
 
 CLEANFILES =
-EXTRA_DIST = API_CHANGES.txt dbus-python.pc.in HACKING.txt \
-	     AUTHORS COPYING NEWS ChangeLog TODO \
-	     doc/tutorial.txt.in
+EXTRA_DIST = dbus-python.pc.in AUTHORS COPYING ChangeLog
 # miss out the gconf examples for now - they don't work
 
 pkgconfigdir = $(libdir)/pkgconfig
