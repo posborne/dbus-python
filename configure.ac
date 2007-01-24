@@ -55,15 +55,15 @@ AC_SUBST(PLATFORM)
 
 dnl Building documentation
 
-AC_MSG_CHECKING([whether you want to build HTML docs...])
+AC_MSG_CHECKING([whether you want to build HTML docs])
 AC_ARG_ENABLE(html-docs,
 AC_HELP_STRING([--disable-html-docs], [Disable HTML documentation building (requires docutils)]), enable_html_docs=$enableval, enable_html_docs="if possible")
-AC_MSG_RESULT(["$enable_html_docs"])
+AC_MSG_RESULT([$enable_html_docs])
 
-AC_MSG_CHECKING([whether you want to build API docs...])
+AC_MSG_CHECKING([whether you want to build API docs])
 AC_ARG_ENABLE(api-docs,
-AC_HELP_STRING([--enable-api-docs], [Enable API documentation building (requires epydoc 3 and docutils)]), enable_api_docs=$enableval, enable_api_docs="if possible")
-AC_MSG_RESULT(["$enable_api_docs"])
+AC_HELP_STRING([--enable-api-docs], [Enable API documentation building (requires epydoc 3 and docutils)]), enable_api_docs=$enableval, enable_api_docs=no)
+AC_MSG_RESULT([$enable_api_docs])
 
 
 if test "$enable_api_docs" != no || test "$enable_html_docs" != no; then
@@ -120,8 +120,8 @@ fi
 AC_SUBST([RST2HTML])
 AC_SUBST([RST2HTMLFLAGS])
 
-AM_CONDITIONAL([ENABLE_API_DOCS], [test x$enable_api_docs != xno])
-AM_CONDITIONAL([ENABLE_DOCS], [test x$enable_html_docs != xno])
+AM_CONDITIONAL([ENABLE_API_DOCS], [test "$enable_api_docs" != no])
+AM_CONDITIONAL([ENABLE_DOCS], [test "$enable_html_docs" != no])
 
 PKG_CHECK_MODULES(DBUS, [dbus-1 >= 1.0 dbus-glib-1 >= 0.70])
 PKG_CHECK_MODULES(DBUS_GLIB, [dbus-1 >= 1.0 dbus-glib-1 >= 0.70])
