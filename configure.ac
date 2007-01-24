@@ -2,11 +2,11 @@
 AC_PREREQ(2.52)
 
 dnl If not 1, append datestamp to the version number and build with -Werror
-m4_define(dbus_python_released, 0)
+m4_define(dbus_python_released, 1)
 dnl The dbus-python version number (must actually be numeric at the moment)
 m4_define(dbus_python_major_version, 0)
-m4_define(dbus_python_minor_version, 79)
-m4_define(dbus_python_micro_version, 94)
+m4_define(dbus_python_minor_version, 80)
+m4_define(dbus_python_micro_version, 0)
 
 m4_define(dbus_python_maybe_datestamp,
 	  m4_esyscmd([if test x]dbus_python_released[ != x1; then date +.%Y%m%d | tr -d '\n\r'; fi]))
@@ -123,8 +123,8 @@ AC_SUBST([RST2HTMLFLAGS])
 AM_CONDITIONAL([ENABLE_API_DOCS], [test "$enable_api_docs" != no])
 AM_CONDITIONAL([ENABLE_DOCS], [test "$enable_html_docs" != no])
 
-PKG_CHECK_MODULES(DBUS, [dbus-1 >= 1.0 dbus-glib-1 >= 0.70])
-PKG_CHECK_MODULES(DBUS_GLIB, [dbus-1 >= 1.0 dbus-glib-1 >= 0.70])
+PKG_CHECK_MODULES(DBUS, [dbus-1 >= 0.93])
+PKG_CHECK_MODULES(DBUS_GLIB, [dbus-glib-1 >= 0.70])
 
 dnl add required cflags ...
 JH_ADD_CFLAG([-Wall])
