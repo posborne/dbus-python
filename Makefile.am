@@ -10,7 +10,8 @@ EXTRA_DIST = API_CHANGES.txt dbus-python.pc.in HACKING.txt \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = dbus-python.pc
 
-include_HEADERS = include/dbus-python.h
+dbusincludedir = $(includedir)/dbus-1.0/dbus
+dbusinclude_HEADERS = include/dbus-python.h
 
 python_PYTHON = dbus_bindings.py
 
