@@ -1,6 +1,6 @@
-D-Bus Python Bindings 0.79.94 (a.k.a. 0.80rc4) (22 January 2007)
-================================================================
-- The "break the world" release
+D-Bus Python Bindings 0.80 (24 January 2007)
+============================================
+- The "everything changes" release
 - Rewrite dbus_bindings (Pyrex) as _dbus_bindings (C) - API changes!
 - Define what's public API
 - Move low-level but still public API to dbus.lowlevel

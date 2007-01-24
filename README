@@ -1,21 +1,30 @@
-======================================
-dbus-python: Python bindings for D-Bus
-======================================
+=======================================
+dbus-python_: Python bindings for D-Bus
+=======================================
 
-:Author: Simon McVittie, `Collabora`_
-:Date: 2006-12-18
-:Version: 0.80rc3 (internally, 0.79.93)
-
-.. _Collabora: http://www.collabora.co.uk/
+.. _dbus-python: http://www.freedesktop.org/wiki/Software/DBusBindings#python
 
 Usage
 =====
+
+Online documentation can be found at
+<http://dbus.freedesktop.org/doc/dbus-python/>.
+
+There is an incomplete tutorial in `doc/tutorial.txt`__
+(if you compile dbus-python with ``rst2html`` installed or you're reading
+this document on the D-Bus website, there's also an `HTML version`__).
+
+__ doc/tutorial.txt
+__ doc/tutorial.html
 
 For client code, see the docstring for dbus/__init__.py.
 
 To export objects, see the docstring for dbus/service.py.
 
-To develop on dbus-python, see HACKING.txt.
+To develop on dbus-python, see `doc/HACKING.txt`__ or the `HTML version`__.
+
+__ doc/HACKING.txt
+__ doc/HACKING.html
 
 Building the API documentation
 ==============================
@@ -28,7 +37,7 @@ epydoc, it's not currently built by default. To do so, install
 .. _epydoc: http://epydoc.sourceforge.net/
 .. _docutils: http://docutils.sourceforge.net/
 
-For now, a copy of the documentation (updated for each release candidate)
-can be found here: `dbus-python API documentation on people.freedesktop.org`__
+A copy of the documentation can be found here:
+`dbus-python API documentation on people.freedesktop.org`__
 
-__ http://people.freedesktop.org/~smcv/dbus-python-0.8pre/epydoc/
+__ http://dbus.freedesktop.org/doc/dbus-python/api/
