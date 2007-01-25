@@ -57,7 +57,7 @@ dnl Building documentation
 
 AC_MSG_CHECKING([whether you want to build HTML docs])
 AC_ARG_ENABLE(html-docs,
-AC_HELP_STRING([--disable-html-docs], [Disable HTML documentation building (requires docutils)]), enable_html_docs=$enableval, enable_html_docs="if possible")
+AC_HELP_STRING([--enable-html-docs], [Enable HTML documentation building (requires docutils, default: auto-detect)]), enable_html_docs=$enableval, enable_html_docs="if possible")
 AC_MSG_RESULT([$enable_html_docs])
 
 AC_MSG_CHECKING([whether you want to build API docs])
@@ -133,9 +133,14 @@ JH_ADD_CFLAG([-Wno-missing-field-initializers])
 JH_ADD_CFLAG([-Wdeclaration-after-statement])
 JH_ADD_CFLAG([-std=c9x])
 JH_ADD_CFLAG([-fno-strict-aliasing])
-[if test x]dbus_python_released[ != x1; then]
+
+AC_ARG_ENABLE(Werror,
+AC_HELP_STRING([--enable-Werror],
+	       [Treat warnings as errors, if the compiler supports it]),
+enable_Werror=$enableval, enable_Werror=no)
+if test "x$enable_Werror" = xyes; then
   JH_ADD_CFLAG([-Werror])
-[fi]
+fi
 
 AC_CONFIG_FILES(
   Makefile
