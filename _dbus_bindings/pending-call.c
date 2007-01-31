@@ -111,13 +111,14 @@ _pending_call_notify_function(DBusPendingCall *pc,
                 PyErr_Print();
             }
             Py_XDECREF(ret);
+            Py_DECREF(msg_obj);
         }
         /* else OOM has happened - not a lot we can do about that,
          * except possibly making it fatal (FIXME?) */
     }
 
-    Py_XDECREF(handler);
 release:
+    Py_XDECREF(handler);
     PyGILState_Release(gil);
 }
 
@@ -161,7 +162,7 @@ DBusPyPendingCall_ConsumeDBusPendingCall(DBusPendingCall *pc,
     PyList_SET_ITEM(list, 0, callable);
 
     /* INCREF so we can give a ref to set_notify and still have one */
-    Py_INCREF(list);    
+    Py_INCREF(list);
 
     Py_BEGIN_ALLOW_THREADS
     ret = dbus_pending_call_set_notify(pc,
