@@ -117,8 +117,8 @@ _pending_call_notify_function(DBusPendingCall *pc,
          * except possibly making it fatal (FIXME?) */
     }
 
-    Py_XDECREF(handler);
 release:
+    Py_XDECREF(handler);
     PyGILState_Release(gil);
 }
 
