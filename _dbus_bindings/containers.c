@@ -505,8 +505,9 @@ static PyObject *
 Struct_tp_repr(PyObject *self)
 {
     PyObject *parent_repr = (PyTuple_Type.tp_repr)((PyObject *)self);
-    PyObject *sig, *sig_repr = NULL;
-    PyObject *vl_obj;
+    PyObject *sig = NULL;
+    PyObject *sig_repr = NULL;
+    PyObject *vl_obj = NULL;
     long variant_level;
     PyObject *my_repr = NULL;
 
@@ -535,7 +536,9 @@ Struct_tp_repr(PyObject *self)
 
 finally:
     Py_XDECREF(parent_repr);
+    Py_XDECREF(sig);
     Py_XDECREF(sig_repr);
+    Py_XDECREF(vl_obj);
     return my_repr;
 }
 
