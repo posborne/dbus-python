@@ -241,20 +241,30 @@ String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
                                      "|O!:__new__", argnames,
                                      &PyInt_Type, &variantness)) return NULL;
-    if (!variantness) {
+    if (variantness) {
+        if (PyInt_AS_LONG(variantness) < 0) {
+            PyErr_SetString(PyExc_ValueError,
+                            "variant_level must be non-negative");
+            return NULL;
+        }
+        /* own a reference */
+        Py_INCREF(variantness);
+    }
+    else {
         variantness = PyInt_FromLong(0);
         if (!variantness) return NULL;
-    }
-    if (PyInt_AS_LONG(variantness) < 0) {
-        PyErr_SetString(PyExc_ValueError,
-                        "variant_level must be non-negative");
-        return NULL;
     }
 
     self = (PyUnicode_Type.tp_new)(cls, args, NULL);
     if (self) {
-        PyObject_GenericSetAttr(self, dbus_py_variant_level_const, variantness);
+        if (PyObject_GenericSetAttr(self, dbus_py_variant_level_const,
+                                    variantness) < 0) {
+            Py_DECREF(variantness);
+            Py_DECREF(self);
+            return NULL;
+        }
     }
+    Py_DECREF(variantness);
     return self;
 }
 
@@ -268,8 +278,12 @@ String_tp_repr(PyObject *self)
 
     if (!parent_repr) return NULL;
     vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
-    if (!vl_obj) return NULL;
+    if (!vl_obj) {
+        Py_DECREF(parent_repr);
+        return NULL;
+    }
     variant_level = PyInt_AsLong(vl_obj);
+    Py_DECREF(vl_obj);
     if (variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
                                       self->ob_type->tp_name,
