@@ -132,8 +132,9 @@ PyTypeObject DBusPyIntBase_Type = {
     0,                                      /* tp_descr_set */
     0,                                      /* tp_dictoffset */
     0,                                      /* tp_init */
-    0,                                      /* tp_alloc */
+    PyType_GenericAlloc,                    /* tp_alloc */
     DBusPythonInt_tp_new,                   /* tp_new */
+    PyObject_Del,                           /* tp_free */
 };
 
 /* Support code for float subclasses. ================================ */
