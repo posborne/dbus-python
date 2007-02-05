@@ -118,9 +118,17 @@ _message_iter_get_dict(DBusMessageIter *iter,
     PyObject *ret;
     int status;
 
+    if (!sig_str) {
+        PyErr_NoMemory();
+        return NULL;
+    }
     sig = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
                                 "(s#)", sig_str+2,
                                 (Py_ssize_t)strlen(sig_str)-3);
+    dbus_free(sig_str);
+    if (!sig) {
+        return NULL;
+    }
     status = PyDict_SetItem(kwargs, dbus_py_signature_const, sig);
     Py_DECREF(sig);
     if (status < 0) {
@@ -234,7 +242,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                                     args, kwargs);
             }
             else {
-                args = Py_BuildValue("(O)", PyUnicode_DecodeUTF8(u.s,
+                args = Py_BuildValue("(N)", PyUnicode_DecodeUTF8(u.s,
                                                                  strlen(u.s),
                                                                  NULL));
                 if (!args) {
@@ -453,12 +461,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                          "message", type);
     }
 
-    if (args) {
-        Py_DECREF(args);
-    }
-    if (kwargs) {
-        Py_DECREF(kwargs);
-    }
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
     return ret;
 }
 
