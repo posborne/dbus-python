@@ -297,8 +297,12 @@ DBusPythonString_tp_repr(PyObject *self)
 
     if (!parent_repr) return NULL;
     vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
-    if (!vl_obj) return NULL;
+    if (!vl_obj) {
+        Py_DECREF(parent_repr);
+        return NULL;
+    }
     variant_level = PyInt_AsLong(vl_obj);
+    Py_DECREF(vl_obj);
     if (variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
                                       self->ob_type->tp_name,
@@ -405,8 +409,12 @@ DBusPythonLong_tp_repr(PyObject *self)
 
     if (!parent_repr) return NULL;
     vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
-    if (!vl_obj) return 0;
+    if (!vl_obj) {
+        Py_DECREF(parent_repr);
+        return NULL;
+    }
     variant_level = PyInt_AsLong(vl_obj);
+    Py_DECREF(vl_obj);
     if (variant_level) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
                                       self->ob_type->tp_name,
