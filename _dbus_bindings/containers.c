@@ -474,6 +474,8 @@ PyTypeObject DBusPyDict_Type = {
 
 /* Struct =========================================================== */
 
+static PyObject *struct_signatures;
+
 PyDoc_STRVAR(Struct_tp_doc,
 "An structure containing items of possibly distinct types.\n"
 "\n"
@@ -505,20 +507,21 @@ static PyObject *
 Struct_tp_repr(PyObject *self)
 {
     PyObject *parent_repr = (PyTuple_Type.tp_repr)((PyObject *)self);
-    PyObject *sig = NULL;
+    PyObject *sig;
     PyObject *sig_repr = NULL;
-    PyObject *vl_obj = NULL;
+    PyObject *key;
     long variant_level;
     PyObject *my_repr = NULL;
 
     if (!parent_repr) goto finally;
-    sig = PyObject_GetAttr(self, dbus_py_signature_const);
-    if (!sig) goto finally;
+    key = PyLong_FromVoidPtr(self);
+    if (!key) goto finally;
+    sig = PyDict_GetItem(struct_signatures, key);
+    Py_DECREF(key);
+    if (!sig) sig = Py_None;
     sig_repr = PyObject_Repr(sig);
     if (!sig_repr) goto finally;
-    vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
-    if (!vl_obj) goto finally;
-    variant_level = PyInt_AsLong(vl_obj);
+    variant_level = dbus_py_variant_level_get(self);
     if (variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, signature=%s, "
                                       "variant_level=%ld)",
@@ -536,9 +539,7 @@ Struct_tp_repr(PyObject *self)
 
 finally:
     Py_XDECREF(parent_repr);
-    Py_XDECREF(sig);
     Py_XDECREF(sig_repr);
-    Py_XDECREF(vl_obj);
     return my_repr;
 }
 
@@ -546,8 +547,8 @@ static PyObject *
 Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     PyObject *signature = NULL;
-    PyObject *variantness = NULL;
-    PyObject *self;
+    long variantness = 0;
+    PyObject *self, *key;
     static char *argnames[] = {"signature", "variant_level", NULL};
 
     if (PyTuple_Size(args) != 1) {
@@ -556,13 +557,14 @@ Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
-                                     "|OO!:__new__", argnames,
-                                     &signature, &PyInt_Type,
-                                     &variantness)) {
+                                     "|Ol:__new__", argnames,
+                                     &signature, &variantness)) {
         return NULL;
     }
-    if (!variantness) {
-        variantness = PyInt_FromLong(0);
+    if (variantness < 0) {
+        PyErr_SetString(PyExc_ValueError,
+                        "variant_level must be non-negative");
+        return NULL;
     }
 
     self = (PyTuple_Type.tp_new)(cls, args, NULL);
@@ -574,7 +576,7 @@ Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    if (PyObject_GenericSetAttr(self, dbus_py_variant_level_const, variantness) < 0) {
+    if (!dbus_py_variant_level_set(self, variantness)) {
         Py_DECREF(self);
         return NULL;
     }
@@ -595,22 +597,101 @@ Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         }
     }
 
-    if (PyObject_GenericSetAttr(self, dbus_py_signature_const, signature) < 0) {
+    key = PyLong_FromVoidPtr(self);
+    if (!key) {
         Py_DECREF(self);
         Py_DECREF(signature);
         return NULL;
     }
+    if (PyDict_SetItem(struct_signatures, key, signature) < 0) {
+        Py_DECREF(key);
+        Py_DECREF(self);
+        Py_DECREF(signature);
+        return NULL;
+    }
+
+    Py_DECREF(key);
     Py_DECREF(signature);
     return self;
+}
+
+static void
+Struct_tp_dealloc(PyObject *self)
+{
+    PyObject *et, *ev, *etb, *key;
+
+    dbus_py_variant_level_clear(self);
+    PyErr_Fetch(&et, &ev, &etb);
+
+    key = PyLong_FromVoidPtr(self);
+    if (key) {
+        if (PyDict_GetItem(struct_signatures, key)) {
+            if (PyDict_DelItem(struct_signatures, key) < 0) {
+                /* should never happen */
+                PyErr_WriteUnraisable(self);
+            }
+        }
+        Py_DECREF(key);
+    }
+    else {
+        /* not enough memory to free all the memory... leak the signature,
+         * there's not much else we could do here */
+        PyErr_WriteUnraisable(self);
+    }
+
+    PyErr_Restore(et, ev, etb);
+    (PyTuple_Type.tp_dealloc)(self);
+}
+
+PyObject *
+Struct_tp_getattro(PyObject *obj, PyObject *name)
+{
+    PyObject *key, *value;
+
+    if (PyString_Check(name)) {
+        Py_INCREF(name);
+    }
+    else if (PyUnicode_Check(name)) {
+        name = PyUnicode_AsEncodedString(name, NULL, NULL);
+        if (!name) {
+            return NULL;
+        }
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "attribute name must be string");
+        return NULL;
+    }
+
+    if (strcmp(PyString_AS_STRING(name), "signature")) {
+        value = dbus_py_variant_level_getattro(obj, name);
+        Py_DECREF(name);
+        return value;
+    }
+
+    Py_DECREF(name);
+
+    key = PyLong_FromVoidPtr(obj);
+
+    if (!key) {
+        return NULL;
+    }
+
+    value = PyDict_GetItem(struct_signatures, key);
+    Py_DECREF(key);
+
+    if (!value)
+        value = Py_None;
+    Py_INCREF(value);
+    return value;
 }
 
 PyTypeObject DBusPyStruct_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Struct",
-    INT_MAX, /* placeholder */
     0,
-    0,                                      /* tp_dealloc */
+    0,
+    Struct_tp_dealloc,                      /* tp_dealloc */
     0,                                      /* tp_print */
     0,                                      /* tp_getattr */
     0,                                      /* tp_setattr */
@@ -622,7 +703,7 @@ PyTypeObject DBusPyStruct_Type = {
     0,                                      /* tp_hash */
     0,                                      /* tp_call */
     0,                                      /* tp_str */
-    PyObject_GenericGetAttr,                /* tp_getattro */
+    Struct_tp_getattro,                     /* tp_getattro */
     dbus_py_immutable_setattro,             /* tp_setattro */
     0,                                      /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
@@ -640,7 +721,7 @@ PyTypeObject DBusPyStruct_Type = {
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
-    -sizeof(PyObject *),                    /* tp_dictoffset */
+    0,                                      /* tp_dictoffset */
     0,                                      /* tp_init */
     0,                                      /* tp_alloc */
     Struct_tp_new,                          /* tp_new */
@@ -649,6 +730,9 @@ PyTypeObject DBusPyStruct_Type = {
 dbus_bool_t
 dbus_py_init_container_types(void)
 {
+    struct_signatures = PyDict_New();
+    if (!struct_signatures) return 0;
+
     DBusPyArray_Type.tp_base = &PyList_Type;
     if (PyType_Ready(&DBusPyArray_Type) < 0) return 0;
     DBusPyArray_Type.tp_print = NULL;
@@ -657,10 +741,6 @@ dbus_py_init_container_types(void)
     if (PyType_Ready(&DBusPyDict_Type) < 0) return 0;
     DBusPyDict_Type.tp_print = NULL;
 
-    DBusPyStruct_Type.tp_basicsize = PyTuple_Type.tp_basicsize
-                                     + 2*sizeof(PyObject *) - 1;
-    DBusPyStruct_Type.tp_basicsize /= sizeof(PyObject *);
-    DBusPyStruct_Type.tp_basicsize *= sizeof(PyObject *);
     DBusPyStruct_Type.tp_base = &PyTuple_Type;
     if (PyType_Ready(&DBusPyStruct_Type) < 0) return 0;
     DBusPyStruct_Type.tp_print = NULL;

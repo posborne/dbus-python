@@ -43,11 +43,13 @@ get_variant_level(PyObject *obj)
     else if (DBusPyDict_Check(obj)) {
         return ((DBusPyDict *)obj)->variant_level;
     }
+    else if (DBusPyString_Check(obj)) {
+        return ((DBusPyString *)obj)->variant_level;
+    }
     else if (DBusPyLongBase_Check(obj) ||
              DBusPyStrBase_Check(obj) ||
-             DBusPyString_Check(obj) ||
              DBusPyStruct_Check(obj)) {
-        return PyInt_AsLong(PyObject_GetAttr(obj, dbus_py_variant_level_const));
+        return dbus_py_variant_level_get(obj);
     }
     else {
         return 0;

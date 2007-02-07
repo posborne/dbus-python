@@ -21,6 +21,7 @@
  */
 
 #include "types-internal.h"
+#include <structmember.h>
 
 /* UTF-8 string representation ====================================== */
 
@@ -226,11 +227,19 @@ PyDoc_STRVAR(String_tp_doc,
 "    String or UTF8String with variant_level==2.\n"
 );
 
+static PyMemberDef String_tp_members[] = {
+    {"variant_level", T_LONG, offsetof(DBusPyString, variant_level),
+     READONLY,
+     "The number of nested variants wrapping the real data. "
+     "0 if not in a variant"},
+    {NULL},
+};
+
 static PyObject *
 String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     PyObject *self;
-    PyObject *variantness = NULL;
+    long variantness = 0;
     static char *argnames[] = {"variant_level", NULL};
 
     if (PyTuple_Size(args) > 1) {
@@ -239,32 +248,17 @@ String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         return NULL;
     }
     if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
-                                     "|O!:__new__", argnames,
-                                     &PyInt_Type, &variantness)) return NULL;
-    if (variantness) {
-        if (PyInt_AS_LONG(variantness) < 0) {
-            PyErr_SetString(PyExc_ValueError,
-                            "variant_level must be non-negative");
-            return NULL;
-        }
-        /* own a reference */
-        Py_INCREF(variantness);
+                                     "|l:__new__", argnames,
+                                     &variantness)) return NULL;
+    if (variantness < 0) {
+        PyErr_SetString(PyExc_ValueError,
+                        "variant_level must be non-negative");
+        return NULL;
     }
-    else {
-        variantness = PyInt_FromLong(0);
-        if (!variantness) return NULL;
-    }
-
     self = (PyUnicode_Type.tp_new)(cls, args, NULL);
     if (self) {
-        if (PyObject_GenericSetAttr(self, dbus_py_variant_level_const,
-                                    variantness) < 0) {
-            Py_DECREF(variantness);
-            Py_DECREF(self);
-            return NULL;
-        }
+        ((DBusPyString *)self)->variant_level = variantness;
     }
-    Py_DECREF(variantness);
     return self;
 }
 
@@ -272,23 +266,16 @@ static PyObject *
 String_tp_repr(PyObject *self)
 {
     PyObject *parent_repr = (PyUnicode_Type.tp_repr)(self);
-    PyObject *vl_obj;
     PyObject *my_repr;
-    long variant_level;
 
-    if (!parent_repr) return NULL;
-    vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
-    if (!vl_obj) {
-        Py_DECREF(parent_repr);
+    if (!parent_repr) {
         return NULL;
     }
-    variant_level = PyInt_AsLong(vl_obj);
-    Py_DECREF(vl_obj);
-    if (variant_level > 0) {
+    if (((DBusPyString *)self)->variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
                                       self->ob_type->tp_name,
                                       PyString_AS_STRING(parent_repr),
-                                      variant_level);
+                                      ((DBusPyString *)self)->variant_level);
     }
     else {
         my_repr = PyString_FromFormat("%s(%s)", self->ob_type->tp_name,
@@ -303,7 +290,7 @@ PyTypeObject DBusPyString_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.String",
-    INT_MAX, /* placeholder */
+    sizeof(DBusPyString),
     0,
     0,                                      /* tp_dealloc */
     0,                                      /* tp_print */
@@ -329,13 +316,13 @@ PyTypeObject DBusPyString_Type = {
     0,                                      /* tp_iter */
     0,                                      /* tp_iternext */
     0,                                      /* tp_methods */
-    0,                                      /* tp_members */
+    String_tp_members,                      /* tp_members */
     0,                                      /* tp_getset */
     DEFERRED_ADDRESS(&PyUnicode_Type),      /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
-    -sizeof(void *),                        /* tp_dictoffset */
+    0,                                      /* tp_dictoffset */
     0,                                      /* tp_init */
     0,                                      /* tp_alloc */
     String_tp_new,                          /* tp_new */
@@ -344,18 +331,18 @@ PyTypeObject DBusPyString_Type = {
 dbus_bool_t
 dbus_py_init_string_types(void)
 {
-    DBusPyString_Type.tp_basicsize = PyUnicode_Type.tp_basicsize
-                                     + 2*sizeof(PyObject *) - 1;
-    DBusPyString_Type.tp_basicsize /= sizeof(PyObject *);
-    DBusPyString_Type.tp_basicsize *= sizeof(PyObject *);
+    /* don't need to do strange contortions for unicode, since it's not a
+     * "variable-size" object (it has a pointer to its data instead)
+     */
+    if (PyUnicode_Type.tp_itemsize != 0) {
+        fprintf(stderr, "dbus-python is not compatible with this version of "
+                "Python (unicode objects are assumed to be fixed-size)");
+        return 0;
+    }
     DBusPyString_Type.tp_base = &PyUnicode_Type;
     if (PyType_Ready(&DBusPyString_Type) < 0) return 0;
     DBusPyString_Type.tp_print = NULL;
 
-    DBusPyUTF8String_Type.tp_basicsize = PyUnicode_Type.tp_basicsize
-                                  + 2*sizeof(PyObject *) - 1;
-    DBusPyUTF8String_Type.tp_basicsize /= sizeof(PyObject *);
-    DBusPyUTF8String_Type.tp_basicsize *= sizeof(PyObject *);
     DBusPyUTF8String_Type.tp_base = &DBusPyStrBase_Type;
     if (PyType_Ready(&DBusPyUTF8String_Type) < 0) return 0;
     DBusPyUTF8String_Type.tp_print = NULL;
