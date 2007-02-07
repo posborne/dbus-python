@@ -381,7 +381,8 @@ typedef struct {
     /* Called with the GIL held, should set a Python exception on error */
     dbus_bool_t (*set_up_connection_cb)(DBusConnection *, void *);
     dbus_bool_t (*set_up_server_cb)(DBusServer *, void *);
-    /* Called in a destructor. */
+    /* Called in a destructor. Must not touch the exception state (use
+     * PyErr_Fetch and PyErr_Restore if necessary). */
     void (*free_cb)(void *);
     void *data;
 } NativeMainLoop;

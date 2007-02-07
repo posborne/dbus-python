@@ -328,8 +328,12 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 static void Connection_tp_dealloc(Connection *self)
 {
     DBusConnection *conn = self->conn;
+    PyObject *et, *ev, *etb;
     PyObject *filters = self->filters;
     PyObject *object_paths = self->object_paths;
+
+    /* avoid clobbering any pending exception */
+    PyErr_Fetch(&et, &ev, &etb);
 
     if (self->weaklist) {
         PyObject_ClearWeakRefs((PyObject *)self);
@@ -367,6 +371,7 @@ static void Connection_tp_dealloc(Connection *self)
     }
 
     DBG("Connection at %p: freeing self", self);
+    PyErr_Restore(et, ev, etb);
     (self->ob_type->tp_free)((PyObject *)self);
 }
 
