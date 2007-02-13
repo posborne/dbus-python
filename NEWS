@@ -1,3 +1,12 @@
+D-Bus Python Bindings 0.80.2 (13 February 2007)
+===============================================
+- Fix numerous memory and reference leaks
+- Only use -Werror if the user specifically asks for it
+- Audit tp_dealloc callbacks to make sure they correctly preserve the
+  exception state
+- Relicense files solely owned by Collabora Ltd. more permissively (LGPL/AFL
+  rather than GPL/AFL) - this includes the tutorial and all the C code
+
 D-Bus Python Bindings 0.80.1 (24 January 2007)
 ==============================================
 - The "oops" release
