@@ -33,7 +33,9 @@ BusImplementation = _dbus_bindings.BusImplementation
 
 import os
 import logging
+import sys
 import weakref
+from traceback import print_exc
 
 from dbus.proxies import ProxyObject, BUS_DAEMON_NAME, BUS_DAEMON_PATH, \
         BUS_DAEMON_IFACE
@@ -187,28 +189,36 @@ class SignalMatch(object):
             return False
 
         #logger.debug('%r: yes, I want to handle that signal', self)
-        # minor optimization: if we already extracted the args with the right
-        # calling convention to do the args match, don't bother doing so again
-        if args is None or not self._utf8_strings or not self._byte_arrays:
-            args = message.get_args_list(utf8_strings=self._utf8_strings,
-                                         byte_arrays=self._byte_arrays)
-        #logger.debug('%r: extracted signal arguments', self)
-        kwargs = {}
-        if self._sender_keyword is not None:
-            kwargs[self._sender_keyword] = message.get_sender()
-        if self._destination_keyword is not None:
-            kwargs[self._destination_keyword] = message.get_destination()
-        if self._path_keyword is not None:
-            kwargs[self._path_keyword] = message.get_path()
-        if self._member_keyword is not None:
-            kwargs[self._member_keyword] = message.get_member()
-        if self._interface_keyword is not None:
-            kwargs[self._interface_keyword] = message.get_interface()
-        if self._message_keyword is not None:
-            kwargs[self._message_keyword] = message
-        #logger.debug('%r: calling handler with %r and %r', self, args, kwargs)
-        self._handler(*args, **kwargs)
-        #logger.debug('%r: signal handled', self)
+
+        try:
+            # minor optimization: if we already extracted the args with the right
+            # calling convention to do the args match, don't bother doing so again
+            if args is None or not self._utf8_strings or not self._byte_arrays:
+                args = message.get_args_list(utf8_strings=self._utf8_strings,
+                                             byte_arrays=self._byte_arrays)
+            #logger.debug('%r: extracted signal arguments', self)
+            kwargs = {}
+            if self._sender_keyword is not None:
+                kwargs[self._sender_keyword] = message.get_sender()
+            if self._destination_keyword is not None:
+                kwargs[self._destination_keyword] = message.get_destination()
+            if self._path_keyword is not None:
+                kwargs[self._path_keyword] = message.get_path()
+            if self._member_keyword is not None:
+                kwargs[self._member_keyword] = message.get_member()
+            if self._interface_keyword is not None:
+                kwargs[self._interface_keyword] = message.get_interface()
+            if self._message_keyword is not None:
+                kwargs[self._message_keyword] = message
+            #logger.debug('%r: calling handler with %r and %r', self, args, kwargs)
+            self._handler(*args, **kwargs)
+            #logger.debug('%r: signal handled', self)
+        except:
+            # FIXME: need to decide whether dbus-python uses logging, or
+            # stderr, or what, and make it consistent
+            sys.stderr.write('Exception in handler for D-Bus signal:\n')
+            print_exc()
+
         return True
 
     def remove(self):
