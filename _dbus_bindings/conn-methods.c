@@ -403,6 +403,13 @@ Connection_send_message_with_reply(Connection *self, PyObject *args, PyObject *k
         return PyErr_NoMemory();
     }
 
+    if (!pending) {
+        /* connection is disconnected (doesn't return FALSE!) */
+        PyErr_SetString (DBusPyException, "Connection is disconnected - "
+                                          "unable to make method call");
+        return NULL;
+    }
+
     return DBusPyPendingCall_ConsumeDBusPendingCall(pending, callable);
 }
 
