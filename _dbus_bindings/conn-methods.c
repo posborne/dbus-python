@@ -226,10 +226,9 @@ PyDoc_STRVAR(Connection_close__doc__,
 "close()\n\n"
 "Close the connection.");
 static PyObject *
-Connection_close (Connection *self, PyObject *args)
+Connection_close (Connection *self, PyObject *args UNUSED)
 {
     TRACE(self);
-    if (!PyArg_ParseTuple(args, ":close")) return NULL;
     /* Because the user explicitly asked to close the connection, we'll even
     let them close shared connections. */
     if (self->conn) {
@@ -244,13 +243,12 @@ PyDoc_STRVAR(Connection_get_is_connected__doc__,
 "get_is_connected() -> bool\n\n"
 "Return true if this Connection is connected.\n");
 static PyObject *
-Connection_get_is_connected (Connection *self, PyObject *args)
+Connection_get_is_connected (Connection *self, PyObject *args UNUSED)
 {
     dbus_bool_t ret;
 
     TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
-    if (!PyArg_ParseTuple(args, ":get_is_connected")) return NULL;
     Py_BEGIN_ALLOW_THREADS
     ret = dbus_connection_get_is_connected(self->conn);
     Py_END_ALLOW_THREADS
@@ -261,13 +259,12 @@ PyDoc_STRVAR(Connection_get_is_authenticated__doc__,
 "get_is_authenticated() -> bool\n\n"
 "Return true if this Connection was ever authenticated.\n");
 static PyObject *
-Connection_get_is_authenticated (Connection *self, PyObject *args)
+Connection_get_is_authenticated (Connection *self, PyObject *args UNUSED)
 {
     dbus_bool_t ret;
 
     TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
-    if (!PyArg_ParseTuple(args, ":get_is_authenticated")) return NULL;
     Py_BEGIN_ALLOW_THREADS
     ret = dbus_connection_get_is_authenticated(self->conn);
     Py_END_ALLOW_THREADS
