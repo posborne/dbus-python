@@ -138,34 +138,24 @@ class SignalMatch(object):
     def matches_removal_spec(self, sender, object_path,
                              dbus_interface, member, handler, **kwargs):
         if handler not in (None, self._handler):
-            #logger.debug('No match: handler %r is not %r', handler, self._handler)
             return False
         if sender != self._sender:
-            #logger.debug('No match: sender %r is not %r', sender, self._sender)
             return False
         if object_path != self._path:
-            #logger.debug('No match: path %r is not %r', object_path, self._path)
             return False
         if dbus_interface != self._interface:
-            #logger.debug('No match: interface %r is not %r', dbus_interface, self._interface)
             return False
         if member != self._member:
-            #logger.debug('No match: member %r is not %r', member, self._member)
             return False
         if kwargs != self._args_match:
-            #logger.debug('No match: args %r are not %r', kwargs, self._args_match)
             return False
         return True
 
     def maybe_handle_message(self, message):
-        #logger.debug('%r: Considering whether I match %r %r', self, message,
-                     #message.get_args_list())
         args = None
 
         # these haven't been checked yet by the match tree
         if self.sender_unique not in (None, message.get_sender()):
-            #logger.debug('%r: not the desired sender, it was %r and I want '
-                         #'%r', self, message.get_sender(), self.sender_unique)
             return False
         if self._int_args_match is not None:
             # extracting args with utf8_strings and byte_arrays is less work
@@ -174,29 +164,23 @@ class SignalMatch(object):
                 if (index >= len(args)
                     or not isinstance(args[index], UTF8String)
                     or args[index] != value):
-                    #logger.debug('%r: not the desired args', self)
                     return False
 
         # these have likely already been checked by the match tree
         if self._member not in (None, message.get_member()):
-            #logger.debug('%r: not the desired member', self)
             return False
         if self._interface not in (None, message.get_interface()):
-            #logger.debug('%r: not the desired interface', self)
             return False
         if self._path not in (None, message.get_path()):
-            #logger.debug('%r: not the desired path', self)
             return False
 
-        #logger.debug('%r: yes, I want to handle that signal', self)
-
         try:
-            # minor optimization: if we already extracted the args with the right
-            # calling convention to do the args match, don't bother doing so again
+            # minor optimization: if we already extracted the args with the
+            # right calling convention to do the args match, don't bother
+            # doing so again
             if args is None or not self._utf8_strings or not self._byte_arrays:
                 args = message.get_args_list(utf8_strings=self._utf8_strings,
                                              byte_arrays=self._byte_arrays)
-            #logger.debug('%r: extracted signal arguments', self)
             kwargs = {}
             if self._sender_keyword is not None:
                 kwargs[self._sender_keyword] = message.get_sender()
@@ -210,9 +194,7 @@ class SignalMatch(object):
                 kwargs[self._interface_keyword] = message.get_interface()
             if self._message_keyword is not None:
                 kwargs[self._message_keyword] = message
-            #logger.debug('%r: calling handler with %r and %r', self, args, kwargs)
             self._handler(*args, **kwargs)
-            #logger.debug('%r: signal handled', self)
         except:
             # FIXME: need to decide whether dbus-python uses logging, or
             # stderr, or what, and make it consistent
