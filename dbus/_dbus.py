@@ -73,6 +73,15 @@ class SignalMatch(object):
                  interface_keyword=None, member_keyword=None,
                  message_keyword=None, destination_keyword=None,
                  **kwargs):
+        if member is not None:
+            _dbus_bindings.validate_member_name(member)
+        if dbus_interface is not None:
+            _dbus_bindings.validate_interface_name(dbus_interface)
+        if sender is not None:
+            _dbus_bindings.validate_bus_name(sender)
+        if object_path is not None:
+            _dbus_bindings.validate_object_path(object_path)
+
         self._conn_weakref = weakref.ref(conn)
         self._sender = sender
         self._interface = dbus_interface
