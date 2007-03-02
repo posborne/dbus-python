@@ -33,6 +33,7 @@ from dbus.exceptions import NameExistsException
 from dbus.exceptions import UnknownMethodException
 from dbus.decorators import method
 from dbus.decorators import signal
+from dbus.proxies import LOCAL_PATH
 
 
 _logger = logging.getLogger('dbus.service')
@@ -89,6 +90,9 @@ class BusName(object):
                 services waiting for the requested name if another service
                 already holds it.
         """
+        _dbus_bindings.validate_bus_name(name, allow_well_known=True,
+                                         allow_unique=False)
+
         # get default bus
         if bus == None:
             bus = _dbus.Bus()
@@ -394,6 +398,10 @@ class Object(Interface):
         """
         if object_path is None:
             raise TypeError('The object_path argument is required')
+        _dbus_bindings.validate_object_path(object_path)
+        if object_path == LOCAL_PATH:
+            raise DBusException('Objects may not be exported on the reserved '
+                                'path %s' % LOCAL_PATH)
 
         if isinstance(conn, BusName):
             # someone's using the old API; don't gratuitously break them
