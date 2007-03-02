@@ -224,8 +224,6 @@ def _method_lookup(self, method_name, dbus_interface):
             raise UnknownMethodException('%s is not a valid method' % method_name)
 
 
-# FIXME: if signature is '', we used to accept anything, but now insist on
-# zero args. Which was desired? -smcv
 def _method_reply_return(connection, message, method_name, signature, *retval):
     reply = _dbus_bindings.MethodReturnMessage(message)
     try:
