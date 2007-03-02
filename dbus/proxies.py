@@ -41,6 +41,10 @@ BUS_DAEMON_NAME = 'org.freedesktop.DBus'
 BUS_DAEMON_PATH = '/org/freedesktop/DBus'
 BUS_DAEMON_IFACE = BUS_DAEMON_NAME
 
+# This is special in libdbus - the bus daemon will kick us off if we try to
+# send any message to it :-/
+LOCAL_PATH = '/org/freedesktop/DBus/Local'
+
 
 class _ReplyHandler(object):
     __slots__ = ('_on_error', '_on_reply', '_get_args_options')
@@ -93,12 +97,21 @@ class _ProxyMethod:
     to a specific named Service.
     """
     def __init__(self, proxy, connection, named_service, object_path, method_name, iface):
+        if object_path == LOCAL_PATH:
+            raise DBusException('Methods may not be called on the reserved '
+                                'path %s' % LOCAL_PATH)
+
+        # trust that the proxy, and the properties it had, are OK
         self._proxy          = proxy
         self._connection     = connection
         self._named_service  = named_service
         self._object_path    = object_path
+        # fail early if the method name is bad
+        _dbus_bindings.validate_member_name(method_name)
         # the test suite relies on the existence of this property
         self._method_name    = method_name
+        # fail early if the interface name is bad
+        _dbus_bindings.validate_interface_name(iface)
         self._dbus_interface = iface
 
     def __call__(self, *args, **keywords):
@@ -212,7 +225,11 @@ class ProxyObject:
             bus._require_main_loop()   # we don't get the signals otherwise
 
         self._bus           = bus
+
+        _dbus_bindings.validate_bus_name(named_service)
         self._named_service = named_service
+
+        _dbus_bindings.validate_object_path(object_path)
         self.__dbus_object_path__ = object_path
 
         if (named_service[:1] != ':' and named_service != BUS_DAEMON_NAME
@@ -242,7 +259,7 @@ class ProxyObject:
         # and calls the callback which re-takes the lock
         self._introspect_lock = RLock()
 
-        if not introspect:
+        if not introspect or self.__dbus_object_path__ == LOCAL_PATH:
             self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
         else:
             self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS
