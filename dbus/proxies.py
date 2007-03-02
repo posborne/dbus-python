@@ -111,7 +111,8 @@ class _ProxyMethod:
         # the test suite relies on the existence of this property
         self._method_name    = method_name
         # fail early if the interface name is bad
-        _dbus_bindings.validate_interface_name(iface)
+        if iface is not None:
+            _dbus_bindings.validate_interface_name(iface)
         self._dbus_interface = iface
 
     def __call__(self, *args, **keywords):
@@ -226,13 +227,15 @@ class ProxyObject:
 
         self._bus           = bus
 
-        _dbus_bindings.validate_bus_name(named_service)
+        if named_service is not None:
+            _dbus_bindings.validate_bus_name(named_service)
         self._named_service = named_service
 
         _dbus_bindings.validate_object_path(object_path)
         self.__dbus_object_path__ = object_path
 
-        if (named_service[:1] != ':' and named_service != BUS_DAEMON_NAME
+        if (named_service is not None and named_service[:1] != ':'
+            and named_service != BUS_DAEMON_NAME
             and not follow_name_owner_changes):
             bus_object = bus.get_object(BUS_DAEMON_NAME, BUS_DAEMON_PATH)
             try:
