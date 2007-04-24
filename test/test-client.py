@@ -123,12 +123,12 @@ class TestDBusBindings(unittest.TestCase):
 
     def testBenchmarkIntrospect(self):
         print "\n********* Benchmark Introspect ************"
-	a = time.time()
-	print a
+        a = time.time()
+        print a
         print self.iface.GetComplexArray()
-	b = time.time()
-	print b
-	print "Delta: %f" % (b - a)
+        b = time.time()
+        print b
+        print "Delta: %f" % (b - a)
         self.assert_(True)
 
     def testAsyncCalls(self):
@@ -342,9 +342,9 @@ class TestDBusPythonToGLibBindings(unittest.TestCase):
         self.bus = dbus.SessionBus()
         self.remote_object = self.bus.get_object("org.freedesktop.DBus.TestSuiteGLibService", "/org/freedesktop/DBus/Tests/MyTestObject")
         self.iface = dbus.Interface(self.remote_object, "org.freedesktop.DBus.Tests.MyObject")
-			    
+
     def testIntrospection(self):
-	#test introspection
+        #test introspection
         print "\n********* Introspection Test ************"
         print self.remote_object.Introspect(dbus_interface="org.freedesktop.DBus.Introspectable")
         print "Introspection test passed"
@@ -355,7 +355,7 @@ class TestDBusPythonToGLibBindings(unittest.TestCase):
         result =  self.iface.ManyArgs(1000, 'Hello GLib', 2)
         print result
         self.assert_(result == [2002.0, 'HELLO GLIB'])
-	
+
         arg0 = {"Dude": 1, "john": "palmieri", "python": 2.4}
         result = self.iface.ManyStringify(arg0)
         print result
