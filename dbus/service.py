@@ -103,7 +103,7 @@ class BusName(object):
             return bus._bus_names[name]
 
         # otherwise register the name
-	name_flags = (
+        name_flags = (
             (allow_replacement and _dbus_bindings.NAME_FLAG_ALLOW_REPLACEMENT or 0) |
             (replace_existing and _dbus_bindings.NAME_FLAG_REPLACE_EXISTING or 0) |
             (do_not_queue and _dbus_bindings.NAME_FLAG_DO_NOT_QUEUE or 0))
