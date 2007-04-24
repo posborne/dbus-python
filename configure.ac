@@ -17,7 +17,8 @@ dnl versions of packages we require ...
 dnl m4_define(glib_required_version, 2.8.0)
 
 AC_INIT(dbus-python, dbus_python_version,
-        [http://bugzilla.gnome.org/enter_bug.cgi?product=dbus&component=python])
+        [http://bugs.freedesktop.org/enter_bug.cgi?product=dbus&component=python])
+AC_CONFIG_MACRO_DIR([m4])
 
 AC_DEFINE(DBUS_PYTHON_MAJOR_VERSION, dbus_python_major_version, [dbus-python major version])
 AC_SUBST(DBUS_PYTHON_MAJOR_VERSION, dbus_python_major_version)
@@ -30,9 +31,6 @@ AC_CONFIG_SRCDIR([_dbus_bindings/module.c])
 AM_CONFIG_HEADER(config.h)
 
 AM_INIT_AUTOMAKE
-
-dnl put the ACLOCAL flags in the makefile
-ACLOCAL="$ACLOCAL $ACLOCAL_FLAGS"
 
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -151,6 +149,7 @@ AC_CONFIG_FILES(
   dbus/_version.py
   doc/tutorial.txt
   examples/Makefile
+  m4/Makefile
   test/Makefile
   test/tmp-session-bus.conf
   test/TestSuitePythonService.service)
