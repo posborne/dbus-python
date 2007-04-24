@@ -9,7 +9,7 @@ m4_define(dbus_python_minor_version, 80)
 m4_define(dbus_python_micro_version, 2)
 
 m4_define(dbus_python_maybe_datestamp,
-	  m4_esyscmd([if test x]dbus_python_released[ != x1; then date +.%Y%m%d | tr -d '\n\r'; fi]))
+          m4_esyscmd([if test x]dbus_python_released[ != x1; then date +.%Y%m%d | tr -d '\n\r'; fi]))
 
 m4_define(dbus_python_version, dbus_python_major_version.dbus_python_minor_version.dbus_python_micro_version[]dbus_python_maybe_datestamp)
 
@@ -87,7 +87,7 @@ if test "${enable_api_docs}" != no; then
     case "$enable_api_docs" in
       if*possible)
         enable_api_docs=no
-	;;
+        ;;
       *)
         AC_MSG_ERROR([cannot compile API documentation without epydoc installed])
         ;;
@@ -101,11 +101,11 @@ if test "${enable_html_docs}" != no; then
   if test -z "$RST2HTML"; then
     case "$enable_html_docs" in
       if*possible)
-      	enable_html_docs=no
-	;;
+        enable_html_docs=no
+      ;;
       *)
         AC_MSG_ERROR([cannot compile HTML documentation without rst2html installed])
-	;;
+      ;;
     esac
   else
     DBUS_PY_ADD_RST2HTMLFLAG([--generator])
@@ -136,7 +136,7 @@ JH_ADD_CFLAG([-fno-strict-aliasing])
 
 AC_ARG_ENABLE(Werror,
 AC_HELP_STRING([--enable-Werror],
-	       [Treat warnings as errors, if the compiler supports it]),
+               [Treat warnings as errors, if the compiler supports it]),
 enable_Werror=$enableval, enable_Werror=no)
 if test "x$enable_Werror" = xyes; then
   JH_ADD_CFLAG([-Werror])
