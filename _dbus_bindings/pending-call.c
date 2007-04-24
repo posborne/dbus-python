@@ -69,7 +69,7 @@ PendingCall_block(PendingCall *self, PyObject *unused UNUSED)
     Py_RETURN_NONE;
 }
 
-static void 
+static void
 _pending_call_notify_function(DBusPendingCall *pc,
                               PyObject *list)
 {

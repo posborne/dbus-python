@@ -454,7 +454,7 @@ static PyObject *
 Message_get_path(Message *self, PyObject *unused UNUSED)
 {
     const char *c_str;
-  
+
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
     c_str = dbus_message_get_path(self->msg);
     if (!c_str) {

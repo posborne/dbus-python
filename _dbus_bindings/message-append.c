@@ -412,7 +412,7 @@ static int _message_iter_append_pyobject(DBusMessageIter *appender,
                                          DBusSignatureIter *sig_iter,
                                          PyObject *obj,
                                          dbus_bool_t *more);
-static int _message_iter_append_variant(DBusMessageIter *appender, 
+static int _message_iter_append_variant(DBusMessageIter *appender,
                                         PyObject *obj);
 
 static int
@@ -658,7 +658,7 @@ _message_iter_append_multi(DBusMessageIter *appender,
              */
             PyObject *args = Py_BuildValue("(O)", contents);
             PyObject *byte;
-            
+
             if (!args)
                 break;
             byte = PyObject_Call((PyObject *)&DBusPyByte_Type, args, NULL);
@@ -999,7 +999,7 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
           break;
     }
     if (ret < 0) return -1;
-  
+
     DBG("Advancing signature iter at %p", sig_iter);
     *more = dbus_signature_iter_next(sig_iter);
 #ifdef USING_DBG

@@ -686,7 +686,7 @@ Connection__register_object_path(Connection *self, PyObject *args,
     }
     if (!PyArg_ParseTupleAndKeywords(args, kwargs,
                                      "OO|Oi:_register_object_path",
-                                     argnames, 
+                                     argnames,
                                      &path,
                                      &on_message, &on_unregister,
                                      &fallback)) return NULL;
@@ -858,7 +858,7 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
         Py_DECREF(path);
         return NULL;
     }
-    
+
     /* BEGIN PARANOIA
     This is something of a critical section - the dict of object-paths
     and libdbus' internal structures are out of sync for a bit. We have

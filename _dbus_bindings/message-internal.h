@@ -37,7 +37,7 @@ extern PyObject *dbus_py_Message_append(Message *, PyObject *, PyObject *);
 extern char dbus_py_Message_guess_signature__doc__[];
 extern PyObject *dbus_py_Message_guess_signature(PyObject *, PyObject *);
 extern char dbus_py_Message_get_args_list__doc__[];
-extern PyObject *dbus_py_Message_get_args_list(Message *,  
+extern PyObject *dbus_py_Message_get_args_list(Message *,
                                                PyObject *,
                                                PyObject *);
 

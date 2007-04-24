@@ -445,7 +445,7 @@ PyTypeObject DBusPyStrBase_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "_dbus_bindings._StrBase",
-    0,                           
+    0,
     0,
     DBusPyStrBase_tp_dealloc,               /* tp_dealloc */
     0,                                      /* tp_print */
@@ -563,7 +563,7 @@ PyTypeObject DBusPyLongBase_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "_dbus_bindings._LongBase",
-    0,                           
+    0,
     0,
     DBusPyLongBase_tp_dealloc,              /* tp_dealloc */
     0,                                      /* tp_print */

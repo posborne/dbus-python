@@ -357,7 +357,7 @@ static void Connection_tp_dealloc(Connection *self)
         Py_END_ALLOW_THREADS
     }
 
-    /* make sure to do this last to preserve the invariant that 
+    /* make sure to do this last to preserve the invariant that
      * self->conn is always non-NULL for any referenced Connection
      * (until the filters and object paths were freed, we might have been
      * in a reference cycle!)

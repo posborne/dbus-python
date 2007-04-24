@@ -115,7 +115,7 @@ Array_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     PyObject *variant_level = NULL;
     DBusPyArray *self = (DBusPyArray *)(PyList_Type.tp_new)(cls, args, kwargs);
 
-    /* variant_level is immutable, so handle it in __new__ rather than 
+    /* variant_level is immutable, so handle it in __new__ rather than
     __init__ */
     if (!self) return NULL;
     Py_INCREF(Py_None);
@@ -328,7 +328,7 @@ Dict_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     DBusPyDict *self = (DBusPyDict *)(PyDict_Type.tp_new)(cls, args, kwargs);
     PyObject *variant_level = NULL;
 
-    /* variant_level is immutable, so handle it in __new__ rather than 
+    /* variant_level is immutable, so handle it in __new__ rather than
     __init__ */
     if (!self) return NULL;
     Py_INCREF(Py_None);
