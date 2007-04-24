@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # the api, doc, include subdirs don't need their own Makefile.am
-SUBDIRS = _dbus_bindings _dbus_glib_bindings dbus examples m4 test
+SUBDIRS = _dbus_bindings _dbus_glib_bindings dbus examples m4 test tools
 
 CLEANFILES =
 EXTRA_DIST = dbus-python.pc.in AUTHORS COPYING ChangeLog \
