@@ -112,6 +112,17 @@ class TestDBusBindings(unittest.TestCase):
             self.assertEquals(send_val, recv_val)
             self.assertEquals(recv_val.variant_level, 1)
 
+    def testMethodExtraInfoKeywords(self):
+        print "Testing MethodExtraInfoKeywords..."
+        sender, path, destination, message_cls = self.iface.MethodExtraInfoKeywords()
+        self.assert_(sender.startswith(':'))
+        self.assertEquals(path, '/org/freedesktop/DBus/TestSuitePythonObject')
+        # we're using the "early binding" form of get_object (without
+        # follow_name_owner_changes), so the destination we actually sent it
+        # to will be the unique name
+        self.assert_(destination.startswith(':'))
+        self.assertEquals(message_cls, 'dbus.lowlevel.MethodCallMessage')
+
     def testUtf8StringsSync(self):
         send_val = u'foo'
         recv_val = self.iface.Echo(send_val, utf8_strings=True)

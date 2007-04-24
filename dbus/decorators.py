@@ -29,7 +29,11 @@ import inspect
 import _dbus_bindings
 
 
-def method(dbus_interface, in_signature=None, out_signature=None, async_callbacks=None, sender_keyword=None, utf8_strings=False, byte_arrays=False):
+def method(dbus_interface, in_signature=None, out_signature=None,
+        async_callbacks=None,
+        sender_keyword=None, path_keyword=None, destination_keyword=None,
+        message_keyword=None,
+        utf8_strings=False, byte_arrays=False):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to be exported on the D-Bus.
 
@@ -73,6 +77,23 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
             method is called, the sender's unique name will be passed as
             this keyword argument.
 
+        `path_keyword` : str or None
+            If not None (the default), the decorated method will receive
+            the destination object path as a keyword argument with this
+            name. Normally you already know the object path, but in the
+            case of "fallback paths" you'll usually want to use the object
+            path in the method's implementation.
+
+        `destination_keyword` : str or None
+            If not None (the default), the decorated method will receive
+            the destination bus name as a keyword argument with this name.
+            Included for completeness - you shouldn't need this.
+
+        `message_keyword` : str or None
+            If not None (the default), the decorated method will receive
+            the `dbus.lowlevel.MethodCallMessage` as a keyword argument
+            with this name.
+
         `utf8_strings` : bool
             If False (default), D-Bus strings are passed to the decorated
             method as objects of class dbus.String, a unicode subclass.
@@ -109,6 +130,12 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
 
         if sender_keyword:
             args.remove(sender_keyword)
+        if path_keyword:
+            args.remove(path_keyword)
+        if destination_keyword:
+            args.remove(destination_keyword)
+        if message_keyword:
+            args.remove(message_keyword)
 
         if in_signature:
             in_sig = tuple(_dbus_bindings.Signature(in_signature))
@@ -124,6 +151,9 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
         func._dbus_in_signature = in_signature
         func._dbus_out_signature = out_signature
         func._dbus_sender_keyword = sender_keyword
+        func._dbus_path_keyword = path_keyword
+        func._dbus_destination_keyword = destination_keyword
+        func._dbus_message_keyword = message_keyword
         func._dbus_args = args
         func._dbus_get_args_options = {'byte_arrays': byte_arrays,
                                        'utf8_strings': utf8_strings}
@@ -132,29 +162,62 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
     return decorator
 
 
-def signal(dbus_interface, signature=None):
+def signal(dbus_interface, signature=None, dbus_name=None, path_keyword=None):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to emit signals on the D-Bus.
 
     Whenever the decorated method is called in Python, after the method
-    body is executed, a signal with the same name as the decorated method,
-    from the given D-Bus interface, will be emitted.
+    body is executed, a signal whose name is `dbus_name` (or if `dbus_name`
+    is None, a signal with the same name as the decorated method),
+    with the given D-Bus interface, will be emitted from this object.
 
     :Parameters:
         `dbus_interface` : str
             The D-Bus interface whose signal is emitted
         `signature` : str
             The signature of the signal in the usual D-Bus notation
+
+        `dbus_name` : str or None
+            The signal to be emitted when the decorated method is called.
+            If None, use the name (``__name__``) of the decorated method.
+
+        `path_keyword` : str or None
+            A keyword argument to the decorated method. If not None,
+            that argument will not be emitted as an argument of
+            the signal, and when the signal is emitted, it will appear
+            to come from the object path given by the keyword argument.
+
+            Note that when calling the decorated method, you must always
+            pass in the object path as a keyword argument, not as a
+            positional argument.
     """
     _dbus_bindings.validate_interface_name(dbus_interface)
     def decorator(func):
+        member_name = dbus_name
+        if member_name is None:
+            member_name = func.__name__
+        _dbus_bindings.validate_member_name(member_name)
+
         def emit_signal(self, *args, **keywords):
             func(self, *args, **keywords)
-            message = _dbus_bindings.SignalMessage(self._object_path, dbus_interface, func.__name__)
+            object_path = self.__dbus_object_path__
+            if path_keyword:
+                kw = keywords.pop(path_keyword, None)
+                if kw is not None:
+                    if not (kw == object_path
+                            or object_path == '/'
+                            or kw.startswith(object_path + '/')):
+                        raise DBusException('Object path %s is not in the '
+                                            'subtree starting at %s'
+                                            % (kw, object_path))
+                    object_path = kw
 
-            if emit_signal._dbus_signature:
-                message.append(signature=emit_signal._dbus_signature,
-                               *args)
+            message = _dbus_bindings.SignalMessage(object_path,
+                                                   dbus_interface,
+                                                   member_name)
+
+            if signature is not None:
+                message.append(signature=signature, *args)
             else:
                 message.append(*args)
 

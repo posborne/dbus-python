@@ -70,6 +70,14 @@ class TestObject(dbus.service.Object, TestInterface):
         assert isinstance(foo, str), (foo, foo.__class__.__mro__)
         return foo
 
+    @dbus.service.method(IFACE, in_signature='', out_signature='soss',
+            sender_keyword='sender', path_keyword='path',
+            destination_keyword='dest', message_keyword='msg')
+    def MethodExtraInfoKeywords(self, sender=None, path=None, dest=None,
+            msg=None):
+        return (sender, path, dest,
+                msg.__class__.__module__ + '.' + msg.__class__.__name__)
+
     @dbus.service.method(IFACE, in_signature='ay', out_signature='ay')
     def AcceptListOfByte(self, foo):
         assert isinstance(foo, list), (foo, foo.__class__.__mro__)
