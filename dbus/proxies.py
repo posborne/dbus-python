@@ -163,7 +163,7 @@ class _ProxyMethod:
                                                    interface=dbus_interface,
                                                    method=self._method_name)
         message.set_destination(self._named_service)
-        
+
         # Add the arguments to the function
         try:
             message.append(signature=introspect_sig, *args)
@@ -253,7 +253,7 @@ class ProxyObject:
 
         #PendingCall object for Introspect call
         self._pending_introspect = None
-        #queue of async calls waiting on the Introspect to return 
+        #queue of async calls waiting on the Introspect to return
         self._pending_introspect_queue = []
         #dictionary mapping method names to their input signatures
         self._introspect_method_map = {}
@@ -266,7 +266,7 @@ class ProxyObject:
             self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
         else:
             self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS
-            
+
             self._pending_introspect = self._Introspect()
 
     def connect_to_signal(self, signal_name, handler_function, dbus_interface=None, **keywords):
@@ -339,10 +339,10 @@ class ProxyObject:
     def _Introspect(self):
         message = _dbus_bindings.MethodCallMessage(None, self.__dbus_object_path__, 'org.freedesktop.DBus.Introspectable', 'Introspect')
         message.set_destination(self._named_service)
-        
+
         result = self._bus.get_connection().send_message_with_reply(message, _ReplyHandler(self._introspect_reply_handler, self._introspect_error_handler, utf8_strings=True), -1)
         return result
-    
+
     def _introspect_execute_queue(self):
         # FIXME: potential to flood the bus
         # We should make sure mainloops all have idle handlers

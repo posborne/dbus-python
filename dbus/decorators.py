@@ -58,7 +58,7 @@ def method(dbus_interface, in_signature=None, out_signature=None, async_callback
             return value will be ignored; instead, a pair of callbacks are
             passed as keyword arguments, and the decorated method is
             expected to arrange for one of them to be called.
-            
+
             On success the success callback must be called, passing the
             results of this method as positional parameters in the format
             given by the `out_signature`.

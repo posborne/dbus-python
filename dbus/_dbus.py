@@ -134,7 +134,7 @@ class SignalMatch(object):
             rule.append("member='%s'" % self._member)
         for kwarg, value in kwargs.iteritems():
             rule.append("%s='%s'" % (kwarg, value))
-            
+
         self._rule = ','.join(rule)
 
     def __str__(self):
@@ -337,7 +337,7 @@ class Bus(BusImplementation):
 
     def get_session(private=False):
         """Static method that returns a connection to the session bus.
-        
+
         :Parameters:
             `private` : bool
                 If true, do not return a shared connection.
@@ -348,7 +348,7 @@ class Bus(BusImplementation):
 
     def get_system(private=False):
         """Static method that returns a connection to the system bus.
-        
+
         :Parameters:
             `private` : bool
                 If true, do not return a shared connection.
@@ -707,7 +707,7 @@ class Interface:
         """
         self._obj = object
         self._dbus_interface = dbus_interface
-    
+
     __dbus_object_path__ = property (lambda self: self._obj.__dbus_object_path__,
                                      None, None,
                                      "The D-Bus object path of the "
