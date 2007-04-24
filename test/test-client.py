@@ -336,6 +336,12 @@ class TestDBusBindings(unittest.TestCase):
         ret = bus.name_has_owner('org.freedesktop.DBus.Python.TestName')
         self.assert_(not ret, 'deleting reference failed to release BusName org.freedesktop.DBus.Python.TestName')
 
+    def testMultipleReturnWithoutSignature(self):
+        # https://bugs.freedesktop.org/show_bug.cgi?id=10174
+        ret = self.iface.MultipleReturnWithoutSignature()
+        self.assert_(not isinstance(ret, dbus.Struct), repr(ret))
+        self.assertEquals(ret, ('abc', 123))
+
 """ Remove this for now
 class TestDBusPythonToGLibBindings(unittest.TestCase):
     def setUp(self):

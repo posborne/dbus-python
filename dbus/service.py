@@ -486,8 +486,14 @@ class Object(Interface):
 
             # no signature, so just turn the return into a tuple and send it as normal
             else:
-                if retval == None:
+                if retval is None:
                     retval = ()
+                elif (isinstance(retval, tuple)
+                      and not isinstance(retval, _dbus_bindings.Struct)):
+                # If the return is a tuple that is not a Struct, we use it
+                # as-is on the assumption that there are multiple return
+                # values - this is the usual Python idiom. (fd.o #10174)
+                    pass
                 else:
                     retval = (retval,)
 

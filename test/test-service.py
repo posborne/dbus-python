@@ -183,6 +183,11 @@ class TestObject(dbus.service.Object, TestInterface):
     def WhoAmI(self, sender):
         return sender
 
+    @dbus.service.method(IFACE)
+    def MultipleReturnWithoutSignature(self):
+        # https://bugs.freedesktop.org/show_bug.cgi?id=10174
+        return dbus.String('abc'), dbus.Int32(123)
+
 session_bus = dbus.SessionBus()
 name = dbus.service.BusName("org.freedesktop.DBus.TestSuitePythonService", bus=session_bus)
 object = TestObject(name)
