@@ -28,3 +28,6 @@ _dbus_bindings_la_SOURCES = \
 			    string.c \
 			    types-internal.h \
 			    validation.c
+
+check_c_sources = $(_dbus_bindings_la_SOURCES)
+include $(top_srcdir)/tools/check-coding-style.mk

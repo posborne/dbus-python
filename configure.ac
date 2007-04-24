@@ -140,6 +140,20 @@ if test "x$enable_Werror" = xyes; then
   JH_ADD_CFLAG([-Werror])
 fi
 
+ifelse(dbus_python_released, 1,
+    [ # version x.y.z - disable coding style checks by default
+AC_ARG_ENABLE(coding-style-checks,
+  AC_HELP_STRING([--enable-coding-style-checks],
+                 [check coding style using grep]),
+    [ENABLE_CODING_STYLE_CHECKS=$enableval], [ENABLE_CODING_STYLE_CHECKS=no] )
+    ],
+    [ # version x.y.z.200xyyzz - enable coding style checks by default
+AC_ARG_ENABLE(coding-style-checks,
+  AC_HELP_STRING([--disable-coding-style-checks],
+                 [don't check coding style using grep]),
+    [ENABLE_CODING_STYLE_CHECKS=$enableval], [ENABLE_CODING_STYLE_CHECKS=yes])
+    ])
+
 AC_CONFIG_FILES(
   Makefile
   _dbus_bindings/Makefile
@@ -152,5 +166,6 @@ AC_CONFIG_FILES(
   m4/Makefile
   test/Makefile
   test/tmp-session-bus.conf
-  test/TestSuitePythonService.service)
+  test/TestSuitePythonService.service
+  tools/Makefile)
 AC_OUTPUT

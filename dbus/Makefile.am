@@ -15,6 +15,9 @@ nobase_pythondbus_PYTHON = dbus_bindings.py \
 			   service.py \
 			   types.py
 
+check_py_sources = $(nobase_pythondbus_PYTHON)
+include $(top_srcdir)/tools/check-coding-style.mk
+
 CLEANFILES = .doc-needs-rebuild-stamp
 BUILT_SOURCES = .doc-needs-rebuild-stamp
 
