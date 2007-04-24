@@ -162,13 +162,12 @@ def method(dbus_interface, in_signature=None, out_signature=None,
     return decorator
 
 
-def signal(dbus_interface, signature=None, dbus_name=None, path_keyword=None):
+def signal(dbus_interface, signature=None, path_keyword=None):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to emit signals on the D-Bus.
 
     Whenever the decorated method is called in Python, after the method
-    body is executed, a signal whose name is `dbus_name` (or if `dbus_name`
-    is None, a signal with the same name as the decorated method),
+    body is executed, a signal with the same name as the decorated method,
     with the given D-Bus interface, will be emitted from this object.
 
     :Parameters:
@@ -176,10 +175,6 @@ def signal(dbus_interface, signature=None, dbus_name=None, path_keyword=None):
             The D-Bus interface whose signal is emitted
         `signature` : str
             The signature of the signal in the usual D-Bus notation
-
-        `dbus_name` : str or None
-            The signal to be emitted when the decorated method is called.
-            If None, use the name (``__name__``) of the decorated method.
 
         `path_keyword` : str or None
             A keyword argument to the decorated method. If not None,
@@ -193,9 +188,7 @@ def signal(dbus_interface, signature=None, dbus_name=None, path_keyword=None):
     """
     _dbus_bindings.validate_interface_name(dbus_interface)
     def decorator(func):
-        member_name = dbus_name
-        if member_name is None:
-            member_name = func.__name__
+        member_name = func.__name__
         _dbus_bindings.validate_member_name(member_name)
 
         def emit_signal(self, *args, **keywords):
