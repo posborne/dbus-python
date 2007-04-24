@@ -42,8 +42,11 @@ logging.getLogger().setLevel(1)
 logger = logging.getLogger('test-service')
 
 
+IFACE = 'org.freedesktop.DBus.TestSuiteInterface'
+
+
 class TestInterface(dbus.service.Interface):
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='', out_signature='b')
+    @dbus.service.method(IFACE, in_signature='', out_signature='b')
     def CheckInheritance(self):
         return False
 
@@ -53,31 +56,31 @@ class TestObject(dbus.service.Object, TestInterface):
 
     """ Echo whatever is sent
     """
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface")
+    @dbus.service.method(IFACE)
     def Echo(self, arg):
         return arg
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='s', out_signature='s')
+    @dbus.service.method(IFACE, in_signature='s', out_signature='s')
     def AcceptUnicodeString(self, foo):
         assert isinstance(foo, unicode), (foo, foo.__class__.__mro__)
         return foo
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='s', out_signature='s', utf8_strings=True)
+    @dbus.service.method(IFACE, in_signature='s', out_signature='s', utf8_strings=True)
     def AcceptUTF8String(self, foo):
         assert isinstance(foo, str), (foo, foo.__class__.__mro__)
         return foo
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='ay', out_signature='ay')
+    @dbus.service.method(IFACE, in_signature='ay', out_signature='ay')
     def AcceptListOfByte(self, foo):
         assert isinstance(foo, list), (foo, foo.__class__.__mro__)
         return foo
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='ay', out_signature='ay', byte_arrays=True)
+    @dbus.service.method(IFACE, in_signature='ay', out_signature='ay', byte_arrays=True)
     def AcceptByteArray(self, foo):
         assert isinstance(foo, str), (foo, foo.__class__.__mro__)
         return foo
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface")
+    @dbus.service.method(IFACE)
     def GetComplexArray(self):
         ret = []
         for i in range(0,100):
@@ -101,48 +104,48 @@ class TestObject(dbus.service.Object, TestInterface):
         elif test == 6:
             return ["","",""]
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='u', out_signature='s')
+    @dbus.service.method(IFACE, in_signature='u', out_signature='s')
     def ReturnOneString(self, test):
         return self.returnValue(test)
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='u', out_signature='ss')
+    @dbus.service.method(IFACE, in_signature='u', out_signature='ss')
     def ReturnTwoStrings(self, test):
         return self.returnValue(test)
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='u', out_signature='(ss)')
+    @dbus.service.method(IFACE, in_signature='u', out_signature='(ss)')
     def ReturnStruct(self, test):
         logger.info('ReturnStruct(%r) -> %r', test, self.returnValue(test))
         return self.returnValue(test)
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='u', out_signature='as')
+    @dbus.service.method(IFACE, in_signature='u', out_signature='as')
     def ReturnArray(self, test):
         return self.returnValue(test)
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='u', out_signature='a{ss}')
+    @dbus.service.method(IFACE, in_signature='u', out_signature='a{ss}')
     def ReturnDict(self, test):
         return self.returnValue(test)
 
-    @dbus.service.signal("org.freedesktop.DBus.TestSuiteInterface", signature='s')
+    @dbus.service.signal(IFACE, signature='s')
     def SignalOneString(self, test):
         logger.info('SignalOneString(%r)', test)
 
-    @dbus.service.signal("org.freedesktop.DBus.TestSuiteInterface", signature='ss')
+    @dbus.service.signal(IFACE, signature='ss')
     def SignalTwoStrings(self, test, test2):
         logger.info('SignalTwoStrings(%r, %r)', test, test2)
 
-    @dbus.service.signal("org.freedesktop.DBus.TestSuiteInterface", signature='(ss)')
+    @dbus.service.signal(IFACE, signature='(ss)')
     def SignalStruct(self, test):
         logger.info('SignalStruct(%r)', test)
 
-    @dbus.service.signal("org.freedesktop.DBus.TestSuiteInterface", signature='as')
+    @dbus.service.signal(IFACE, signature='as')
     def SignalArray(self, test):
         pass
 
-    @dbus.service.signal("org.freedesktop.DBus.TestSuiteInterface", signature='a{ss}')
+    @dbus.service.signal(IFACE, signature='a{ss}')
     def SignalDict(self, test):
         pass
 
-    @dbus.service.method("org.freedesktop.DBus.TestSuiteInterface", in_signature='su', out_signature='')
+    @dbus.service.method(IFACE, in_signature='su', out_signature='')
     def EmitSignal(self, signal, value):
         sig = getattr(self, str(signal), None)
         assert(sig != None)
@@ -160,7 +163,7 @@ class TestObject(dbus.service.Object, TestInterface):
     def CheckInheritance(self):
         return True
 
-    @dbus.service.method('org.freedesktop.DBus.TestSuiteInterface', in_signature='bbv', out_signature='v', async_callbacks=('return_cb', 'error_cb'))
+    @dbus.service.method(IFACE, in_signature='bbv', out_signature='v', async_callbacks=('return_cb', 'error_cb'))
     def AsynchronousMethod(self, async, fail, variant, return_cb, error_cb):
         try:
             if async:
@@ -176,7 +179,7 @@ class TestObject(dbus.service.Object, TestInterface):
         except Exception, e:
             error_cb(e)
 
-    @dbus.service.method('org.freedesktop.DBus.TestSuiteInterface', in_signature='', out_signature='s', sender_keyword='sender')
+    @dbus.service.method(IFACE, in_signature='', out_signature='s', sender_keyword='sender')
     def WhoAmI(self, sender):
         return sender
 
