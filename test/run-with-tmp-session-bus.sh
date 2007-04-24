@@ -4,7 +4,7 @@ SCRIPTNAME=$0
 WRAPPED_SCRIPT=$1
 shift
 
-function die() 
+function die()
 {
     if ! test -z "$DBUS_SESSION_BUS_PID" ; then
         echo "killing message bus $DBUS_SESSION_BUS_PID" >&2
@@ -40,12 +40,12 @@ echo "Running: $WRAPPED_SCRIPT $*" >&2
 "$WRAPPED_SCRIPT" "$@" || die "script \"$WRAPPED_SCRIPT\" failed"
 
 kill -TERM "$DBUS_SESSION_BUS_PID" \
-	|| die "Message bus vanished! should not have happened" \
-	&& echo "Killed daemon $DBUS_SESSION_BUS_PID" >&2
+    || die "Message bus vanished! should not have happened" \
+    && echo "Killed daemon $DBUS_SESSION_BUS_PID" >&2
 
 sleep 2
 
-## be sure it really died 
+## be sure it really died
 kill -9 $DBUS_SESSION_BUS_PID > /dev/null 2>&1 || true
 
 exit 0
