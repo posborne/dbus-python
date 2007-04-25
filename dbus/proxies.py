@@ -223,17 +223,20 @@ class ProxyObject:
                 well-known name, follow ownership changes for that name
         """
         if follow_name_owner_changes:
-            bus._require_main_loop()   # we don't get the signals otherwise
+            # we don't get the signals unless the Bus has a main loop
+            # XXX: using Bus internals
+            bus._require_main_loop()
 
         self._bus           = bus
 
         if named_service is not None:
             _dbus_bindings.validate_bus_name(named_service)
-        self._named_service = named_service
+        self._named_service = self._requested_bus_name = named_service
 
         _dbus_bindings.validate_object_path(object_path)
         self.__dbus_object_path__ = object_path
 
+        # XXX: assumes it's a bus daemon
         if (named_service is not None and named_service[:1] != ':'
             and named_service != BUS_DAEMON_NAME
             and not follow_name_owner_changes):
@@ -268,6 +271,42 @@ class ProxyObject:
             self._introspect_state = self.INTROSPECT_STATE_INTROSPECT_IN_PROGRESS
 
             self._pending_introspect = self._Introspect()
+
+    bus_name = property(lambda self: self._named_service, None, None,
+            """The bus name to which this proxy is bound. (Read-only,
+            may change.)
+
+            If the proxy was instantiated using a unique name, this property
+            is that unique name.
+
+            If the proxy was instantiated with a well-known name and with
+            `follow_name_owner_changes` set false (the default), this
+            property is the unique name of the connection that owned that
+            well-known name when the proxy was instantiated, which might
+            not actually own the requested well-known name any more.
+
+            If the proxy was instantiated with a well-known name and with
+            `follow_name_owner_changes` set true, this property is that
+            well-known name.
+            """)
+
+    requested_bus_name = property(lambda self: self._requested_bus_name,
+            None, None,
+            """The bus name which was requested when this proxy was
+            instantiated.
+            """)
+
+    object_path = property(lambda self: self.__dbus_object_path__,
+            None, None,
+            """The object-path of this proxy.""")
+
+    # XXX: We don't currently support this because it's the signal receiver
+    # that's responsible for tracking name owner changes, but it
+    # seems a natural thing to add in future.
+    #unique_bus_name = property(lambda self: something, None, None,
+    #        """The unique name of the connection to which this proxy is
+    #        currently bound. (Read-only, may change.)
+    #        """)
 
     def connect_to_signal(self, signal_name, handler_function, dbus_interface=None, **keywords):
         """Arrange for the given function to be called when the given signal
