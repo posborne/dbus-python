@@ -44,6 +44,10 @@ __all__ = (
            'validate_bus_name', 'validate_object_path',
            'validate_error_name',
 
+           'BUS_DAEMON_NAME', 'BUS_DAEMON_PATH', 'BUS_DAEMON_IFACE',
+           'LOCAL_PATH', 'LOCAL_IFACE', 'PEER_IFACE',
+           'INTROSPECTABLE_IFACE', 'PROPERTIES_IFACE',
+
            'DBusException',
 
            'ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
@@ -73,7 +77,11 @@ from _dbus_bindings import get_default_main_loop, set_default_main_loop,\
                            validate_interface_name, validate_member_name,\
                            validate_bus_name, validate_object_path,\
                            validate_error_name
+from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE,\
+                           LOCAL_PATH, LOCAL_IFACE, PEER_IFACE,\
+                           INTROSPECTABLE_IFACE, PROPERTIES_IFACE
 from _dbus_bindings import DBusException
+
 from dbus.exceptions import MissingErrorHandlerException, \
                             MissingReplyHandlerException, \
                             ValidationException, \
