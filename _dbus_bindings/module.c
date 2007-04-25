@@ -285,6 +285,23 @@ init_dbus_bindings(void)
     if (!dbus_py_insert_conn_types(this_module)) return;
     if (!dbus_py_insert_bus_types(this_module)) return;
 
+    if (PyModule_AddStringConstant(this_module, "BUS_DAEMON_NAME",
+                                   DBUS_SERVICE_DBUS) < 0) return;
+    if (PyModule_AddStringConstant(this_module, "BUS_DAEMON_PATH",
+                                   DBUS_PATH_DBUS) < 0) return;
+    if (PyModule_AddStringConstant(this_module, "BUS_DAEMON_IFACE",
+                                   DBUS_INTERFACE_DBUS) < 0) return;
+    if (PyModule_AddStringConstant(this_module, "LOCAL_PATH",
+                                   DBUS_PATH_LOCAL) < 0) return;
+    if (PyModule_AddStringConstant(this_module, "LOCAL_IFACE",
+                                   DBUS_INTERFACE_LOCAL) < 0) return;
+    if (PyModule_AddStringConstant(this_module, "INTROSPECTABLE_IFACE",
+                                   DBUS_INTERFACE_INTROSPECTABLE) < 0) return;
+    if (PyModule_AddStringConstant(this_module, "PEER_IFACE",
+                                   DBUS_INTERFACE_PEER) < 0) return;
+    if (PyModule_AddStringConstant(this_module, "PROPERTIES_IFACE",
+                                   DBUS_INTERFACE_PROPERTIES) < 0) return;
+
 #define ADD_CONST_VAL(x, v) \
     if (PyModule_AddIntConstant(this_module, x, v) < 0) return;
 #define ADD_CONST_PREFIXED(x) ADD_CONST_VAL(#x, DBUS_##x)
