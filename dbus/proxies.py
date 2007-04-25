@@ -190,7 +190,7 @@ class _ProxyMethod:
                 return tuple(args_list)
 
 
-class ProxyObject:
+class ProxyObject(object):
     """A proxy to the remote Object.
 
     A ProxyObject is provided by the Bus. ProxyObjects
