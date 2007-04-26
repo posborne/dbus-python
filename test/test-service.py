@@ -42,8 +42,9 @@ logging.getLogger().setLevel(1)
 logger = logging.getLogger('test-service')
 
 
-IFACE = 'org.freedesktop.DBus.TestSuiteInterface'
-
+NAME = "org.freedesktop.DBus.TestSuitePythonService"
+IFACE = "org.freedesktop.DBus.TestSuiteInterface"
+OBJECT = "/org/freedesktop/DBus/TestSuitePythonObject"
 
 class TestInterface(dbus.service.Interface):
     @dbus.service.method(IFACE, in_signature='', out_signature='b')
@@ -51,7 +52,7 @@ class TestInterface(dbus.service.Interface):
         return False
 
 class TestObject(dbus.service.Object, TestInterface):
-    def __init__(self, bus_name, object_path="/org/freedesktop/DBus/TestSuitePythonObject"):
+    def __init__(self, bus_name, object_path=OBJECT):
         dbus.service.Object.__init__(self, bus_name, object_path)
 
     """ Echo whatever is sent
@@ -197,7 +198,7 @@ class TestObject(dbus.service.Object, TestInterface):
         return dbus.String('abc'), dbus.Int32(123)
 
 session_bus = dbus.SessionBus()
-name = dbus.service.BusName("org.freedesktop.DBus.TestSuitePythonService", bus=session_bus)
+name = dbus.service.BusName(NAME, bus=session_bus)
 object = TestObject(name)
 loop = gobject.MainLoop()
 loop.run()
