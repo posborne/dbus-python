@@ -436,13 +436,11 @@ class ProxyObject(object):
         finally:
             self._introspect_lock.release()
 
-    def __getattr__(self, member, dbus_interface=None):
-        if member == '__call__':
-            return object.__call__
-        elif member.startswith('__') and member.endswith('__'):
+    def __getattr__(self, member):
+        if member.startswith('__') and member.endswith('__'):
             raise AttributeError(member)
         else:
-            return self.get_dbus_method(member, dbus_interface)
+            return self.get_dbus_method(member)
 
     def get_dbus_method(self, member, dbus_interface=None):
         """Return a proxy method representing the given D-Bus method. The
@@ -493,25 +491,38 @@ class Interface(object):
 
     An Interface can be used to wrap ProxyObjects
     so that calls can be routed to their correct
-    dbus interface
+    D-Bus interface.
     """
 
     def __init__(self, object, dbus_interface):
         """Construct a proxy for the given interface on the given object.
 
         :Parameters:
-            `object` : `dbus.proxies.ProxyObject`
-                The remote object
+            `object` : `dbus.proxies.ProxyObject` or `dbus.Interface`
+                The remote object or another of its interfaces
             `dbus_interface` : str
                 An interface the `object` implements
         """
-        self._obj = object
+        if isinstance(object, Interface):
+            self._obj = object.proxy_object
+        else:
+            self._obj = object
         self._dbus_interface = dbus_interface
 
-    __dbus_object_path__ = property (lambda self: self._obj.__dbus_object_path__,
-                                     None, None,
-                                     "The D-Bus object path of the "
-                                     "underlying object")
+    object_path = property (lambda self: self._obj.object_path, None, None,
+                            "The D-Bus object path of the underlying object")
+    __dbus_object_path__ = object_path
+    bus_name = property (lambda self: self._obj.bus_name, None, None,
+                         "The bus name to which the underlying proxy object "
+                         "is bound")
+    requested_bus_name = property (lambda self: self._obj.requested_bus_name,
+                                   None, None,
+                                   "The bus name which was requested when the "
+                                   "underlying object was created")
+    proxy_object = property (lambda self: self._obj, None, None,
+                             """The underlying proxy object""")
+    dbus_interface = property (lambda self: self._dbus_interface, None, None,
+                               """The D-Bus interface represented""")
 
     def connect_to_signal(self, signal_name, handler_function,
                           dbus_interface=None, **keywords):
@@ -529,19 +540,11 @@ class Interface(object):
         return self._obj.connect_to_signal(signal_name, handler_function,
                                            dbus_interface, **keywords)
 
-    def __getattr__(self, member, **keywords):
-        # FIXME: this syntax is bizarre.
-        if (keywords.has_key('dbus_interface')):
-            _dbus_interface = keywords['dbus_interface']
+    def __getattr__(self, member):
+        if member.startswith('__') and member.endswith('__'):
+            raise AttributeError(member)
         else:
-            _dbus_interface = self._dbus_interface
-
-        # I have no idea what's going on here. -smcv
-        if member == '__call__':
-            return object.__call__
-        else:
-            ret = self._obj.__getattr__(member, dbus_interface=_dbus_interface)
-            return ret
+            return self._obj.get_dbus_method(member, self._dbus_interface)
 
     def get_dbus_method(self, member, dbus_interface=None):
         """Return a proxy method representing the given D-Bus method.
@@ -553,7 +556,7 @@ class Interface(object):
         """
         if dbus_interface is None:
             dbus_interface = self._dbus_interface
-        return self._obj.get_dbus_method(member, dbus_interface=dbus_interface)
+        return self._obj.get_dbus_method(member, dbus_interface)
 
     def __repr__(self):
         return '<Interface %r implementing %r at %#x>'%(
