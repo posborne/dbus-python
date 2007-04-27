@@ -35,6 +35,8 @@ import os
 __all__ = (
            # from _dbus
            'Bus', 'SystemBus', 'SessionBus', 'StarterBus',
+
+           # from proxies
            'Interface',
 
            # from _dbus_bindings
@@ -92,7 +94,8 @@ from _dbus_bindings import ObjectPath, ByteArray, Signature, Byte, Boolean,\
                            Int16, UInt16, Int32, UInt32, Int64, UInt64,\
                            Double, String, Array, Struct, Dictionary, \
                            UTF8String
-from dbus._dbus import Bus, SystemBus, SessionBus, StarterBus, Interface
+from dbus._dbus import Bus, SystemBus, SessionBus, StarterBus
+from dbus.proxies import Interface
 
 
 if 'DBUS_PYTHON_NO_DEPRECATED' not in os.environ:

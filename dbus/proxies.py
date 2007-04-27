@@ -487,3 +487,75 @@ class ProxyObject(object):
             self._bus, self._named_service, self.__dbus_object_path__, id(self))
     __str__ = __repr__
 
+
+class Interface(object):
+    """An interface into a remote object.
+
+    An Interface can be used to wrap ProxyObjects
+    so that calls can be routed to their correct
+    dbus interface
+    """
+
+    def __init__(self, object, dbus_interface):
+        """Construct a proxy for the given interface on the given object.
+
+        :Parameters:
+            `object` : `dbus.proxies.ProxyObject`
+                The remote object
+            `dbus_interface` : str
+                An interface the `object` implements
+        """
+        self._obj = object
+        self._dbus_interface = dbus_interface
+
+    __dbus_object_path__ = property (lambda self: self._obj.__dbus_object_path__,
+                                     None, None,
+                                     "The D-Bus object path of the "
+                                     "underlying object")
+
+    def connect_to_signal(self, signal_name, handler_function,
+                          dbus_interface=None, **keywords):
+        """Arrange for a function to be called when the given signal is
+        emitted.
+
+        The parameters and keyword arguments are the same as for
+        `dbus.proxies.ProxyObject.connect_to_signal`, except that if
+        `dbus_interface` is None (the default), the D-Bus interface that
+        was passed to the `Interface` constructor is used.
+        """
+        if not dbus_interface:
+            dbus_interface = self._dbus_interface
+
+        return self._obj.connect_to_signal(signal_name, handler_function,
+                                           dbus_interface, **keywords)
+
+    def __getattr__(self, member, **keywords):
+        # FIXME: this syntax is bizarre.
+        if (keywords.has_key('dbus_interface')):
+            _dbus_interface = keywords['dbus_interface']
+        else:
+            _dbus_interface = self._dbus_interface
+
+        # I have no idea what's going on here. -smcv
+        if member == '__call__':
+            return object.__call__
+        else:
+            ret = self._obj.__getattr__(member, dbus_interface=_dbus_interface)
+            return ret
+
+    def get_dbus_method(self, member, dbus_interface=None):
+        """Return a proxy method representing the given D-Bus method.
+
+        This is the same as `dbus.proxies.ProxyObject.get_dbus_method`
+        except that if `dbus_interface` is None (the default),
+        the D-Bus interface that was passed to the `Interface` constructor
+        is used.
+        """
+        if dbus_interface is None:
+            dbus_interface = self._dbus_interface
+        return self._obj.get_dbus_method(member, dbus_interface=dbus_interface)
+
+    def __repr__(self):
+        return '<Interface %r implementing %r at %#x>'%(
+        self._obj, self._dbus_interface, id(self))
+    __str__ = __repr__

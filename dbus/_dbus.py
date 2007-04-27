@@ -23,7 +23,7 @@
 
 from __future__ import generators
 
-__all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus', 'Interface')
+__all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus')
 __docformat__ = 'reStructuredText'
 
 import _dbus_bindings
@@ -685,138 +685,6 @@ class StarterBus(Bus):
         """
         return Bus.__new__(cls, Bus.TYPE_STARTER, private=private,
                            mainloop=mainloop)
-
-class Interface:
-    """An interface into a remote object.
-
-    An Interface can be used to wrap ProxyObjects
-    so that calls can be routed to their correct
-    dbus interface
-    """
-
-    def __init__(self, object, dbus_interface):
-        """Construct a proxy for the given interface on the given object.
-
-        :Parameters:
-            `object` : `dbus.proxies.ProxyObject`
-                The remote object
-            `dbus_interface` : str
-                An interface the `object` implements
-        """
-        self._obj = object
-        self._dbus_interface = dbus_interface
-
-    __dbus_object_path__ = property (lambda self: self._obj.__dbus_object_path__,
-                                     None, None,
-                                     "The D-Bus object path of the "
-                                     "underlying object")
-
-    def connect_to_signal(self, signal_name, handler_function, dbus_interface = None, **keywords):
-        """Arrange for a function to be called when the given signal is
-        emitted.
-
-        :Parameters:
-            `signal_name` : str
-                The name of the signal
-            `handler_function` : callable
-                A function to be called when the signal is emitted by the
-                remote object. It will receive the signal's arguments
-                as its positional arguments.
-            `dbus_interface` : str
-                Optional interface with which to qualify the signal name.
-                The default is to use the interface this Interface represents.
-                (FIXME: deprecate this? Violates least astonishment)
-        :Keywords:
-            `utf8_strings` : bool
-                If True, the handler function will receive any string
-                arguments as dbus.UTF8String objects (a subclass of str
-                guaranteed to be UTF-8). If False (default) it will receive
-                any string arguments as dbus.String objects (a subclass of
-                unicode).
-            `byte_arrays` : bool
-                If True, the handler function will receive any byte-array
-                arguments as dbus.ByteArray objects (a subclass of str).
-                If False (default) it will receive any byte-array
-                arguments as a dbus.Array of dbus.Byte (subclasses of:
-                a list of ints).
-            `sender_keyword` : str
-                If not None (the default), the handler function will receive
-                the unique name of the sending endpoint as a keyword
-                argument with this name
-            `destination_keyword` : str
-                If not None (the default), the handler function will receive
-                the bus name of the destination (or None if the signal is a
-                broadcast, as is usual) as a keyword argument with this name.
-            `interface_keyword` : str
-                If not None (the default), the handler function will receive
-                the signal interface as a keyword argument with this name.
-            `member_keyword` : str
-                If not None (the default), the handler function will receive
-                the signal name as a keyword argument with this name.
-            `path_keyword` : str
-                If not None (the default), the handler function will receive
-                the object-path of the sending object as a keyword argument
-                with this name
-            `message_keyword` : str
-                If not None (the default), the handler function will receive
-                the `dbus.lowlevel.SignalMessage` as a keyword argument with
-                this name.
-            `arg...` : unicode or UTF-8 str
-                If there are additional keyword parameters of the form
-                ``arg``\ *n*, only call the handler_function for signals
-                where the *n*\ th argument is the value given for that
-                keyword parameter. As of this time only string arguments
-                can be matched.
-        """
-        if not dbus_interface:
-            dbus_interface = self._dbus_interface
-
-        return self._obj.connect_to_signal(signal_name, handler_function, dbus_interface, **keywords)
-
-    def __getattr__(self, member, **keywords):
-        # FIXME: this syntax is bizarre.
-        if (keywords.has_key('dbus_interface')):
-            _dbus_interface = keywords['dbus_interface']
-        else:
-            _dbus_interface = self._dbus_interface
-
-        # I have no idea what's going on here. -smcv
-        if member == '__call__':
-            return object.__call__
-        else:
-            ret = self._obj.__getattr__(member, dbus_interface=_dbus_interface)
-            return ret
-
-    def get_dbus_method(self, member, dbus_interface=None):
-        """Return a proxy method representing the given D-Bus method. The
-        returned proxy method can be called in the usual way. For instance, ::
-
-            iface.get_dbus_method("Foo")(123)
-
-        is equivalent to::
-
-            iface.Foo(123)
-
-        or even::
-
-            getattr(iface, "Foo")(123)
-
-        However, using `get_dbus_method` is the only way to call D-Bus
-        methods with certain awkward names - if the author of a service
-        implements a method called ``connect_to_signal`` or even
-        ``__getattr__``, you'll need to use `get_dbus_method` to call them.
-
-        For services which follow the D-Bus convention of CamelCaseMethodNames
-        this won't be a problem.
-        """
-        if dbus_interface is None:
-            dbus_interface = self._dbus_interface
-        return self._obj.get_dbus_method(member, dbus_interface=dbus_interface)
-
-    def __repr__(self):
-        return '<Interface %r implementing %r at %#x>'%(
-        self._obj, self._dbus_interface, id(self))
-    __str__ = __repr__
 
 
 _dbus_bindings_warning = DeprecationWarning("""\
