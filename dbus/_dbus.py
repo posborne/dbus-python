@@ -601,7 +601,8 @@ class Bus(BusImplementation):
 
         # If it's NameOwnerChanged, we'll need to update our
         # sender well-known name -> sender unique name mappings
-        if (message.is_signal(BUS_DAEMON_NAME, 'NameOwnerChanged')
+        if (message.is_signal(BUS_DAEMON_IFACE, 'NameOwnerChanged')
+            and message.has_sender(BUS_DAEMON_NAME)
             and message.has_path(BUS_DAEMON_PATH)):
                 name, unused, new = message.get_args_list()
                 for match in self._signal_sender_matches.get(name, (None,))[1:]:
