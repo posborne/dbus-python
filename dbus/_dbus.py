@@ -46,9 +46,6 @@ except ImportError:
     import dummy_thread as thread
 
 logger = logging.getLogger('dbus._dbus')
-BUS_DAEMON_NAME = 'org.freedesktop.DBus'
-BUS_DAEMON_PATH = '/org/freedesktop/DBus'
-BUS_DAEMON_IFACE = BUS_DAEMON_NAME
 
 _NAME_OWNER_CHANGE_MATCH = ("type='signal',sender='%s',"
                             "interface='%s',member='NameOwnerChanged',"
