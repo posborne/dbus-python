@@ -73,7 +73,11 @@ class SignalMatch(object):
         self._member = member
         self._path = object_path
         self._handler = handler
+
+        # if the connection is actually a bus, it's responsible for changing
+        # this
         self.sender_unique = sender
+
         self._utf8_strings = utf8_strings
         self._byte_arrays = byte_arrays
         self._sender_keyword = sender_keyword
@@ -343,6 +347,8 @@ class Connection(_Connection):
                                                                          {})
         by_member = by_interface.setdefault(dbus_interface, {})
         matches = by_member.setdefault(signal_name, [])
+
+        # make sure nobody is currently manipulating the list
         self._signals_lock.acquire()
         try:
             matches.append(match)
