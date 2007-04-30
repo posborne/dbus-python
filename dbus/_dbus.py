@@ -94,7 +94,7 @@ class SignalMatch(object):
         self._handler = handler
         if (sender is not None and sender[:1] != ':'
             and sender != BUS_DAEMON_NAME):
-            self.sender_unique = conn.get_object(BUS_DAEMON_NAME, BUS_DAEMON_PATH).GetNameOwner(sender, dbus_interface=BUS_DAEMON_IFACE)
+            self.sender_unique = conn.get_name_owner(sender)
         else:
             self.sender_unique = sender
         self._utf8_strings = utf8_strings
