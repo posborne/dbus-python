@@ -29,7 +29,6 @@ __docformat__ = 'reStructuredText'
 import _dbus_bindings
 UTF8String = _dbus_bindings.UTF8String
 DBusException = _dbus_bindings.DBusException
-BusImplementation = _dbus_bindings.BusImplementation
 
 import os
 import logging
@@ -222,7 +221,7 @@ class SignalMatch(object):
                                         **self._args_match)
 
 
-class Bus(BusImplementation, _BusDaemonMixin):
+class Bus(_dbus_bindings.Connection, _BusDaemonMixin):
     """A connection to a DBus daemon.
 
     One of three possible standard buses, the SESSION, SYSTEM,
@@ -288,8 +287,7 @@ class Bus(BusImplementation, _BusDaemonMixin):
         else:
             raise ValueError('invalid bus_type %s' % bus_type)
 
-        bus = _dbus_bindings.BusImplementation.__new__(subclass, bus_type,
-                                                       mainloop=mainloop)
+        bus = subclass._new_for_bus(bus_type, mainloop=mainloop)
 
         bus._bus_type = bus_type
         # _bus_names is used by dbus.service.BusName!
@@ -319,7 +317,7 @@ class Bus(BusImplementation, _BusDaemonMixin):
         t = self._bus_type
         if self.__class__._shared_instances[t] is self:
             del self.__class__._shared_instances[t]
-        BusImplementation.close(self)
+        _dbus_bindings.Connection.close(self)
 
     def get_connection(self):
         """(Deprecated - in new code, just use self)

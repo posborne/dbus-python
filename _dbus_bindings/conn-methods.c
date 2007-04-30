@@ -914,6 +914,27 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
 
 /* dbus_connection_get_outgoing_size - almost certainly unneeded */
 
+PyDoc_STRVAR(new_for_bus__doc__,
+"Connection._new_for_bus([address: str or int]) -> Connection\n"
+"\n"
+"If the address is an int it must be one of the constants BUS_SESSION,\n"
+"BUS_SYSTEM, BUS_STARTER; if a string, it must be a D-Bus address.\n"
+"The default is BUS_SESSION.\n"
+);
+
+PyDoc_STRVAR(get_unique_name__doc__,
+"get_unique_name() -> str\n\n"
+"Return this application's unique name on this bus.\n"
+"\n"
+":Raises DBusException: if the connection has no unique name yet\n"
+"   (for Bus objects this can't happen, for peer-to-peer connections\n"
+"   this means you haven't called `set_unique_name`)\n");
+
+PyDoc_STRVAR(set_unique_name__doc__,
+"set_unique_name(str)\n\n"
+"Set this application's unique name on this bus. Raise ValueError if it has\n"
+"already been set.\n");
+
 struct PyMethodDef DBusPyConnection_tp_methods[] = {
 #define ENTRY(name, flags) {#name, (PyCFunction)Connection_##name, flags, Connection_##name##__doc__}
     ENTRY(_require_main_loop, METH_NOARGS),
@@ -932,6 +953,15 @@ struct PyMethodDef DBusPyConnection_tp_methods[] = {
     ENTRY(send_message_with_reply, METH_VARARGS|METH_KEYWORDS),
     ENTRY(send_message_with_reply_and_block, METH_VARARGS),
     ENTRY(_unregister_object_path, METH_VARARGS|METH_KEYWORDS),
+    {"_new_for_bus", (PyCFunction)DBusPyConnection_NewForBus,
+        METH_CLASS|METH_VARARGS|METH_KEYWORDS,
+        new_for_bus__doc__},
+    {"get_unique_name", (PyCFunction)DBusPyConnection_GetUniqueName,
+        METH_NOARGS,
+        get_unique_name__doc__},
+    {"set_unique_name", (PyCFunction)DBusPyConnection_SetUniqueName,
+        METH_VARARGS,
+        set_unique_name__doc__},
     {NULL},
 #undef ENTRY
 };

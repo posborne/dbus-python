@@ -50,4 +50,9 @@ extern PyObject *DBusPyConnection_ExistingFromDBusConnection(DBusConnection *);
 extern PyObject *DBusPyConnection_GetObjectPathHandlers(PyObject *self,
                                                         PyObject *path);
 
+extern PyObject *DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args,
+                                            PyObject *kwargs);
+extern PyObject *DBusPyConnection_SetUniqueName(Connection *, PyObject *);
+extern PyObject *DBusPyConnection_GetUniqueName(Connection *, PyObject *);
+
 #endif
