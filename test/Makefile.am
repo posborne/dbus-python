@@ -5,6 +5,7 @@ EXTRA_DIST = \
 	     run-test.sh \
 	     run-with-tmp-session-bus.sh \
 	     test-client.py \
+	     test-p2p.py \
 	     test-service.py \
 	     test-signals.py \
 	     test-standalone.py \
