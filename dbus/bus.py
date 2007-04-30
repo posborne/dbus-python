@@ -107,6 +107,35 @@ class _BusDaemonMixin(object):
                                   BUS_DAEMON_IFACE, 'ReleaseName',
                                   's', (name,))
 
+    def list_names(self):
+        """Return a list of all currently-owned names on the bus.
+
+        :Returns: a dbus.Array of dbus.UTF8String
+        """
+        return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                                  BUS_DAEMON_IFACE, 'ListNames',
+                                  '', (), utf8_strings=True)
+
+    def list_activatable_names(self):
+        """Return a list of all names that can be activated on the bus.
+
+        :Returns: a dbus.Array of dbus.UTF8String
+        """
+        return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                                  BUS_DAEMON_IFACE, 'ListNames',
+                                  '', (), utf8_strings=True)
+
+    def get_name_owner(self, bus_name):
+        """Return the unique connection name of the primary owner of the
+        given name.
+
+        :Raises DBusException: if the `bus_name` has no owner
+        """
+        validate_bus_name(bus_name, allow_unique=False)
+        return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                                  BUS_DAEMON_IFACE, 'GetNameOwner',
+                                  's', (bus_name,), utf8_strings=True)
+
     def name_has_owner(self, bus_name):
         """Return True iff the given bus name has an owner on this bus.
 

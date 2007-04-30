@@ -60,11 +60,15 @@ test_types_vals = [1, 12323231, 3.14159265, 99999999.99,
                  #([1,2,3],"c", 1.2, ["a","b","c"], {"a": (1,"v"), "b": (2,"d")})
                  ]
 
+NAME = "org.freedesktop.DBus.TestSuitePythonService"
+IFACE = "org.freedesktop.DBus.TestSuiteInterface"
+OBJECT = "/org/freedesktop/DBus/TestSuitePythonObject"
+
 class TestDBusBindings(unittest.TestCase):
     def setUp(self):
         self.bus = dbus.SessionBus()
-        self.remote_object = self.bus.get_object("org.freedesktop.DBus.TestSuitePythonService", "/org/freedesktop/DBus/TestSuitePythonObject")
-        self.iface = dbus.Interface(self.remote_object, "org.freedesktop.DBus.TestSuiteInterface")
+        self.remote_object = self.bus.get_object(NAME, OBJECT)
+        self.iface = dbus.Interface(self.remote_object, IFACE)
 
     def testWeakRefs(self):
         # regression test for Sugar crash caused by smcv getting weak refs
@@ -306,6 +310,22 @@ class TestDBusBindings(unittest.TestCase):
         print '\n******** Testing sender name keyword ********'
         myself = self.iface.WhoAmI()
         print "I am", myself
+
+    def testBusGetNameOwner(self):
+        ret = self.bus.get_name_owner(NAME)
+        self.assert_(ret.startswith(':'), ret)
+
+    def testBusListNames(self):
+        ret = self.bus.list_names()
+        self.assert_(NAME in ret, ret)
+
+    def testBusListActivatableNames(self):
+        ret = self.bus.list_activatable_names()
+        self.assert_(NAME in ret, ret)
+
+    def testBusNameHasOwner(self):
+        self.assert_(self.bus.name_has_owner(NAME))
+        self.assert_(not self.bus.name_has_owner('badger.mushroom.snake'))
 
     def testBusNameCreation(self):
         print '\n******** Testing BusName creation ********'
