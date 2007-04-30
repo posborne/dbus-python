@@ -18,13 +18,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-BUS_DAEMON_NAME = 'org.freedesktop.DBus'
-BUS_DAEMON_PATH = '/org/freedesktop/DBus'
-BUS_DAEMON_IFACE = BUS_DAEMON_NAME
-
 from _dbus_bindings import validate_interface_name, validate_member_name,\
                            validate_bus_name, validate_object_path,\
-                           validate_error_name
+                           validate_error_name,\
+                           BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE
 
 
 class _BusDaemonMixin(object):
