@@ -28,7 +28,7 @@ import operator
 import traceback
 
 import _dbus_bindings
-import dbus._dbus as _dbus
+from dbus import SessionBus
 from dbus.exceptions import NameExistsException
 from dbus.exceptions import UnknownMethodException
 from dbus.decorators import method
@@ -95,7 +95,7 @@ class BusName(object):
 
         # get default bus
         if bus == None:
-            bus = _dbus.Bus()
+            bus = SessionBus()
 
         # see if this name is already defined, return it if so
         # FIXME: accessing internals of Bus
