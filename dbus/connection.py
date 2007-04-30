@@ -1,7 +1,3 @@
-"""Method-call mixin for use within dbus-python only.
-See `_MethodCallMixin`.
-"""
-
 # Copyright (C) 2007 Collabora Ltd. <http://www.collabora.co.uk/>
 #
 # Licensed under the Academic Free License version 2.1
@@ -22,7 +18,7 @@ See `_MethodCallMixin`.
 
 import logging
 
-from _dbus_bindings import Connection, ErrorMessage, \
+from _dbus_bindings import Connection as _Connection, ErrorMessage, \
                            MethodCallMessage, MethodReturnMessage, \
                            DBusException, LOCAL_PATH, LOCAL_IFACE
 
@@ -34,7 +30,22 @@ def _noop(*args, **kwargs):
     pass
 
 
-class _MethodCallMixin(object):
+class Connection(_Connection):
+
+    def activate_name_owner(self, bus_name):
+        """Return the unique name for the given bus name, activating it
+        if necessary and possible.
+
+        If the name is already unique or this connection is not to a
+        bus daemon, just return it.
+
+        :Returns: a bus name. If the given `bus_name` exists, the returned
+            name identifies its current owner; otherwise the returned name
+            does not exist.
+        :Raises DBusException: if the implementation has failed
+            to activate the given bus name.
+        """
+        return bus_name
 
     def call_async(self, bus_name, object_path, dbus_interface, method,
                    signature, args, reply_handler, error_handler,

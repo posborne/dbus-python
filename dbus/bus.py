@@ -1,5 +1,3 @@
-"""Bus mixin, for use within dbus-python only. See `_BusMixin`."""
-
 # Copyright (C) 2007 Collabora Ltd. <http://www.collabora.co.uk/>
 #
 # Licensed under the Academic Free License version 2.1
@@ -21,14 +19,32 @@
 from _dbus_bindings import validate_interface_name, validate_member_name,\
                            validate_bus_name, validate_object_path,\
                            validate_error_name,\
+                           DBusException, \
                            BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE
+from dbus.connection import Connection
 
 
-class _BusDaemonMixin(object):
+class BusConnection(Connection):
     """This mixin provides simple blocking wrappers for various methods on
     the org.freedesktop.DBus bus-daemon object, to reduce the amount of C
     code we need.
     """
+
+    def activate_name_owner(self, bus_name):
+        if (bus_name is not None and bus_name[:1] != ':'
+            and bus_name != BUS_DAEMON_NAME):
+            try:
+                return self.get_name_owner(bus_name)
+            except DBusException, e:
+                # FIXME: detect whether it's NameHasNoOwner, but properly
+                #if not str(e).startswith('org.freedesktop.DBus.Error.NameHasNoOwner:'):
+                #    raise
+                # it might not exist: try to start it
+                self.start_service_by_name(bus_name)
+                return self.get_name_owner(bus_name)
+        else:
+            # already unique
+            return bus_name
 
     def get_unix_user(self, bus_name):
         """Get the numeric uid of the process owning the given bus name.

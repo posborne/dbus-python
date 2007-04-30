@@ -202,23 +202,8 @@ class ProxyObject(object):
         _dbus_bindings.validate_object_path(object_path)
         self.__dbus_object_path__ = object_path
 
-        # XXX: assumes it's a bus daemon
-        if (named_service is not None and named_service[:1] != ':'
-            and named_service != BUS_DAEMON_NAME
-            and not follow_name_owner_changes):
-            bus_object = bus.get_object(BUS_DAEMON_NAME, BUS_DAEMON_PATH)
-            try:
-                self._named_service = bus_object.GetNameOwner(named_service,
-                        dbus_interface=BUS_DAEMON_IFACE)
-            except DBusException, e:
-                # FIXME: detect whether it's NameHasNoOwner, but properly
-                #if not str(e).startswith('org.freedesktop.DBus.Error.NameHasNoOwner:'):
-                #    raise
-                # it might not exist: try to start it
-                bus_object.StartServiceByName(named_service,
-                                              _dbus_bindings.UInt32(0))
-                self._named_service = bus_object.GetNameOwner(named_service,
-                        dbus_interface=BUS_DAEMON_IFACE)
+        if not follow_name_owner_changes:
+            self._named_service = bus.activate_name_owner(named_service)
 
         #PendingCall object for Introspect call
         self._pending_introspect = None
@@ -433,7 +418,7 @@ class ProxyObject(object):
         this won't be a problem.
         """
 
-        ret = self.ProxyMethodClass(self, self._bus.get_connection(),
+        ret = self.ProxyMethodClass(self, self._bus,
                                     self._named_service,
                                     self.__dbus_object_path__, member,
                                     dbus_interface)

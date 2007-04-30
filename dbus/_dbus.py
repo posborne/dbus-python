@@ -37,14 +37,12 @@ from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH,\
                            validate_member_name, validate_interface_name,\
                            validate_bus_name, validate_object_path,\
                            BUS_SESSION, BUS_SYSTEM, BUS_STARTER,\
-                           Connection as _Connection,\
                            DBUS_START_REPLY_SUCCESS, \
                            DBUS_START_REPLY_ALREADY_RUNNING, \
                            SignalMessage,\
                            HANDLER_RESULT_NOT_YET_HANDLED,\
                            HANDLER_RESULT_HANDLED
-from dbus.bus import _BusDaemonMixin
-from dbus.connection import _MethodCallMixin
+from dbus.bus import BusConnection
 from dbus.proxies import ProxyObject
 
 try:
@@ -228,7 +226,7 @@ class SignalMatch(object):
                                         **self._args_match)
 
 
-class Bus(_Connection, _MethodCallMixin, _BusDaemonMixin):
+class Bus(BusConnection):
     """A connection to a DBus daemon.
 
     One of three possible standard buses, the SESSION, SYSTEM,
@@ -324,7 +322,7 @@ class Bus(_Connection, _MethodCallMixin, _BusDaemonMixin):
         t = self._bus_type
         if self.__class__._shared_instances[t] is self:
             del self.__class__._shared_instances[t]
-        _Connection.close(self)
+        super(BusConnection, self).close()
 
     def get_connection(self):
         """(Deprecated - in new code, just use self)
