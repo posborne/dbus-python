@@ -37,9 +37,8 @@ __docformat__ = 'restructuredtext'
 _logger = logging.getLogger('dbus.proxies')
 
 from _dbus_bindings import LOCAL_PATH, \
-                           BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE
-
-INTROSPECTABLE_IFACE = 'org.freedesktop.DBus.Introspectable'
+                           BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE,\
+                           INTROSPECTABLE_IFACE
 
 
 class _DeferredMethod:
