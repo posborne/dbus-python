@@ -33,6 +33,7 @@ from _dbus_bindings import validate_interface_name, validate_member_name,\
                            HANDLER_RESULT_NOT_YET_HANDLED
 from dbus.connection import Connection
 
+
 _NAME_OWNER_CHANGE_MATCH = ("type='signal',sender='%s',"
                             "interface='%s',member='NameOwnerChanged',"
                             "path='%s',arg0='%%s'"
@@ -41,8 +42,7 @@ _NAME_OWNER_CHANGE_MATCH = ("type='signal',sender='%s',"
 """(_NAME_OWNER_CHANGE_MATCH % sender) matches relevant NameOwnerChange
 messages"""
 
-
-_logger = logging.getLogger('dbus.connection')
+_logger = logging.getLogger('dbus.bus')
 
 
 class BusConnection(Connection):
