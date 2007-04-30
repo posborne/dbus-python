@@ -19,13 +19,30 @@
 __all__ = ('BusConnection',)
 __docformat__ = 'reStructuredText'
 
+import logging
+import weakref
+
 from _dbus_bindings import validate_interface_name, validate_member_name,\
                            validate_bus_name, validate_object_path,\
                            validate_error_name,\
                            DBusException, \
                            BUS_SESSION, BUS_STARTER, BUS_SYSTEM, \
-                           BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE
+                           DBUS_START_REPLY_SUCCESS, \
+                           DBUS_START_REPLY_ALREADY_RUNNING, \
+                           BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE,\
+                           HANDLER_RESULT_NOT_YET_HANDLED
 from dbus.connection import Connection
+
+_NAME_OWNER_CHANGE_MATCH = ("type='signal',sender='%s',"
+                            "interface='%s',member='NameOwnerChanged',"
+                            "path='%s',arg0='%%s'"
+                            % (BUS_DAEMON_NAME, BUS_DAEMON_IFACE,
+                               BUS_DAEMON_PATH))
+"""(_NAME_OWNER_CHANGE_MATCH % sender) matches relevant NameOwnerChange
+messages"""
+
+
+_logger = logging.getLogger('dbus.connection')
 
 
 class BusConnection(Connection):
@@ -42,6 +59,77 @@ class BusConnection(Connection):
     TYPE_STARTER = BUS_STARTER
     """Represents the bus that started this service by activation (same as
     the global dbus.BUS_STARTER)"""
+
+    START_REPLY_SUCCESS = DBUS_START_REPLY_SUCCESS
+    START_REPLY_ALREADY_RUNNING = DBUS_START_REPLY_ALREADY_RUNNING
+
+    def __new__(cls, address_or_type=TYPE_SESSION, mainloop=None):
+        bus = cls._new_for_bus(address_or_type, mainloop=mainloop)
+
+        # _bus_names is used by dbus.service.BusName!
+        bus._bus_names = weakref.WeakValueDictionary()
+
+        bus._signal_sender_matches = {}
+        """Map from sender well-known name to list of match rules for all
+        signal handlers that match on sender well-known name."""
+
+        bus.add_message_filter(bus.__class__._noc_signal_func)
+
+        return bus
+
+    def _noc_signal_func(self, message):
+        # If it's NameOwnerChanged, we'll need to update our
+        # sender well-known name -> sender unique name mappings
+        if (message.is_signal(BUS_DAEMON_IFACE, 'NameOwnerChanged')
+            and message.has_sender(BUS_DAEMON_NAME)
+            and message.has_path(BUS_DAEMON_PATH)):
+                name, unused, new = message.get_args_list()
+                for match in self._signal_sender_matches.get(name, (None,)):
+                    match.sender_unique = new
+
+        return HANDLER_RESULT_NOT_YET_HANDLED
+
+    def add_signal_receiver(self, handler_function, signal_name=None,
+                            dbus_interface=None, named_service=None,
+                            path=None, **keywords):
+        match = super(BusConnection, self).add_signal_receiver(
+                handler_function, signal_name, dbus_interface, named_service,
+                path, **keywords)
+
+        # The bus daemon is special - its unique-name is org.freedesktop.DBus
+        # rather than starting with :
+        if (named_service is not None
+            and named_service[:1] != ':'
+            and named_service != BUS_DAEMON_NAME):
+            try:
+                match.sender_unique = self.get_name_owner(named_service)
+            except DBusException:
+                # if the desired sender isn't actually running, we'll get
+                # notified by NameOwnerChanged when it appears
+                pass
+            notification = self._signal_sender_matches.setdefault(
+                    named_service, [])
+            if not notification:
+                self.add_match_string(_NAME_OWNER_CHANGE_MATCH % named_service)
+            notification.append(match)
+
+        self.add_match_string(str(match))
+
+        return match
+
+    def _clean_up_signal_match(self, match):
+        # The signals lock must be held.
+        self.remove_match_string(str(match))
+        notification = self._signal_sender_matches.get(match.sender, False)
+        if notification:
+            try:
+                notification.remove(match)
+            except LookupError:
+                pass
+            if not notification:
+                # nobody cares any more, so remove the match rule from the bus
+                self.remove_match_string(_NAME_OWNER_CHANGE_MATCH
+                                         % match.sender)
 
     def activate_name_owner(self, bus_name):
         if (bus_name is not None and bus_name[:1] != ':'
