@@ -16,11 +16,15 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+__all__ = ('Connection',)
+__docformat__ = 'reStructuredText'
+
 import logging
 
 from _dbus_bindings import Connection as _Connection, ErrorMessage, \
                            MethodCallMessage, MethodReturnMessage, \
                            DBusException, LOCAL_PATH, LOCAL_IFACE
+from dbus.proxies import ProxyObject
 
 
 _logger = logging.getLogger('dbus.methods')
@@ -31,6 +35,32 @@ def _noop(*args, **kwargs):
 
 
 class Connection(_Connection):
+    """A connection to another application. In this base class there is
+    assumed to be no bus daemon.
+    """
+
+    ProxyObjectClass = ProxyObject
+
+    def get_object(self, named_service, object_path, introspect=True):
+        """Return a local proxy for the given remote object.
+
+        Method calls on the proxy are translated into method calls on the
+        remote object.
+
+        :Parameters:
+            `named_service` : str
+                A bus name (either the unique name or a well-known name)
+                of the application owning the object
+            `object_path` : str
+                The object path of the desired object
+            `introspect` : bool
+                If true (default), attempt to introspect the remote
+                object to find out supported methods and their signatures
+
+        :Returns: a `dbus.proxies.ProxyObject`
+        """
+        return self.ProxyObjectClass(self, named_service, object_path,
+                                     introspect=introspect)
 
     def activate_name_owner(self, bus_name):
         """Return the unique name for the given bus name, activating it

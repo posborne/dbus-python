@@ -16,19 +16,32 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+__all__ = ('BusConnection',)
+__docformat__ = 'reStructuredText'
+
 from _dbus_bindings import validate_interface_name, validate_member_name,\
                            validate_bus_name, validate_object_path,\
                            validate_error_name,\
                            DBusException, \
+                           BUS_SESSION, BUS_STARTER, BUS_SYSTEM, \
                            BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE
 from dbus.connection import Connection
 
 
 class BusConnection(Connection):
-    """This mixin provides simple blocking wrappers for various methods on
-    the org.freedesktop.DBus bus-daemon object, to reduce the amount of C
-    code we need.
+    """A connection to a D-Bus daemon that implements the
+    ``org.freedesktop.DBus`` pseudo-service.
     """
+
+    TYPE_SESSION    = BUS_SESSION
+    """Represents a session bus (same as the global dbus.BUS_SESSION)"""
+
+    TYPE_SYSTEM     = BUS_SYSTEM
+    """Represents the system bus (same as the global dbus.BUS_SYSTEM)"""
+
+    TYPE_STARTER = BUS_STARTER
+    """Represents the bus that started this service by activation (same as
+    the global dbus.BUS_STARTER)"""
 
     def activate_name_owner(self, bus_name):
         if (bus_name is not None and bus_name[:1] != ':'
@@ -45,6 +58,47 @@ class BusConnection(Connection):
         else:
             # already unique
             return bus_name
+
+    def get_object(self, named_service, object_path, introspect=True,
+                   follow_name_owner_changes=False):
+        """Return a local proxy for the given remote object.
+
+        Method calls on the proxy are translated into method calls on the
+        remote object.
+
+        :Parameters:
+            `named_service` : str
+                A bus name (either the unique name or a well-known name)
+                of the application owning the object
+            `object_path` : str
+                The object path of the desired object
+            `introspect` : bool
+                If true (default), attempt to introspect the remote
+                object to find out supported methods and their signatures
+            `follow_name_owner_changes` : bool
+                If the object path is a well-known name and this parameter
+                is false (default), resolve the well-known name to the unique
+                name of its current owner and bind to that instead; if the
+                ownership of the well-known name changes in future,
+                keep communicating with the original owner.
+                This is necessary if the D-Bus API used is stateful.
+
+                If the object path is a well-known name and this parameter
+                is true, whenever the well-known name changes ownership in
+                future, bind to the new owner, if any.
+
+                If the given object path is a unique name, this parameter
+                has no effect.
+
+        :Returns: a `dbus.proxies.ProxyObject`
+        :Raises `DBusException`: if resolving the well-known name to a
+            unique name fails
+        """
+        if follow_name_owner_changes:
+            self._require_main_loop()   # we don't get the signals otherwise
+        return self.ProxyObjectClass(self, named_service, object_path,
+                                     introspect=introspect,
+                                     follow_name_owner_changes=follow_name_owner_changes)
 
     def get_unix_user(self, bus_name):
         """Get the numeric uid of the process owning the given bus name.

@@ -227,30 +227,21 @@ class SignalMatch(object):
 
 
 class Bus(BusConnection):
-    """A connection to a DBus daemon.
+    """A connection to one of three possible standard buses, the SESSION,
+    SYSTEM, or STARTER bus. This class manages shared connections to those
+    buses.
 
-    One of three possible standard buses, the SESSION, SYSTEM,
-    or STARTER bus
+    If you're trying to subclass `Bus`, you may be better off subclassing
+    `BusConnection`, which doesn't have all this magic.
     """
-
-    TYPE_SESSION    = BUS_SESSION
-    """Represents a session bus (same as the global dbus.BUS_SESSION)"""
-
-    TYPE_SYSTEM     = BUS_SYSTEM
-    """Represents the system bus (same as the global dbus.BUS_SYSTEM)"""
-
-    TYPE_STARTER = BUS_STARTER
-    """Represents the bus that started this service by activation (same as
-    the global dbus.BUS_STARTER)"""
-
-    ProxyObjectClass = ProxyObject
 
     START_REPLY_SUCCESS = DBUS_START_REPLY_SUCCESS
     START_REPLY_ALREADY_RUNNING = DBUS_START_REPLY_ALREADY_RUNNING
 
     _shared_instances = {}
 
-    def __new__(cls, bus_type=TYPE_SESSION, private=False, mainloop=None):
+    def __new__(cls, bus_type=BusConnection.TYPE_SESSION, private=False,
+                mainloop=None):
         """Constructor, returning an existing instance where appropriate.
 
         The returned instance is actually always an instance of `SessionBus`,
@@ -369,47 +360,6 @@ class Bus(BusConnection):
         return StarterBus(private=private)
 
     get_starter = staticmethod(get_starter)
-
-    def get_object(self, named_service, object_path, introspect=True,
-                   follow_name_owner_changes=False):
-        """Return a local proxy for the given remote object.
-
-        Method calls on the proxy are translated into method calls on the
-        remote object.
-
-        :Parameters:
-            `named_service` : str
-                A bus name (either the unique name or a well-known name)
-                of the application owning the object
-            `object_path` : str
-                The object path of the desired object
-            `introspect` : bool
-                If true (default), attempt to introspect the remote
-                object to find out supported methods and their signatures
-            `follow_name_owner_changes` : bool
-                If the object path is a well-known name and this parameter
-                is false (default), resolve the well-known name to the unique
-                name of its current owner and bind to that instead; if the
-                ownership of the well-known name changes in future,
-                keep communicating with the original owner.
-                This is necessary if the D-Bus API used is stateful.
-
-                If the object path is a well-known name and this parameter
-                is true, whenever the well-known name changes ownership in
-                future, bind to the new owner, if any.
-
-                If the given object path is a unique name, this parameter
-                has no effect.
-
-        :Returns: a `dbus.proxies.ProxyObject`
-        :Raises `DBusException`: if resolving the well-known name to a
-            unique name fails
-        """
-        if follow_name_owner_changes:
-            self._require_main_loop()   # we don't get the signals otherwise
-        return self.ProxyObjectClass(self, named_service, object_path,
-                                     introspect=introspect,
-                                     follow_name_owner_changes=follow_name_owner_changes)
 
     def add_signal_receiver(self, handler_function,
                                   signal_name=None,
