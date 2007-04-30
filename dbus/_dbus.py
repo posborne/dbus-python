@@ -26,17 +26,23 @@ from __future__ import generators
 __all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus')
 __docformat__ = 'reStructuredText'
 
-import _dbus_bindings
-UTF8String = _dbus_bindings.UTF8String
-DBusException = _dbus_bindings.DBusException
-
 import os
 import logging
 import sys
 import weakref
 from traceback import print_exc
 
-from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE
+from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH,\
+                           BUS_DAEMON_IFACE, DBusException, UTF8String,\
+                           validate_member_name, validate_interface_name,\
+                           validate_bus_name, validate_object_path,\
+                           BUS_SESSION, BUS_SYSTEM, BUS_STARTER,\
+                           Connection as _Connection,\
+                           DBUS_START_REPLY_SUCCESS, \
+                           DBUS_START_REPLY_ALREADY_RUNNING, \
+                           SignalMessage,\
+                           HANDLER_RESULT_NOT_YET_HANDLED,\
+                           HANDLER_RESULT_HANDLED
 from dbus.bus import _BusDaemonMixin
 from dbus.connection import _MethodCallMixin
 from dbus.proxies import ProxyObject
@@ -72,13 +78,13 @@ class SignalMatch(object):
                  message_keyword=None, destination_keyword=None,
                  **kwargs):
         if member is not None:
-            _dbus_bindings.validate_member_name(member)
+            validate_member_name(member)
         if dbus_interface is not None:
-            _dbus_bindings.validate_interface_name(dbus_interface)
+            validate_interface_name(dbus_interface)
         if sender is not None:
-            _dbus_bindings.validate_bus_name(sender)
+            validate_bus_name(sender)
         if object_path is not None:
-            _dbus_bindings.validate_object_path(object_path)
+            validate_object_path(object_path)
 
         self._conn_weakref = weakref.ref(conn)
         self._sender = sender
@@ -222,27 +228,27 @@ class SignalMatch(object):
                                         **self._args_match)
 
 
-class Bus(_dbus_bindings.Connection, _MethodCallMixin, _BusDaemonMixin):
+class Bus(_Connection, _MethodCallMixin, _BusDaemonMixin):
     """A connection to a DBus daemon.
 
     One of three possible standard buses, the SESSION, SYSTEM,
     or STARTER bus
     """
 
-    TYPE_SESSION    = _dbus_bindings.BUS_SESSION
+    TYPE_SESSION    = BUS_SESSION
     """Represents a session bus (same as the global dbus.BUS_SESSION)"""
 
-    TYPE_SYSTEM     = _dbus_bindings.BUS_SYSTEM
+    TYPE_SYSTEM     = BUS_SYSTEM
     """Represents the system bus (same as the global dbus.BUS_SYSTEM)"""
 
-    TYPE_STARTER = _dbus_bindings.BUS_STARTER
+    TYPE_STARTER = BUS_STARTER
     """Represents the bus that started this service by activation (same as
     the global dbus.BUS_STARTER)"""
 
     ProxyObjectClass = ProxyObject
 
-    START_REPLY_SUCCESS = _dbus_bindings.DBUS_START_REPLY_SUCCESS
-    START_REPLY_ALREADY_RUNNING = _dbus_bindings.DBUS_START_REPLY_ALREADY_RUNNING
+    START_REPLY_SUCCESS = DBUS_START_REPLY_SUCCESS
+    START_REPLY_ALREADY_RUNNING = DBUS_START_REPLY_ALREADY_RUNNING
 
     _shared_instances = {}
 
@@ -279,11 +285,11 @@ class Bus(_dbus_bindings.Connection, _MethodCallMixin, _BusDaemonMixin):
         # construct one of them (otherwise we'd eg try and return an
         # instance of Bus from __new__ in SessionBus). why are there
         # three ways to construct this class? we just don't know.
-        if bus_type == cls.TYPE_SESSION:
+        if bus_type == BUS_SESSION:
             subclass = SessionBus
-        elif bus_type == cls.TYPE_SYSTEM:
+        elif bus_type == BUS_SYSTEM:
             subclass = SystemBus
-        elif bus_type == cls.TYPE_STARTER:
+        elif bus_type == BUS_STARTER:
             subclass = StarterBus
         else:
             raise ValueError('invalid bus_type %s' % bus_type)
@@ -318,7 +324,7 @@ class Bus(_dbus_bindings.Connection, _MethodCallMixin, _BusDaemonMixin):
         t = self._bus_type
         if self.__class__._shared_instances[t] is self:
             del self.__class__._shared_instances[t]
-        _dbus_bindings.Connection.close(self)
+        _Connection.close(self)
 
     def get_connection(self):
         """(Deprecated - in new code, just use self)
@@ -594,8 +600,8 @@ class Bus(_dbus_bindings.Connection, _MethodCallMixin, _BusDaemonMixin):
         #logger.debug('Incoming message %r with args %r', message,
                      #message.get_args_list())
 
-        if (message.get_type() != _dbus_bindings.MESSAGE_TYPE_SIGNAL):
-            return _dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
+        if not isinstance(message, SignalMessage):
+            return HANDLER_RESULT_NOT_YET_HANDLED
 
         # If it's NameOwnerChanged, we'll need to update our
         # sender well-known name -> sender unique name mappings
@@ -611,19 +617,19 @@ class Bus(_dbus_bindings.Connection, _MethodCallMixin, _BusDaemonMixin):
         path = message.get_path()
         signal_name = message.get_member()
 
-        ret = _dbus_bindings.HANDLER_RESULT_NOT_YET_HANDLED
+        ret = HANDLER_RESULT_NOT_YET_HANDLED
         for match in self._iter_easy_matches(path, dbus_interface,
                                              signal_name):
             if match.maybe_handle_message(message):
-                ret = _dbus_bindings.HANDLER_RESULT_HANDLED
+                ret = HANDLER_RESULT_HANDLED
         return ret
 
     def __repr__(self):
-        if self._bus_type == self.TYPE_SESSION:
+        if self._bus_type == BUS_SESSION:
             name = 'SESSION'
-        elif self._bus_type == self.TYPE_SYSTEM:
+        elif self._bus_type == BUS_SYSTEM:
             name = 'SYSTEM'
-        elif self._bus_type == self.TYPE_STARTER:
+        elif self._bus_type == BUS_STARTER:
             name = 'STARTER'
         else:
             raise AssertionError('Unable to represent unknown bus type.')
