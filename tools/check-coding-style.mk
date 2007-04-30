@@ -1,5 +1,6 @@
 check-local::
 	@fail=0; \
+	cd $(srcdir) || exit $$?; \
 	if test -n "$(check_misc_sources)"; then \
 		echo check-coding-style.mk: checking misc sources...; \
 		top_srcdir=$(top_srcdir) \
