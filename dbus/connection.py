@@ -24,12 +24,7 @@ import logging
 
 from _dbus_bindings import Connection, ErrorMessage, \
                            MethodCallMessage, MethodReturnMessage, \
-                           DBusException
-
-
-# This is special in libdbus - the bus daemon will kick us off if we try to
-# send any message to it :-/
-LOCAL_PATH = '/org/freedesktop/DBus/Local'
+                           DBusException, LOCAL_PATH, LOCAL_IFACE
 
 
 _logger = logging.getLogger('dbus.methods')
@@ -56,6 +51,9 @@ class _MethodCallMixin(object):
         if object_path == LOCAL_PATH:
             raise DBusException('Methods may not be called on the reserved '
                                 'path %s' % LOCAL_PATH)
+        if dbus_interface == LOCAL_IFACE:
+            raise DBusException('Methods may not be called on the reserved '
+                                'interface %s' % LOCAL_IFACE)
         # no need to validate other args - MethodCallMessage ctor will do
 
         get_args_opts = {'utf8_strings': utf8_strings,
@@ -109,6 +107,9 @@ class _MethodCallMixin(object):
         if object_path == LOCAL_PATH:
             raise DBusException('Methods may not be called on the reserved '
                                 'path %s' % LOCAL_PATH)
+        if dbus_interface == LOCAL_IFACE:
+            raise DBusException('Methods may not be called on the reserved '
+                                'interface %s' % LOCAL_IFACE)
         # no need to validate other args - MethodCallMessage ctor will do
 
         get_args_opts = {'utf8_strings': utf8_strings,
