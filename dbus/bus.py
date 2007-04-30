@@ -18,21 +18,19 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-from dbus import UInt32, UTF8String
-from dbus.proxies import BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE
+BUS_DAEMON_NAME = 'org.freedesktop.DBus'
+BUS_DAEMON_PATH = '/org/freedesktop/DBus'
+BUS_DAEMON_IFACE = BUS_DAEMON_NAME
 
 from _dbus_bindings import validate_interface_name, validate_member_name,\
                            validate_bus_name, validate_object_path,\
                            validate_error_name
 
-def _noop(*args, **kwargs):
-    """A universal no-op function"""
 
 class _BusDaemonMixin(object):
-    """This mixin must be mixed-in with something with a get_object method
-    (obviously, it's meant to be the dbus.Bus). It provides simple blocking
-    wrappers for various methods on the org.freedesktop.DBus bus-daemon
-    object, to reduce the amount of C code we need.
+    """This mixin provides simple blocking wrappers for various methods on
+    the org.freedesktop.DBus bus-daemon object, to reduce the amount of C
+    code we need.
     """
 
     def get_unix_user(self, bus_name):
@@ -44,9 +42,9 @@ class _BusDaemonMixin(object):
         :Returns: a `dbus.UInt32`
         """
         validate_bus_name(bus_name)
-        return self.get_object(BUS_DAEMON_NAME,
-                BUS_DAEMON_PATH).GetConnectionUnixUser(bus_name,
-                        dbus_interface=BUS_DAEMON_IFACE)
+        return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                                  BUS_DAEMON_IFACE, 'GetConnectionUnixUser',
+                                  's', (bus_name,))
 
     def start_service_by_name(self, bus_name, flags=0):
         """Start a service which will implement the given bus name on this Bus.
@@ -65,10 +63,10 @@ class _BusDaemonMixin(object):
         :Raises DBusException: if the service could not be started.
         """
         validate_bus_name(bus_name)
-        ret = self.get_object(BUS_DAEMON_NAME,
-                BUS_DAEMON_PATH).StartServiceByName(bus_name, UInt32(flags),
-                        dbus_interface=BUS_DAEMON_IFACE)
-        return (True, ret)
+        return (True, self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                                         BUS_DAEMON_IFACE,
+                                         'StartServiceByName',
+                                         'su', (bus_name, flags)))
 
     # XXX: it might be nice to signal IN_QUEUE, EXISTS by exception,
     # but this would not be backwards-compatible
@@ -91,9 +89,9 @@ class _BusDaemonMixin(object):
             returns an error.
         """
         validate_bus_name(name, allow_unique=False)
-        return self.get_object(BUS_DAEMON_NAME,
-                BUS_DAEMON_PATH).RequestName(name, UInt32(flags),
-                        dbus_interface=BUS_DAEMON_IFACE)
+        return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                                  BUS_DAEMON_IFACE, 'RequestName',
+                                  'su', (name, flags))
 
     def release_name(self, name):
         """Release a bus name.
@@ -108,9 +106,9 @@ class _BusDaemonMixin(object):
             returns an error.
         """
         validate_bus_name(name, allow_unique=False)
-        return self.get_object(BUS_DAEMON_NAME,
-                BUS_DAEMON_PATH).ReleaseName(name,
-                        dbus_interface=BUS_DAEMON_IFACE)
+        return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                                  BUS_DAEMON_IFACE, 'ReleaseName',
+                                  's', (name,))
 
     def name_has_owner(self, bus_name):
         """Return True iff the given bus name has an owner on this bus.
@@ -120,12 +118,9 @@ class _BusDaemonMixin(object):
                 The bus name to look up
         :Returns: a `bool`
         """
-        return bool(self.get_object(BUS_DAEMON_NAME,
-                BUS_DAEMON_PATH).NameHasOwner(bus_name,
-                        dbus_interface=BUS_DAEMON_IFACE))
-
-    # AddMatchString is not bound here
-    # RemoveMatchString either
+        return bool(self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                                       BUS_DAEMON_IFACE, 'NameHasOwner',
+                                       's', (bus_name,)))
 
     def add_match_string(self, rule):
         """Arrange for this application to receive messages on the bus that
@@ -136,12 +131,10 @@ class _BusDaemonMixin(object):
                 The match rule
         :Raises: `DBusException` on error.
         """
-        self.get_object(BUS_DAEMON_NAME,
-                BUS_DAEMON_PATH).AddMatch(rule,
-                        dbus_interface=BUS_DAEMON_IFACE)
+        self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                           BUS_DAEMON_IFACE, 'AddMatch', 's', (rule,))
 
     # FIXME: add an async success/error handler capability?
-    # FIXME: tell the bus daemon not to bother sending us a reply
     # (and the same for remove_...)
     def add_match_string_non_blocking(self, rule):
         """Arrange for this application to receive messages on the bus that
@@ -154,11 +147,9 @@ class _BusDaemonMixin(object):
                 The match rule
         :Raises: `DBusException` on error.
         """
-        self.get_object(BUS_DAEMON_NAME,
-                BUS_DAEMON_PATH).AddMatch(rule,
-                        dbus_interface=BUS_DAEMON_IFACE,
-                        reply_handler=_noop,
-                        error_handler=_noop)
+        self.call_async(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                        BUS_DAEMON_IFACE, 'AddMatch', 's', (rule,),
+                        None, None)
 
     def remove_match_string(self, rule):
         """Arrange for this application to receive messages on the bus that
@@ -169,9 +160,8 @@ class _BusDaemonMixin(object):
                 The match rule
         :Raises: `DBusException` on error.
         """
-        self.get_object(BUS_DAEMON_NAME,
-                BUS_DAEMON_PATH).RemoveMatch(rule,
-                        dbus_interface=BUS_DAEMON_IFACE)
+        self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                           BUS_DAEMON_IFACE, 'RemoveMatch', 's', (rule,))
 
     def remove_match_string_non_blocking(self, rule):
         """Arrange for this application to receive messages on the bus that
@@ -184,8 +174,6 @@ class _BusDaemonMixin(object):
                 The match rule
         :Raises: `DBusException` on error.
         """
-        self.get_object(BUS_DAEMON_NAME,
-                BUS_DAEMON_PATH).RemoveMatch(rule,
-                        dbus_interface=BUS_DAEMON_IFACE,
-                        reply_handler=_noop,
-                        error_handler=_noop)
+        self.call_async(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
+                        BUS_DAEMON_IFACE, 'RemoveMatch', 's', (rule,),
+                        None, None)

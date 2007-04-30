@@ -1,6 +1,7 @@
 pythondbusdir = $(pythondir)/dbus
 
 nobase_pythondbus_PYTHON = bus.py \
+			   connection.py \
 			   dbus_bindings.py \
 			   _dbus.py \
 			   _version.py \

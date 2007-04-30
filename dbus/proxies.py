@@ -36,35 +36,10 @@ __docformat__ = 'restructuredtext'
 
 _logger = logging.getLogger('dbus.proxies')
 
+from _dbus_bindings import LOCAL_PATH, \
+                           BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE
 
-BUS_DAEMON_NAME = 'org.freedesktop.DBus'
-BUS_DAEMON_PATH = '/org/freedesktop/DBus'
-BUS_DAEMON_IFACE = BUS_DAEMON_NAME
-
-# This is special in libdbus - the bus daemon will kick us off if we try to
-# send any message to it :-/
-LOCAL_PATH = '/org/freedesktop/DBus/Local'
-
-
-class _ReplyHandler(object):
-    __slots__ = ('_on_error', '_on_reply', '_get_args_options')
-    def __init__(self, on_reply, on_error, **get_args_options):
-        self._on_error = on_error
-        self._on_reply = on_reply
-        self._get_args_options = get_args_options
-
-    def __call__(self, message):
-        if isinstance(message, _dbus_bindings.MethodReturnMessage):
-            self._on_reply(*message.get_args_list(**self._get_args_options))
-        elif isinstance(message, _dbus_bindings.ErrorMessage):
-            args = message.get_args_list()
-            if len(args) > 0:
-                self._on_error(DBusException(args[0]))
-            else:
-                self._on_error(DBusException())
-        else:
-            self._on_error(DBusException('Unexpected reply message type: %s'
-                                        % message))
+INTROSPECTABLE_IFACE = 'org.freedesktop.DBus.Introspectable'
 
 
 class _DeferredMethod:
@@ -87,6 +62,9 @@ class _DeferredMethod:
             # we're being synchronous, so block
             self._block()
             return self._proxy_method(*args, **keywords)
+
+    def call_async(self, *args, **keywords):
+        self._append(self._proxy_method, args, keywords)
 
 
 class _ProxyMethod:
@@ -116,78 +94,67 @@ class _ProxyMethod:
         self._dbus_interface = iface
 
     def __call__(self, *args, **keywords):
-        timeout = -1
-        if keywords.has_key('timeout'):
-            timeout = keywords['timeout']
+        reply_handler = keywords.pop('reply_handler', None)
+        error_handler = keywords.pop('error_handler', None)
+        ignore_reply = keywords.pop('ignore_reply', False)
 
-        reply_handler = None
-        if keywords.has_key('reply_handler'):
-            reply_handler = keywords['reply_handler']
-
-        error_handler = None
-        if keywords.has_key('error_handler'):
-            error_handler = keywords['error_handler']
-
-        ignore_reply = False
-        if keywords.has_key('ignore_reply'):
-            ignore_reply = keywords['ignore_reply']
-
-        get_args_options = {}
-        if keywords.has_key('utf8_strings'):
-            get_args_options['utf8_strings'] = keywords['utf8_strings']
-        if keywords.has_key('byte_arrays'):
-            get_args_options['byte_arrays'] = keywords['byte_arrays']
-
-        if not(reply_handler and error_handler):
-            if reply_handler:
+        if reply_handler is not None or error_handler is not None:
+            if reply_handler is None:
                 raise MissingErrorHandlerException()
-            elif error_handler:
+            elif error_handler is None:
                 raise MissingReplyHandlerException()
+            elif ignore_reply:
+                raise TypeError('ignore_reply and reply_handler cannot be '
+                                'used together')
 
-        dbus_interface = self._dbus_interface
-        if keywords.has_key('dbus_interface'):
-            dbus_interface = keywords['dbus_interface']
+        dbus_interface = keywords.pop('dbus_interface', self._dbus_interface)
 
-        tmp_iface = ''
-        if dbus_interface:
-            tmp_iface = dbus_interface + '.'
-
-        key = tmp_iface + self._method_name
-
-        introspect_sig = None
-        if self._proxy._introspect_method_map.has_key (key):
-            introspect_sig = self._proxy._introspect_method_map[key]
-
-        message = _dbus_bindings.MethodCallMessage(destination=None,
-                                                   path=self._object_path,
-                                                   interface=dbus_interface,
-                                                   method=self._method_name)
-        message.set_destination(self._named_service)
-
-        # Add the arguments to the function
-        try:
-            message.append(signature=introspect_sig, *args)
-        except Exception, e:
-            _logger.error('Unable to set arguments %r according to '
-                          'introspected signature %r: %s: %s',
-                          args, introspect_sig, e.__class__, e)
-            raise
-
-        if ignore_reply:
-            self._connection.send_message(message)
-            return None
-        elif reply_handler:
-            self._connection.send_message_with_reply(message, _ReplyHandler(reply_handler, error_handler, **get_args_options), timeout/1000.0, require_main_loop=1)
-            return None
+        if dbus_interface is None:
+            key = self._method_name
         else:
-            reply_message = self._connection.send_message_with_reply_and_block(message, timeout)
-            args_list = reply_message.get_args_list(**get_args_options)
-            if len(args_list) == 0:
-                return None
-            elif len(args_list) == 1:
-                return args_list[0]
-            else:
-                return tuple(args_list)
+            key = dbus_interface + '.' + self._method_name
+        introspect_sig = self._proxy._introspect_method_map.get(key, None)
+
+        if ignore_reply or reply_handler is not None:
+            self._connection.call_async(self._named_service,
+                                        self._object_path,
+                                        dbus_interface,
+                                        self._method_name,
+                                        introspect_sig,
+                                        args,
+                                        reply_handler,
+                                        error_handler,
+                                        **keywords)
+        else:
+            return self._connection.call_blocking(self._named_service,
+                                                  self._object_path,
+                                                  dbus_interface,
+                                                  self._method_name,
+                                                  introspect_sig,
+                                                  args,
+                                                  **keywords)
+
+    def call_async(self, *args, **keywords):
+        reply_handler = keywords.pop('reply_handler', None)
+        error_handler = keywords.pop('error_handler', None)
+
+        dbus_interface = keywords.pop('dbus_interface', self._dbus_interface)
+
+        if dbus_interface:
+            key = dbus_interface + '.' + self._method_name
+        else:
+            key = self._method_name
+        introspect_sig = self._proxy._introspect_method_map.get(key, None)
+
+        self._connection.call_async(self._named_service,
+                                    self._object_path,
+                                    dbus_interface,
+                                    self._method_name,
+                                    introspect_sig,
+                                    args,
+                                    reply_handler,
+                                    error_handler,
+                                    **keywords)
 
 
 class ProxyObject(object):
@@ -376,11 +343,13 @@ class ProxyObject(object):
                                       **keywords)
 
     def _Introspect(self):
-        message = _dbus_bindings.MethodCallMessage(None, self.__dbus_object_path__, 'org.freedesktop.DBus.Introspectable', 'Introspect')
-        message.set_destination(self._named_service)
-
-        result = self._bus.get_connection().send_message_with_reply(message, _ReplyHandler(self._introspect_reply_handler, self._introspect_error_handler, utf8_strings=True), -1)
-        return result
+        return self._bus.call_async(self._named_service,
+                                    self.__dbus_object_path__,
+                                    INTROSPECTABLE_IFACE, 'Introspect', '', (),
+                                    self._introspect_reply_handler,
+                                    self._introspect_error_handler,
+                                    utf8_strings=True,
+                                    require_main_loop=False)
 
     def _introspect_execute_queue(self):
         # FIXME: potential to flood the bus

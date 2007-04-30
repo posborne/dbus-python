@@ -36,9 +36,10 @@ import sys
 import weakref
 from traceback import print_exc
 
+from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE
 from dbus.bus import _BusDaemonMixin
-from dbus.proxies import ProxyObject, BUS_DAEMON_NAME, BUS_DAEMON_PATH, \
-        BUS_DAEMON_IFACE
+from dbus.connection import _MethodCallMixin
+from dbus.proxies import ProxyObject
 
 try:
     import thread
@@ -221,7 +222,7 @@ class SignalMatch(object):
                                         **self._args_match)
 
 
-class Bus(_dbus_bindings.Connection, _BusDaemonMixin):
+class Bus(_dbus_bindings.Connection, _MethodCallMixin, _BusDaemonMixin):
     """A connection to a DBus daemon.
 
     One of three possible standard buses, the SESSION, SYSTEM,
