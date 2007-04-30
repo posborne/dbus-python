@@ -37,6 +37,7 @@ import sys
 import weakref
 from traceback import print_exc
 
+from dbus.bus import _BusDaemonMixin
 from dbus.proxies import ProxyObject, BUS_DAEMON_NAME, BUS_DAEMON_PATH, \
         BUS_DAEMON_IFACE
 
@@ -221,7 +222,7 @@ class SignalMatch(object):
                                         **self._args_match)
 
 
-class Bus(BusImplementation):
+class Bus(BusImplementation, _BusDaemonMixin):
     """A connection to a DBus daemon.
 
     One of three possible standard buses, the SESSION, SYSTEM,
@@ -533,6 +534,7 @@ class Bus(BusImplementation):
                         yield m
 
     def _remove_name_owner_changed_for_match(self, named_service, match):
+        # The signals lock must be held.
         notification = self._signal_sender_matches.get(named_service, False)
         if notification:
             try:

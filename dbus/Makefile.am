@@ -1,6 +1,7 @@
 pythondbusdir = $(pythondir)/dbus
 
-nobase_pythondbus_PYTHON = dbus_bindings.py \
+nobase_pythondbus_PYTHON = bus.py \
+			   dbus_bindings.py \
 			   _dbus.py \
 			   _version.py \
 			   decorators.py \
