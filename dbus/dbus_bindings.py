@@ -1,7 +1,18 @@
 # Backwards-compatibility with the old dbus_bindings.
 
 from warnings import warn as _warn
-from dbus._dbus import _dbus_bindings_warning
+
+_dbus_bindings_warning = DeprecationWarning("""\
+The dbus_bindings module is not public API and will go away soon.
+
+Most uses of dbus_bindings are applications catching the exception
+dbus.dbus_bindings.DBusException. You should use dbus.DBusException
+instead (this is compatible with all dbus-python versions since 0.40.2).
+
+If you need additional public API, please contact the maintainers via
+<dbus@lists.freedesktop.org>.
+""")
+
 _warn(_dbus_bindings_warning, DeprecationWarning, stacklevel=2)
 
 # Exceptions

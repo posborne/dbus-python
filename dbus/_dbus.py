@@ -234,37 +234,19 @@ class StarterBus(Bus):
                            mainloop=mainloop)
 
 
-_dbus_bindings_warning = DeprecationWarning("""\
-The dbus_bindings module is deprecated and will go away soon.
-
-dbus-python 0.80 provides only a partial emulation of the old
-dbus_bindings, which was never meant to be public API.
-
-Most uses of dbus_bindings are applications catching the exception
-dbus.dbus_bindings.DBusException. You should use dbus.DBusException
-instead (this is compatible with all dbus-python versions since 0.40.2).
-
-If you need additional public API, please contact the maintainers via
-<dbus@lists.freedesktop.org>.
-""")
-
 if 'DBUS_PYTHON_NO_DEPRECATED' not in os.environ:
 
     class _DBusBindingsEmulation:
         """A partial emulation of the dbus_bindings module."""
-        _module = None
         def __str__(self):
             return '_DBusBindingsEmulation()'
         def __repr__(self):
             return '_DBusBindingsEmulation()'
         def __getattr__(self, attr):
-            if self._module is None:
-                from warnings import warn as _warn
-                _warn(_dbus_bindings_warning, DeprecationWarning, stacklevel=2)
-
-                import dbus.dbus_bindings as m
-                self._module = m
-            return getattr(self._module, attr)
+            global dbus_bindings
+            import dbus.dbus_bindings as m
+            dbus_bindings = m
+            return getattr(m, attr)
 
     dbus_bindings = _DBusBindingsEmulation()
     """Deprecated, don't use."""
