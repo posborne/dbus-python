@@ -45,7 +45,7 @@ def _noop(*args, **kwargs):
 
 
 class SignalMatch(object):
-    __slots__ = ('sender_unique', '_member', '_interface', '_sender',
+    __slots__ = ('_sender_name_owner', '_member', '_interface', '_sender',
                  '_path', '_handler', '_args_match', '_rule',
                  '_utf8_strings', '_byte_arrays', '_conn_weakref',
                  '_destination_keyword', '_interface_keyword',
@@ -67,6 +67,7 @@ class SignalMatch(object):
         if object_path is not None:
             validate_object_path(object_path)
 
+        self._rule = None
         self._conn_weakref = weakref.ref(conn)
         self._sender = sender
         self._interface = dbus_interface
@@ -75,8 +76,8 @@ class SignalMatch(object):
         self._handler = handler
 
         # if the connection is actually a bus, it's responsible for changing
-        # this
-        self.sender_unique = sender
+        # this later
+        self._sender_name_owner = sender
 
         self._utf8_strings = utf8_strings
         self._byte_arrays = byte_arrays
@@ -106,30 +107,45 @@ class SignalMatch(object):
                                     'range(64), not %d' % index)
                 self._int_args_match[index] = kwargs[kwarg]
 
-        # we're probably going to have to calculate the match rule for
-        # the Bus's benefit, so this constructor might as well do the work
-        rule = ["type='signal'"]
-        if self._sender is not None:
-            rule.append("sender='%s'" % self._sender)
-        if self._path is not None:
-            rule.append("path='%s'" % self._path)
-        if self._interface is not None:
-            rule.append("interface='%s'" % self._interface)
-        if self._member is not None:
-            rule.append("member='%s'" % self._member)
-        for kwarg, value in kwargs.iteritems():
-            rule.append("%s='%s'" % (kwarg, value))
+    def __hash__(self):
+        """SignalMatch objects are compared by identity."""
+        return hash(id(self))
 
-        self._rule = ','.join(rule)
+    def __eq__(self, other):
+        """SignalMatch objects are compared by identity."""
+        return self is other
+
+    def __ne__(self, other):
+        """SignalMatch objects are compared by identity."""
+        return self is not other
 
     sender = property(lambda self: self._sender)
 
     def __str__(self):
+        if self._rule is None:
+            rule = ["type='signal'"]
+            if self._sender is not None:
+                rule.append("sender='%s'" % self._sender)
+            if self._path is not None:
+                rule.append("path='%s'" % self._path)
+            if self._interface is not None:
+                rule.append("interface='%s'" % self._interface)
+            if self._member is not None:
+                rule.append("member='%s'" % self._member)
+            if self._int_args_match is not None:
+                for index, value in self._int_args_match.iteritems():
+                    rule.append("arg%d='%s'" % (index, value))
+
+            self._rule = ','.join(rule)
+
         return self._rule
 
     def __repr__(self):
         return ('<%s at %x "%s" on conn %r>'
                 % (self.__class__, id(self), self._rule, self._conn_weakref()))
+
+    def set_sender_name_owner(self, new_name):
+        self._sender_name_owner = new_name
 
     def matches_removal_spec(self, sender, object_path,
                              dbus_interface, member, handler, **kwargs):
@@ -151,7 +167,7 @@ class SignalMatch(object):
         args = None
 
         # these haven't been checked yet by the match tree
-        if self.sender_unique not in (None, message.get_sender()):
+        if self._sender_name_owner not in (None, message.get_sender()):
             return False
         if self._int_args_match is not None:
             # extracting args with utf8_strings and byte_arrays is less work

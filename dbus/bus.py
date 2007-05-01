@@ -45,6 +45,46 @@ messages"""
 _logger = logging.getLogger('dbus.bus')
 
 
+class NameOwnerWatch(object):
+    __slots__ = ('_match', '_pending_call')
+
+    def __init__(self, bus_conn, bus_name, callback):
+        validate_bus_name(bus_name, allow_unique=False)
+
+        def signal_cb(owned, old_owner, new_owner):
+            callback(new_owner)
+
+        def error_cb(e):
+            # FIXME: detect whether it's NameHasNoOwner properly
+            if str(e).startswith('org.freedesktop.DBus.Error.NameHasNoOwner:'):
+                callback('')
+            else:
+                logging.basicConfig()
+                _logger.error('GetNameOwner(%s) failed:', bus_name,
+                              exc_info=(e.__class__, e, None))
+
+        self._match = bus_conn.add_signal_receiver(signal_cb,
+                                                   'NameOwnerChanged',
+                                                   BUS_DAEMON_IFACE,
+                                                   BUS_DAEMON_NAME,
+                                                   BUS_DAEMON_PATH)
+        self._pending_call = bus_conn.call_async(BUS_DAEMON_NAME,
+                                                 BUS_DAEMON_PATH,
+                                                 BUS_DAEMON_IFACE,
+                                                 'GetNameOwner',
+                                                 's', (bus_name,),
+                                                 callback, error_cb,
+                                                 utf8_strings=True)
+
+    def cancel(self):
+        if self._match is not None:
+            self._match.remove()
+        if self._pending_call is not None:
+            self._pending_call.cancel()
+        self._match = None
+        self._pending_call = None
+
+
 class BusConnection(Connection):
     """A connection to a D-Bus daemon that implements the
     ``org.freedesktop.DBus`` pseudo-service.
@@ -70,24 +110,9 @@ class BusConnection(Connection):
         bus._bus_names = weakref.WeakValueDictionary()
 
         bus._signal_sender_matches = {}
-        """Map from sender well-known name to list of match rules for all
-        signal handlers that match on sender well-known name."""
-
-        bus.add_message_filter(bus.__class__._noc_signal_func)
+        """Map from SignalMatch to NameOwnerWatch."""
 
         return bus
-
-    def _noc_signal_func(self, message):
-        # If it's NameOwnerChanged, we'll need to update our
-        # sender well-known name -> sender unique name mappings
-        if (message.is_signal(BUS_DAEMON_IFACE, 'NameOwnerChanged')
-            and message.has_sender(BUS_DAEMON_NAME)
-            and message.has_path(BUS_DAEMON_PATH)):
-                name, unused, new = message.get_args_list()
-                for match in self._signal_sender_matches.get(name, (None,)):
-                    match.sender_unique = new
-
-        return HANDLER_RESULT_NOT_YET_HANDLED
 
     def add_signal_receiver(self, handler_function, signal_name=None,
                             dbus_interface=None, named_service=None,
@@ -101,17 +126,9 @@ class BusConnection(Connection):
         if (named_service is not None
             and named_service[:1] != ':'
             and named_service != BUS_DAEMON_NAME):
-            try:
-                match.sender_unique = self.get_name_owner(named_service)
-            except DBusException:
-                # if the desired sender isn't actually running, we'll get
-                # notified by NameOwnerChanged when it appears
-                pass
-            notification = self._signal_sender_matches.setdefault(
-                    named_service, [])
-            if not notification:
-                self.add_match_string(_NAME_OWNER_CHANGE_MATCH % named_service)
-            notification.append(match)
+            watch = self.watch_name_owner(named_service,
+                                          match.set_sender_name_owner)
+            self._signal_sender_matches[match] = watch
 
         self.add_match_string(str(match))
 
@@ -120,16 +137,9 @@ class BusConnection(Connection):
     def _clean_up_signal_match(self, match):
         # The signals lock must be held.
         self.remove_match_string(str(match))
-        notification = self._signal_sender_matches.get(match.sender, False)
-        if notification:
-            try:
-                notification.remove(match)
-            except LookupError:
-                pass
-            if not notification:
-                # nobody cares any more, so remove the match rule from the bus
-                self.remove_match_string(_NAME_OWNER_CHANGE_MATCH
-                                         % match.sender)
+        watch = self._signal_sender_matches.pop(match, None)
+        if watch is not None:
+            watch.cancel()
 
     def activate_name_owner(self, bus_name):
         if (bus_name is not None and bus_name[:1] != ':'
@@ -293,6 +303,16 @@ class BusConnection(Connection):
         return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
                                   BUS_DAEMON_IFACE, 'GetNameOwner',
                                   's', (bus_name,), utf8_strings=True)
+
+    def watch_name_owner(self, bus_name, callback):
+        """Watch the unique connection name of the primary owner of the
+        given name.
+
+        `callback` will be called with one argument, which is either the
+        unique connection name, or the empty string (meaning the name is
+        not owned).
+        """
+        return NameOwnerWatch(self, bus_name, callback)
 
     def name_has_owner(self, bus_name):
         """Return True iff the given bus name has an owner on this bus.
