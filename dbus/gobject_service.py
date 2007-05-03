@@ -21,12 +21,15 @@
 import gobject
 import dbus.service
 
-class ExportedGObjectType(dbus.service.InterfaceType, gobject.GObjectMeta):
+class ExportedGObjectType(gobject.GObjectMeta, dbus.service.InterfaceType):
     """A metaclass which inherits from both GObjectMeta and
     `dbus.service.InterfaceType`. Used as the metaclass for `ExportedGObject`.
     """
+    def __init__(cls, name, bases, dct):
+        gobject.GObjectMeta.__init__(cls, name, bases, dct)
+        dbus.service.InterfaceType.__init__(cls, name, bases, dct)
 
-class ExportedGObject(dbus.service.Object, gobject.GObject):
+class ExportedGObject(gobject.GObject, dbus.service.Object):
     """A GObject which is exported on the D-Bus.
 
     Because GObject and `dbus.service.Object` both have custom metaclasses,
@@ -35,3 +38,9 @@ class ExportedGObject(dbus.service.Object, gobject.GObject):
     to make it work correctly.
     """
     __metaclass__ = ExportedGObjectType
+
+    def __init__(self, conn=None, object_path=None, bus_name=None):
+        gobject.GObject.__init__(self)
+        dbus.service.Object.__init__(self, conn=conn,
+                                     object_path=object_path,
+                                     bus_name=bus_name)

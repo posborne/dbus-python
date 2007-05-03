@@ -70,6 +70,16 @@ class TestDBusBindings(unittest.TestCase):
         self.remote_object = self.bus.get_object(NAME, OBJECT)
         self.iface = dbus.Interface(self.remote_object, IFACE)
 
+    def testGObject(self):
+        print "Testing ExportedGObject... ",
+        remote_gobject = self.bus.get_object(NAME, OBJECT + '/GObject')
+        iface = dbus.Interface(remote_gobject, IFACE)
+        print "introspection, ",
+        remote_gobject.Introspect(dbus_interface=dbus.INTROSPECTABLE_IFACE)
+        print "method call, ",
+        self.assertEquals(iface.Echo('123'), '123')
+        print "... OK"
+
     def testWeakRefs(self):
         # regression test for Sugar crash caused by smcv getting weak refs
         # wrong - pre-bugfix, this would segfault

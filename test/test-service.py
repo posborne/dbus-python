@@ -36,6 +36,8 @@ import dbus.glib
 import gobject
 import random
 
+from dbus.gobject_service import ExportedGObject
+
 
 logging.basicConfig(filename=builddir + '/test/test-service.log', filemode='w')
 logging.getLogger().setLevel(1)
@@ -45,6 +47,14 @@ logger = logging.getLogger('test-service')
 NAME = "org.freedesktop.DBus.TestSuitePythonService"
 IFACE = "org.freedesktop.DBus.TestSuiteInterface"
 OBJECT = "/org/freedesktop/DBus/TestSuitePythonObject"
+
+class TestGObject(ExportedGObject):
+    def __init__(self, bus_name, object_path=OBJECT + '/GObject'):
+        super(TestGObject, self).__init__(bus_name, object_path)
+
+    @dbus.service.method(IFACE)
+    def Echo(self, arg):
+        return arg
 
 class TestInterface(dbus.service.Interface):
     @dbus.service.method(IFACE, in_signature='', out_signature='b')
@@ -200,5 +210,6 @@ class TestObject(dbus.service.Object, TestInterface):
 session_bus = dbus.SessionBus()
 name = dbus.service.BusName(NAME, bus=session_bus)
 object = TestObject(name)
+g_object = TestGObject(name)
 loop = gobject.MainLoop()
 loop.run()
