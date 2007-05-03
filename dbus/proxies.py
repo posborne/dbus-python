@@ -73,7 +73,8 @@ class _ProxyMethod:
     method produce messages that travel over the Bus and are routed
     to a specific named Service.
     """
-    def __init__(self, proxy, connection, named_service, object_path, method_name, iface):
+    def __init__(self, proxy, connection, bus_name, object_path, method_name,
+                 iface):
         if object_path == LOCAL_PATH:
             raise DBusException('Methods may not be called on the reserved '
                                 'path %s' % LOCAL_PATH)
@@ -81,7 +82,7 @@ class _ProxyMethod:
         # trust that the proxy, and the properties it had, are OK
         self._proxy          = proxy
         self._connection     = connection
-        self._named_service  = named_service
+        self._named_service  = bus_name
         self._object_path    = object_path
         # fail early if the method name is bad
         _dbus_bindings.validate_member_name(method_name)
@@ -169,41 +170,70 @@ class ProxyObject(object):
     INTROSPECT_STATE_INTROSPECT_IN_PROGRESS = 1
     INTROSPECT_STATE_INTROSPECT_DONE = 2
 
-    def __init__(self, bus, named_service, object_path, introspect=True,
-                 follow_name_owner_changes=False):
+    def __init__(self, conn=None, bus_name=None, object_path=None,
+                 introspect=True, follow_name_owner_changes=False, **kwargs):
         """Initialize the proxy object.
 
         :Parameters:
-            `bus` : `dbus.Bus`
-                The bus on which to find this object
-            `named_service` : str
-                A bus name for the endpoint owning the object (need not
-                actually be a service name)
+            `conn` : `dbus.connection.Connection`
+                The bus or connection on which to find this object.
+                The keyword argument `bus` is a deprecated alias for this.
+            `bus_name` : str
+                A bus name for the application owning the object, to be used
+                as the destination for method calls and the sender for
+                signal matches. The keyword argument `named_service` is a
+                deprecated alias for this.
             `object_path` : str
-                The object path at which the endpoint exports the object
+                The object path at which the application exports the object
             `introspect` : bool
                 If true (default), attempt to introspect the remote
                 object to find out supported methods and their signatures
             `follow_name_owner_changes` : bool
-                If true (default is false) and the `named_service` is a
+                If true (default is false) and the `bus_name` is a
                 well-known name, follow ownership changes for that name
         """
+        bus = kwargs.pop('bus', None)
+        if bus is not None:
+            if conn is not None:
+                raise TypeError('conn and bus cannot both be specified')
+            conn = bus
+            from warnings import warn
+            warn('Passing the bus parameter to ProxyObject by name is '
+                 'deprecated: please use positional parameters',
+                 DeprecationWarning, stacklevel=2)
+        named_service = kwargs.pop('named_service', None)
+        if named_service is not None:
+            if bus_name is not None:
+                raise TypeError('bus_name and named_service cannot both be '
+                                'specified')
+            bus_name = named_service
+            from warnings import warn
+            warn('Passing the named_service parameter to ProxyObject by name '
+                 'is deprecated: please use positional parameters',
+                 DeprecationWarning, stacklevel=2)
+        if kwargs:
+            raise TypeError('ProxyObject.__init__ does not take these '
+                            'keyword arguments: %s'
+                            % ', '.join(kwargs.iterkeys()))
+
         if follow_name_owner_changes:
             # we don't get the signals unless the Bus has a main loop
             # XXX: using Bus internals
-            bus._require_main_loop()
+            conn._require_main_loop()
 
-        self._bus           = bus
+        self._bus = conn
 
-        if named_service is not None:
-            _dbus_bindings.validate_bus_name(named_service)
-        self._named_service = self._requested_bus_name = named_service
+        if bus_name is not None:
+            _dbus_bindings.validate_bus_name(bus_name)
+        # the attribute is still called _named_service for the moment,
+        # for the benefit of telepathy-python
+        self._named_service = self._requested_bus_name = bus_name
 
         _dbus_bindings.validate_object_path(object_path)
         self.__dbus_object_path__ = object_path
 
         if not follow_name_owner_changes:
-            self._named_service = bus.activate_name_owner(named_service)
+            self._named_service = conn.activate_name_owner(bus_name)
 
         #PendingCall object for Introspect call
         self._pending_introspect = None
@@ -322,7 +352,7 @@ class ProxyObject(object):
         self._bus.add_signal_receiver(handler_function,
                                       signal_name=signal_name,
                                       dbus_interface=dbus_interface,
-                                      named_service=self._named_service,
+                                      bus_name=self._named_service,
                                       path=self.__dbus_object_path__,
                                       **keywords)
 

@@ -265,16 +265,18 @@ class Connection(_Connection):
         """
         return bus_name
 
-    def get_object(self, named_service, object_path, introspect=True):
+    def get_object(self, bus_name=None, object_path=None, introspect=True,
+                   **kwargs):
         """Return a local proxy for the given remote object.
 
         Method calls on the proxy are translated into method calls on the
         remote object.
 
         :Parameters:
-            `named_service` : str
+            `bus_name` : str
                 A bus name (either the unique name or a well-known name)
-                of the application owning the object
+                of the application owning the object. The keyword argument
+                named_service is a deprecated alias for this.
             `object_path` : str
                 The object path of the desired object
             `introspect` : bool
@@ -283,13 +285,27 @@ class Connection(_Connection):
 
         :Returns: a `dbus.proxies.ProxyObject`
         """
-        return self.ProxyObjectClass(self, named_service, object_path,
+        named_service = kwargs.pop('named_service', None)
+        if named_service is not None:
+            if bus_name is not None:
+                raise TypeError('bus_name and named_service cannot both '
+                                'be specified')
+            from warnings import warn
+            warn('Passing the named_service parameter to get_object by name '
+                 'is deprecated: please use positional parameters',
+                 DeprecationWarning, stacklevel=2)
+            bus_name = named_service
+        if kwargs:
+            raise TypeError('get_object does not take these keyword '
+                            'arguments: %s' % ', '.join(kwargs.iterkeys()))
+
+        return self.ProxyObjectClass(self, bus_name, object_path,
                                      introspect=introspect)
 
     def add_signal_receiver(self, handler_function,
                                   signal_name=None,
                                   dbus_interface=None,
-                                  named_service=None,
+                                  bus_name=None,
                                   path=None,
                                   **keywords):
         """Arrange for the given function to be called when a signal matching
@@ -306,10 +322,10 @@ class Connection(_Connection):
             `dbus_interface` : str
                 The D-Bus interface name with which to qualify the signal;
                 None (the default) matches all interface names
-            `named_service` : str
+            `bus_name` : str
                 A bus name for the sender, which will be resolved to a
                 unique name if it is not already; None (the default) matches
-                any sender
+                any sender.
             `path` : str
                 The object path of the object which must have emitted the
                 signal; None (the default) matches any object path
@@ -354,10 +370,23 @@ class Connection(_Connection):
                 is the value given for that keyword parameter. As of this
                 time only string arguments can be matched (in particular,
                 object paths and signatures can't).
+            `named_service` : str
+                A deprecated alias for `bus_name`.
         """
         self._require_main_loop()
 
-        match = SignalMatch(self, named_service, path, dbus_interface,
+        named_service = keywords.pop('named_service', None)
+        if named_service is not None:
+            if bus_name is not None:
+                raise TypeError('bus_name and named_service cannot both be '
+                                'specified')
+            bus_name = named_service
+            from warnings import warn
+            warn('Passing the named_service parameter to add_signal_receiver '
+                 'by name is deprecated: please use positional parameters',
+                 DeprecationWarning, stacklevel=2)
+
+        match = SignalMatch(self, bus_name, path, dbus_interface,
                             signal_name, handler_function, **keywords)
         by_interface = self._signal_recipients_by_object_path.setdefault(path,
                                                                          {})
@@ -405,9 +434,21 @@ class Connection(_Connection):
     def remove_signal_receiver(self, handler_or_match,
                                signal_name=None,
                                dbus_interface=None,
-                               named_service=None,
+                               bus_name=None,
                                path=None,
                                **keywords):
+        named_service = keywords.pop('named_service', None)
+        if named_service is not None:
+            if bus_name is not None:
+                raise TypeError('bus_name and named_service cannot both be '
+                                'specified')
+            bus_name = named_service
+            from warnings import warn
+            warn('Passing the named_service parameter to '
+                 'remove_signal_receiver by name is deprecated: please use '
+                 'positional parameters',
+                 DeprecationWarning, stacklevel=2)
+
         by_interface = self._signal_recipients_by_object_path.get(path, None)
         if by_interface is None:
             return
@@ -422,7 +463,7 @@ class Connection(_Connection):
             new = []
             for match in matches:
                 if (handler_or_match is match
-                    or match.matches_removal_spec(named_service,
+                    or match.matches_removal_spec(bus_name,
                                                   path,
                                                   dbus_interface,
                                                   signal_name,
