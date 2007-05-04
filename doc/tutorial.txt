@@ -1,12 +1,9 @@
-.. @configure_input@
-
 ====================
 dbus-python tutorial
 ====================
 
 :Author: Simon McVittie, `Collabora Ltd.`_
 :Date: 2006-01-16
-:``dbus-python`` version: @VERSION@
 
 .. _`Collabora Ltd.`: http://www.collabora.co.uk/
 
@@ -45,6 +42,10 @@ bus, create a ``SystemBus`` object::
     system_bus = dbus.SystemBus()
 
 Of course, you can connect to both in the same application.
+
+For special purposes, you might use a non-default Bus, or a connection
+which isn't a Bus at all, using some new API added in dbus-python 0.81.0.
+This is the subject of a separate tutorial.
 
 .. _udev:
     http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev.html
@@ -414,41 +415,41 @@ To receive signals, the Bus needs to be connected to an event loop - see
 section `Setting up an event loop`_. Signals will only be received while
 the event loop is running.
 
-Receiving signals from a proxy object
--------------------------------------
+Signal matching
+---------------
 
-`Proxy objects`_ have a special method ``connect_to_signal`` which
-arranges for a callback to be called when a signal is received
-from the corresponding remote object. The parameters are:
+To respond to signals, you can use the ``add_signal_receiver`` method on
+`Bus objects`_. This arranges for a callback to be called when a
+matching signal is received, and has the following arguments:
 
-* the name of the signal
-
-* a callable (the handler function) which will be called by the event loop
+* a callable (the ``handler_function``) which will be called by the event loop
   when the signal is received - its parameters will be the arguments of
   the signal
 
-* the keyword argument ``dbus_interface`` qualifies the name with its
-  interface
+* the signal name, ``signal_name``: here None (the default) matches all names
 
-`dbus.Interface` objects have a similar ``connect_to_signal`` method,
-but in this case you don't need the ``dbus_interface`` keyword argument
-since the interface to use is already known.
+* the D-Bus interface, ``dbus_interface``: again None is the default,
+  and matches all interfaces
 
-``connect_to_signal`` has keyword arguments ``utf8_strings`` and
+* a sender bus name (well-known or unique), ``bus_name``: None is again
+  the default, and matches all senders. Well-known names match signals
+  from whatever application is currently the primary owner of that
+  well-known name.
+
+* a sender object path, ``path``: once again None is the default and
+  matches all object paths
+
+``add_signal_receiver`` also has keyword arguments ``utf8_strings`` and
 ``byte_arrays`` which influence the types used when calling the
 handler function, in the same way as the `byte_arrays and utf8_strings`_
 options on proxy methods.
 
-Example
-~~~~~~~
-
-``examples/example-signal-recipient.py`` receives signals. Before running it,
-you'll need to run ``examples/example-signal-emitter.py`` in the background or
-in another shell. As well as ``connect_to_signal`` it demonstrates more
-general signal matching, described next.
+``add_signal_receiver`` returns a ``SignalMatch`` object. Its only
+useful public API at the moment is a ``remove`` method with no
+arguments, which removes the signal match from the connection.
 
 Getting more information from a signal
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------------------
 
 You can also arrange for more information to be passed to the handler
 function. If you pass the keyword arguments ``sender_keyword``,
@@ -467,7 +468,7 @@ and a signal ``Hello`` with no arguments is received from
 ``sender='com.example.Foo'``.
 
 String argument matching
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
 If there are keyword parameters for the form ``arg``\ *n* where n is a
 small non-negative number, their values must be ``unicode`` objects
@@ -477,30 +478,41 @@ not an object-path or a signature) with that value.
 
 .. *this comment is to stop the above breaking vim syntax highlighting*
 
-General signal matching
------------------------
+Receiving signals from a proxy object
+-------------------------------------
 
-To match signals in a more general way, you can use the
-``add_signal_receiver`` method on `Bus objects`_. This behaves rather
-like ``connect_to_signal``, but has the following parameters:
+`Proxy objects`_ have a special method ``connect_to_signal`` which
+arranges for a callback to be called when a signal is received
+from the corresponding remote object. The parameters are:
 
-* the handler function ``handler_function``, a callable: the same as for
-  ``connect_to_signal``
-* the signal name, ``signal_name``: here None (the default) matches all names
-* the D-Bus interface, ``dbus_interface``: again None is the default,
-  and matches all interfaces
-* a sender bus name (well-known or unique), ``named_service``: None is again
-  the default, and matches all senders
-* a sender object path, ``path``: once again None is the default and
-  matches all object paths
+* the name of the signal
 
-The same extra keyword arguments as for ``connect_to_signal`` are also
-available.
+* a callable (the handler function) which will be called by the event loop
+  when the signal is received - its parameters will be the arguments of
+  the signal
+
+* the handler function, a callable: the same as for ``add_signal_receiver``
+
+* the keyword argument ``dbus_interface`` qualifies the name with its
+  interface
+
+`dbus.Interface` objects have a similar ``connect_to_signal`` method,
+but in this case you don't need the ``dbus_interface`` keyword argument
+since the interface to use is already known.
+
+The same extra keyword arguments as for ``add_signal_receiver`` are also
+available, and just like ``add_signal_receiver``, it returns a
+SignalMatch.
+
+You shouldn't use proxy objects just to listen to signals, since they
+might activate the relevant service when created, but if you already have a
+proxy object in order to call methods, it's often convenient to use it to add
+signal matches too.
 
 See also
-~~~~~~~~
+--------
 
-As before, ``examples/signal-recipient.py`` receives signals - it demonstrates
+``examples/signal-recipient.py`` receives signals - it demonstrates
 general signal matching as well as ``connect_to_signal``. Before running it,
 you'll need to run ``examples/signal-emitter.py`` in the background or
 in another shell.
