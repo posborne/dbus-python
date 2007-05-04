@@ -415,9 +415,7 @@ class Object(Interface):
 
         self._object_path = object_path
         self._name = bus_name
-        self._bus = conn
-
-        self._connection = self._bus.get_connection()
+        self._connection = conn
 
         self._connection._register_object_path(object_path, self._message_cb, self._unregister_cb)
 
