@@ -45,7 +45,8 @@ Of course, you can connect to both in the same application.
 
 For special purposes, you might use a non-default Bus, or a connection
 which isn't a Bus at all, using some new API added in dbus-python 0.81.0.
-This is the subject of a separate tutorial.
+This is not described here, and will at some stage be the subject of a separate
+tutorial.
 
 .. _udev:
     http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev.html
