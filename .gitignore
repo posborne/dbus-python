@@ -36,6 +36,5 @@ test/TestSuitePythonService.service
 test/tmp-session-bus.conf
 Makefile
 *.html
-doc/tutorial.txt
 dbus-python-*.tar.gz
 INSTALL

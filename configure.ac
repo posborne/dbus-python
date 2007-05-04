@@ -161,7 +161,6 @@ AC_CONFIG_FILES(
   dbus/Makefile
   dbus-python.pc
   dbus/_version.py
-  doc/tutorial.txt
   examples/Makefile
   m4/Makefile
   test/Makefile
