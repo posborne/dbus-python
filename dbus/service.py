@@ -233,6 +233,7 @@ def _method_reply_return(connection, message, method_name, signature, *retval):
     try:
         reply.append(signature=signature, *retval)
     except Exception, e:
+        logging.basicConfig()
         if signature is None:
             try:
                 signature = reply.guess_signature(retval) + ' (guessed)'
