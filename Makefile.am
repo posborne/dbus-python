@@ -55,9 +55,10 @@ nodist_doc_DATA = $(HTML_TXT_RSTDOCS) $(HTML_RSTDOCS)
 CLEANFILES += $(nodist_doc_DATA)
 
 $(HTML_TXT_RSTDOCS) : %.html: %.txt
-		$(RST2HTML) $(RST2HTMLFLAGS) $< $@
+	$(INSTALL) -d doc
+	$(RST2HTML) $(RST2HTMLFLAGS) $< $@
 $(HTML_RSTDOCS) : %.html: %
-		$(RST2HTML) $(RST2HTMLFLAGS) $< $@
+	$(RST2HTML) $(RST2HTMLFLAGS) $< $@
 else
 _maintainer-update-htmldocs:
 	@echo "*** Not updating the HTML docs on the website - install rst2html"
