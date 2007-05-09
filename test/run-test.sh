@@ -43,18 +43,18 @@ $PYTHON "$DBUS_TOP_SRCDIR"/test/test-standalone.py || die "test-standalone.py fa
 echo "running test-unusable-main-loop.py"
 $PYTHON "$DBUS_TOP_SRCDIR"/test/test-unusable-main-loop.py || die "... failed"
 
-echo "running the examples"
+#echo "running the examples"
 
-$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-service.py &
-$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-signal-emitter.py &
-$PYTHON "$DBUS_TOP_SRCDIR"/examples/list-system-services.py --session ||
-  die "list-system-services.py --session failed!"
-$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-async-client.py ||
-  die "example-async-client failed!"
-$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-client.py --exit-service ||
-  die "example-client failed!"
-$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-signal-recipient.py --exit-service ||
-  die "example-signal-recipient failed!"
+#$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-service.py &
+#$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-signal-emitter.py &
+#$PYTHON "$DBUS_TOP_SRCDIR"/examples/list-system-services.py --session ||
+#  die "list-system-services.py --session failed!"
+#$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-async-client.py ||
+#  die "example-async-client failed!"
+#$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-client.py --exit-service ||
+#  die "example-client failed!"
+#$PYTHON "$DBUS_TOP_SRCDIR"/examples/example-signal-recipient.py --exit-service ||
+#  die "example-signal-recipient failed!"
 
 echo "running cross-test (for better diagnostics use mjj29's dbus-test)"
 
