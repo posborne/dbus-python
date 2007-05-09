@@ -1,3 +1,88 @@
+D-Bus Python Bindings 0.81.0 (9 May 2007)
+=========================================
+
+The 'series of tubes' release
+-----------------------------
+
+This is a feature release with support for non-bus-daemon connections
+and improved GObject integration.
+
+Features:
+
+* Bus has a superclass dbus.bus.BusConnection (a connection to a bus daemon,
+  but without the shared-connection semantics or any deprecated API)
+  for the benefit of those wanting to subclass bus daemon connections
+
+* BusConnection has a superclass dbus.connection.Connection (a
+  connection without a bus daemon) for use in peer-to-peer situations,
+  or distributed pseudo-bus situations without a bus daemon such as
+  Telepathy's Tubes API
+
+* dbus.gobject_service.ExportedGObject is like dbus.service.Object, but
+  is also a subclass of GObject (with the necessary metaclass magic to
+  make this work). Until someone has verified that the GObject side of
+  things works as expected too, I consider this API to be potentially
+  subject to change!
+
+* Connection and BusConnection have gained a number of useful methods,
+  including watch_name_owner (track name owner changes asynchronously,
+  avoiding race conditions), call_blocking and call_async (blocking and
+  asynchronous method calls without going via a proxy - note that these
+  are semi-low-level interfaces which don't do introspection), and
+  list_names, list_activatable_names and get_name_owner which are
+  simple wrappers for the corresponding org.freedesktop.DBus methods
+
+* dbus.Interface (now also available at dbus.proxies.Interface)
+  and dbus.proxies.ProxyObject now have some reasonably obvious properties.
+
+Deprecations:
+
+* All keyword arguments called named_service are deprecated in favour of an
+  argument called bus_name (to be compatible with both older and newer
+  dbus-python, you should pass these positional arguments).
+
+* The bus keyword argument to dbus.proxies.ProxyObject is deprecated in
+  favour of an argument called conn, because proxies will work on non-bus
+  connections now (again, for maximum compatibility you should use a
+  positional argument for this).
+
+* No warning is raised for this, but I consider calling any remote method
+  on a ProxyObject or Interface whose name is either alllowercase or
+  lower_case_with_underscores to be deprecated, and reserve the right
+  to add properties or methods of this form in future releases - use
+  ProxyObject.get_dbus_method if you must call a remote method named in
+  this way. Methods named following TheUsualDBusConvention or
+  theJavaConvention are safe.
+
+Bugfixes:
+
+* Exceptions in signal handlers print a stack trace to stderr (this can
+  be redirected elsewhere with Python's logging framework). Partially
+  addresses fd.o #9980.
+
+* The reserved local interface and object path are properly checked for.
+
+* When you return a tuple that is not a Struct from a method with no
+  out_signature, it's interpreted as multiple return values, not a
+  single Struct (closes fd.o #10174).
+
+* If send_with_reply() returns TRUE but with pending call NULL, dbus-python
+  no longer crashes. This can happen when unexpectedly disconnected.
+
+* Arguments are not examined for functions declared METH_NOARGS (this is
+  unnecessary and can cause a crash).
+
+Other notable changes:
+
+* dbus-python uses the standard Python logging framework throughout.
+  The first time a WARNING or ERROR is generated, it will configure the
+  logging framework to output to stderr, unless you have already
+  configured logging in your application.
+
+* The tutorial now advocates the use of add_signal_receiver if all you
+  want to do is listen for signals: this avoids undesired activation,
+  e.g. of Listen or Rhythmbox (!). Addresses fd.o #10743, fd.o #10568.
+
 D-Bus Python Bindings 0.80.2 (13 February 2007)
 ===============================================
 - Fix numerous memory and reference leaks
