@@ -1,0 +1,2 @@
+In git versions of dbus-python, please use 'git-log' instead of referring to
+ChangeLog. A changelog is generated from the git history during 'make dist'.

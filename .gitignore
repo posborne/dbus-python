@@ -1,6 +1,5 @@
 run-with-tmp-session-bus.conf
 test/data
-ChangeLog
 *.pyc
 *.pyo
 .*.sw?

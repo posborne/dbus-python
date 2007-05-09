@@ -26,12 +26,13 @@ cross-test-client:
 
 # === Documentation ===
 
-ChangeLog: always-rebuild
-	@if test -d $(top_srcdir)/.git; then \
-		if git-log --stat > ChangeLog; then \
+dist-hook:
+	chmod u+w $(distdir)/ChangeLog
+	if test -d $(top_srcdir)/.git; then \
+		if git-log --stat > $(distdir)/ChangeLog; then \
 			: ; \
 		else \
-			git-log > Changelog || exit 1; \
+			git-log > $(distdir)/ChangeLog; \
 		fi; \
 	fi
 
