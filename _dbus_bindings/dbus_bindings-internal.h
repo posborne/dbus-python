@@ -65,7 +65,7 @@ extern dbus_bool_t dbus_py_init_bus_types(void);
 extern dbus_bool_t dbus_py_insert_bus_types(PyObject *this_module);
 
 /* exceptions.c */
-extern PyObject *DBusPyException;
+extern PyObject *DBusPyException_SetString(const char *msg);
 extern PyObject *DBusPyException_ConsumeError(DBusError *error);
 extern dbus_bool_t dbus_py_init_exception_types(void);
 extern dbus_bool_t dbus_py_insert_exception_types(PyObject *this_module);

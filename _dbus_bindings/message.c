@@ -36,9 +36,9 @@ static inline int Message_Check(PyObject *o)
 PyObject *
 DBusPy_RaiseUnusableMessage(void)
 {
-    PyErr_SetString(DBusPyException,
-                    "Message object is uninitialized, or has become unusable "
-                     "due to error while appending arguments");
+    DBusPyException_SetString("Message object is uninitialized, or has become "
+                              "unusable due to error while appending "
+                              "arguments");
     return NULL;
 }
 

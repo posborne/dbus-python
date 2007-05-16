@@ -254,7 +254,6 @@ init_dbus_bindings(void)
     }
 
     if (!dbus_py_init_generic()) return;
-    if (!dbus_py_init_exception_types()) return;
     if (!dbus_py_init_abstract()) return;
     if (!dbus_py_init_signature()) return;
     if (!dbus_py_init_int_types()) return;
@@ -270,7 +269,6 @@ init_dbus_bindings(void)
     this_module = Py_InitModule3("_dbus_bindings", module_functions, module_doc);
     if (!this_module) return;
 
-    if (!dbus_py_insert_exception_types(this_module)) return;
     if (!dbus_py_insert_abstract_types(this_module)) return;
     if (!dbus_py_insert_signature(this_module)) return;
     if (!dbus_py_insert_int_types(this_module)) return;

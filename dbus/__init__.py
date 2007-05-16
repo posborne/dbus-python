@@ -50,13 +50,12 @@ __all__ = (
            'LOCAL_PATH', 'LOCAL_IFACE', 'PEER_IFACE',
            'INTROSPECTABLE_IFACE', 'PROPERTIES_IFACE',
 
-           'DBusException',
-
            'ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
            'Int16', 'UInt16', 'Int32', 'UInt32', 'Int64', 'UInt64',
            'Double', 'String', 'Array', 'Struct', 'Dictionary', 'UTF8String',
 
            # from exceptions
+           'DBusException',
            'MissingErrorHandlerException', 'MissingReplyHandlerException',
            'ValidationException', 'IntrospectionParserException',
            'UnknownMethodException', 'NameExistsException',
@@ -82,14 +81,14 @@ from _dbus_bindings import get_default_main_loop, set_default_main_loop,\
 from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE,\
                            LOCAL_PATH, LOCAL_IFACE, PEER_IFACE,\
                            INTROSPECTABLE_IFACE, PROPERTIES_IFACE
-from _dbus_bindings import DBusException
 
 from dbus.exceptions import MissingErrorHandlerException, \
                             MissingReplyHandlerException, \
                             ValidationException, \
                             IntrospectionParserException, \
                             UnknownMethodException, \
-                            NameExistsException
+                            NameExistsException, \
+                            DBusException
 from _dbus_bindings import ObjectPath, ByteArray, Signature, Byte, Boolean,\
                            Int16, UInt16, Int32, UInt32, Int64, UInt64,\
                            Double, String, Array, Struct, Dictionary, \

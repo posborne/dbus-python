@@ -31,8 +31,9 @@ import sys
 import weakref
 from traceback import print_exc
 
+from dbus.exceptions import DBusException
 from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH,\
-                           BUS_DAEMON_IFACE, DBusException, UTF8String,\
+                           BUS_DAEMON_IFACE, UTF8String,\
                            validate_member_name, validate_interface_name,\
                            validate_bus_name, validate_object_path,\
                            BUS_SESSION, BUS_SYSTEM, BUS_STARTER,\

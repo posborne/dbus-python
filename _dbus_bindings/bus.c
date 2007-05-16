@@ -103,9 +103,8 @@ DBusPyConnection_GetUniqueName(Connection *self, PyObject *args UNUSED)
     name = dbus_bus_get_unique_name(self->conn);
     Py_END_ALLOW_THREADS
     if (!name) {
-        PyErr_SetString(DBusPyException, "This connection has no unique "
-                        "name yet");
-        return NULL;
+        return DBusPyException_SetString("This connection has no unique name "
+                                         "yet");
     }
     return PyString_FromString(name);
 }

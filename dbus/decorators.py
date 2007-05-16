@@ -28,6 +28,8 @@ import inspect
 
 import _dbus_bindings
 
+from dbus.exceptions import DBusException
+
 
 def method(dbus_interface, in_signature=None, out_signature=None,
         async_callbacks=None,

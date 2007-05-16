@@ -29,8 +29,9 @@ import traceback
 
 import _dbus_bindings
 from dbus import SessionBus
-from dbus.exceptions import NameExistsException
-from dbus.exceptions import UnknownMethodException
+from dbus.exceptions import DBusException, \
+                            NameExistsException, \
+                            UnknownMethodException
 from dbus.decorators import method
 from dbus.decorators import signal
 from dbus.proxies import LOCAL_PATH
@@ -249,8 +250,10 @@ def _method_reply_return(connection, message, method_name, signature, *retval):
 
 
 def _method_reply_error(connection, message, exception):
-    if hasattr(exception, '_dbus_error_name'):
-        name = exception._dbus_error_name
+    name = getattr(exception, '_dbus_error_name', None)
+
+    if name is not None:
+        pass
     elif getattr(exception, '__module__', '') in ('', '__main__'):
         name = 'org.freedesktop.DBus.Python.%s' % exception.__class__.__name__
     else:

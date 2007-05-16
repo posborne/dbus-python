@@ -405,9 +405,8 @@ Connection_send_message_with_reply(Connection *self, PyObject *args, PyObject *k
 
     if (!pending) {
         /* connection is disconnected (doesn't return FALSE!) */
-        PyErr_SetString (DBusPyException, "Connection is disconnected - "
+        return DBusPyException_SetString ("Connection is disconnected - "
                                           "unable to make method call");
-        return NULL;
     }
 
     return DBusPyPendingCall_ConsumeDBusPendingCall(pending, callable);
@@ -473,6 +472,9 @@ Connection_send_message_with_reply_and_block(Connection *self, PyObject *args)
                                                       timeout_ms, &error);
     Py_END_ALLOW_THREADS
 
+    /* FIXME: if we instead used send_with_reply and blocked on the resulting
+     * PendingCall, then we could get all args from the error, not just
+     * the first */
     if (!reply) {
         return DBusPyException_ConsumeError(&error);
     }

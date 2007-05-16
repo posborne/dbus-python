@@ -22,60 +22,75 @@
 
 #include "dbus_bindings-internal.h"
 
-PyObject *DBusPyException;
+static PyObject *imported_dbus_exception = NULL;
 
-PyDoc_STRVAR(DBusException__doc__, "Represents any D-Bus-related error.");
+static dbus_bool_t
+import_exception(void)
+{
+    PyObject *name;
+    PyObject *exceptions;
+
+    if (imported_dbus_exception != NULL) {
+        return TRUE;
+    }
+
+    name = PyString_FromString("dbus.exceptions");
+    if (name == NULL) {
+        return FALSE;
+    }
+    exceptions = PyImport_Import(name);
+    Py_DECREF(name);
+    if (exceptions == NULL) {
+        return FALSE;
+    }
+    imported_dbus_exception = PyObject_GetAttrString(exceptions,
+                                                     "DBusException");
+    Py_DECREF(exceptions);
+
+    return (imported_dbus_exception != NULL);
+}
+
+PyObject *
+DBusPyException_SetString(const char *msg)
+{
+    if (imported_dbus_exception != NULL || import_exception()) {
+        PyErr_SetString(imported_dbus_exception, msg);
+    }
+    return NULL;
+}
 
 PyObject *
 DBusPyException_ConsumeError(DBusError *error)
 {
-    PyErr_Format(DBusPyException, "%s: %s",
-                 error->name, error->message);
+    PyObject *exc_value = NULL;
+
+    if (imported_dbus_exception == NULL && !import_exception()) {
+        goto finally;
+    }
+
+    exc_value = PyObject_CallFunction(imported_dbus_exception,
+                                      "s",
+                                      error->message ? error->message
+                                                     : "");
+    if (error->name) {
+        PyObject *name = PyString_FromString(error->name);
+        int ret;
+
+        if (!name)
+            goto finally;
+        ret = PyObject_SetAttrString(exc_value, "_dbus_error_name", name);
+        Py_DECREF(name);
+        if (ret < 0) {
+            goto finally;
+        }
+    }
+
+    PyErr_SetObject(imported_dbus_exception, exc_value);
+
+finally:
+    Py_XDECREF(exc_value);
     dbus_error_free(error);
     return NULL;
-}
-
-dbus_bool_t
-dbus_py_init_exception_types(void)
-{
-    PyObject *bases;
-    PyObject *dict = PyDict_New();
-    PyObject *name;
-
-    if (!dict)
-        return 0;
-    if (PyDict_SetItemString(dict, "__doc__",
-                             PyString_FromString(DBusException__doc__)) < 0)
-        return 0;
-    if (PyDict_SetItemString(dict, "__module__",
-                             PyString_FromString("dbus")) < 0)
-        return 0;
-    bases = Py_BuildValue("(O)", (PyObject *)PyExc_Exception);
-    if (!bases) {
-        Py_DECREF(dict);
-        return 0;
-    }
-    name = PyString_FromString("DBusException");
-    if (!name) {
-        Py_DECREF(dict);
-        Py_DECREF(bases);
-        return 0;
-    }
-    DBusPyException = PyClass_New(bases, dict, name);
-    Py_DECREF(bases);
-    Py_DECREF(dict);
-    if (!DBusPyException)
-        return 0;
-    return 1;
-}
-
-dbus_bool_t
-dbus_py_insert_exception_types(PyObject *this_module)
-{
-    if (PyModule_AddObject(this_module, "DBusException", DBusPyException) < 0) {
-        return 0;
-    }
-    return 1;
 }
 
 /* vim:set ft=c cino< sw=4 sts=4 et: */

@@ -28,12 +28,13 @@ import weakref
 
 from _dbus_bindings import Connection as _Connection, ErrorMessage, \
                            MethodCallMessage, MethodReturnMessage, \
-                           DBusException, LOCAL_PATH, LOCAL_IFACE, \
+                           LOCAL_PATH, LOCAL_IFACE, \
                            validate_interface_name, validate_member_name,\
                            validate_bus_name, validate_object_path,\
                            validate_error_name, \
                            HANDLER_RESULT_NOT_YET_HANDLED, \
                            UTF8String, SignalMessage
+from dbus.exceptions import DBusException
 from dbus.proxies import ProxyObject
 
 
@@ -548,12 +549,8 @@ class Connection(_Connection):
             if isinstance(message, MethodReturnMessage):
                 reply_handler(*message.get_args_list(**get_args_opts))
             elif isinstance(message, ErrorMessage):
-                args = message.get_args_list()
-                # FIXME: should we do something with the rest?
-                if len(args) > 0:
-                    error_handler(DBusException(args[0]))
-                else:
-                    error_handler(DBusException())
+                error_handler(DBusException(name=message.get_error_name(),
+                                            *message.get_args_list()))
             else:
                 error_handler(TypeError('Unexpected type for reply '
                                         'message: %r' % message))

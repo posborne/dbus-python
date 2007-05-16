@@ -16,7 +16,7 @@ If you need additional public API, please contact the maintainers via
 _warn(_dbus_bindings_warning, DeprecationWarning, stacklevel=2)
 
 # Exceptions
-from _dbus_bindings import DBusException
+from dbus.exceptions import DBusException
 class ConnectionError(Exception): pass
 
 # Types
