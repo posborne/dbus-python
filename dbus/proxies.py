@@ -388,12 +388,17 @@ class ProxyObject(object):
             self._introspect_lock.release()
 
     def _introspect_error_handler(self, error):
+        logging.basicConfig()
+        _logger.error("Introspect error on %s:%s: %s.%s: %s",
+                      self._named_service, self.__dbus_object_path__,
+                      error.__class__.__module__, error.__class__.__name__,
+                      error)
         self._introspect_lock.acquire()
         try:
+            _logger.debug('Executing introspect queue due to error')
             self._introspect_state = self.INTROSPECT_STATE_DONT_INTROSPECT
             self._pending_introspect = None
             self._introspect_execute_queue()
-            sys.stderr.write("Introspect error: " + str(error) + "\n")
         finally:
             self._introspect_lock.release()
 
