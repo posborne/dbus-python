@@ -8,6 +8,9 @@ Features:
   get_dbus_name(). Exception handlers should use this instead of looking at
   the stringified form of the exception, unless backwards compatibility
   is needed.
+* DBusException objects now get all arguments from the Error message, not
+  just the first (although there will usually only be one). Use the 'args'
+  attribute if you need to retrieve them.
 
 D-Bus Python Bindings 0.81.0 (9 May 2007)
 =========================================
