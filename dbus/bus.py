@@ -42,6 +42,8 @@ _NAME_OWNER_CHANGE_MATCH = ("type='signal',sender='%s',"
 """(_NAME_OWNER_CHANGE_MATCH % sender) matches relevant NameOwnerChange
 messages"""
 
+_NAME_HAS_NO_OWNER = 'org.freedesktop.DBus.Error.NameHasNoOwner'
+
 _logger = logging.getLogger('dbus.bus')
 
 
@@ -55,8 +57,7 @@ class NameOwnerWatch(object):
             callback(new_owner)
 
         def error_cb(e):
-            # FIXME: detect whether it's NameHasNoOwner properly
-            if str(e).startswith('org.freedesktop.DBus.Error.NameHasNoOwner:'):
+            if e.get_dbus_name() == _NAME_HAS_NO_OWNER:
                 callback('')
             else:
                 logging.basicConfig()
@@ -158,10 +159,9 @@ class BusConnection(Connection):
             try:
                 return self.get_name_owner(bus_name)
             except DBusException, e:
-                # FIXME: detect whether it's NameHasNoOwner, but properly
-                #if not str(e).startswith('org.freedesktop.DBus.Error.NameHasNoOwner:'):
-                #    raise
-                # it might not exist: try to start it
+                if e.get_dbus_name() != _NAME_HAS_NO_OWNER:
+                    raise
+                # else it doesn't exist: try to start it
                 self.start_service_by_name(bus_name)
                 return self.get_name_owner(bus_name)
         else:
