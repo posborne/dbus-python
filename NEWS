@@ -1,3 +1,14 @@
+D-Bus Python Bindings 0.81.1 (unreleased)
+=========================================
+
+Features:
+
+* When an Error message on the bus is represented as a DBusException, the
+  error name is copied into the exception and can be retrieved by
+  get_dbus_name(). Exception handlers should use this instead of looking at
+  the stringified form of the exception, unless backwards compatibility
+  is needed.
+
 D-Bus Python Bindings 0.81.0 (9 May 2007)
 =========================================
 
