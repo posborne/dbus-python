@@ -68,6 +68,8 @@ class TestDBusBindings(unittest.TestCase):
     def setUp(self):
         self.bus = dbus.SessionBus()
         self.remote_object = self.bus.get_object(NAME, OBJECT)
+        self.remote_object_follow = self.bus.get_object(NAME, OBJECT,
+                follow_name_owner_changes=True)
         self.iface = dbus.Interface(self.remote_object, IFACE)
 
     def testGObject(self):

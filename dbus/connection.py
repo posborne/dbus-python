@@ -245,9 +245,7 @@ class Connection(_Connection):
             mapping member to list of SignalMatch objects."""
 
             self._signals_lock = thread.allocate_lock()
-            """Lock used to protect signal data structures if doing two
-            removals at the same time (everything else is atomic, thanks to
-            the GIL)"""
+            """Lock used to protect signal data structures"""
 
             self.add_message_filter(self.__class__._signal_func)
 
@@ -389,17 +387,18 @@ class Connection(_Connection):
 
         match = SignalMatch(self, bus_name, path, dbus_interface,
                             signal_name, handler_function, **keywords)
-        by_interface = self._signal_recipients_by_object_path.setdefault(path,
-                                                                         {})
-        by_member = by_interface.setdefault(dbus_interface, {})
-        matches = by_member.setdefault(signal_name, [])
 
-        # make sure nobody is currently manipulating the list
         self._signals_lock.acquire()
         try:
+            by_interface = self._signal_recipients_by_object_path.setdefault(
+                    path, {})
+            by_member = by_interface.setdefault(dbus_interface, {})
+            matches = by_member.setdefault(signal_name, [])
+
             matches.append(match)
         finally:
             self._signals_lock.release()
+
         return match
 
     def _iter_easy_matches(self, path, dbus_interface, member):
@@ -450,18 +449,21 @@ class Connection(_Connection):
                  'positional parameters',
                  DeprecationWarning, stacklevel=2)
 
-        by_interface = self._signal_recipients_by_object_path.get(path, None)
-        if by_interface is None:
-            return
-        by_member = by_interface.get(dbus_interface, None)
-        if by_member is None:
-            return
-        matches = by_member.get(signal_name, None)
-        if matches is None:
-            return
+        new = []
+        deletions = []
         self._signals_lock.acquire()
         try:
-            new = []
+            by_interface = self._signal_recipients_by_object_path.get(path,
+                                                                      None)
+            if by_interface is None:
+                return
+            by_member = by_interface.get(dbus_interface, None)
+            if by_member is None:
+                return
+            matches = by_member.get(signal_name, None)
+            if matches is None:
+                return
+
             for match in matches:
                 if (handler_or_match is match
                     or match.matches_removal_spec(bus_name,
@@ -470,15 +472,18 @@ class Connection(_Connection):
                                                   signal_name,
                                                   handler_or_match,
                                                   **keywords)):
-                    self._clean_up_signal_match(match)
+                    deletions.append(match)
                 else:
                     new.append(match)
             by_member[signal_name] = new
         finally:
             self._signals_lock.release()
 
+        for match in deletions:
+            self._clean_up_signal_match(match)
+
     def _clean_up_signal_match(self, match):
-        # Called with the signals lock held
+        # Now called without the signals lock held (it was held in <= 0.81.0)
         pass
 
     def _signal_func(self, message):

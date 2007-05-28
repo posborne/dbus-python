@@ -53,10 +53,12 @@ class TestSignals(unittest.TestCase):
         logger.info('setUp()')
         self.bus = dbus.SessionBus()
         self.remote_object = self.bus.get_object("org.freedesktop.DBus.TestSuitePythonService", "/org/freedesktop/DBus/TestSuitePythonObject")
+        self.remote_object_follow = self.bus.get_object("org.freedesktop.DBus.TestSuitePythonService", "/org/freedesktop/DBus/TestSuitePythonObject", follow_name_owner_changes=True)
         self.iface = dbus.Interface(self.remote_object, "org.freedesktop.DBus.TestSuiteInterface")
+        self.iface_follow = dbus.Interface(self.remote_object_follow, "org.freedesktop.DBus.TestSuiteInterface")
         self.in_test = None
 
-    def signal_test_impl(self, name, test_removal=False):
+    def signal_test_impl(self, iface, name, test_removal=False):
         self.in_test = name
         # using append rather than assignment here to avoid scoping issues
         result = []
@@ -79,11 +81,11 @@ class TestSignals(unittest.TestCase):
                 main_loop.quit()
 
         logger.info('Testing %s', name)
-        match = self.iface.connect_to_signal('SignalOneString', _signal_handler,
-                                             sender_keyword='sender',
-                                             path_keyword='path')
+        match = iface.connect_to_signal('SignalOneString', _signal_handler,
+                                        sender_keyword='sender',
+                                        path_keyword='path')
         logger.info('Waiting for signal...')
-        self.iface.EmitSignal('SignalOneString', 0)
+        iface.EmitSignal('SignalOneString', 0)
         source_id = gobject.timeout_add(1000, _timeout_handler)
         main_loop.run()
         if not result:
@@ -95,7 +97,7 @@ class TestSignals(unittest.TestCase):
             self.in_test = name + '+removed'
             logger.info('Testing %s', name)
             result = []
-            self.iface.EmitSignal('SignalOneString', 0)
+            iface.EmitSignal('SignalOneString', 0)
             source_id = gobject.timeout_add(1000, _rm_timeout_handler)
             main_loop.run()
             if result:
@@ -103,16 +105,28 @@ class TestSignals(unittest.TestCase):
             gobject.source_remove(source_id)
 
     def testSignal(self):
-        self.signal_test_impl('Signal')
+        self.signal_test_impl(self.iface, 'Signal')
 
     def testRemoval(self):
-        self.signal_test_impl('Removal', True)
+        self.signal_test_impl(self.iface, 'Removal', True)
 
     def testSignalAgain(self):
-        self.signal_test_impl('SignalAgain')
+        self.signal_test_impl(self.iface, 'SignalAgain')
 
     def testRemovalAgain(self):
-        self.signal_test_impl('RemovalAgain', True)
+        self.signal_test_impl(self.iface, 'RemovalAgain', True)
+
+    def testSignalF(self):
+        self.signal_test_impl(self.iface_follow, 'Signal')
+
+    def testRemovalF(self):
+        self.signal_test_impl(self.iface_follow, 'Removal', True)
+
+    def testSignalAgainF(self):
+        self.signal_test_impl(self.iface_follow, 'SignalAgain')
+
+    def testRemovalAgainF(self):
+        self.signal_test_impl(self.iface_follow, 'RemovalAgain', True)
 
 if __name__ == '__main__':
     main_loop = gobject.MainLoop()
