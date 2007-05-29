@@ -11,11 +11,15 @@ Features:
 * DBusException objects now get all arguments from the Error message, not
   just the first (although there will usually only be one). Use the 'args'
   attribute if you need to retrieve them.
+* The Connection, BusConnection and Bus classes have a method
+  list_exported_child_objects(path: str) -> list of str, which wraps
+  dbus_connection_list_registered()
 
 Bug fixes:
 
 * Don't deadlock when removing a signal match that tracks name-owner changes.
   (http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=426412)
+* Include child nodes in introspection using list_exported_child_objects()
 
 D-Bus Python Bindings 0.81.0 (9 May 2007)
 =========================================
