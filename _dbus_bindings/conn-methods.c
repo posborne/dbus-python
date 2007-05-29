@@ -901,6 +901,67 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
     }
 }
 
+PyDoc_STRVAR(Connection_list_exported_child_objects__doc__,
+"list_exported_child_objects(path: str) -> list of str\n\n"
+"Return a list of the names of objects exported on this Connection as\n"
+"direct children of the given object path.\n"
+"\n"
+"Each name returned may be converted to a valid object path using\n"
+"``dbus.ObjectPath('%s%s%s' % (path, (path != '/' and '/' or ''), name))``.\n"
+"For the purposes of this function, every parent or ancestor of an exported\n"
+"object is considered to be an exported object, even if it's only an object\n"
+"synthesized by the library to support introspection.\n");
+static PyObject *
+Connection_list_exported_child_objects (Connection *self, PyObject *args,
+                                        PyObject *kwargs)
+{
+    const char *path;
+    char **kids, **kid_ptr;
+    dbus_bool_t ok;
+    PyObject *ret;
+    static char *argnames[] = {"path", NULL};
+
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", argnames, &path)) {
+        return NULL;
+    }
+
+    if (!dbus_py_validate_object_path(path)) {
+        return NULL;
+    }
+
+    Py_BEGIN_ALLOW_THREADS
+    ok = dbus_connection_list_registered(self->conn, path, &kids);
+    Py_END_ALLOW_THREADS
+
+    if (!ok) {
+        return PyErr_NoMemory();
+    }
+
+    ret = PyList_New(0);
+    if (!ret) {
+        return NULL;
+    }
+    for (kid_ptr = kids; *kid_ptr; kid_ptr++) {
+        PyObject *tmp = PyString_FromString(*kid_ptr);
+
+        if (!tmp) {
+            Py_DECREF(ret);
+            return NULL;
+        }
+        if (PyList_Append(ret, tmp) < 0) {
+            Py_DECREF(tmp);
+            Py_DECREF(ret);
+            return NULL;
+        }
+        Py_DECREF(tmp);
+    }
+
+    dbus_free_string_array(kids);
+
+    return ret;
+}
+
     /* dbus_connection_get_object_path_data - not useful to Python,
      * the object path data is just a PyString containing the path */
     /* dbus_connection_list_registered could be useful, though */
@@ -955,6 +1016,7 @@ struct PyMethodDef DBusPyConnection_tp_methods[] = {
     ENTRY(send_message_with_reply, METH_VARARGS|METH_KEYWORDS),
     ENTRY(send_message_with_reply_and_block, METH_VARARGS),
     ENTRY(_unregister_object_path, METH_VARARGS|METH_KEYWORDS),
+    ENTRY(list_exported_child_objects, METH_VARARGS|METH_KEYWORDS),
     {"_new_for_bus", (PyCFunction)DBusPyConnection_NewForBus,
         METH_CLASS|METH_VARARGS|METH_KEYWORDS,
         new_for_bus__doc__},

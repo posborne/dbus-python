@@ -385,6 +385,9 @@ class TestDBusBindings(unittest.TestCase):
         self.assert_(not isinstance(ret, dbus.Struct), repr(ret))
         self.assertEquals(ret, ('abc', 123))
 
+    def testListExportedChildObjects(self):
+        self.assert_(self.iface.TestListExportedChildObjects())
+
 """ Remove this for now
 class TestDBusPythonToGLibBindings(unittest.TestCase):
     def setUp(self):

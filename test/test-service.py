@@ -182,6 +182,14 @@ class TestObject(dbus.service.Object, TestInterface):
     def CheckInheritance(self):
         return True
 
+    @dbus.service.method(IFACE, in_signature='', out_signature='b')
+    def TestListExportedChildObjects(self):
+        objs_root = session_bus.list_exported_child_objects('/')
+        assert objs_root == ['org'], objs_root
+        objs_org = session_bus.list_exported_child_objects('/org')
+        assert objs_org == ['freedesktop'], objs_org
+        return True
+
     @dbus.service.method(IFACE, in_signature='bbv', out_signature='v', async_callbacks=('return_cb', 'error_cb'))
     def AsynchronousMethod(self, async, fail, variant, return_cb, error_cb):
         try:
