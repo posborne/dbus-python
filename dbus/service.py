@@ -530,6 +530,10 @@ class Object(Interface):
 
             reflection_data += '  </interface>\n'
 
+        for name in self._connection.list_exported_child_objects(
+                self._object_path):
+            reflection_data += '  <node name="%s"/>\n' % name
+
         reflection_data += '</node>\n'
 
         return reflection_data
