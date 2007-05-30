@@ -380,7 +380,7 @@ class Object(Interface):
         is also required.
 
         :Parameters:
-            `conn` : dbus.Connection
+            `conn` : dbus.connection.Connection
                 The connection on which to export this object.
 
                 If None, use the Bus associated with the given ``bus_name``,
@@ -425,6 +425,37 @@ class Object(Interface):
 
     __dbus_object_path__ = property(lambda self: self._object_path, None, None,
                                     "The D-Bus object path of this object")
+
+    def unexport(self, connection=None, path=None):
+        """Unexport this object. It will no longer be accessible via D-Bus.
+
+        It's not currently possible to export an object on more than one
+        connection or with more than one object-path, but this will be
+        supported in future.
+
+        :Parameters:
+            `connection` : dbus.connection.Connection or None
+                Only unexport the object from this Connection. If None,
+                unexport from all Connections.
+            `path` : dbus.ObjectPath or other str, or None
+                Only unexport the object from this object path. If None,
+                unexport from all object paths.
+        :Raises LookupError:
+            if the object was not exported on the requested connection
+            or path, or (if both are None) was not exported at all.
+        """
+        if self._object_path is None or self._connection is None:
+            raise LookupError('%r is not exported' % self)
+        if path is not None and self._object_path != path:
+            raise LookupError('%r is not exported at path %r' % (self, path))
+        if connection is not None and self._connection != connection:
+            raise LookupError('%r is not exported on %r' % (self, connection))
+
+        try:
+            self._connection._unregister_object_path(self._object_path)
+        finally:
+            self._connection = None
+            self._object_path = None
 
     def _unregister_cb(self, connection):
         _logger.info('Unregistering exported object %r', self)

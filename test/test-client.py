@@ -388,6 +388,26 @@ class TestDBusBindings(unittest.TestCase):
     def testListExportedChildObjects(self):
         self.assert_(self.iface.TestListExportedChildObjects())
 
+    def testUnexport(self):
+        # https://bugs.freedesktop.org/show_bug.cgi?id=10457
+        self.assert_(not self.iface.HasRemovableObject())
+        self.assert_(self.iface.AddRemovableObject())
+        self.assert_(self.iface.HasRemovableObject())
+
+        removable = self.bus.get_object(NAME, OBJECT + '/RemovableObject')
+        iface = dbus.Interface(removable, IFACE)
+        self.assert_(iface.IsThere())
+        self.assert_(iface.RemoveSelf())
+
+        self.assert_(not self.iface.HasRemovableObject())
+
+        # and again...
+        self.assert_(self.iface.AddRemovableObject())
+        self.assert_(self.iface.HasRemovableObject())
+        self.assert_(iface.IsThere())
+        self.assert_(iface.RemoveSelf())
+        self.assert_(not self.iface.HasRemovableObject())
+
 """ Remove this for now
 class TestDBusPythonToGLibBindings(unittest.TestCase):
     def setUp(self):

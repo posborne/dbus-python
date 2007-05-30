@@ -48,6 +48,20 @@ NAME = "org.freedesktop.DBus.TestSuitePythonService"
 IFACE = "org.freedesktop.DBus.TestSuiteInterface"
 OBJECT = "/org/freedesktop/DBus/TestSuitePythonObject"
 
+class RemovableObject(dbus.service.Object):
+    # Part of test for https://bugs.freedesktop.org/show_bug.cgi?id=10457
+    def __init__(self, bus_name, object_path=OBJECT + '/RemovableObject'):
+        super(RemovableObject, self).__init__(bus_name, object_path)
+
+    @dbus.service.method(IFACE, in_signature='', out_signature='b')
+    def IsThere(self):
+        return True
+
+    @dbus.service.method(IFACE, in_signature='', out_signature='b')
+    def RemoveSelf(self):
+        self.unexport()
+        return True
+
 class TestGObject(ExportedGObject):
     def __init__(self, bus_name, object_path=OBJECT + '/GObject'):
         super(TestGObject, self).__init__(bus_name, object_path)
@@ -64,6 +78,7 @@ class TestInterface(dbus.service.Interface):
 class TestObject(dbus.service.Object, TestInterface):
     def __init__(self, bus_name, object_path=OBJECT):
         dbus.service.Object.__init__(self, bus_name, object_path)
+        self._removables = []
 
     """ Echo whatever is sent
     """
@@ -210,14 +225,27 @@ class TestObject(dbus.service.Object, TestInterface):
     def WhoAmI(self, sender):
         return sender
 
+    @dbus.service.method(IFACE, in_signature='', out_signature='b')
+    def AddRemovableObject(self):
+        # Part of test for https://bugs.freedesktop.org/show_bug.cgi?id=10457
+        # Keep the removable object reffed, since that's the use case for this
+        self._removables.append(RemovableObject(global_name))
+        return True
+
+    @dbus.service.method(IFACE, in_signature='', out_signature='b')
+    def HasRemovableObject(self):
+        # Part of test for https://bugs.freedesktop.org/show_bug.cgi?id=10457
+        objs = session_bus.list_exported_child_objects(OBJECT)
+        return ('RemovableObject' in objs)
+
     @dbus.service.method(IFACE)
     def MultipleReturnWithoutSignature(self):
         # https://bugs.freedesktop.org/show_bug.cgi?id=10174
         return dbus.String('abc'), dbus.Int32(123)
 
 session_bus = dbus.SessionBus()
-name = dbus.service.BusName(NAME, bus=session_bus)
-object = TestObject(name)
-g_object = TestGObject(name)
+global_name = dbus.service.BusName(NAME, bus=session_bus)
+object = TestObject(global_name)
+g_object = TestGObject(global_name)
 loop = gobject.MainLoop()
 loop.run()
