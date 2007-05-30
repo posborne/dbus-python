@@ -14,6 +14,9 @@ Features:
 * The Connection, BusConnection and Bus classes have a method
   list_exported_child_objects(path: str) -> list of str, which wraps
   dbus_connection_list_registered()
+* You can remove objects from the bus before they become unreferenced, by
+  using dbus.service.Object.unexport()
+  (https://bugs.freedesktop.org/show_bug.cgi?id=10457)
 
 Bug fixes:
 
