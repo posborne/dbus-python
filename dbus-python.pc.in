@@ -9,3 +9,4 @@ Name: dbus-python
 Description: Python bindings for D-Bus
 Requires: dbus-1
 Version: @VERSION@
+Cflags: -I${includedir}
