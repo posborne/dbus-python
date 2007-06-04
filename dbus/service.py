@@ -426,8 +426,10 @@ class Object(Interface):
     __dbus_object_path__ = property(lambda self: self._object_path, None, None,
                                     "The D-Bus object path of this object")
 
-    def unexport(self, connection=None, path=None):
-        """Unexport this object. It will no longer be accessible via D-Bus.
+    def remove_from_connection(self, connection=None, path=None):
+        """Make this object inaccessible via the given D-Bus connection
+        and object path. If no connection or path is specified,
+        the object ceases to be accessible via any connection or path.
 
         It's not currently possible to export an object on more than one
         connection or with more than one object-path, but this will be
@@ -435,11 +437,11 @@ class Object(Interface):
 
         :Parameters:
             `connection` : dbus.connection.Connection or None
-                Only unexport the object from this Connection. If None,
-                unexport from all Connections.
+                Only remove the object from this Connection. If None,
+                remove from all Connections on which it's exported.
             `path` : dbus.ObjectPath or other str, or None
-                Only unexport the object from this object path. If None,
-                unexport from all object paths.
+                Only remove the object from this object path. If None,
+                remove from all object paths.
         :Raises LookupError:
             if the object was not exported on the requested connection
             or path, or (if both are None) was not exported at all.

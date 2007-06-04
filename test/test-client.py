@@ -388,7 +388,7 @@ class TestDBusBindings(unittest.TestCase):
     def testListExportedChildObjects(self):
         self.assert_(self.iface.TestListExportedChildObjects())
 
-    def testUnexport(self):
+    def testRemoveFromConnection(self):
         # https://bugs.freedesktop.org/show_bug.cgi?id=10457
         self.assert_(not self.iface.HasRemovableObject())
         self.assert_(self.iface.AddRemovableObject())

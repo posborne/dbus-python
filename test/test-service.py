@@ -59,7 +59,7 @@ class RemovableObject(dbus.service.Object):
 
     @dbus.service.method(IFACE, in_signature='', out_signature='b')
     def RemoveSelf(self):
-        self.unexport()
+        self.remove_from_connection()
         return True
 
 class TestGObject(ExportedGObject):
