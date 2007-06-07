@@ -51,7 +51,7 @@ class NameOwnerWatch(object):
     __slots__ = ('_match', '_pending_call')
 
     def __init__(self, bus_conn, bus_name, callback):
-        validate_bus_name(bus_name, allow_unique=False)
+        validate_bus_name(bus_name)
 
         def signal_cb(owned, old_owner, new_owner):
             callback(new_owner)
@@ -61,7 +61,7 @@ class NameOwnerWatch(object):
                 callback('')
             else:
                 logging.basicConfig()
-                _logger.error('GetNameOwner(%s) failed:', bus_name,
+                _logger.debug('GetNameOwner(%s) failed:', bus_name,
                               exc_info=(e.__class__, e, None))
 
         self._match = bus_conn.add_signal_receiver(signal_cb,
@@ -133,13 +133,14 @@ class BusConnection(Connection):
                 handler_function, signal_name, dbus_interface, bus_name,
                 path, **keywords)
 
-        # The bus daemon is special - its unique-name is org.freedesktop.DBus
-        # rather than starting with :
-        if (bus_name is not None
-            and bus_name[:1] != ':'
-            and bus_name != BUS_DAEMON_NAME):
-            watch = self.watch_name_owner(bus_name,
-                                          match.set_sender_name_owner)
+        if (bus_name is not None and bus_name != BUS_DAEMON_NAME):
+            if bus_name[:1] == ':':
+                def callback(new_owner):
+                    if new_owner == '':
+                        match.remove()
+            else:
+                callback = match.set_sender_name_owner
+            watch = self.watch_name_owner(bus_name, callback)
             self._signal_sender_matches[match] = watch
 
         self.add_match_string(str(match))
