@@ -26,6 +26,10 @@ import sys
 import logging
 import operator
 import traceback
+try:
+    import thread
+except ImportError:
+    import dummy_thread as thread
 
 import _dbus_bindings
 from dbus import SessionBus
@@ -342,6 +346,10 @@ class InterfaceType(type):
 class Interface(object):
     __metaclass__ = InterfaceType
 
+#: A unique object used as the value of Object._object_path and
+#: Object._connection if it's actually in more than one place
+_MANY = object()
+
 class Object(Interface):
     r"""A base class for exporting your own Objects across the Bus.
 
@@ -374,57 +382,171 @@ class Object(Interface):
                 return self._last_input
     """
 
+    #: If True, this object can be made available at more than one object path.
+    #: If True but `SUPPORTS_MULTIPLE_CONNECTIONS` is False, the object may
+    #: handle more than one object path, but they must all be on the same
+    #: connection.
+    SUPPORTS_MULTIPLE_OBJECT_PATHS = False
+
+    #: If True, this object can be made available on more than one connection.
+    #: If True but `SUPPORTS_MULTIPLE_OBJECT_PATHS` is False, the object must
+    #: have the same object path on all its connections.
+    SUPPORTS_MULTIPLE_CONNECTIONS = False
+
     # the signature of __init__ is a bit mad, for backwards compatibility
     def __init__(self, conn=None, object_path=None, bus_name=None):
         """Constructor. Either conn or bus_name is required; object_path
         is also required.
 
         :Parameters:
-            `conn` : dbus.connection.Connection
+            `conn` : dbus.connection.Connection or None
                 The connection on which to export this object.
 
-                If None, use the Bus associated with the given ``bus_name``,
-                or raise TypeError if there is no ``bus_name`` either.
+                If None, use the Bus associated with the given ``bus_name``.
+                If there is no ``bus_name`` either, the object is not
+                initially available on any Connection.
 
                 For backwards compatibility, if an instance of
                 dbus.service.BusName is passed as the first parameter,
                 this is equivalent to passing its associated Bus as
                 ``conn``, and passing the BusName itself as ``bus_name``.
 
-            `object_path` : str
-                The D-Bus object path at which to export this Object.
+            `object_path` : str or None
+                A D-Bus object path at which to make this Object available
+                immediately. If this is not None, a `conn` or `bus_name` must
+                also be provided.
 
-            `bus_name` : dbus.service.BusName
+            `bus_name` : dbus.service.BusName or None
                 Represents a well-known name claimed by this process. A
                 reference to the BusName object will be held by this
                 Object, preventing the name from being released during this
                 Object's lifetime (unless it's released manually).
         """
-        if object_path is None:
-            raise TypeError('The object_path argument is required')
-        _dbus_bindings.validate_object_path(object_path)
-        if object_path == LOCAL_PATH:
-            raise DBusException('Objects may not be exported on the reserved '
-                                'path %s' % LOCAL_PATH)
+        if object_path is not None:
+            _dbus_bindings.validate_object_path(object_path)
 
         if isinstance(conn, BusName):
             # someone's using the old API; don't gratuitously break them
             bus_name = conn
             conn = bus_name.get_bus()
         elif conn is None:
-            # someone's using the old API but naming arguments, probably
-            if bus_name is None:
-                raise TypeError('Either conn or bus_name is required')
-            conn = bus_name.get_bus()
+            if bus_name is not None:
+                # someone's using the old API but naming arguments, probably
+                conn = bus_name.get_bus()
 
-        self._object_path = object_path
+        #: Either an object path, None or _MANY
+        self._object_path = None
+        #: Either a dbus.connection.Connection, None or _MANY
+        self._connection = None
+        #: A list of tuples (Connection, object path, False) where the False
+        #: is for future expansion (to support fallback paths)
+        self._locations = []
+        #: Lock protecting `_locations`, `_connection` and `_object_path`
+        self._locations_lock = thread.allocate_lock()
+
         self._name = bus_name
-        self._connection = conn
 
-        self._connection._register_object_path(object_path, self._message_cb, self._unregister_cb)
+        if conn is None and object_path is not None:
+            raise TypeError('If object_path is given, either conn or bus_name '
+                            'is required')
+        if conn is not None and object_path is not None:
+            self.add_to_connection(conn, object_path)
 
-    __dbus_object_path__ = property(lambda self: self._object_path, None, None,
-                                    "The D-Bus object path of this object")
+    @property
+    def __dbus_object_path__(self):
+        """The object-path at which this object is available.
+        Access raises AttributeError if there is no object path, or more than
+        one object path.
+        """
+        if self._object_path is _MANY:
+            raise AttributeError('Object %r has more than one object path: '
+                                 'use Object.locations instead' % self)
+        elif self._object_path is None:
+            raise AttributeError('Object %r has no object path yet' % self)
+        else:
+            return self._object_path
+
+    @property
+    def connection(self):
+        """The Connection on which this object is available.
+        Access raises AttributeError if there is no Connection, or more than
+        one Connection.
+        """
+        if self._connection is _MANY:
+            raise AttributeError('Object %r is on more than one Connection: '
+                                 'use Object.locations instead' % self)
+        elif self._connection is None:
+            raise AttributeError('Object %r has no Connection yet' % self)
+        else:
+            return self._connection
+
+    @property
+    def locations(self):
+        """An iterable over tuples representing locations at which this
+        object is available.
+
+        Each tuple has at least two items, but may have more in future
+        versions of dbus-python, so do not rely on their exact length.
+        The first two items are the dbus.connection.Connection and the object
+        path.
+        """
+        return iter(self._locations)
+
+    def add_to_connection(self, connection, path):
+        """Make this object accessible via the given D-Bus connection and
+        object path.
+
+        :Parameters:
+            `connection` : dbus.connection.Connection
+                Export the object on this connection. If the class attribute
+                SUPPORTS_MULTIPLE_CONNECTIONS is False (default), this object
+                can only be made available on one connection; if the class
+                attribute is set True by a subclass, the object can be made
+                available on more than one connection.
+
+            `path` : dbus.ObjectPath or other str
+                Place the object at this object path. If the class attribute
+                SUPPORTS_MULTIPLE_OBJECT_PATHS is False (default), this object
+                can only be made available at one object path; if the class
+                attribute is set True by a subclass, the object can be made
+                available with more than one object path.
+        :Raises ValueError: if the object's class attributes do not allow the
+            object to be exported in the desired way.
+        """
+        if path == LOCAL_PATH:
+            raise ValueError('Objects may not be exported on the reserved '
+                             'path %s' % LOCAL_PATH)
+
+        self._locations_lock.acquire()
+        try:
+            if (self._connection is not None and
+                self._connection is not connection and
+                not self.SUPPORTS_MULTIPLE_CONNECTIONS):
+                raise ValueError('%r is already exported on '
+                                 'connection %r' % (self, self._connection))
+
+            if (self._object_path is not None and
+                not self.SUPPORTS_MULTIPLE_OBJECT_PATHS and
+                self._object_path != path):
+                raise ValueError('%r is already exported at object '
+                                 'path %s' % (self, self._object_path))
+
+            connection._register_object_path(path, self._message_cb,
+                                             self._unregister_cb)
+
+            if self._connection is None:
+                self._connection = connection
+            elif self._connection is not connection:
+                self._connection = _MANY
+
+            if self._object_path is None:
+                self._object_path = path
+            elif self._object_path != path:
+                self._object_path = _MANY
+
+            self._locations.append((connection, path, False))
+        finally:
+            self._locations_lock.release()
 
     def remove_from_connection(self, connection=None, path=None):
         """Make this object inaccessible via the given D-Bus connection
@@ -446,21 +568,42 @@ class Object(Interface):
             if the object was not exported on the requested connection
             or path, or (if both are None) was not exported at all.
         """
-        if self._object_path is None or self._connection is None:
-            raise LookupError('%r is not exported' % self)
-        if path is not None and self._object_path != path:
-            raise LookupError('%r is not exported at path %r' % (self, path))
-        if connection is not None and self._connection != connection:
-            raise LookupError('%r is not exported on %r' % (self, connection))
-
+        self._locations_lock.acquire()
         try:
-            self._connection._unregister_object_path(self._object_path)
+            if self._object_path is None or self._connection is None:
+                raise LookupError('%r is not exported' % self)
+
+            if connection is not None or path is not None:
+                dropped = []
+                for location in self._locations:
+                    if ((connection is None or location[0] is connection) and
+                        (path is None or location[1] == path)):
+                        dropped.append(location)
+            else:
+                dropped = self._locations
+                self._locations = []
+
+            if not dropped:
+                raise LookupError('%r is not exported at a location matching '
+                                  '(%r,%r)' % (self, connection, path))
+
+            for location in dropped:
+                try:
+                    location[0]._unregister_object_path(location[1])
+                except LookupError:
+                    pass
+                if self._locations:
+                    try:
+                        self._locations.remove(location)
+                    except ValueError:
+                        pass
         finally:
-            self._connection = None
-            self._object_path = None
+            self._locations_lock.release()
 
     def _unregister_cb(self, connection):
-        _logger.info('Unregistering exported object %r', self)
+        # there's not really enough information to do anything useful here
+        _logger.info('Unregistering exported object %r from some path '
+                     'on %r', self, connection)
 
     def _message_cb(self, connection, message):
         try:
@@ -493,6 +636,8 @@ class Object(Interface):
                 keywords[parent_method._dbus_destination_keyword] = message.get_destination()
             if parent_method._dbus_message_keyword:
                 keywords[parent_method._dbus_message_keyword] = message
+            if parent_method._dbus_connection_keyword:
+                keywords[parent_method._dbus_connection_keyword] = connection
 
             # call method
             retval = candidate_method(self, *args, **keywords)

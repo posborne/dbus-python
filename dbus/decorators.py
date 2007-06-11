@@ -34,7 +34,7 @@ from dbus.exceptions import DBusException
 def method(dbus_interface, in_signature=None, out_signature=None,
         async_callbacks=None,
         sender_keyword=None, path_keyword=None, destination_keyword=None,
-        message_keyword=None,
+        message_keyword=None, connection_keyword=None,
         utf8_strings=False, byte_arrays=False):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to be exported on the D-Bus.
@@ -96,6 +96,12 @@ def method(dbus_interface, in_signature=None, out_signature=None,
             the `dbus.lowlevel.MethodCallMessage` as a keyword argument
             with this name.
 
+        `connection_keyword` : str or None
+            If not None (the default), the decorated method will receive
+            the `dbus.connection.Connection` as a keyword argument
+            with this name. This is generally only useful for objects
+            that are available on more than one connection.
+
         `utf8_strings` : bool
             If False (default), D-Bus strings are passed to the decorated
             method as objects of class dbus.String, a unicode subclass.
@@ -138,6 +144,8 @@ def method(dbus_interface, in_signature=None, out_signature=None,
             args.remove(destination_keyword)
         if message_keyword:
             args.remove(message_keyword)
+        if connection_keyword:
+            args.remove(connection_keyword)
 
         if in_signature:
             in_sig = tuple(_dbus_bindings.Signature(in_signature))
@@ -156,6 +164,7 @@ def method(dbus_interface, in_signature=None, out_signature=None,
         func._dbus_path_keyword = path_keyword
         func._dbus_destination_keyword = destination_keyword
         func._dbus_message_keyword = message_keyword
+        func._dbus_connection_keyword = connection_keyword
         func._dbus_args = args
         func._dbus_get_args_options = {'byte_arrays': byte_arrays,
                                        'utf8_strings': utf8_strings}
@@ -164,7 +173,8 @@ def method(dbus_interface, in_signature=None, out_signature=None,
     return decorator
 
 
-def signal(dbus_interface, signature=None, path_keyword=None):
+def signal(dbus_interface, signature=None, path_keyword=None,
+           connection_keyword=None):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to emit signals on the D-Bus.
 
@@ -187,6 +197,19 @@ def signal(dbus_interface, signature=None, path_keyword=None):
             Note that when calling the decorated method, you must always
             pass in the object path as a keyword argument, not as a
             positional argument.
+
+        `connection_keyword` : str or None
+            Similar to `path_keyword`, but this gives the Connection on
+            which the signal should be emitted. If given, and the path_keyword
+            is also given, the signal will be emitted at that path on that
+            connection; if given, but the path_keyword is not, the signal
+            will be emitted from every path at which this object is available
+            on that connection.
+
+            If not given, the signal is emitted on every Connection on which
+            the object is available: if the `path_keyword` is given, it will
+            be emitted at that path on each Connection, otherwise it will be
+            emitted once per (Connection, path) pair.
     """
     _dbus_bindings.validate_interface_name(dbus_interface)
     def decorator(func):
@@ -195,28 +218,42 @@ def signal(dbus_interface, signature=None, path_keyword=None):
 
         def emit_signal(self, *args, **keywords):
             func(self, *args, **keywords)
-            object_path = self.__dbus_object_path__
+
+            object_path = None
             if path_keyword:
-                kw = keywords.pop(path_keyword, None)
-                if kw is not None:
-                    if not (kw == object_path
-                            or object_path == '/'
-                            or kw.startswith(object_path + '/')):
-                        raise DBusException('Object path %s is not in the '
-                                            'subtree starting at %s'
-                                            % (kw, object_path))
-                    object_path = kw
+                object_path = keywords.pop(path_keyword, None)
+            connection = None
+            if connection_keyword:
+                connection = keywords.pop(connection_keyword, None)
 
-            message = _dbus_bindings.SignalMessage(object_path,
-                                                   dbus_interface,
-                                                   member_name)
-
-            if signature is not None:
-                message.append(signature=signature, *args)
+            if connection is None:
+                if object_path is None:
+                    # any conn, any path
+                    locations = self.locations
+                else:
+                    # any conn, specified path
+                    connections = set()
+                    for location in self.locations:
+                        connections.add(connection)
+                    locations = [(connection, object_path)
+                                 for connection in connections]
+            elif object_path is None:
+                # specified conn, any path
+                locations = [L for L in self.locations if L[0] is connection]
             else:
-                message.append(*args)
+                # specified conn, specified path
+                locations = ((connection, object_path),)
 
-            self._connection.send_message(message)
+            for location in locations:
+                message = _dbus_bindings.SignalMessage(location[1],
+                                                       dbus_interface,
+                                                       member_name)
+                if signature is not None:
+                    message.append(signature=signature, *args)
+                else:
+                    message.append(*args)
+
+                location[0].send_message(message)
 
         args = inspect.getargspec(func)[0]
         args.pop(0)

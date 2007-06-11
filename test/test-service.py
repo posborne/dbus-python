@@ -50,9 +50,6 @@ OBJECT = "/org/freedesktop/DBus/TestSuitePythonObject"
 
 class RemovableObject(dbus.service.Object):
     # Part of test for https://bugs.freedesktop.org/show_bug.cgi?id=10457
-    def __init__(self, bus_name, object_path=OBJECT + '/RemovableObject'):
-        super(RemovableObject, self).__init__(bus_name, object_path)
-
     @dbus.service.method(IFACE, in_signature='', out_signature='b')
     def IsThere(self):
         return True
@@ -78,7 +75,7 @@ class TestInterface(dbus.service.Interface):
 class TestObject(dbus.service.Object, TestInterface):
     def __init__(self, bus_name, object_path=OBJECT):
         dbus.service.Object.__init__(self, bus_name, object_path)
-        self._removables = []
+        self._removable = RemovableObject()
 
     """ Echo whatever is sent
     """
@@ -229,7 +226,8 @@ class TestObject(dbus.service.Object, TestInterface):
     def AddRemovableObject(self):
         # Part of test for https://bugs.freedesktop.org/show_bug.cgi?id=10457
         # Keep the removable object reffed, since that's the use case for this
-        self._removables.append(RemovableObject(global_name))
+        self._removable.add_to_connection(self._connection,
+                                          OBJECT + '/RemovableObject')
         return True
 
     @dbus.service.method(IFACE, in_signature='', out_signature='b')
