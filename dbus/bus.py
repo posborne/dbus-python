@@ -149,7 +149,7 @@ class BusConnection(Connection):
 
     def _clean_up_signal_match(self, match):
         # The signals lock is no longer held here (it was in <= 0.81.0)
-        self.remove_match_string(str(match))
+        self.remove_match_string_non_blocking(str(match))
         watch = self._signal_sender_matches.pop(match, None)
         if watch is not None:
             watch.cancel()
