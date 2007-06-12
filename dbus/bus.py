@@ -68,7 +68,8 @@ class NameOwnerWatch(object):
                                                    'NameOwnerChanged',
                                                    BUS_DAEMON_IFACE,
                                                    BUS_DAEMON_NAME,
-                                                   BUS_DAEMON_PATH)
+                                                   BUS_DAEMON_PATH,
+                                                   arg0=bus_name)
         self._pending_call = bus_conn.call_async(BUS_DAEMON_NAME,
                                                  BUS_DAEMON_PATH,
                                                  BUS_DAEMON_IFACE,
