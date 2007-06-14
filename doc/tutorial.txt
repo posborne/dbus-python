@@ -3,7 +3,7 @@ dbus-python tutorial
 ====================
 
 :Author: Simon McVittie, `Collabora Ltd.`_
-:Date: 2006-01-16
+:Date: 2006-06-14
 
 .. _`Collabora Ltd.`: http://www.collabora.co.uk/
 
@@ -578,7 +578,7 @@ example::
         def __init__(self, object_path):
             dbus.service.Object.__init__(self, dbus.SessionBus(), path)
 
-        @dbus.service.method(interface='com.example.Sample',
+        @dbus.service.method(dbus_interface='com.example.Sample',
                              in_signature='v', out_signature='s')
         def StringifyVariant(self, variant):
             return str(variant)
@@ -606,7 +606,7 @@ passed to the decorated method as a keyword argument of that name::
         def __init__(self, object_path):
             dbus.service.Object.__init__(self, dbus.SessionBus(), path)
 
-        @dbus.service.method(interface='com.example.Sample',
+        @dbus.service.method(dbus_interface='com.example.Sample',
                              in_signature='', out_signature='s',
                              sender_keyword='sender')
         def SayHello(self, sender=None):
@@ -629,7 +629,7 @@ contain code which will be run when called, as usual. For example::
         def __init__(self, object_path):
             dbus.service.Object.__init__(self, dbus.SessionBus(), path)
 
-        @dbus.service.signal(interface='com.example.Sample',
+        @dbus.service.signal(dbus_interface='com.example.Sample',
                              signature='us')
         def NumberOfBottlesChanged(self, number, contents):
             print "%d bottles of %s on the wall" % (number, contents)
