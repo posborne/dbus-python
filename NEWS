@@ -1,3 +1,32 @@
+D-Bus Python Bindings 0.81.2 (unreleased)
+=========================================
+
+Features:
+
+* dbus.service.Object can start off with no Connection or object path, and
+  become exported later. If suitable class attributes are set, objects can
+  even be exported on multiple connections, or with multiple object-paths,
+  or both.
+
+* @signal and @method accept a parameter ``connection_keyword`` so signals
+  can be emitted from a chosen connection, and methods can find out which
+  connection to use for any follow-up actions.
+
+Fixes:
+
+* In watch_name_owner, only the desired name is watched!
+
+* When cleaning up signal matches, errors are ignored. This avoids using up
+  scarce pending-call allowance on dbus-daemon < 1.1, and emitting error
+  messages if we get disconnected.
+
+* Signal handlers which are bound to a unique name are automatically
+  disconnected when the unique name goes away, reducing the likelihood that
+  applications will leak signal matches.
+
+* Some corrections were made to the tutorial (@service and @method take a
+  parameter dbus_interface, not just interface; fd.o #11209).
+
 D-Bus Python Bindings 0.81.1 (4 June 2007)
 ==========================================
 
