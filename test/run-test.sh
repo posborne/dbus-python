@@ -37,6 +37,8 @@ if test -z "$DBUS_TEST_PYTHON_IN_RUN_TEST"; then
   exec "$DBUS_TOP_SRCDIR"/test/run-with-tmp-session-bus.sh $SCRIPTNAME
 fi  
 
+dbus-monitor > "$DBUS_TOP_BUILDDIR"/test/monitor.log &
+
 echo "running test-standalone.py"
 $PYTHON "$DBUS_TOP_SRCDIR"/test/test-standalone.py || die "test-standalone.py failed"
 
@@ -95,4 +97,5 @@ $PYTHON "$DBUS_TOP_SRCDIR"/test/test-p2p.py || die "... failed"
 rm -f "$DBUS_TOP_BUILDDIR"/test/test-service.log
 rm -f "$DBUS_TOP_BUILDDIR"/test/cross-client.log
 rm -f "$DBUS_TOP_BUILDDIR"/test/cross-server.log
+rm -f "$DBUS_TOP_BUILDDIR"/test/monitor.log
 exit 0

@@ -174,7 +174,7 @@ def method(dbus_interface, in_signature=None, out_signature=None,
 
 
 def signal(dbus_interface, signature=None, path_keyword=None,
-           connection_keyword=None):
+           rel_path_keyword=None):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to emit signals on the D-Bus.
 
@@ -198,65 +198,94 @@ def signal(dbus_interface, signature=None, path_keyword=None,
             pass in the object path as a keyword argument, not as a
             positional argument.
 
-        `connection_keyword` : str or None
-            Similar to `path_keyword`, but this gives the Connection on
-            which the signal should be emitted. If given, and the path_keyword
-            is also given, the signal will be emitted at that path on that
-            connection; if given, but the path_keyword is not, the signal
-            will be emitted from every path at which this object is available
-            on that connection.
+            This keyword argument cannot be used on objects where
+            the class attribute ``SUPPORTS_MULTIPLE_OBJECT_PATHS`` is true.
 
-            If not given, the signal is emitted on every Connection on which
-            the object is available: if the `path_keyword` is given, it will
-            be emitted at that path on each Connection, otherwise it will be
-            emitted once per (Connection, path) pair.
+            :Deprecated: since 0.82.0. Use `rel_path_keyword` instead.
+
+        `rel_path_keyword` : str or None
+            A keyword argument to the decorated method. If not None,
+            that argument will not be emitted as an argument of
+            the signal.
+
+            When the signal is emitted, if the named keyword argument is given,
+            the signal will appear to come from the object path obtained by
+            appending the keyword argument to the object's object path.
+            This is useful to implement "fallback objects" (objects which
+            own an entire subtree of the object-path tree).
+
+            If the object is available at more than one object-path on the
+            same or different connections, the signal will be emitted at
+            an appropriate object-path on each connection - for instance,
+            if the object is exported at /abc on connection 1 and at
+            /def and /x/y/z on connection 2, and the keyword argument is
+            /foo, then signals will be emitted from /abc/foo and /def/foo
+            on connection 1, and /x/y/z/foo on connection 2.
     """
     _dbus_bindings.validate_interface_name(dbus_interface)
+
+    if path_keyword is not None:
+        from warnings import warn
+        warn(DeprecationWarning('dbus.service.signal::path_keyword has been '
+                                'deprecated since dbus-python 0.82.0, and '
+                                'will not work on objects that support '
+                                'multiple object paths'),
+             DeprecationWarning, stacklevel=2)
+        if rel_path_keyword is not None:
+            raise TypeError('dbus.service.signal::path_keyword and '
+                            'rel_path_keyword cannot both be used')
+
     def decorator(func):
         member_name = func.__name__
         _dbus_bindings.validate_member_name(member_name)
 
         def emit_signal(self, *args, **keywords):
+            abs_path = None
+            if path_keyword is not None:
+                if self.SUPPORTS_MULTIPLE_OBJECT_PATHS:
+                    raise TypeError('path_keyword cannot be used on the '
+                                    'signals of an object that supports '
+                                    'multiple object paths')
+                abs_path = keywords.pop(path_keyword, None)
+                if (abs_path != self.__dbus_object_path__ and
+                    not self.__dbus_object_path__.startswith(abs_path + '/')):
+                    raise ValueError('Path %r is not below %r', abs_path,
+                                     self.__dbus_object_path__)
+
+            rel_path = None
+            if rel_path_keyword is not None:
+                rel_path = keywords.pop(rel_path_keyword, None)
+
             func(self, *args, **keywords)
 
-            object_path = None
-            if path_keyword:
-                object_path = keywords.pop(path_keyword, None)
-            connection = None
-            if connection_keyword:
-                connection = keywords.pop(connection_keyword, None)
-
-            if connection is None:
-                if object_path is None:
-                    # any conn, any path
-                    locations = self.locations
+            for location in self.locations:
+                if abs_path is None:
+                    # non-deprecated case
+                    if rel_path is None or rel_path in ('/', ''):
+                        object_path = location[1]
+                    else:
+                        # will be validated by SignalMessage ctor in a moment
+                        object_path = location[1] + rel_path
                 else:
-                    # any conn, specified path
-                    connections = set()
-                    for location in self.locations:
-                        connections.add(connection)
-                    locations = [(connection, object_path)
-                                 for connection in connections]
-            elif object_path is None:
-                # specified conn, any path
-                locations = [L for L in self.locations if L[0] is connection]
-            else:
-                # specified conn, specified path
-                locations = ((connection, object_path),)
+                    object_path = abs_path
 
-            for location in locations:
-                message = _dbus_bindings.SignalMessage(location[1],
+                message = _dbus_bindings.SignalMessage(object_path,
                                                        dbus_interface,
                                                        member_name)
-                if signature is not None:
-                    message.append(signature=signature, *args)
-                else:
-                    message.append(*args)
+                message.append(signature=signature, *args)
 
                 location[0].send_message(message)
+        # end emit_signal
 
         args = inspect.getargspec(func)[0]
         args.pop(0)
+
+        for keyword in rel_path_keyword, path_keyword:
+            if keyword is not None:
+                try:
+                    args.remove(keyword)
+                except ValueError:
+                    raise ValueError('function has no argument "%s"' % keyword)
 
         if signature:
             sig = tuple(_dbus_bindings.Signature(signature))

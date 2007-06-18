@@ -72,6 +72,44 @@ class TestInterface(dbus.service.Interface):
     def CheckInheritance(self):
         return False
 
+class Fallback(dbus.service.FallbackObject):
+    def __init__(self, bus_name, object_path=OBJECT + '/Fallback'):
+        super(Fallback, self).__init__(bus_name, object_path)
+
+    @dbus.service.method(IFACE, in_signature='', out_signature='os',
+                         path_keyword='path', # rel_path_keyword='rel',
+                         connection_keyword='conn')
+    def TestPathAndConnKeywords(self, path=None, conn=None):
+        return path, conn.get_unique_name()
+
+    @dbus.service.signal(IFACE, signature='s', rel_path_keyword='rel_path')
+    def SignalOneString(self, test, rel_path=None):
+        logger.info('SignalOneString(%r) @ %r', test, rel_path)
+
+    # Deprecated
+    @dbus.service.signal(IFACE, signature='ss', path_keyword='path')
+    def SignalTwoStrings(self, test, test2, path=None):
+        logger.info('SignalTwoStrings(%r, %r) @ %r', test, test2, path)
+
+    @dbus.service.method(IFACE, in_signature='su', out_signature='',
+                         path_keyword='path')
+    def EmitSignal(self, signal, value, path=None):
+        sig = getattr(self, str(signal), None)
+        assert sig is not None
+
+        assert path.startswith(OBJECT + '/Fallback')
+        rel_path = path[len(OBJECT + '/Fallback'):]
+        if rel_path == '':
+            rel_path = '/'
+
+        if signal == 'SignalOneString':
+            logger.info('Emitting %s from rel %r', signal, rel_path)
+            sig('I am a fallback', rel_path=rel_path)
+        else:
+            val = ('I am', 'a fallback')
+            logger.info('Emitting %s from abs %r', signal, path)
+            sig('I am', 'a deprecated fallback', path=path)
+
 class TestObject(dbus.service.Object, TestInterface):
     def __init__(self, bus_name, object_path=OBJECT):
         dbus.service.Object.__init__(self, bus_name, object_path)
@@ -245,5 +283,6 @@ session_bus = dbus.SessionBus()
 global_name = dbus.service.BusName(NAME, bus=session_bus)
 object = TestObject(global_name)
 g_object = TestGObject(global_name)
+fallback_object = Fallback(session_bus)
 loop = gobject.MainLoop()
 loop.run()

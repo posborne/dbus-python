@@ -93,13 +93,13 @@ class TestDBusBindings(unittest.TestCase):
 
     def testInterfaceKeyword(self):
         #test dbus_interface parameter
-        print self.remote_object.Echo("dbus_interface on Proxy test Passed", dbus_interface = "org.freedesktop.DBus.TestSuiteInterface")
-        print self.iface.Echo("dbus_interface on Interface test Passed", dbus_interface = "org.freedesktop.DBus.TestSuiteInterface")
+        print self.remote_object.Echo("dbus_interface on Proxy test Passed", dbus_interface = IFACE)
+        print self.iface.Echo("dbus_interface on Interface test Passed", dbus_interface = IFACE)
         self.assert_(True)
 
     def testGetDBusMethod(self):
         self.assertEquals(self.iface.get_dbus_method('AcceptListOfByte')('\1\2\3'), [1,2,3])
-        self.assertEquals(self.remote_object.get_dbus_method('AcceptListOfByte', dbus_interface='org.freedesktop.DBus.TestSuiteInterface')('\1\2\3'), [1,2,3])
+        self.assertEquals(self.remote_object.get_dbus_method('AcceptListOfByte', dbus_interface=IFACE)('\1\2\3'), [1,2,3])
 
     def testCallingConventionOptions(self):
         self.assertEquals(self.iface.AcceptListOfByte('\1\2\3'), [1,2,3])
@@ -407,6 +407,22 @@ class TestDBusBindings(unittest.TestCase):
         self.assert_(iface.IsThere())
         self.assert_(iface.RemoveSelf())
         self.assert_(not self.iface.HasRemovableObject())
+
+    def testFallbackObjectTrivial(self):
+        obj = self.bus.get_object(NAME, OBJECT + '/Fallback')
+        iface = dbus.Interface(obj, IFACE)
+        path, unique_name = iface.TestPathAndConnKeywords()
+        self.assertEquals(path, OBJECT + '/Fallback')
+        #self.assertEquals(rel, '/Badger/Mushroom')
+        self.assertEquals(unique_name, obj.bus_name)
+
+    def testFallbackObject(self):
+        obj = self.bus.get_object(NAME, OBJECT + '/Fallback/Badger/Mushroom')
+        iface = dbus.Interface(obj, IFACE)
+        path, unique_name = iface.TestPathAndConnKeywords()
+        self.assertEquals(path, OBJECT + '/Fallback/Badger/Mushroom')
+        #self.assertEquals(rel, '/Badger/Mushroom')
+        self.assertEquals(unique_name, obj.bus_name)
 
 """ Remove this for now
 class TestDBusPythonToGLibBindings(unittest.TestCase):

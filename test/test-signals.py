@@ -48,14 +48,28 @@ if not pkg.startswith(pydir):
 if not _dbus_bindings.__file__.startswith(builddir):
     raise Exception("DBus modules (%s) are not being picked up from the package"%_dbus_bindings.__file__)
 
+
+NAME = "org.freedesktop.DBus.TestSuitePythonService"
+IFACE = "org.freedesktop.DBus.TestSuiteInterface"
+OBJECT = "/org/freedesktop/DBus/TestSuitePythonObject"
+
+
 class TestSignals(unittest.TestCase):
     def setUp(self):
         logger.info('setUp()')
         self.bus = dbus.SessionBus()
-        self.remote_object = self.bus.get_object("org.freedesktop.DBus.TestSuitePythonService", "/org/freedesktop/DBus/TestSuitePythonObject")
-        self.remote_object_follow = self.bus.get_object("org.freedesktop.DBus.TestSuitePythonService", "/org/freedesktop/DBus/TestSuitePythonObject", follow_name_owner_changes=True)
-        self.iface = dbus.Interface(self.remote_object, "org.freedesktop.DBus.TestSuiteInterface")
-        self.iface_follow = dbus.Interface(self.remote_object_follow, "org.freedesktop.DBus.TestSuiteInterface")
+        self.remote_object = self.bus.get_object(NAME, OBJECT)
+        self.remote_object_fallback_trivial = self.bus.get_object(NAME,
+                OBJECT + '/Fallback')
+        self.remote_object_fallback = self.bus.get_object(NAME,
+                OBJECT + '/Fallback/Badger')
+        self.remote_object_follow = self.bus.get_object(NAME, OBJECT,
+                follow_name_owner_changes=True)
+        self.iface = dbus.Interface(self.remote_object, IFACE)
+        self.iface_follow = dbus.Interface(self.remote_object_follow, IFACE)
+        self.fallback_iface = dbus.Interface(self.remote_object_fallback, IFACE)
+        self.fallback_trivial_iface = dbus.Interface(
+                self.remote_object_fallback_trivial, IFACE)
         self.in_test = None
 
     def signal_test_impl(self, iface, name, test_removal=False):
@@ -103,6 +117,12 @@ class TestSignals(unittest.TestCase):
             if result:
                 raise AssertionError('Signal should not have arrived, but did')
             gobject.source_remove(source_id)
+
+    def testFallback(self):
+        self.signal_test_impl(self.fallback_iface, 'Fallback')
+
+    def testFallbackTrivial(self):
+        self.signal_test_impl(self.fallback_trivial_iface, 'FallbackTrivial')
 
     def testSignal(self):
         self.signal_test_impl(self.iface, 'Signal')

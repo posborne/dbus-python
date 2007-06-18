@@ -393,7 +393,6 @@ class Object(Interface):
     #: have the same object path on all its connections.
     SUPPORTS_MULTIPLE_CONNECTIONS = False
 
-    # the signature of __init__ is a bit mad, for backwards compatibility
     def __init__(self, conn=None, object_path=None, bus_name=None):
         """Constructor. Either conn or bus_name is required; object_path
         is also required.
@@ -443,6 +442,9 @@ class Object(Interface):
         self._locations = []
         #: Lock protecting `_locations`, `_connection` and `_object_path`
         self._locations_lock = thread.allocate_lock()
+
+        #: True if this is a fallback object handling a whole subtree.
+        self._fallback = False
 
         self._name = bus_name
 
@@ -532,7 +534,8 @@ class Object(Interface):
                                  'path %s' % (self, self._object_path))
 
             connection._register_object_path(path, self._message_cb,
-                                             self._unregister_cb)
+                                             self._unregister_cb,
+                                             self._fallback)
 
             if self._connection is None:
                 self._connection = connection
@@ -544,7 +547,7 @@ class Object(Interface):
             elif self._object_path != path:
                 self._object_path = _MANY
 
-            self._locations.append((connection, path, False))
+            self._locations.append((connection, path, self._fallback))
         finally:
             self._locations_lock.release()
 
@@ -717,6 +720,47 @@ class Object(Interface):
         return reflection_data
 
     def __repr__(self):
-        return '<dbus.service.Object %s on %r at %#x>' % (self._object_path, self._name, id(self))
+        where = ''
+        if (self._object_path is not _MANY
+            and self._object_path is not None):
+            where = ' at %s' % self._object_path
+        return '<%s.%s%s at %#x>' % (self.__class__.__module__,
+                                   self.__class__.__name__, where,
+                                   id(self))
     __str__ = __repr__
 
+class FallbackObject(Object):
+    """An object that implements an entire subtree of the object-path
+    tree."""
+
+    SUPPORTS_MULTIPLE_OBJECT_PATHS = True
+
+    def __init__(self, conn=None, object_path=None):
+        """Constructor.
+
+        Note that the superclass' ``bus_name`` __init__ argument is not
+        supported here.
+
+        :Parameters:
+            `conn` : dbus.connection.Connection or None
+                The connection on which to export this object.
+
+                If None, the object is not initially available on any
+                Connection.
+
+            `object_path` : str or None
+                A D-Bus object path at which to make this Object available
+                immediately. If this is not None, a `conn` or `bus_name` must
+                also be provided.
+
+                This object will implements all object-paths in the subtree
+                starting at this object-path, except where a more specific
+                object has been added.
+        """
+        super(FallbackObject, self).__init__()
+        self._fallback = True
+
+        if conn is None and object_path is not None:
+            raise TypeError('If object_path is given, conn is required')
+        if conn is not None and object_path is not None:
+            self.add_to_connection(conn, object_path)
