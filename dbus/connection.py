@@ -228,6 +228,8 @@ class SignalMatch(object):
 class Connection(_Connection):
     """A connection to another application. In this base class there is
     assumed to be no bus daemon.
+
+    :Since: 0.81.0
     """
 
     ProxyObjectClass = ProxyObject
@@ -261,6 +263,7 @@ class Connection(_Connection):
             does not exist.
         :Raises DBusException: if the implementation has failed
             to activate the given bus name.
+        :Since: 0.81.0
         """
         return bus_name
 
@@ -514,6 +517,7 @@ class Connection(_Connection):
         are None, the implementation may request that no reply is sent.
 
         :Returns: The dbus.lowlevel.PendingCall.
+        :Since: 0.81.0
         """
         if object_path == LOCAL_PATH:
             raise DBusException('Methods may not be called on the reserved '
@@ -567,6 +571,7 @@ class Connection(_Connection):
                       signature, args, timeout=-1.0, utf8_strings=False,
                       byte_arrays=False):
         """Call the given method, synchronously.
+        :Since: 0.81.0
         """
         if object_path == LOCAL_PATH:
             raise DBusException('Methods may not be called on the reserved '

@@ -29,7 +29,17 @@ from _dbus_bindings import validate_interface_name, validate_member_name,\
                            DBUS_START_REPLY_SUCCESS, \
                            DBUS_START_REPLY_ALREADY_RUNNING, \
                            BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE,\
-                           HANDLER_RESULT_NOT_YET_HANDLED
+                           HANDLER_RESULT_NOT_YET_HANDLED, \
+                           NAME_FLAG_ALLOW_REPLACEMENT, \
+                           NAME_FLAG_DO_NOT_QUEUE, \
+                           NAME_FLAG_REPLACE_EXISTING, \
+                           RELEASE_NAME_REPLY_NON_EXISTENT, \
+                           RELEASE_NAME_REPLY_NOT_OWNER, \
+                           RELEASE_NAME_REPLY_RELEASED, \
+                           REQUEST_NAME_REPLY_ALREADY_OWNER, \
+                           REQUEST_NAME_REPLY_EXISTS, \
+                           REQUEST_NAME_REPLY_IN_QUEUE, \
+                           REQUEST_NAME_REPLY_PRIMARY_OWNER
 from dbus.connection import Connection
 from dbus.exceptions import DBusException
 
@@ -90,6 +100,8 @@ class NameOwnerWatch(object):
 class BusConnection(Connection):
     """A connection to a D-Bus daemon that implements the
     ``org.freedesktop.DBus`` pseudo-service.
+
+    :Since: 0.81.0
     """
 
     TYPE_SESSION    = BUS_SESSION
@@ -234,6 +246,7 @@ class BusConnection(Connection):
             `bus_name` : str
                 A bus name, either unique or well-known
         :Returns: a `dbus.UInt32`
+        :Since: 0.80.0
         """
         validate_bus_name(bus_name)
         return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
@@ -254,7 +267,8 @@ class BusConnection(Connection):
             second is either START_REPLY_SUCCESS or
             START_REPLY_ALREADY_RUNNING.
 
-        :Raises DBusException: if the service could not be started.
+        :Raises `DBusException`: if the service could not be started.
+        :Since: 0.80.0
         """
         validate_bus_name(bus_name)
         return (True, self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
@@ -272,14 +286,14 @@ class BusConnection(Connection):
                 The well-known name to be requested
             `flags` : dbus.UInt32
                 A bitwise-OR of 0 or more of the flags
-                `DBUS_NAME_FLAG_ALLOW_REPLACEMENT`,
-                `DBUS_NAME_FLAG_REPLACE_EXISTING`
-                and `DBUS_NAME_FLAG_DO_NOT_QUEUE`
-        :Returns: `DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER`,
-            `DBUS_REQUEST_NAME_REPLY_IN_QUEUE`,
-            `DBUS_REQUEST_NAME_REPLY_EXISTS` or
-            `DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER`
-        :Raises DBusException: if the bus daemon cannot be contacted or
+                `NAME_FLAG_ALLOW_REPLACEMENT`,
+                `NAME_FLAG_REPLACE_EXISTING`
+                and `NAME_FLAG_DO_NOT_QUEUE`
+        :Returns: `REQUEST_NAME_REPLY_PRIMARY_OWNER`,
+            `REQUEST_NAME_REPLY_IN_QUEUE`,
+            `REQUEST_NAME_REPLY_EXISTS` or
+            `REQUEST_NAME_REPLY_ALREADY_OWNER`
+        :Raises `DBusException`: if the bus daemon cannot be contacted or
             returns an error.
         """
         validate_bus_name(name, allow_unique=False)
@@ -293,10 +307,10 @@ class BusConnection(Connection):
         :Parameters:
             `name` : str
                 The well-known name to be released
-        :Returns: `DBUS_RELEASE_NAME_REPLY_RELEASED`,
-            `DBUS_RELEASE_NAME_REPLY_NON_EXISTENT`
-            or `DBUS_RELEASE_NAME_REPLY_NOT_OWNER`
-        :Raises DBusException: if the bus daemon cannot be contacted or
+        :Returns: `RELEASE_NAME_REPLY_RELEASED`,
+            `RELEASE_NAME_REPLY_NON_EXISTENT`
+            or `RELEASE_NAME_REPLY_NOT_OWNER`
+        :Raises `DBusException`: if the bus daemon cannot be contacted or
             returns an error.
         """
         validate_bus_name(name, allow_unique=False)
@@ -308,6 +322,7 @@ class BusConnection(Connection):
         """Return a list of all currently-owned names on the bus.
 
         :Returns: a dbus.Array of dbus.UTF8String
+        :Since: 0.81.0
         """
         return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
                                   BUS_DAEMON_IFACE, 'ListNames',
@@ -317,6 +332,7 @@ class BusConnection(Connection):
         """Return a list of all names that can be activated on the bus.
 
         :Returns: a dbus.Array of dbus.UTF8String
+        :Since: 0.81.0
         """
         return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
                                   BUS_DAEMON_IFACE, 'ListNames',
@@ -326,7 +342,8 @@ class BusConnection(Connection):
         """Return the unique connection name of the primary owner of the
         given name.
 
-        :Raises DBusException: if the `bus_name` has no owner
+        :Raises `DBusException`: if the `bus_name` has no owner
+        :Since: 0.81.0
         """
         validate_bus_name(bus_name, allow_unique=False)
         return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
@@ -340,6 +357,8 @@ class BusConnection(Connection):
         `callback` will be called with one argument, which is either the
         unique connection name, or the empty string (meaning the name is
         not owned).
+
+        :Since: 0.81.0
         """
         return NameOwnerWatch(self, bus_name, callback)
 
@@ -347,7 +366,7 @@ class BusConnection(Connection):
         """Return True iff the given bus name has an owner on this bus.
 
         :Parameters:
-            `name` : str
+            `bus_name` : str
                 The bus name to look up
         :Returns: a `bool`
         """
@@ -362,7 +381,8 @@ class BusConnection(Connection):
         :Parameters:
             `rule` : str
                 The match rule
-        :Raises: `DBusException` on error.
+        :Raises `DBusException`: on error.
+        :Since: 0.80.0
         """
         self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
                            BUS_DAEMON_IFACE, 'AddMatch', 's', (rule,))
@@ -378,7 +398,8 @@ class BusConnection(Connection):
         :Parameters:
             `rule` : str
                 The match rule
-        :Raises: `DBusException` on error.
+        :Raises `DBusException`: on error.
+        :Since: 0.80.0
         """
         self.call_async(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
                         BUS_DAEMON_IFACE, 'AddMatch', 's', (rule,),
@@ -391,7 +412,8 @@ class BusConnection(Connection):
         :Parameters:
             `rule` : str
                 The match rule
-        :Raises: `DBusException` on error.
+        :Raises `DBusException`: on error.
+        :Since: 0.80.0
         """
         self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
                            BUS_DAEMON_IFACE, 'RemoveMatch', 's', (rule,))
@@ -405,7 +427,8 @@ class BusConnection(Connection):
         :Parameters:
             `rule` : str
                 The match rule
-        :Raises: `DBusException` on error.
+        :Raises `DBusException`: on error.
+        :Since: 0.80.0
         """
         self.call_async(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
                         BUS_DAEMON_IFACE, 'RemoveMatch', 's', (rule,),

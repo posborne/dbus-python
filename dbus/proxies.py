@@ -181,7 +181,7 @@ class ProxyObject(object):
             `bus_name` : str
                 A bus name for the application owning the object, to be used
                 as the destination for method calls and the sender for
-                signal matches. The keyword argument `named_service` is a
+                signal matches. The keyword argument ``named_service`` is a
                 deprecated alias for this.
             `object_path` : str
                 The object path at which the application exports the object
@@ -261,13 +261,13 @@ class ProxyObject(object):
             is that unique name.
 
             If the proxy was instantiated with a well-known name and with
-            `follow_name_owner_changes` set false (the default), this
+            ``follow_name_owner_changes`` set false (the default), this
             property is the unique name of the connection that owned that
             well-known name when the proxy was instantiated, which might
             not actually own the requested well-known name any more.
 
             If the proxy was instantiated with a well-known name and with
-            `follow_name_owner_changes` set true, this property is that
+            ``follow_name_owner_changes`` set true, this property is that
             well-known name.
             """)
 

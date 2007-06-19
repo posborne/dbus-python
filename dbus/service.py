@@ -459,6 +459,8 @@ class Object(Interface):
         """The object-path at which this object is available.
         Access raises AttributeError if there is no object path, or more than
         one object path.
+
+        Changed in 0.82.0: AttributeError can be raised.
         """
         if self._object_path is _MANY:
             raise AttributeError('Object %r has more than one object path: '
@@ -473,6 +475,8 @@ class Object(Interface):
         """The Connection on which this object is available.
         Access raises AttributeError if there is no Connection, or more than
         one Connection.
+
+        Changed in 0.82.0: AttributeError can be raised.
         """
         if self._connection is _MANY:
             raise AttributeError('Object %r is on more than one Connection: '
@@ -491,6 +495,8 @@ class Object(Interface):
         versions of dbus-python, so do not rely on their exact length.
         The first two items are the dbus.connection.Connection and the object
         path.
+
+        :Since: 0.82.0
         """
         return iter(self._locations)
 
@@ -512,8 +518,10 @@ class Object(Interface):
                 can only be made available at one object path; if the class
                 attribute is set True by a subclass, the object can be made
                 available with more than one object path.
+
         :Raises ValueError: if the object's class attributes do not allow the
             object to be exported in the desired way.
+        :Since: 0.82.0
         """
         if path == LOCAL_PATH:
             raise ValueError('Objects may not be exported on the reserved '
@@ -570,6 +578,7 @@ class Object(Interface):
         :Raises LookupError:
             if the object was not exported on the requested connection
             or path, or (if both are None) was not exported at all.
+        :Since: 0.81.1
         """
         self._locations_lock.acquire()
         try:
@@ -731,7 +740,10 @@ class Object(Interface):
 
 class FallbackObject(Object):
     """An object that implements an entire subtree of the object-path
-    tree."""
+    tree.
+
+    :Since: 0.82.0
+    """
 
     SUPPORTS_MULTIPLE_OBJECT_PATHS = True
 
@@ -743,15 +755,16 @@ class FallbackObject(Object):
 
         :Parameters:
             `conn` : dbus.connection.Connection or None
-                The connection on which to export this object.
+                The connection on which to export this object. If this is not
+                None, an `object_path` must also be provided.
 
                 If None, the object is not initially available on any
                 Connection.
 
             `object_path` : str or None
                 A D-Bus object path at which to make this Object available
-                immediately. If this is not None, a `conn` or `bus_name` must
-                also be provided.
+                immediately. If this is not None, a `conn` must also be
+                provided.
 
                 This object will implements all object-paths in the subtree
                 starting at this object-path, except where a more specific
@@ -760,7 +773,10 @@ class FallbackObject(Object):
         super(FallbackObject, self).__init__()
         self._fallback = True
 
-        if conn is None and object_path is not None:
-            raise TypeError('If object_path is given, conn is required')
-        if conn is not None and object_path is not None:
+        if conn is None:
+            if object_path is not None:
+                raise TypeError('If object_path is given, conn is required')
+        elif object_path is None:
+            raise TypeError('If conn is given, object_path is required')
+        else:
             self.add_to_connection(conn, object_path)

@@ -86,21 +86,29 @@ def method(dbus_interface, in_signature=None, out_signature=None,
             case of "fallback paths" you'll usually want to use the object
             path in the method's implementation.
 
+            :Since: 0.80.0?
+
         `destination_keyword` : str or None
             If not None (the default), the decorated method will receive
             the destination bus name as a keyword argument with this name.
             Included for completeness - you shouldn't need this.
+
+            :Since: 0.80.0?
 
         `message_keyword` : str or None
             If not None (the default), the decorated method will receive
             the `dbus.lowlevel.MethodCallMessage` as a keyword argument
             with this name.
 
+            :Since: 0.80.0?
+
         `connection_keyword` : str or None
             If not None (the default), the decorated method will receive
             the `dbus.connection.Connection` as a keyword argument
             with this name. This is generally only useful for objects
             that are available on more than one connection.
+
+            :Since: 0.82.0
 
         `utf8_strings` : bool
             If False (default), D-Bus strings are passed to the decorated
@@ -113,6 +121,8 @@ def method(dbus_interface, in_signature=None, out_signature=None,
             This option does not affect object-paths and signatures, which
             are always 8-bit strings (str subclass) encoded in ASCII.
 
+            :Since: 0.80.0
+
         `byte_arrays` : bool
             If False (default), a byte array will be passed to the decorated
             method as an `Array` (a list subclass) of `Byte` objects.
@@ -121,6 +131,8 @@ def method(dbus_interface, in_signature=None, out_signature=None,
             a `ByteArray`, a str subclass. This is usually what you want,
             but is switched off by default to keep dbus-python's API
             consistent.
+
+            :Since: 0.80.0
     """
     _dbus_bindings.validate_interface_name(dbus_interface)
 
@@ -221,6 +233,8 @@ def signal(dbus_interface, signature=None, path_keyword=None,
             /def and /x/y/z on connection 2, and the keyword argument is
             /foo, then signals will be emitted from /abc/foo and /def/foo
             on connection 1, and /x/y/z/foo on connection 2.
+
+            :Since: 0.82.0
     """
     _dbus_bindings.validate_interface_name(dbus_interface)
 
