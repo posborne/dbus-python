@@ -120,10 +120,10 @@ class Bus(BusConnection):
         super(Bus, self).close()
 
     def get_connection(self):
-        """(Deprecated - in new code, just use self)
-
-        Return self, for backwards compatibility with earlier dbus-python
+        """Return self, for backwards compatibility with earlier dbus-python
         versions where Bus was not a subclass of Connection.
+
+        :Deprecated: since 0.80.0
         """
         return self
     _connection = property(get_connection, None, None,
@@ -167,15 +167,17 @@ class Bus(BusConnection):
 
     def __repr__(self):
         if self._bus_type == BUS_SESSION:
-            name = 'SESSION'
+            name = 'session'
         elif self._bus_type == BUS_SYSTEM:
-            name = 'SYSTEM'
+            name = 'system'
         elif self._bus_type == BUS_STARTER:
-            name = 'STARTER'
+            name = 'starter'
         else:
-            raise AssertionError('Unable to represent unknown bus type.')
+            name = 'unknown bus type'
 
-        return '<dbus.Bus on %s at %#x>' % (name, id(self))
+        return '<%s.%s (%s) at %#x>' % (self.__class__.__module__,
+                                        self.__class__.__name__,
+                                        name, id(self))
     __str__ = __repr__
 
 
