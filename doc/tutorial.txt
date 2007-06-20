@@ -104,14 +104,11 @@ interface at object paths like
 ``/org/freedesktop/NetworkManager/Devices/eth0``. You can get a proxy
 for the object representing eth0 like this::
 
-    >>> import dbus
-    >>> bus = dbus.SystemBus()
-    >>> bus.get_object('org.freedesktop.NetworkManager',
-    ...                '/org/freedesktop/NetworkManager/Devices/eth0')
-    <ProxyObject wrapping <dbus.Bus on SYSTEM at 0x3007e150>
-    org.freedesktop.NetworkManager
-    /org/freedesktop/NetworkManager/Devices/eth0 at 0x301f0ad0>
-    >>>
+    import dbus
+    bus = dbus.SystemBus()
+    proxy = bus.get_object('org.freedesktop.NetworkManager',
+                           '/org/freedesktop/NetworkManager/Devices/eth0')
+    # proxy is a dbus.proxies.ProxyObject
 
 Interfaces and methods
 ----------------------
@@ -127,15 +124,12 @@ object representing a network interface implements the interface
 To call a method, call the method of the same name on the proxy object,
 passing in the interface name via the ``dbus_interface`` keyword argument::
 
-    >>> import dbus
-    >>> bus = dbus.SystemBus()
-    >>> eth0 = bus.get_object('org.freedesktop.NetworkManager',
-    ...                       '/org/freedesktop/NetworkManager/Devices/eth0')
-    >>> eth0.getProperties(dbus_interface='org.freedesktop.NetworkManager.Devices')
-    (dbus.ObjectPath('/org/freedesktop/NetworkManager/Devices/eth0'), [...])
-    >>>
-
-(I've truncated the list of properties here.)
+    import dbus
+    bus = dbus.SystemBus()
+    eth0 = bus.get_object('org.freedesktop.NetworkManager',
+                          '/org/freedesktop/NetworkManager/Devices/eth0')
+    props = eth0.getProperties(dbus_interface='org.freedesktop.NetworkManager.Devices')
+    # props is a tuple of properties, the first of which is the object path
 
 .. _dbus.Interface:
 
@@ -143,15 +137,14 @@ As a short cut, if you're going to be calling many methods with the same
 interface, you can construct a ``dbus.Interface`` object and call
 methods on that, without needing to specify the interface again::
 
-    >>> import dbus
-    >>> bus = dbus.SystemBus()
-    >>> eth0 = bus.get_object('org.freedesktop.NetworkManager',
-    ...                       '/org/freedesktop/NetworkManager/Devices/eth0')
-    >>> eth0_dev_iface = dbus.Interface(eth0,
-    ...     dbus_interface='org.freedesktop.NetworkManager.Devices')
-    >>> eth0_dev_iface.getProperties()
-    (dbus.ObjectPath('/org/freedesktop/NetworkManager/Devices/eth0'), [...])
-    >>>
+    import dbus
+    bus = dbus.SystemBus()
+    eth0 = bus.get_object('org.freedesktop.NetworkManager',
+                          '/org/freedesktop/NetworkManager/Devices/eth0')
+    eth0_dev_iface = dbus.Interface(eth0,
+        dbus_interface='org.freedesktop.NetworkManager.Devices')
+    props = eth0_dev_iface.getProperties()
+    # props is the same as before
 
 See also
 ~~~~~~~~
