@@ -82,8 +82,13 @@ class BusName(object):
             `name` : str
                 The well-known name to be advertised
             `bus` : dbus.Bus
-                A Bus on which this service will be advertised; if None
-                (default) the session bus will be used
+                A Bus on which this service will be advertised.
+
+                Omitting this parameter or setting it to None has been
+                deprecated since version 0.82.1. For backwards compatibility,
+                if this is done, the global shared connection to the session
+                bus will be used.
+
             `allow_replacement` : bool
                 If True, other processes trying to claim the same well-known
                 name will take precedence over this one.
@@ -98,8 +103,12 @@ class BusName(object):
         _dbus_bindings.validate_bus_name(name, allow_well_known=True,
                                          allow_unique=False)
 
-        # get default bus
-        if bus == None:
+        # if necessary, get default bus (deprecated)
+        if bus is None:
+            import warnings
+            warnings.warn('Omitting the "bus" parameter to '
+                          'dbus.service.BusName.__init__ is deprecated',
+                          DeprecationWarning)
             bus = SessionBus()
 
         # see if this name is already defined, return it if so
