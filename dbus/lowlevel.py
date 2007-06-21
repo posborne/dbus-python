@@ -19,7 +19,10 @@
 """Low-level interface to D-Bus."""
 
 __all__ = ('PendingCall', 'Message', 'MethodCallMessage',
-           'MethodReturnMessage', 'ErrorMessage', 'SignalMessage')
+           'MethodReturnMessage', 'ErrorMessage', 'SignalMessage',
+           'HANDLER_RESULT_HANDLED', 'HANDLER_RESULT_NOT_YET_HANDLED')
 
 from _dbus_bindings import PendingCall, Message, MethodCallMessage, \
-                           MethodReturnMessage, ErrorMessage, SignalMessage
+                           MethodReturnMessage, ErrorMessage, SignalMessage, \
+                           HANDLER_RESULT_HANDLED, \
+                           HANDLER_RESULT_NOT_YET_HANDLED
