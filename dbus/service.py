@@ -714,7 +714,7 @@ class Object(Interface):
         """Return a string of XML encoding this object's supported interfaces,
         methods and signals.
         """
-        reflection_data = '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">\n'
+        reflection_data = _dbus_bindings.DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE
         reflection_data += '<node name="%s">\n' % (self._object_path)
 
         interfaces = self._dbus_class_table[self.__class__.__module__ + '.' + self.__class__.__name__]
