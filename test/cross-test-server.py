@@ -270,7 +270,7 @@ class TestsImpl(dbus.service.Object):
         logger.info('method/signal: Emitting Triggered(%r) from %r', parameter, object)
         obj = objects.get(object, None)
         if obj is None:
-            obj = SignalTestsImpl(dbus.service.BusName(CROSS_TEST_BUS_NAME), object)
+            obj = SignalTestsImpl(dbus.service.BusName(CROSS_TEST_BUS_NAME, SessionBus()), object)
             objects[object] = obj
         obj.Triggered(parameter)
         logger.info('method/signal: Emitted Triggered')
@@ -300,7 +300,7 @@ class Server(SingleTestsImpl, TestsImpl, SignalTestsImpl):
 
 if __name__ == '__main__':
     bus = SessionBus()
-    bus_name = BusName(CROSS_TEST_BUS_NAME)
+    bus_name = BusName(CROSS_TEST_BUS_NAME, SessionBus())
     loop = gobject.MainLoop()
     obj = Server(bus_name, CROSS_TEST_PATH, loop.quit)
     objects[CROSS_TEST_PATH] = obj

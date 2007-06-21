@@ -23,7 +23,6 @@ import logging
 import gobject
 
 from dbus import SessionBus, Interface, Array, Byte, Double, Boolean, ByteArray, Int16, Int32, Int64, UInt16, UInt32, UInt64, String, UTF8String, Struct, Dictionary
-from dbus.service import BusName
 import dbus.glib
 
 from crosstest import CROSS_TEST_PATH, CROSS_TEST_BUS_NAME,\
@@ -375,14 +374,9 @@ class Client(SignalTestsImpl):
 
 
 if __name__ == '__main__':
-    # FIXME: should be possible to export objects without a bus name
-    bus_name = BusName('com.example.Argh')
-    if 0:
-        client = Client(bus_name, '/Client')
-    else:
-        # the Java cross test's interpretation is that the client should be
-        # at /Test too
-        client = Client(bus_name, '/Test')
+    # the Java cross test's interpretation is that the client should be
+    # at /Test too
+    client = Client(SessionBus(), '/Test')
     gobject.idle_add(client.run_client)
 
     loop = gobject.MainLoop()

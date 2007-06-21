@@ -621,10 +621,10 @@ class Object(Interface):
         finally:
             self._locations_lock.release()
 
-    def _unregister_cb(self, connection):
+    def _unregister_cb(self, connection, path):
         # there's not really enough information to do anything useful here
-        _logger.info('Unregistering exported object %r from some path '
-                     'on %r', self, connection)
+        _logger.info('Unregistering exported object %r from %r '
+                     'on %r', self, path, connection)
 
     def _message_cb(self, connection, message):
         try:

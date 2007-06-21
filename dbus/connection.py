@@ -28,17 +28,23 @@ import weakref
 
 from _dbus_bindings import Connection as _Connection, ErrorMessage, \
                            MethodCallMessage, MethodReturnMessage, \
-                           LOCAL_PATH, LOCAL_IFACE, \
+                           LOCAL_PATH, LOCAL_IFACE, PEER_IFACE, \
                            validate_interface_name, validate_member_name,\
                            validate_bus_name, validate_object_path,\
                            validate_error_name, \
+                           HANDLER_RESULT_HANDLED, \
                            HANDLER_RESULT_NOT_YET_HANDLED, \
-                           UTF8String, SignalMessage
+                           UTF8String, SignalMessage, ObjectPath
+from _dbus_bindings import DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE \
+        as _INTROSPECT_DOCTYPE
 from dbus.exceptions import DBusException
 from dbus.proxies import ProxyObject
 
 
 _logger = logging.getLogger('dbus.connection')
+
+
+_ROOT = ObjectPath('/')
 
 
 def _noop(*args, **kwargs):
@@ -249,7 +255,23 @@ class Connection(_Connection):
             self._signals_lock = thread.allocate_lock()
             """Lock used to protect signal data structures"""
 
-            self.add_message_filter(self.__class__._signal_func)
+            self._object_tree_lock = thread.allocate_lock()
+            """Lock used to protect _object_paths and _object_tree"""
+
+            self._object_paths = {}
+            """Dict mapping object path to one of:
+
+            - a tuple (on_message, on_unregister, fallback)
+            - a tuple (None, None, False), meaning this is a "synthetic"
+              object created as a parent or ancestor for a real object
+            """
+
+            self._object_children = {}
+            """Dict mapping object paths to sets of children"""
+
+            self._filters = []
+
+            super(Connection, self).add_message_filter(self.__class__._filter)
 
     def activate_name_owner(self, bus_name):
         """Return the unique name for the given bus name, activating it
@@ -489,23 +511,6 @@ class Connection(_Connection):
         # Now called without the signals lock held (it was held in <= 0.81.0)
         pass
 
-    def _signal_func(self, message):
-        """D-Bus filter function. Handle signals by dispatching to Python
-        callbacks kept in the match-rule tree.
-        """
-
-        if not isinstance(message, SignalMessage):
-            return HANDLER_RESULT_NOT_YET_HANDLED
-
-        dbus_interface = message.get_interface()
-        path = message.get_path()
-        signal_name = message.get_member()
-
-        for match in self._iter_easy_matches(path, dbus_interface,
-                                             signal_name):
-            match.maybe_handle_message(message)
-        return HANDLER_RESULT_NOT_YET_HANDLED
-
     def call_async(self, bus_name, object_path, dbus_interface, method,
                    signature, args, reply_handler, error_handler,
                    timeout=-1.0, utf8_strings=False, byte_arrays=False,
@@ -608,3 +613,250 @@ class Connection(_Connection):
             return args_list[0]
         else:
             return tuple(args_list)
+
+    # Export functionality
+
+    def _register_object_path(self, path, on_message, on_unregister=None,
+                              fallback=False):
+        """Register a callback to be called when messages arrive at the given
+        object-path. Used to export objects' methods on the bus in a low-level
+        way. Use `dbus.service.Object` instead.
+
+        :Parameters:
+            `path` : dbus.ObjectPath or other str
+                Object path to be acted on
+            `on_message` : callable
+                Called when a message arrives at the given object-path, with
+                two positional parameters: the first is this Connection,
+                the second is the incoming `dbus.lowlevel.Message`.
+            `on_unregister` : callable or None
+                If not None, called when the callback is unregistered, with
+                two positional parameters: the first is this Connection,
+                the second is the path at which the object is no longer
+                registered.
+            `fallback` : bool
+                If True (the default is False), when a message arrives for a
+                'subdirectory' of the given path and there is no more specific
+                handler, use this handler. Normally this handler is only run if
+                the paths match exactly.
+        """
+        self._require_main_loop()
+        path = ObjectPath(path)
+        parent, tail = path.rsplit('/', 1)
+        if on_message is None:
+            raise TypeError('None may not be registered as an object-path '
+                            'handler')
+
+        self._object_tree_lock.acquire()
+        paths = self._object_paths
+        children = self._object_children
+        try:
+            if path in paths:
+                old_on_message, unused, unused = paths[path]
+                if old_on_message:
+                    raise KeyError("Can't register the object-path handler "
+                                   "for %r: there is already a handler" % path)
+
+            while tail:
+                parent = ObjectPath(parent or _ROOT)
+                # make sure there's at least a synthetic parent
+                paths.setdefault(parent, (None, None, False))
+                # give the parent an appropriate child
+                children.setdefault(parent, set()).add(tail)
+                # walk upwards
+                parent, tail = parent.rsplit('/', 1)
+
+            paths[path] = (on_message, on_unregister, fallback)
+        finally:
+            self._object_tree_lock.release()
+
+    def _unregister_object_path(self, path):
+        """Remove a previously registered handler for the given object path.
+
+        :Parameters:
+           `path` : dbus.ObjectPath or other str
+               The object path whose handler is to be removed
+        :Raises KeyError: if there is no handler registered for exactly that
+           object path.
+        """
+        path = ObjectPath(path)
+        parent, tail = path.rsplit('/', 1)
+
+        self._object_tree_lock.acquire()
+        paths = self._object_paths
+        children = self._object_children
+        try:
+            unused, on_unregister, unused = paths.pop(path)
+
+            while tail:
+                parent = ObjectPath(parent or _ROOT)
+                kids = children.get(parent)
+                if kids is not None:
+                    kids.discard(tail)
+                    if kids:
+                        # parent still has other children, don't delete it
+                        break
+                    else:
+                        del children[parent]
+                parent_on_message, unused, unused = paths[parent]
+                if parent_on_message is not None:
+                    # parent is a real object, don't delete it
+                    break
+                del paths[parent]
+                # walk upwards
+                parent, tail = parent.rsplit('/', 1)
+        finally:
+            self._object_tree_lock.release()
+
+        if on_unregister is not None:
+            on_unregister(self, path)
+
+    def list_exported_child_objects(self, path):
+        """Return a list of the names of objects exported on this Connection
+        as direct children of the given object path.
+
+        Each name ``n`` returned may be converted to a valid object path using
+        ``dbus.ObjectPath('%s%s%s' % (path, (path != '/' and '/' or ''), n))``.
+        For the purposes of this function, every parent or ancestor of an
+        exported object is considered to be an exported object, even if it's
+        only an object synthesized by the library to support introspection.
+        """
+        return list(self._object_children.get(path, ()))
+
+    def _handle_method_call(self, msg):
+        path = msg.get_path()
+        on_message = None
+        absent = True
+        self._object_tree_lock.acquire()
+        try:
+            try:
+                on_message, on_unregister, fallback = self._object_paths[path]
+            except KeyError:
+                parent, tail = path.rsplit('/', 1)
+                while parent:
+                    on_message, on_unregister, fallback \
+                        = self._object_paths.get(parent, (None, None, False))
+                    if fallback:
+                        print "Found fallback handler at %s", parent
+                        absent = False
+                        break
+                    parent, tail = parent.rsplit('/', 1)
+            else:
+                print "Found handler at %s", path
+                absent = False
+        finally:
+            self._object_tree_lock.release()
+
+        if absent:
+            # There's nothing there, and it's not an ancestor of any object
+            # FIXME: Raise UnknownObject once it's specified
+            reply = ErrorMessage(msg,
+                                 'org.freedesktop.DBus.Error.UnknownMethod',
+                                 'There is no object at %s' % path)
+            self.send_message(reply)
+        elif on_message is None:
+            # It's a synthetic object that's an ancestor of a real object.
+            # It supports Introspect and nothing else
+            reflection_data = _INTROSPECT_DOCTYPE
+            reflection_data += '<node name="%s">\n' % path
+            for kid in self._object_children.get(path, ()):
+                reflection_data += '  <node name="%s"/>\n' % kid
+            reflection_data += '</node>\n'
+            reply = MethodReturnMessage(msg)
+            reply.append(reflection_data, signature='s')
+            self.send_message(reply)
+        else:
+            # It's a real object and can return whatever it likes
+            try:
+                on_message(self, msg)
+            except:
+                logging.basicConfig()
+                _logger.error('Error in message handler:',
+                              exc_info=1)
+
+    def _filter(self, message):
+        try:
+            self.__filter(message)
+        except:
+            logging.basicConfig()
+            _logger.error('Internal error while filtering message:',
+                          exc_info=1)
+
+    def __filter(self, message):
+        # Step 1. Pass any method replies to DBusPendingCall or
+        # send_with_reply_and_block if they're for us.
+        # - libdbus still does this for us
+
+        # Step 1 1/2. Process the standardized org.freedesktop.DBus.Peer
+        # interface. libdbus does this before any filters, so so will we.
+        # FIXME: while we're using libdbus, this code won't ever run
+
+        if (isinstance(message, MethodCallMessage) and
+            message.get_interface() == PEER_IFACE):
+            member = message.get_member()
+            if member == 'Ping':
+                # send an empty reply
+                reply = MethodReturnMessage(message)
+            elif member == 'GetMachineID':
+                reply = ErrorMessage(message,
+                        'org.freedesktop.DBus.Error.UnknownMethod',
+                        'dbus-python does not yet implement Peer.GetMachineID')
+            else:
+                reply = ErrorMessage(message,
+                        'org.freedesktop.DBus.Error.UnknownMethod',
+                        'Unrecognised Peer method %s' % member)
+            self.send_message(reply)
+            return HANDLER_RESULT_HANDLED
+
+
+        # Step 2a. Check for signals - this filter always ran first
+        # in older dbus-pythons, so it runs first here
+
+        if isinstance(message, SignalMessage):
+            dbus_interface = message.get_interface()
+            path = message.get_path()
+            signal_name = message.get_member()
+
+            for match in self._iter_easy_matches(path, dbus_interface,
+                                                 signal_name):
+                try:
+                    match.maybe_handle_message(message)
+                except:
+                    logging.basicConfig()
+                    _logger.error('Internal error handling D-Bus signal:',
+                                  exc_info=1)
+
+        # Step 2b. Run user-defined filters
+        for filter in self._filters:
+            try:
+                ret = filter(self, message)
+            except:
+                logging.basicConfig()
+                _logger.error('User-defined message filter raised exception:',
+                              exc_info=1)
+                ret = NotImplemented
+            if ret is NotImplemented or ret == HANDLER_RESULT_NOT_YET_HANDLED:
+                continue
+            elif ret is None or ret == HANDLER_RESULT_HANDLED:
+                break
+            elif isinstance(ret, (int, long)):
+                _logger.error('Return from message filter should be None, '
+                              'NotImplemented, '
+                              'dbus.lowlevel.HANDLER_RESULT_HANDLED or '
+                              'dbus.lowlevel.HANDLER_RESULT_NOT_YET_HANDLED, '
+                              'not %r', ret)
+
+        # Step 3. Pass method calls to registered objects at that path
+        if isinstance(message, MethodCallMessage):
+            try:
+                self._handle_method_call(message)
+            except:
+                logging.basicConfig()
+                _logger.error('Internal error handling method call:',
+                              exc_info=1)
+
+        # We should be the only ones doing anything with messages now, so...
+        return HANDLER_RESULT_HANDLED
+
+    def add_message_filter():
+        self._filters.append(filter)
