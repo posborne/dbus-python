@@ -297,6 +297,15 @@ init_dbus_bindings(void)
                                    DBUS_INTERFACE_PEER) < 0) return;
     if (PyModule_AddStringConstant(this_module, "PROPERTIES_IFACE",
                                    DBUS_INTERFACE_PROPERTIES) < 0) return;
+    if (PyModule_AddStringConstant(this_module,
+                "DBUS_INTROSPECT_1_0_XML_PUBLIC_IDENTIFIER",
+                DBUS_INTROSPECT_1_0_XML_PUBLIC_IDENTIFIER) < 0) return;
+    if (PyModule_AddStringConstant(this_module,
+                "DBUS_INTROSPECT_1_0_XML_SYSTEM_IDENTIFIER",
+                DBUS_INTROSPECT_1_0_XML_SYSTEM_IDENTIFIER) < 0) return;
+    if (PyModule_AddStringConstant(this_module,
+                "DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE",
+                DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE) < 0) return;
 
 #define ADD_CONST_VAL(x, v) \
     if (PyModule_AddIntConstant(this_module, x, v) < 0) return;
