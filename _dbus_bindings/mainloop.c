@@ -20,7 +20,13 @@
  *
  */
 
+#include "config.h"
+
 #include "dbus_bindings-internal.h"
+
+#ifndef HAVE_DBUS_WATCH_GET_UNIX_FD
+#   define dbus_watch_get_unix_fd dbus_watch_get_fd
+#endif
 
 /* Watch ============================================================ */
 
@@ -51,7 +57,7 @@ Watch_fileno(Watch *self, PyObject *unused UNUSED)
         PyErr_SetString(PyExc_ValueError, "FD watch is no longer valid");
         return NULL;
     }
-    fd = dbus_watch_get_fd(self->watch);
+    fd = dbus_watch_get_unix_fd(self->watch);
     DBG("Watch at %p (wrapping DBusWatch at %p) has fileno %d", self,
         self->watch, fd);
     return PyInt_FromLong(fd);
