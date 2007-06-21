@@ -108,7 +108,7 @@ class BusName(object):
             import warnings
             warnings.warn('Omitting the "bus" parameter to '
                           'dbus.service.BusName.__init__ is deprecated',
-                          DeprecationWarning)
+                          DeprecationWarning, stacklevel=2)
             bus = SessionBus()
 
         # see if this name is already defined, return it if so
