@@ -2,6 +2,8 @@ run-with-tmp-session-bus.conf
 test/data
 *.pyc
 *.pyo
+*.orig
+*.rej
 .*.sw?
 configure
 config.h.in*
@@ -36,4 +38,5 @@ test/tmp-session-bus.conf
 Makefile
 *.html
 dbus-python-*.tar.gz
+dbus-python-*.tar.gz.asc
 INSTALL
