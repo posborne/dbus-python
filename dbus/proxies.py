@@ -53,7 +53,8 @@ class _DeferredMethod:
         self._block = block
 
     def __call__(self, *args, **keywords):
-        if keywords.has_key('reply_handler'):
+        if (keywords.has_key('reply_handler') or
+            keywords.get('ignore_reply', False)):
             # defer the async call til introspection finishes
             self._append(self._proxy_method, args, keywords)
             return None
