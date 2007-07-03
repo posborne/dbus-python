@@ -50,6 +50,8 @@ PyDoc_STRVAR(Signature_tp_doc,
 "    Signature with variant_level==2.\n"
 );
 
+static PyTypeObject DBusPySignature_Type;
+
 typedef struct {
     PyObject_HEAD
     PyObject *string;
@@ -173,7 +175,7 @@ Signature_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return (DBusPyStrBase_Type.tp_new)(cls, args, kwargs);
 }
 
-PyTypeObject DBusPySignature_Type = {
+static PyTypeObject DBusPySignature_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Signature",
@@ -215,6 +217,47 @@ PyTypeObject DBusPySignature_Type = {
     Signature_tp_new,                       /* tp_new */
     0,                                      /* tp_free */
 };
+
+PyObject *
+DBusPySignature_FromStringObject(PyObject *o, int allow_none)
+{
+    if (allow_none && o == Py_None) {
+        Py_INCREF(o);
+        return o;
+    }
+    if (PyObject_TypeCheck(o, &DBusPySignature_Type)) {
+        Py_INCREF(o);
+        return o;
+    }
+    return PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(O)", o);
+}
+
+PyObject *
+DBusPySignature_FromStringAndVariantLevel(const char *str, long variant_level)
+{
+    return PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(sl)",
+                                 str, variant_level);
+}
+
+PyObject *
+DBusPySignature_FromStringAndSize(const char *str, Py_ssize_t size)
+{
+    return PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s#)",
+                                 str, size);
+}
+
+PyObject *
+DBusPySignature_FromString(const char *str)
+{
+    return PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s)",
+                                 str);
+}
+
+int
+DBusPySignature_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPySignature_Type);
+}
 
 dbus_bool_t
 dbus_py_init_signature(void)

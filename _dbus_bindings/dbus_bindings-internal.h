@@ -73,9 +73,8 @@ extern dbus_bool_t dbus_py_insert_exception_types(PyObject *this_module);
 /* types */
 extern PyTypeObject DBusPyBoolean_Type;
 DEFINE_CHECK(DBusPyBoolean)
-extern PyTypeObject DBusPyObjectPath_Type, DBusPySignature_Type;
+extern PyTypeObject DBusPyObjectPath_Type;
 DEFINE_CHECK(DBusPyObjectPath)
-DEFINE_CHECK(DBusPySignature)
 extern PyTypeObject DBusPyArray_Type, DBusPyDict_Type, DBusPyStruct_Type;
 DEFINE_CHECK(DBusPyArray)
 DEFINE_CHECK(DBusPyDict)
@@ -111,6 +110,13 @@ extern dbus_bool_t dbus_py_insert_string_types(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_float_types(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_container_types(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_byte_types(PyObject *this_module);
+
+int DBusPySignature_Check (PyObject *o);
+PyObject *DBusPySignature_FromString(const char *str);
+PyObject *DBusPySignature_FromStringObject(PyObject *o, int allow_none);
+PyObject *DBusPySignature_FromStringAndSize(const char *str, Py_ssize_t size);
+PyObject *DBusPySignature_FromStringAndVariantLevel(const char *str,
+                                                    long variant_level);
 
 /* generic */
 extern void dbus_py_take_gil_and_xdecref(PyObject *);

@@ -138,7 +138,7 @@ static int
 Array_tp_init (DBusPyArray *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *obj = dbus_py_empty_tuple;
-    PyObject *signature = NULL;
+    PyObject *signature = Py_None;
     PyObject *tuple;
     PyObject *variant_level;
     /* variant_level is accepted but ignored - it's immutable, so
@@ -150,18 +150,11 @@ Array_tp_init (DBusPyArray *self, PyObject *args, PyObject *kwargs)
         return -1;
     }
 
-  /* convert signature from a borrowed ref of unknown type to an owned ref
-  of type Signature (or None) */
-    if (!signature) signature = Py_None;
-    if (signature == Py_None
-        || PyObject_IsInstance(signature, (PyObject *)&DBusPySignature_Type)) {
-        Py_INCREF(signature);
-    }
-    else {
-        signature = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
-                                          "(O)", signature);
-        if (!signature) return -1;
-    }
+    /* convert signature from a borrowed ref of unknown type to an owned ref
+    of type Signature (or None) */
+    signature = DBusPySignature_FromStringObject(signature, TRUE);
+    if (!signature)
+        return -1;
 
     if (signature != Py_None) {
         const char *c_str = PyString_AS_STRING(signature);
@@ -351,7 +344,7 @@ static int
 Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *obj = dbus_py_empty_tuple;
-    PyObject *signature = NULL;
+    PyObject *signature = Py_None;
     PyObject *tuple;
     PyObject *variant_level;    /* ignored here - __new__ uses it */
     static char *argnames[] = {"mapping_or_iterable", "signature",
@@ -362,18 +355,11 @@ Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
         return -1;
     }
 
-  /* convert signature from a borrowed ref of unknown type to an owned ref
-  of type Signature (or None) */
-    if (!signature) signature = Py_None;
-    if (signature == Py_None
-        || PyObject_IsInstance(signature, (PyObject *)&DBusPySignature_Type)) {
-        Py_INCREF(signature);
-    }
-    else {
-        signature = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
-                                          "(O)", signature);
-        if (!signature) return -1;
-    }
+    /* convert signature from a borrowed ref of unknown type to an owned ref
+    of type Signature (or None) */
+    signature = DBusPySignature_FromStringObject(signature, TRUE);
+    if (!signature)
+        return -1;
 
     if (signature != Py_None) {
         const char *c_str = PyString_AS_STRING(signature);
@@ -546,7 +532,7 @@ finally:
 static PyObject *
 Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    PyObject *signature = NULL;
+    PyObject *signature = Py_None;
     long variantness = 0;
     PyObject *self, *key;
     static char *argnames[] = {"signature", "variant_level", NULL};
@@ -583,19 +569,9 @@ Struct_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
     /* convert signature from a borrowed ref of unknown type to an owned ref
     of type Signature (or None) */
-    if (!signature) signature = Py_None;
-    if (signature == Py_None
-        || PyObject_IsInstance(signature, (PyObject *)&DBusPySignature_Type)) {
-        Py_INCREF(signature);
-    }
-    else {
-        signature = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
-                                          "(O)", signature);
-        if (!signature) {
-            Py_DECREF(self);
-            return NULL;
-        }
-    }
+    signature = DBusPySignature_FromStringObject(signature, TRUE);
+    if (!signature)
+        return NULL;
 
     key = PyLong_FromVoidPtr(self);
     if (!key) {

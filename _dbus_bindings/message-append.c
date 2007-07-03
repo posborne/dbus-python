@@ -381,7 +381,7 @@ dbus_py_Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
     /* if there were no args, easy */
     if (PyTuple_GET_SIZE(args) == 0) {
         DBG("%s", "Message_guess_signature: no args, so return Signature('')");
-        return PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s)", "");
+        return DBusPySignature_FromString("");
     }
 
     /* if there were args, the signature we want is, by construction,
@@ -399,9 +399,8 @@ dbus_py_Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
         Py_DECREF(tmp);
         return NULL;
     }
-    ret = PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s#)",
-                                PyString_AS_STRING(tmp) + 1,
-                                PyString_GET_SIZE(tmp) - 2);
+    ret = DBusPySignature_FromStringAndSize(PyString_AS_STRING(tmp) + 1,
+                                            PyString_GET_SIZE(tmp) - 2);
     DBG("Message_guess_signature: returning Signature at %p \"%s\"", ret,
         ret ? PyString_AS_STRING(ret) : "(NULL)");
     Py_DECREF(tmp);

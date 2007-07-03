@@ -122,9 +122,8 @@ _message_iter_get_dict(DBusMessageIter *iter,
         PyErr_NoMemory();
         return NULL;
     }
-    sig = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
-                                "(s#)", sig_str+2,
-                                (Py_ssize_t)strlen(sig_str)-3);
+    sig = DBusPySignature_FromStringAndSize(sig_str+2,
+                                            (Py_ssize_t)strlen(sig_str)-3);
     dbus_free(sig_str);
     if (!sig) {
         return NULL;
@@ -258,7 +257,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             dbus_message_iter_get_basic(iter, &u.s);
             args = Py_BuildValue("(s)", u.s);
             if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPySignature_Type, args, kwargs);
+            ret = DBusPySignature_FromStringAndVariantLevel(u.s,
+                                                            variant_level);
             break;
 
         case DBUS_TYPE_OBJECT_PATH:
@@ -403,8 +403,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 dbus_message_iter_recurse(iter, &sub);
                 sig = dbus_message_iter_get_signature(&sub);
                 if (!sig) break;
-                sig_obj = PyObject_CallFunction((PyObject *)&DBusPySignature_Type,
-                                                "(s)", sig);
+                sig_obj = DBusPySignature_FromString(sig);
                 dbus_free(sig);
                 if (!sig_obj) break;
                 status = PyDict_SetItem(kwargs, dbus_py_signature_const, sig_obj);

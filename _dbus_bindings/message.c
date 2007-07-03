@@ -543,9 +543,9 @@ Message_get_signature(Message *self, PyObject *unused UNUSED)
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
     c_str = dbus_message_get_signature(self->msg);
     if (!c_str) {
-        return PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s)", "");
+        c_str = "";
     }
-    return PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s)", c_str);
+    return DBusPySignature_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_has_signature__doc__,
