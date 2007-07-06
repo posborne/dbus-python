@@ -110,31 +110,26 @@ _message_iter_append_all_to_list(DBusMessageIter *iter, PyObject *list,
 static inline PyObject *
 _message_iter_get_dict(DBusMessageIter *iter,
                        Message_get_args_options *opts,
-                       PyObject *kwargs)
+                       long variant_level)
 {
     DBusMessageIter entries;
     char *sig_str = dbus_message_iter_get_signature(iter);
     PyObject *sig;
     PyObject *ret;
-    int status;
 
     if (!sig_str) {
         PyErr_NoMemory();
         return NULL;
     }
+    /* drop the trailing '}' and the leading 'a{' */
     sig = DBusPySignature_FromStringAndSize(sig_str+2,
                                             (Py_ssize_t)strlen(sig_str)-3);
     dbus_free(sig_str);
     if (!sig) {
         return NULL;
     }
-    status = PyDict_SetItem(kwargs, dbus_py_signature_const, sig);
-    Py_DECREF(sig);
-    if (status < 0) {
-        return NULL;
-    }
 
-    ret = PyObject_Call((PyObject *)&DBusPyDict_Type, dbus_py_empty_tuple, kwargs);
+    ret = DBusPyDictionary_New (PyString_AS_STRING (sig), variant_level);
     if (!ret) {
         return NULL;
     }
@@ -144,6 +139,7 @@ _message_iter_get_dict(DBusMessageIter *iter,
         PyObject *key = NULL;
         PyObject *value = NULL;
         DBusMessageIter kv;
+        int status;
 
         DBG("%s", "dict entry...");
 
@@ -199,33 +195,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
 #endif
     } u;
     int type = dbus_message_iter_get_arg_type(iter);
-    PyObject *args = NULL;
-    PyObject *kwargs = NULL;
     PyObject *ret = NULL;
 
-    /* If the variant-level is >0, prepare a dict for the kwargs.
-     * For variant wrappers optimize slightly by skipping this.
-     */
-    if (variant_level > 0 && type != DBUS_TYPE_VARIANT) {
-        PyObject *variant_level_int;
-
-        variant_level_int = PyInt_FromLong(variant_level);
-        if (!variant_level_int) {
-            return NULL;
-        }
-        kwargs = PyDict_New();
-        if (!kwargs) {
-            Py_DECREF(variant_level_int);
-            return NULL;
-        }
-        if (PyDict_SetItem(kwargs, dbus_py_variant_level_const,
-                           variant_level_int) < 0) {
-            Py_DECREF(variant_level_int);
-            Py_DECREF(kwargs);
-            return NULL;
-        }
-        Py_DECREF(variant_level_int);
-    }
     /* From here down you need to break from the switch to exit, so the
      * dict is freed if necessary
      */
@@ -235,28 +206,16 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             DBG("%s", "found a string");
             dbus_message_iter_get_basic(iter, &u.s);
             if (opts->utf8_strings) {
-                args = Py_BuildValue("(s)", u.s);
-                if (!args) break;
-                ret = PyObject_Call((PyObject *)&DBusPyUTF8String_Type,
-                                    args, kwargs);
+                ret = DBusPyUTF8String_New (u.s, variant_level);
             }
             else {
-                args = Py_BuildValue("(N)", PyUnicode_DecodeUTF8(u.s,
-                                                                 strlen(u.s),
-                                                                 NULL));
-                if (!args) {
-                    break;
-                }
-                ret = PyObject_Call((PyObject *)&DBusPyString_Type,
-                                    args, kwargs);
+                ret = DBusPyString_New (u.s, variant_level);
             }
             break;
 
         case DBUS_TYPE_SIGNATURE:
             DBG("%s", "found a signature");
             dbus_message_iter_get_basic(iter, &u.s);
-            args = Py_BuildValue("(s)", u.s);
-            if (!args) break;
             ret = DBusPySignature_FromStringAndVariantLevel(u.s,
                                                             variant_level);
             break;
@@ -264,76 +223,58 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
         case DBUS_TYPE_OBJECT_PATH:
             DBG("%s", "found an object path");
             dbus_message_iter_get_basic(iter, &u.s);
-            args = Py_BuildValue("(s)", u.s);
-            if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPyObjectPath_Type, args, kwargs);
+            ret = DBusPyObjectPath_New (u.s, variant_level);
             break;
 
         case DBUS_TYPE_DOUBLE:
             DBG("%s", "found a double");
             dbus_message_iter_get_basic(iter, &u.d);
-            args = Py_BuildValue("(f)", u.d);
-            if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPyDouble_Type, args, kwargs);
+            ret = DBusPyDouble_New (u.d, variant_level);
             break;
 
 #ifdef WITH_DBUS_FLOAT32
         case DBUS_TYPE_FLOAT:
             DBG("%s", "found a float");
             dbus_message_iter_get_basic(iter, &u.f);
-            args = Py_BuildValue("(f)", (double)u.f);
-            if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPyFloat_Type, args, kwargs);
+            ret = DBusPyFloat_New (u.f, variant_level);
             break;
 #endif
 
         case DBUS_TYPE_INT16:
             DBG("%s", "found an int16");
             dbus_message_iter_get_basic(iter, &u.i16);
-            args = Py_BuildValue("(i)", (int)u.i16);
-            if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPyInt16_Type, args, kwargs);
+            ret = DBusPyInt16_New (u.i16, variant_level);
             break;
 
         case DBUS_TYPE_UINT16:
             DBG("%s", "found a uint16");
             dbus_message_iter_get_basic(iter, &u.u16);
-            args = Py_BuildValue("(i)", (int)u.u16);
-            if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPyUInt16_Type, args, kwargs);
+            ret = DBusPyUInt16_New (u.u16, variant_level);
             break;
 
         case DBUS_TYPE_INT32:
             DBG("%s", "found an int32");
             dbus_message_iter_get_basic(iter, &u.i32);
-            args = Py_BuildValue("(l)", (long)u.i32);
-            if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPyInt32_Type, args, kwargs);
+            ret = DBusPyInt32_New (u.i32, variant_level);
             break;
 
         case DBUS_TYPE_UINT32:
             DBG("%s", "found a uint32");
             dbus_message_iter_get_basic(iter, &u.u32);
-            args = Py_BuildValue("(k)", (unsigned long)u.u32);
-            if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPyUInt32_Type, args, kwargs);
+            ret = DBusPyUInt32_New (u.u32, variant_level);
             break;
 
 #if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
         case DBUS_TYPE_INT64:
             DBG("%s", "found an int64");
             dbus_message_iter_get_basic(iter, &u.i64);
-            args = Py_BuildValue("(L)", (PY_LONG_LONG)u.i64);
-            if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPyInt64_Type, args, kwargs);
+            ret = DBusPyInt64_New (u.i64, variant_level);
             break;
 
         case DBUS_TYPE_UINT64:
             DBG("%s", "found a uint64");
             dbus_message_iter_get_basic(iter, &u.u64);
-            args = Py_BuildValue("(K)", (unsigned PY_LONG_LONG)u.u64);
-            if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPyUInt64_Type, args, kwargs);
+            ret = DBusPyUInt64_New (u.u64, variant_level);
             break;
 #else
         case DBUS_TYPE_INT64:
@@ -347,19 +288,13 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
         case DBUS_TYPE_BYTE:
             DBG("%s", "found a byte");
             dbus_message_iter_get_basic(iter, &u.y);
-            args = Py_BuildValue("(l)", (long)u.y);
-            if (!args)
-                break;
-            ret = PyObject_Call((PyObject *)&DBusPyByte_Type, args, kwargs);
+            ret = DBusPyByte_New(u.y, variant_level);
             break;
 
         case DBUS_TYPE_BOOLEAN:
             DBG("%s", "found a bool");
             dbus_message_iter_get_basic(iter, &u.b);
-            args = Py_BuildValue("(l)", (long)u.b);
-            if (!args)
-                break;
-            ret = PyObject_Call((PyObject *)&DBusPyBoolean_Type, args, kwargs);
+            ret = DBusPyBoolean_New(u.b, variant_level);
             break;
 
         case DBUS_TYPE_ARRAY:
@@ -369,11 +304,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             type = dbus_message_iter_get_element_type(iter);
             if (type == DBUS_TYPE_DICT_ENTRY) {
                 DBG("%s", "no, actually it's a dict...");
-                if (!kwargs) {
-                    kwargs = PyDict_New();
-                    if (!kwargs) break;
-                }
-                ret = _message_iter_get_dict(iter, opts, kwargs);
+                ret = _message_iter_get_dict(iter, opts, variant_level);
             }
             else if (opts->byte_arrays && type == DBUS_TYPE_BYTE) {
                 DBusMessageIter sub;
@@ -384,33 +315,23 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 dbus_message_iter_get_fixed_array(&sub,
                                                   (const unsigned char **)&u.s,
                                                   &n);
-                args = Py_BuildValue("(s#)", u.s, (Py_ssize_t)n);
-                if (!args) break;
-                ret = PyObject_Call((PyObject *)&DBusPyByteArray_Type,
-                                    args, kwargs);
+                ret = DBusPyByteArray_New(u.s, n, variant_level);
             }
             else {
                 DBusMessageIter sub;
                 char *sig;
                 PyObject *sig_obj;
-                int status;
 
                 DBG("%s", "a normal array...");
-                if (!kwargs) {
-                    kwargs = PyDict_New();
-                    if (!kwargs) break;
-                }
                 dbus_message_iter_recurse(iter, &sub);
                 sig = dbus_message_iter_get_signature(&sub);
                 if (!sig) break;
                 sig_obj = DBusPySignature_FromString(sig);
                 dbus_free(sig);
                 if (!sig_obj) break;
-                status = PyDict_SetItem(kwargs, dbus_py_signature_const, sig_obj);
+                ret = DBusPyArray_New(PyString_AS_STRING(sig_obj),
+                                      variant_level);
                 Py_DECREF(sig_obj);
-                if (status < 0) break;
-                ret = PyObject_Call((PyObject *)&DBusPyArray_Type,
-                                    dbus_py_empty_tuple, kwargs);
                 if (!ret) break;
                 if (_message_iter_append_all_to_list(&sub, ret, opts) < 0) {
                     Py_DECREF(ret);
@@ -423,7 +344,6 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             {
                 DBusMessageIter sub;
                 PyObject *list = PyList_New(0);
-                PyObject *tuple;
 
                 DBG("%s", "found a struct...");
                 if (!list) break;
@@ -432,16 +352,9 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                     Py_DECREF(list);
                     break;
                 }
-                tuple = Py_BuildValue("(O)", list);
-                if (tuple) {
-                    ret = PyObject_Call((PyObject *)&DBusPyStruct_Type, tuple, kwargs);
-                }
-                else {
-                    ret = NULL;
-                }
+                ret = DBusPyStruct_New(list, variant_level);
                 /* whether successful or not, we take the same action: */
                 Py_DECREF(list);
-                Py_XDECREF(tuple);
             }
             break;
 
@@ -460,8 +373,6 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                          "message", type);
     }
 
-    Py_XDECREF(args);
-    Py_XDECREF(kwargs);
     return ret;
 }
 

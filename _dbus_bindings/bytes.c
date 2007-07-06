@@ -28,6 +28,70 @@
 #include "dbus_bindings-internal.h"
 #include "types-internal.h"
 
+static PyTypeObject DBusPyByte_Type, DBusPyByteArray_Type;
+
+int
+DBusPyByte_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyByte_Type);
+}
+
+int
+DBusPyByteArray_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyByteArray_Type);
+}
+
+PyObject *
+DBusPyByte_New(unsigned char value, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(I)", (unsigned int) value);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyByte_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
+
+PyObject *
+DBusPyByteArray_New(const char *bytes, Py_ssize_t count, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(s#)", bytes, count);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyByteArray_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
+
 PyDoc_STRVAR(Byte_tp_doc,
 "An unsigned byte: a subtype of int, with range restricted to [0, 255].\n"
 "\n"
@@ -125,7 +189,7 @@ Byte_tp_str(PyObject *self)
     return PyString_FromStringAndSize((char *)str, 1);
 }
 
-PyTypeObject DBusPyByte_Type = {
+static PyTypeObject DBusPyByte_Type = {
         PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
         0,
         "dbus.Byte",
@@ -192,7 +256,7 @@ PyDoc_STRVAR(ByteArray_tp_doc,
 "   ByteArray(str)\n"
 );
 
-PyTypeObject DBusPyByteArray_Type = {
+static PyTypeObject DBusPyByteArray_Type = {
         PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
         0,
         "dbus.ByteArray",

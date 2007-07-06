@@ -28,6 +28,8 @@
 #include "dbus_bindings-internal.h"
 #include "types-internal.h"
 
+static PyTypeObject DBusPySignature_Type;
+
 PyDoc_STRVAR(Signature_tp_doc,
 "A string subclass whose values are restricted to valid D-Bus\n"
 "signatures. When iterated over, instead of individual characters it\n"
@@ -49,8 +51,6 @@ PyDoc_STRVAR(Signature_tp_doc,
 "    variant containing a signature, this is represented in Python by a\n"
 "    Signature with variant_level==2.\n"
 );
-
-static PyTypeObject DBusPySignature_Type;
 
 typedef struct {
     PyObject_HEAD

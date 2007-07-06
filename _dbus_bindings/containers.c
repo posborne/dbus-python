@@ -30,6 +30,34 @@
 
 /* Array ============================================================ */
 
+static PyTypeObject DBusPyArray_Type;
+
+int
+DBusPyArray_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyArray_Type);
+}
+
+PyObject *
+DBusPyArray_New(const char *signature, long variant_level)
+{
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, signature);
+        if (!kwargs)
+            goto finally;
+    }
+
+    ret = PyObject_Call((PyObject *)&DBusPyArray_Type, dbus_py_empty_tuple,
+                        kwargs);
+
+finally:
+    Py_XDECREF(kwargs);
+    return ret;
+}
+
 PyDoc_STRVAR(Array_tp_doc,
 "An array of similar items, implemented as a subtype of list.\n"
 "\n"
@@ -185,7 +213,7 @@ Array_tp_init (DBusPyArray *self, PyObject *args, PyObject *kwargs)
     return 0;
 }
 
-PyTypeObject DBusPyArray_Type = {
+static PyTypeObject DBusPyArray_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Array",
@@ -229,6 +257,34 @@ PyTypeObject DBusPyArray_Type = {
 
 /* Dict ============================================================= */
 
+static PyTypeObject DBusPyDictionary_Type;
+
+int
+DBusPyDictionary_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyDictionary_Type);
+}
+
+PyObject *
+DBusPyDictionary_New(const char *signature, long variant_level)
+{
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, signature);
+        if (!kwargs)
+            goto finally;
+    }
+
+    ret = PyObject_Call((PyObject *)&DBusPyDictionary_Type,
+                        dbus_py_empty_tuple, kwargs);
+
+finally:
+    Py_XDECREF(kwargs);
+    return ret;
+}
+
 PyDoc_STRVAR(Dict_tp_doc,
 "An mapping whose keys are similar and whose values are similar,\n"
 "implemented as a subtype of dict.\n"
@@ -267,10 +323,10 @@ PyDoc_STRVAR(Dict_tp_doc,
 );
 
 static struct PyMemberDef Dict_tp_members[] = {
-    {"signature", T_OBJECT, offsetof(DBusPyDict, signature), READONLY,
+    {"signature", T_OBJECT, offsetof(DBusPyDictionary, signature), READONLY,
      "The D-Bus signature of each key in this Dictionary, followed by "
      "that of each value in this Dictionary, as a Signature instance."},
-    {"variant_level", T_LONG, offsetof(DBusPyDict, variant_level),
+    {"variant_level", T_LONG, offsetof(DBusPyDictionary, variant_level),
      READONLY,
      "The number of nested variants wrapping the real data. "
      "0 if not in a variant."},
@@ -278,7 +334,7 @@ static struct PyMemberDef Dict_tp_members[] = {
 };
 
 static void
-Dict_tp_dealloc (DBusPyDict *self)
+Dict_tp_dealloc (DBusPyDictionary *self)
 {
     Py_XDECREF(self->signature);
     self->signature = NULL;
@@ -286,7 +342,7 @@ Dict_tp_dealloc (DBusPyDict *self)
 }
 
 static PyObject *
-Dict_tp_repr(DBusPyDict *self)
+Dict_tp_repr(DBusPyDictionary *self)
 {
     PyObject *parent_repr = (PyDict_Type.tp_repr)((PyObject *)self);
     PyObject *sig_repr = PyObject_Repr(self->signature);
@@ -318,7 +374,7 @@ finally:
 static PyObject *
 Dict_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    DBusPyDict *self = (DBusPyDict *)(PyDict_Type.tp_new)(cls, args, kwargs);
+    DBusPyDictionary *self = (DBusPyDictionary *)(PyDict_Type.tp_new)(cls, args, kwargs);
     PyObject *variant_level = NULL;
 
     /* variant_level is immutable, so handle it in __new__ rather than
@@ -341,7 +397,7 @@ Dict_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 static int
-Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
+Dict_tp_init(DBusPyDictionary *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *obj = dbus_py_empty_tuple;
     PyObject *signature = Py_None;
@@ -416,11 +472,11 @@ Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
     return 0;
 }
 
-PyTypeObject DBusPyDict_Type = {
+static PyTypeObject DBusPyDictionary_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Dictionary",
-    sizeof(DBusPyDict),
+    sizeof(DBusPyDictionary),
     0,
     (destructor)Dict_tp_dealloc,            /* tp_dealloc */
     0,                                      /* tp_print */
@@ -459,6 +515,40 @@ PyTypeObject DBusPyDict_Type = {
 };
 
 /* Struct =========================================================== */
+
+static PyTypeObject DBusPyStruct_Type;
+
+int
+DBusPyStruct_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyStruct_Type);
+}
+
+PyObject *
+DBusPyStruct_New(PyObject *iterable, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(O)", iterable);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyStruct_Type, args,
+                        kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
 
 static PyObject *struct_signatures;
 
@@ -661,7 +751,7 @@ Struct_tp_getattro(PyObject *obj, PyObject *name)
     return value;
 }
 
-PyTypeObject DBusPyStruct_Type = {
+static PyTypeObject DBusPyStruct_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Struct",
@@ -713,9 +803,9 @@ dbus_py_init_container_types(void)
     if (PyType_Ready(&DBusPyArray_Type) < 0) return 0;
     DBusPyArray_Type.tp_print = NULL;
 
-    DBusPyDict_Type.tp_base = &PyDict_Type;
-    if (PyType_Ready(&DBusPyDict_Type) < 0) return 0;
-    DBusPyDict_Type.tp_print = NULL;
+    DBusPyDictionary_Type.tp_base = &PyDict_Type;
+    if (PyType_Ready(&DBusPyDictionary_Type) < 0) return 0;
+    DBusPyDictionary_Type.tp_print = NULL;
 
     DBusPyStruct_Type.tp_base = &PyTuple_Type;
     if (PyType_Ready(&DBusPyStruct_Type) < 0) return 0;
@@ -731,9 +821,9 @@ dbus_py_insert_container_types(PyObject *this_module)
     if (PyModule_AddObject(this_module, "Array",
                            (PyObject *)&DBusPyArray_Type) < 0) return 0;
 
-    Py_INCREF(&DBusPyDict_Type);
+    Py_INCREF(&DBusPyDictionary_Type);
     if (PyModule_AddObject(this_module, "Dictionary",
-                           (PyObject *)&DBusPyDict_Type) < 0) return 0;
+                           (PyObject *)&DBusPyDictionary_Type) < 0) return 0;
 
     Py_INCREF(&DBusPyStruct_Type);
     if (PyModule_AddObject(this_module, "Struct",

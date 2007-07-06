@@ -25,35 +25,35 @@
 #include "types-internal.h"
 #include "message-internal.h"
 
+/* When the types actually become pure-Python, this will check for a common
+ * superclass DBusTypeMixin. That common superclass doesn't exist yet, though.
+ */
+static int
+DBusTypeMixin_Check(PyObject *o)
+{
+    return (DBusPyStrBase_Check(o) || DBusPyFloatBase_Check(o) ||
+            DBusPyIntBase_Check(o) || DBusPyLongBase_Check(o) ||
+            DBusPyString_Check(o) || DBusPyArray_Check(o) ||
+            DBusPyStruct_Check(o) || DBusPyDictionary_Check(o));
+}
+
 /* Return the number of variants wrapping the given object. Return 0
  * if the object is not a D-Bus type.
  */
 static long
 get_variant_level(PyObject *obj)
 {
-    if (DBusPyIntBase_Check(obj)) {
-        return ((DBusPyIntBase *)obj)->variant_level;
+    long ret = 0;
+
+    if (DBusTypeMixin_Check(obj)) {
+        PyObject *attr = PyObject_GetAttrString(obj, "variant_level");
+
+        if (attr && PyInt_Check(attr)) {
+            ret = PyInt_AS_LONG(attr);
+        }
+        Py_XDECREF(attr);
     }
-    else if (DBusPyFloatBase_Check(obj)) {
-        return ((DBusPyFloatBase *)obj)->variant_level;
-    }
-    else if (DBusPyArray_Check(obj)) {
-        return ((DBusPyArray *)obj)->variant_level;
-    }
-    else if (DBusPyDict_Check(obj)) {
-        return ((DBusPyDict *)obj)->variant_level;
-    }
-    else if (DBusPyString_Check(obj)) {
-        return ((DBusPyString *)obj)->variant_level;
-    }
-    else if (DBusPyLongBase_Check(obj) ||
-             DBusPyStrBase_Check(obj) ||
-             DBusPyStruct_Check(obj)) {
-        return dbus_py_variant_level_get(obj);
-    }
-    else {
-        return 0;
-    }
+    return ret;
 }
 
 char dbus_py_Message_append__doc__[] = (
@@ -317,8 +317,10 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         Py_ssize_t pos = 0;
         PyObject *ret = NULL;
 
-        if (DBusPyDict_Check(obj) && PyString_Check(((DBusPyDict *)obj)->signature)) {
-            const char *sig = PyString_AS_STRING(((DBusPyDict *)obj)->signature);
+        if (DBusPyDictionary_Check(obj) &&
+            ((DBusPyDictionary *)obj)->signature != NULL &&
+            PyString_Check(((DBusPyDictionary *)obj)->signature)) {
+            const char *sig = PyString_AS_STRING(((DBusPyDictionary *)obj)->signature);
 
             return PyString_FromFormat((DBUS_TYPE_ARRAY_AS_STRING
                                         DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
@@ -655,13 +657,14 @@ _message_iter_append_multi(DBusMessageIter *appender,
              * variants, we want to produce an array of variants containing
              * bytes, not strings.
              */
-            PyObject *args = Py_BuildValue("(O)", contents);
             PyObject *byte;
 
-            if (!args)
+            if (!PyString_Check(contents)) {
+                PyErr_BadArgument();
                 break;
-            byte = PyObject_Call((PyObject *)&DBusPyByte_Type, args, NULL);
-            Py_DECREF(args);
+            }
+            byte = DBusPyByte_New(
+                    (unsigned char)PyString_AS_STRING(contents)[0], 0);
             if (!byte)
                 break;
             ret = _message_iter_append_variant(&sub_appender, byte);

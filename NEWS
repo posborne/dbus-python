@@ -1,3 +1,19 @@
+D-Bus Python Bindings, 'purity' branch (unreleased)
+===================================================
+
+* Implement the object-path tree, and user filters, in pure Python
+* Refactor _dbus_bindings to facilitate porting types to pure Python
+
+Roadmap:
+
+* Port types to pure Python
+* Implement parameterized types
+* Implement signature parsing and signature <-> type-sequence round trip in
+  pure Python
+* Implement message argument coercion in pure Python
+* Implement message serialization and deserialization in pure Python
+  (may need to be conditional on having dbus >= 1.1)
+
 D-Bus Python Bindings 0.82.1 (unreleased)
 =========================================
 

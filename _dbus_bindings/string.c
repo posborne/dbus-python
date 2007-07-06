@@ -23,6 +23,105 @@
 #include "types-internal.h"
 #include <structmember.h>
 
+static PyTypeObject DBusPyString_Type;
+
+int
+DBusPyString_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyString_Type);
+}
+
+PyObject *
+DBusPyString_New(const char *utf8, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(s)", utf8);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyString_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
+
+static PyTypeObject DBusPyObjectPath_Type;
+
+int
+DBusPyObjectPath_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyObjectPath_Type);
+}
+
+PyObject *
+DBusPyObjectPath_New(const char *utf8, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(s)", utf8);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyObjectPath_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
+
+static PyTypeObject DBusPyUTF8String_Type;
+
+int
+DBusPyUTF8String_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyUTF8String_Type);
+}
+
+PyObject *
+DBusPyUTF8String_New(const char *utf8, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(s)", utf8);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyUTF8String_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
+
 /* UTF-8 string representation ====================================== */
 
 PyDoc_STRVAR(UTF8String_tp_doc,
@@ -78,7 +177,7 @@ UTF8String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return (DBusPyStrBase_Type.tp_new)(cls, args, kwargs);
 }
 
-PyTypeObject DBusPyUTF8String_Type = {
+static PyTypeObject DBusPyUTF8String_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.UTF8String",
@@ -157,7 +256,7 @@ ObjectPath_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return (DBusPyStrBase_Type.tp_new)(cls, args, kwargs);
 }
 
-PyTypeObject DBusPyObjectPath_Type = {
+static PyTypeObject DBusPyObjectPath_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.ObjectPath",
@@ -236,9 +335,26 @@ static PyMemberDef String_tp_members[] = {
 };
 
 static PyObject *
+unicode_or_utf8_to_unicode(PyObject *s)
+{
+    if (PyUnicode_Check(s)) {
+        Py_INCREF(s);
+        return s;
+    }
+    if (!PyString_Check(s)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "A unicode object or UTF-8 string was expected");
+        return NULL;
+    }
+    return PyUnicode_DecodeUTF8(PyString_AS_STRING(s),
+                                strlen(PyString_AS_STRING(s)), NULL);
+}
+
+static PyObject *
 String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     PyObject *self;
+    PyObject *new_args;
     long variantness = 0;
     static char *argnames[] = {"variant_level", NULL};
 
@@ -247,6 +363,7 @@ String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
                         "__new__ takes at most one positional parameter");
         return NULL;
     }
+
     if (!PyArg_ParseTupleAndKeywords(dbus_py_empty_tuple, kwargs,
                                      "|l:__new__", argnames,
                                      &variantness)) return NULL;
@@ -255,7 +372,14 @@ String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
                         "variant_level must be non-negative");
         return NULL;
     }
-    self = (PyUnicode_Type.tp_new)(cls, args, NULL);
+
+    new_args = Py_BuildValue("(O&)", unicode_or_utf8_to_unicode,
+                             PyTuple_GET_ITEM(args, 0));
+    if (!new_args)
+        return NULL;
+
+    self = (PyUnicode_Type.tp_new)(cls, new_args, NULL);
+    Py_DECREF(new_args);
     if (self) {
         ((DBusPyString *)self)->variant_level = variantness;
     }
@@ -286,7 +410,7 @@ String_tp_repr(PyObject *self)
     return my_repr;
 }
 
-PyTypeObject DBusPyString_Type = {
+static PyTypeObject DBusPyString_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.String",
@@ -350,10 +474,6 @@ dbus_py_init_string_types(void)
     DBusPyObjectPath_Type.tp_base = &DBusPyStrBase_Type;
     if (PyType_Ready(&DBusPyObjectPath_Type) < 0) return 0;
     DBusPyObjectPath_Type.tp_print = NULL;
-
-    DBusPyBoolean_Type.tp_base = &DBusPyIntBase_Type;
-    if (PyType_Ready(&DBusPyBoolean_Type) < 0) return 0;
-    DBusPyBoolean_Type.tp_print = NULL;
 
     return 1;
 }

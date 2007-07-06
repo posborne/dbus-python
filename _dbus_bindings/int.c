@@ -26,6 +26,39 @@
 
 /* Boolean, a subclass of DBusPythonInt ============================= */
 
+static PyTypeObject DBusPyBoolean_Type;
+
+int
+DBusPyBoolean_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyBoolean_Type);
+}
+
+PyObject *
+DBusPyBoolean_New(int is_true, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(i)", is_true);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyBoolean_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
+
 PyDoc_STRVAR(Boolean_tp_doc,
 "A boolean, represented as a subtype of `int` (not `bool`, because `bool`\n"
 "cannot be subclassed).\n"
@@ -82,7 +115,7 @@ Boolean_tp_repr (PyObject *self)
                                PyInt_AsLong(self) ? "True" : "False");
 }
 
-PyTypeObject DBusPyBoolean_Type = {
+static PyTypeObject DBusPyBoolean_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Boolean",
@@ -125,6 +158,39 @@ PyTypeObject DBusPyBoolean_Type = {
 };
 
 /* Int16 ============================================================ */
+
+static PyTypeObject DBusPyInt16_Type;
+
+int
+DBusPyInt16_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyInt16_Type);
+}
+
+PyObject *
+DBusPyInt16_New(dbus_int16_t value, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(i)", (int)value);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyInt16_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
 
 PyDoc_STRVAR(Int16_tp_doc,
 "A signed 16-bit integer between -0x8000 and +0x7FFF, represented as\n"
@@ -171,7 +237,7 @@ Int16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return self;
 }
 
-PyTypeObject DBusPyInt16_Type = {
+static PyTypeObject DBusPyInt16_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Int16",
@@ -214,6 +280,39 @@ PyTypeObject DBusPyInt16_Type = {
 };
 
 /* UInt16 =========================================================== */
+
+static PyTypeObject DBusPyUInt16_Type;
+
+int
+DBusPyUInt16_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyUInt16_Type);
+}
+
+PyObject *
+DBusPyUInt16_New(dbus_uint16_t value, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(I)", (unsigned int)value);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyUInt16_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
 
 PyDoc_STRVAR(UInt16_tp_doc,
 "An unsigned 16-bit integer between 0 and 0xFFFF, represented as\n"
@@ -261,7 +360,7 @@ UInt16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return self;
 }
 
-PyTypeObject DBusPyUInt16_Type = {
+static PyTypeObject DBusPyUInt16_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.UInt16",
@@ -304,6 +403,39 @@ PyTypeObject DBusPyUInt16_Type = {
 };
 
 /* Int32 ============================================================ */
+
+static PyTypeObject DBusPyInt32_Type;
+
+int
+DBusPyInt32_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyInt32_Type);
+}
+
+PyObject *
+DBusPyInt32_New(dbus_int32_t value, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(l)", (long)value);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyInt32_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
 
 PyDoc_STRVAR(Int32_tp_doc,
 "A signed 32-bit integer between -0x8000 0000 and +0x7FFF FFFF, represented as\n"
@@ -350,7 +482,7 @@ Int32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return self;
 }
 
-PyTypeObject DBusPyInt32_Type = {
+static PyTypeObject DBusPyInt32_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Int32",
@@ -393,6 +525,39 @@ PyTypeObject DBusPyInt32_Type = {
 };
 
 /* UInt32 =========================================================== */
+
+static PyTypeObject DBusPyUInt32_Type;
+
+int
+DBusPyUInt32_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyUInt32_Type);
+}
+
+PyObject *
+DBusPyUInt32_New(dbus_uint32_t value, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(k)", (unsigned long)value);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyUInt32_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
 
 PyDoc_STRVAR(UInt32_tp_doc,
 "An unsigned 32-bit integer between 0 and 0xFFFF FFFF, represented as a\n"
@@ -452,7 +617,7 @@ UInt32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return self;
 }
 
-PyTypeObject DBusPyUInt32_Type = {
+static PyTypeObject DBusPyUInt32_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.UInt32",
@@ -495,6 +660,39 @@ PyTypeObject DBusPyUInt32_Type = {
 };
 
 /* Int64 =========================================================== */
+
+static PyTypeObject DBusPyInt64_Type;
+
+int
+DBusPyInt64_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyInt64_Type);
+}
+
+PyObject *
+DBusPyInt64_New(dbus_int64_t value, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(L)", (PY_LONG_LONG)value);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyInt64_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
 
 PyDoc_STRVAR(Int64_tp_doc,
 "A signed 64-bit integer between -0x8000 0000 0000 0000 and\n"
@@ -570,7 +768,7 @@ Int64_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 #endif
 }
 
-PyTypeObject DBusPyInt64_Type = {
+static PyTypeObject DBusPyInt64_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Int64",
@@ -613,6 +811,39 @@ PyTypeObject DBusPyInt64_Type = {
 };
 
 /* UInt64 =========================================================== */
+
+static PyTypeObject DBusPyUInt64_Type;
+
+int
+DBusPyUInt64_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyUInt64_Type);
+}
+
+PyObject *
+DBusPyUInt64_New(dbus_uint64_t value, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(K)", (unsigned PY_LONG_LONG)value);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyUInt64_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
 
 PyDoc_STRVAR(UInt64_tp_doc,
 "An unsigned 64-bit integer between 0 and 0xFFFF FFFF FFFF FFFF,\n"
@@ -684,7 +915,7 @@ UInt64_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 #endif
 }
 
-PyTypeObject DBusPyUInt64_Type = {
+static PyTypeObject DBusPyUInt64_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.UInt64",
@@ -729,10 +960,14 @@ PyTypeObject DBusPyUInt64_Type = {
 dbus_bool_t
 dbus_py_init_int_types(void)
 {
-    DBusPyInt16_Type.tp_base = &DBusPyIntBase_Type;
-    if (PyType_Ready(&DBusPyInt16_Type) < 0) return 0;
+    DBusPyBoolean_Type.tp_base = &DBusPyIntBase_Type;
+    if (PyType_Ready(&DBusPyBoolean_Type) < 0) return 0;
     /* disable the tp_print copied from PyInt_Type, so tp_repr gets called as
     desired */
+    DBusPyBoolean_Type.tp_print = NULL;
+
+    DBusPyInt16_Type.tp_base = &DBusPyIntBase_Type;
+    if (PyType_Ready(&DBusPyInt16_Type) < 0) return 0;
     DBusPyInt16_Type.tp_print = NULL;
 
     DBusPyUInt16_Type.tp_base = &DBusPyIntBase_Type;

@@ -28,6 +28,39 @@
 #include "dbus_bindings-internal.h"
 #include "types-internal.h"
 
+static PyTypeObject DBusPyDouble_Type;
+
+int
+DBusPyDouble_Check(PyObject *o)
+{
+    return PyObject_TypeCheck(o, &DBusPyDouble_Type);
+}
+
+PyObject *
+DBusPyDouble_New(double value, long variant_level)
+{
+    PyObject *args = NULL;
+    PyObject *kwargs = NULL;
+    PyObject *ret = NULL;
+
+    if (variant_level != 0) {
+        kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
+        if (!kwargs)
+            goto finally;
+    }
+
+    args = Py_BuildValue("(d)", value);
+    if (!args)
+        goto finally;
+
+    ret = PyObject_Call((PyObject *)&DBusPyDouble_Type, args, kwargs);
+
+finally:
+    Py_XDECREF(args);
+    Py_XDECREF(kwargs);
+    return ret;
+}
+
 PyDoc_STRVAR(Double_tp_doc,
 "A double-precision floating point number (a subtype of float).");
 
@@ -36,7 +69,7 @@ PyDoc_STRVAR(Float_tp_doc,
 "A single-precision floating point number (a subtype of float).");
 #endif
 
-PyTypeObject DBusPyDouble_Type = {
+static PyTypeObject DBusPyDouble_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Double",
@@ -80,7 +113,7 @@ PyTypeObject DBusPyDouble_Type = {
 
 #ifdef WITH_DBUS_FLOAT32
 
-PyTypeObject DBusPyFloat_Type = {
+static PyTypeObject DBusPyFloat_Type = {
     PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
     0,
     "dbus.Float",

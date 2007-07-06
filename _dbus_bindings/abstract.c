@@ -605,6 +605,47 @@ PyObject *dbus_py_variant_level_const = NULL;
 PyObject *dbus_py_signature_const = NULL;
 PyObject *dbus_py__dbus_object_path__const = NULL;
 
+PyObject *
+DBusPy_BuildConstructorKeywordArgs(long variant_level, const char *signature)
+{
+    PyObject *dict = PyDict_New();
+    PyObject *value;
+    int status;
+
+    if (!dict)
+        return NULL;
+
+    if (variant_level != 0) {
+        value = PyInt_FromLong(variant_level);
+        if (!value) {
+            Py_DECREF(dict);
+            return NULL;
+        }
+        status = PyDict_SetItem(dict, dbus_py_variant_level_const, value);
+        Py_DECREF(value);
+        if (status < 0) {
+            Py_DECREF(dict);
+            return NULL;
+        }
+    }
+
+    if (signature != NULL) {
+        value = DBusPySignature_FromString(signature);
+        if (!value) {
+            Py_DECREF(dict);
+            return NULL;
+        }
+        status = PyDict_SetItem(dict, dbus_py_signature_const, value);
+        Py_DECREF(value);
+        if (status < 0) {
+            Py_DECREF(dict);
+            return NULL;
+        }
+    }
+
+    return dict;
+}
+
 dbus_bool_t
 dbus_py_init_abstract(void)
 {

@@ -71,31 +71,6 @@ extern dbus_bool_t dbus_py_init_exception_types(void);
 extern dbus_bool_t dbus_py_insert_exception_types(PyObject *this_module);
 
 /* types */
-extern PyTypeObject DBusPyBoolean_Type;
-DEFINE_CHECK(DBusPyBoolean)
-extern PyTypeObject DBusPyObjectPath_Type;
-DEFINE_CHECK(DBusPyObjectPath)
-extern PyTypeObject DBusPyArray_Type, DBusPyDict_Type, DBusPyStruct_Type;
-DEFINE_CHECK(DBusPyArray)
-DEFINE_CHECK(DBusPyDict)
-DEFINE_CHECK(DBusPyStruct)
-extern PyTypeObject DBusPyByte_Type, DBusPyByteArray_Type;
-DEFINE_CHECK(DBusPyByteArray)
-DEFINE_CHECK(DBusPyByte)
-extern PyTypeObject DBusPyUTF8String_Type, DBusPyString_Type;
-DEFINE_CHECK(DBusPyUTF8String)
-DEFINE_CHECK(DBusPyString)
-extern PyTypeObject DBusPyDouble_Type;
-DEFINE_CHECK(DBusPyDouble)
-extern PyTypeObject DBusPyInt16_Type, DBusPyUInt16_Type;
-DEFINE_CHECK(DBusPyInt16)
-DEFINE_CHECK(DBusPyUInt16)
-extern PyTypeObject DBusPyInt32_Type, DBusPyUInt32_Type;
-DEFINE_CHECK(DBusPyInt32)
-DEFINE_CHECK(DBusPyUInt32)
-extern PyTypeObject DBusPyInt64_Type, DBusPyUInt64_Type;
-DEFINE_CHECK(DBusPyInt64)
-DEFINE_CHECK(DBusPyUInt64)
 extern dbus_bool_t dbus_py_init_abstract(void);
 extern dbus_bool_t dbus_py_init_signature(void);
 extern dbus_bool_t dbus_py_init_int_types(void);
@@ -111,12 +86,61 @@ extern dbus_bool_t dbus_py_insert_float_types(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_container_types(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_byte_types(PyObject *this_module);
 
-int DBusPySignature_Check (PyObject *o);
+int DBusPySignature_Check(PyObject *o);
 PyObject *DBusPySignature_FromString(const char *str);
 PyObject *DBusPySignature_FromStringObject(PyObject *o, int allow_none);
 PyObject *DBusPySignature_FromStringAndSize(const char *str, Py_ssize_t size);
 PyObject *DBusPySignature_FromStringAndVariantLevel(const char *str,
                                                     long variant_level);
+
+int DBusPyBoolean_Check(PyObject *o);
+PyObject *DBusPyBoolean_New(int is_true, long variant_level);
+
+int DBusPyByte_Check(PyObject *o);
+PyObject *DBusPyByte_New(unsigned char value, long variant_level);
+
+int DBusPyByteArray_Check(PyObject *o);
+PyObject *DBusPyByteArray_New(const char *bytes, Py_ssize_t count,
+                              long variant_level);
+
+int DBusPyArray_Check(PyObject *o);
+PyObject *DBusPyArray_New(const char *signature, long variant_level);
+
+int DBusPyDictionary_Check(PyObject *o);
+PyObject *DBusPyDictionary_New(const char *signature, long variant_level);
+
+int DBusPyStruct_Check(PyObject *o);
+PyObject *DBusPyStruct_New(PyObject *iterable, long variant_level);
+
+int DBusPyUTF8String_Check(PyObject *o);
+PyObject *DBusPyUTF8String_New(const char *utf8, long variant_level);
+
+int DBusPyString_Check(PyObject *o);
+PyObject *DBusPyString_New(const char *utf8, long variant_level);
+
+int DBusPyObjectPath_Check(PyObject *o);
+PyObject *DBusPyObjectPath_New(const char *utf8, long variant_level);
+
+int DBusPyDouble_Check(PyObject *o);
+PyObject *DBusPyDouble_New(double val, long variant_level);
+
+int DBusPyInt16_Check(PyObject *o);
+PyObject *DBusPyInt16_New(dbus_int16_t val, long variant_level);
+
+int DBusPyUInt16_Check(PyObject *o);
+PyObject *DBusPyUInt16_New(dbus_uint16_t val, long variant_level);
+
+int DBusPyInt32_Check(PyObject *o);
+PyObject *DBusPyInt32_New(dbus_int32_t val, long variant_level);
+
+int DBusPyUInt32_Check(PyObject *o);
+PyObject *DBusPyUInt32_New(dbus_uint32_t val, long variant_level);
+
+int DBusPyInt64_Check(PyObject *o);
+PyObject *DBusPyInt64_New(dbus_int64_t val, long variant_level);
+
+int DBusPyUInt64_Check(PyObject *o);
+PyObject *DBusPyUInt64_New(dbus_uint64_t val, long variant_level);
 
 /* generic */
 extern void dbus_py_take_gil_and_xdecref(PyObject *);
@@ -127,6 +151,8 @@ extern PyObject *dbus_py_tp_richcompare_by_pointer(PyObject *,
 extern long dbus_py_tp_hash_by_pointer(PyObject *self);
 extern PyObject *dbus_py_empty_tuple;
 extern dbus_bool_t dbus_py_init_generic(void);
+PyObject *DBusPy_BuildConstructorKeywordArgs(long variant_level,
+                                             const char *signature);
 
 /* message.c */
 extern DBusMessage *DBusPyMessage_BorrowDBusMessage(PyObject *msg);

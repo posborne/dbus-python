@@ -82,7 +82,7 @@ typedef struct {
     PyDictObject super;
     PyObject *signature;
     long variant_level;
-} DBusPyDict;
+} DBusPyDictionary;
 
 PyObject *dbus_py_variant_level_getattro(PyObject *obj, PyObject *name);
 dbus_bool_t dbus_py_variant_level_set(PyObject *obj, long variant_level);

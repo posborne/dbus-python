@@ -460,7 +460,7 @@ Message_get_path(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyObject_CallFunction((PyObject *)&DBusPyObjectPath_Type, "(s)", c_str);
+    return DBusPyObjectPath_New(c_str, 0);
 }
 
 PyDoc_STRVAR(Message_get_path_decomposed__doc__,
