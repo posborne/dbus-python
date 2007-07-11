@@ -43,7 +43,7 @@ do_import(void)
     Py_CLEAR(Byte);
     Py_CLEAR(ByteArray);
 
-    name = PyString_FromString("dbus.types");
+    name = PyString_FromString("dbus.data");
     if (!name)
         return FALSE;
 

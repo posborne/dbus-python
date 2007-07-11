@@ -25,15 +25,51 @@
 #include "types-internal.h"
 #include "message-internal.h"
 
-/* When the types actually become pure-Python, this will check for a common
- * superclass DBusTypeMixin. That common superclass doesn't exist yet, though.
+static PyObject *DBusPyTypeMixin = NULL;
+
+static dbus_bool_t
+do_import(void)
+{
+    PyObject *name;
+    PyObject *module;
+
+    if (DBusPyTypeMixin)
+        return TRUE;
+
+    Py_CLEAR(DBusPyTypeMixin);
+
+    name = PyString_FromString("dbus.data");
+    if (!name)
+        return FALSE;
+
+    module = PyImport_Import(name);
+    Py_DECREF(name);
+    if (!module)
+        return FALSE;
+
+    DBusPyTypeMixin = PyObject_GetAttrString(module, "_DBusTypeMixin");
+    Py_DECREF(module);
+
+    return (DBusPyTypeMixin != NULL);
+}
+
+/* When the types actually become pure-Python, this will only check for the
+ * common superclass DBusTypeMixin. During a transitional period, not all
+ * types subclass it, though.
  */
 static int
 DBusTypeMixin_Check(PyObject *o)
 {
+    if (!DBusPyTypeMixin)
+        do_import();
+
+    if (DBusPyTypeMixin && PyObject_TypeCheck(o,
+                                              (PyTypeObject *)DBusPyTypeMixin))
+        return 1;
+
     return (DBusPyStrBase_Check(o) || DBusPyFloatBase_Check(o) ||
             DBusPyIntBase_Check(o) || DBusPyLongBase_Check(o) ||
-            DBusPyString_Check(o) || DBusPyArray_Check(o) ||
+            DBusPyArray_Check(o) ||
             DBusPyStruct_Check(o) || DBusPyDictionary_Check(o));
 }
 

@@ -28,12 +28,12 @@ __all__ = ('ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
            'UTF8String')
 
 
-from weakref import ref
-
-from _dbus_bindings import ObjectPath, Signature, \
+from _dbus_bindings import Signature, \
                            Int16, UInt16, Int32, UInt32,\
                            Int64, UInt64, Dictionary, Array, \
-                           String, Boolean, Double, Struct, UTF8String
+                           Boolean, Double, Struct
+
+from _dbus_bindings import validate_object_path
 
 
 class _DBusTypeMixin(object):
@@ -121,7 +121,7 @@ class Byte(_DBusTypeMixin, int):
        dbus.Byte(value: integer or str of length 1[, variant_level: integer])
     """
 
-    def __new__(cls, value, variant_level=0):
+    def __new__(cls, value=0, variant_level=0):
         if isinstance(value, str):
             if len(value) != 1:
                 raise TypeError('A string argument to Byte.__new__() must '
@@ -135,7 +135,100 @@ class Byte(_DBusTypeMixin, int):
             raise TypeError('Argument %r to Byte.__new__() not in range(256)'
                             % value)
 
-        return super(Byte, cls).__new__(cls, value)
+        return super(Byte, cls).__new__(cls, value, variant_level)
 
     def __str__(self):
         return chr(self)
+
+
+class String(_DBusTypeMixin, unicode):
+    """A human-readable string: a subtype of `unicode`, with U+0000 disallowed.
+
+    All strings on D-Bus are required to be valid Unicode; in the "wire
+    protocol" they're transported as UTF-8.
+
+    By default, when strings are converted from D-Bus to Python, they come
+    out as this class. If you prefer to get UTF-8 strings (as instances of
+    a subtype of `str`) or you want to avoid the conversion overhead of
+    going from UTF-8 to Python's internal Unicode representation, see the
+    documentation for `dbus.UTF8String`.
+    """
+    __slots__ = ('_dbus_variant_level',)
+
+    def __new__(cls, value=u'', variant_level=0):
+
+        if isinstance(value, str):
+            try:
+                value = value.decode('utf8')
+            except UnicodeError, e:
+                raise UnicodeError('A str argument to String.__new__ must be '
+                                   'UTF-8: %s', e)
+        elif not isinstance(value, unicode):
+            raise TypeError('String.__new__ requires a unicode or UTF-8 str, '
+                            'not %r' % value)
+
+        if u'\0' in value:
+            raise TypeError(r'D-Bus strings cannot contain u"\0", but %r does'
+                            % value)
+
+        return super(String, cls).__new__(cls, value, variant_level)
+
+
+class UTF8String(_DBusTypeMixin, str):
+    r"""A human-readable string represented as UTF-8; a subtype of `str`,
+    with '\0' disallowed.
+
+    By default, when byte arrays are converted from D-Bus to Python, they
+    come out as a `dbus.String`, which is a subtype of `unicode`.
+    If you prefer to get UTF-8 strings (as instances of this class) or you
+    want to avoid the conversion overhead of going from UTF-8 to Python's
+    internal Unicode representation, you can pass the ``utf8_strings=True``
+    keyword argument to any of these methods:
+
+    * any D-Bus method proxy, or ``connect_to_signal``, on the objects returned
+      by `Bus.get_object`
+    * any D-Bus method on a `dbus.Interface`
+    * `dbus.Interface.connect_to_signal`
+    * `Bus.add_signal_receiver`
+
+    :Since: 0.80 (in older versions, use dbus.String)
+    """
+
+    def __new__(cls, value='', variant_level=0):
+
+        if isinstance(value, str):
+            try:
+                # evaluating for its side-effect of performing validation
+                value.decode('utf8')
+            except UnicodeError, e:
+                raise UnicodeError('A str argument to UTF8String.__new__ must '
+                                   'be UTF-8: %s', e)
+        elif isinstance(value, unicode):
+            value = value.encode('utf8')
+        else:
+            raise TypeError('UTF8String.__new__ requires a unicode or UTF-8 '
+                            'str, not %r' % value)
+
+        if '\0' in value:
+            raise TypeError(r'D-Bus strings cannot contain "\0", but %r does'
+                            % value)
+
+        return super(UTF8String, cls).__new__(cls, value, variant_level)
+
+
+class ObjectPath(_DBusTypeMixin, str):
+    """A D-Bus object path, such as '/com/example/MyApp/Documents/abc'.
+
+    ObjectPath is a subtype of str, and object-paths behave like strings.
+    """
+
+    def __new__(cls, value, variant_level=0):
+        if isinstance(value, unicode):
+            value = value.encode('ascii')
+        elif not isinstance(value, str):
+            raise TypeError('ObjectPath.__new__ requires a unicode or '
+                            'str instance, not %r' % value)
+
+        validate_object_path(value)
+
+        return super(ObjectPath, cls).__new__(cls, value, variant_level)

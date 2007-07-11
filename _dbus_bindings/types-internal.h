@@ -47,11 +47,6 @@ typedef struct {
     long variant_level;
 } DBusPyFloatBase;
 
-typedef struct {
-    PyUnicodeObject unicode;
-    long variant_level;
-} DBusPyString;
-
 extern PyTypeObject DBusPyStrBase_Type;
 DEFINE_CHECK(DBusPyStrBase)
 

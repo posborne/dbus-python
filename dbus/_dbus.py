@@ -33,7 +33,7 @@ from traceback import print_exc
 
 from dbus.exceptions import DBusException
 from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH,\
-                           BUS_DAEMON_IFACE, UTF8String,\
+                           BUS_DAEMON_IFACE,\
                            validate_member_name, validate_interface_name,\
                            validate_bus_name, validate_object_path,\
                            BUS_SESSION, BUS_SYSTEM, BUS_STARTER,\
@@ -43,6 +43,7 @@ from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH,\
                            HANDLER_RESULT_NOT_YET_HANDLED,\
                            HANDLER_RESULT_HANDLED
 from dbus.bus import BusConnection
+from dbus.data import UTF8String
 
 try:
     import thread
