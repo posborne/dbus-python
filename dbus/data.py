@@ -31,7 +31,7 @@ from sys import maxint
 
 from _dbus_bindings import Signature, \
                            Dictionary, Array, \
-                           Double, Struct
+                           Struct
 
 from _dbus_bindings import validate_object_path
 
@@ -353,3 +353,12 @@ class UInt64(_DBusTypeMixin, _U64):
             raise OverflowError('Value %r out of range for UInt64'
                                 % value)
         return self
+
+class Double(_DBusTypeMixin, float):
+    """A double-precision floating-point number, represented as a subtype
+    of `float`."""
+
+    __slots__ = ('_dbus_variant_level',)
+
+    def __new__(cls, value=0.0, variant_level=0):
+        return super(Double, cls).__new__(cls, value, variant_level)
