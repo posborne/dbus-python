@@ -22,16 +22,96 @@
 
 #include "types-internal.h"
 
-/* Specific types =================================================== */
+static PyObject *DBusPyBoolean = NULL;
+static PyObject *Int16 = NULL;
+static PyObject *UInt16 = NULL;
+static PyObject *Int32 = NULL;
+static PyObject *UInt32 = NULL;
+static PyObject *Int64 = NULL;
+static PyObject *UInt64 = NULL;
 
-/* Boolean, a subclass of DBusPythonInt ============================= */
+static dbus_bool_t
+do_import(void)
+{
+    PyObject *name;
+    PyObject *module;
 
-static PyTypeObject DBusPyBoolean_Type;
+    if (DBusPyBoolean && Int16 && UInt16 && Int32 && UInt32 &&
+        Int64 && UInt64)
+        return TRUE;
+
+    Py_CLEAR(DBusPyBoolean);
+    Py_CLEAR(Int16);
+    Py_CLEAR(UInt16);
+    Py_CLEAR(Int32);
+    Py_CLEAR(UInt32);
+    Py_CLEAR(Int64);
+    Py_CLEAR(UInt64);
+
+    name = PyString_FromString("dbus.data");
+    if (!name)
+        return FALSE;
+
+    module = PyImport_Import(name);
+    Py_DECREF(name);
+    if (!module)
+        return FALSE;
+
+    DBusPyBoolean = PyObject_GetAttrString(module, "Boolean");
+    Int16 = PyObject_GetAttrString(module, "Int16");
+    UInt16 = PyObject_GetAttrString(module, "UInt16");
+    Int32 = PyObject_GetAttrString(module, "Int32");
+    UInt32 = PyObject_GetAttrString(module, "UInt32");
+    Int64 = PyObject_GetAttrString(module, "Int64");
+    UInt64 = PyObject_GetAttrString(module, "UInt64");
+    Py_DECREF(module);
+
+    if (DBusPyBoolean && !PyType_Check(DBusPyBoolean)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.Boolean, type)");
+        DBusPyBoolean = NULL;
+    }
+    if (Int16 && !PyType_Check(Int16)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.Int16, type)");
+        Int16 = NULL;
+    }
+    if (UInt16 && !PyType_Check(UInt16)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.UInt16, type)");
+        UInt16 = NULL;
+    }
+    if (Int32 && !PyType_Check(Int32)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.Int32, type)");
+        Int32 = NULL;
+    }
+    if (UInt32 && !PyType_Check(UInt32)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.UInt32, type)");
+        UInt32 = NULL;
+    }
+    if (Int64 && !PyType_Check(Int64)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.Int64, type)");
+        Int64 = NULL;
+    }
+    if (UInt64 && !PyType_Check(UInt64)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.UInt64, type)");
+        UInt64 = NULL;
+    }
+
+    return DBusPyBoolean && Int16 && UInt16 && Int32 && UInt32 && Int64 &&
+        UInt64;
+}
 
 int
 DBusPyBoolean_Check(PyObject *o)
 {
-    return PyObject_TypeCheck(o, &DBusPyBoolean_Type);
+    if (!DBusPyBoolean && !do_import())
+        return 0;
+    return PyObject_TypeCheck(o, (PyTypeObject *)DBusPyBoolean);
 }
 
 PyObject *
@@ -40,6 +120,9 @@ DBusPyBoolean_New(int is_true, long variant_level)
     PyObject *args = NULL;
     PyObject *kwargs = NULL;
     PyObject *ret = NULL;
+
+    if (!DBusPyBoolean && !do_import())
+        return NULL;
 
     if (variant_level != 0) {
         kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
@@ -51,7 +134,7 @@ DBusPyBoolean_New(int is_true, long variant_level)
     if (!args)
         goto finally;
 
-    ret = PyObject_Call((PyObject *)&DBusPyBoolean_Type, args, kwargs);
+    ret = PyObject_Call(DBusPyBoolean, args, kwargs);
 
 finally:
     Py_XDECREF(args);
@@ -59,112 +142,52 @@ finally:
     return ret;
 }
 
-PyDoc_STRVAR(Boolean_tp_doc,
-"A boolean, represented as a subtype of `int` (not `bool`, because `bool`\n"
-"cannot be subclassed).\n"
-"\n"
-"Constructor::\n"
-"\n"
-"    dbus.Boolean(value[, variant_level]) -> Boolean\n"
-"\n"
-"``value`` is converted to 0 or 1 as if by ``int(bool(value))``.\n"
-"\n"
-"``variant_level`` must be non-negative; the default is 0.\n"
-"\n"
-":IVariables:\n"
-"  `variant_level` : int\n"
-"    Indicates how many nested Variant containers this object\n"
-"    is contained in: if a message's wire format has a variant containing a\n"
-"    variant containing a boolean, this is represented in Python by a\n"
-"    Boolean with variant_level==2.\n"
-);
-
-static PyObject *
-Boolean_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
-{
-    PyObject *tuple, *self, *value = Py_None;
-    long variantness = 0;
-    static char *argnames[] = {"_", "variant_level", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|Ol:__new__", argnames,
-                                     &value, &variantness)) return NULL;
-    if (variantness < 0) {
-        PyErr_SetString(PyExc_ValueError,
-                        "variant_level must be non-negative");
-        return NULL;
-    }
-    tuple = Py_BuildValue("(i)", PyObject_IsTrue(value) ? 1 : 0);
-    if (!tuple) return NULL;
-    self = (DBusPyIntBase_Type.tp_new)(cls, tuple, kwargs);
-    Py_DECREF(tuple);
-    return self;
-}
-
-static PyObject *
-Boolean_tp_repr (PyObject *self)
-{
-    long variant_level = ((DBusPyIntBase *)self)->variant_level;
-    if (variant_level > 0) {
-        return PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                   self->ob_type->tp_name,
-                                   PyInt_AsLong(self) ? "True" : "False",
-                                   variant_level);
-    }
-    return PyString_FromFormat("%s(%s)",
-                               self->ob_type->tp_name,
-                               PyInt_AsLong(self) ? "True" : "False");
-}
-
-static PyTypeObject DBusPyBoolean_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
-    "dbus.Boolean",
-    0,
-    0,
-    0,                                      /* tp_dealloc */
-    0,                                      /* tp_print */
-    0,                                      /* tp_getattr */
-    0,                                      /* tp_setattr */
-    0,                                      /* tp_compare */
-    Boolean_tp_repr,                        /* tp_repr */
-    0,                                      /* tp_as_number */
-    0,                                      /* tp_as_sequence */
-    0,                                      /* tp_as_mapping */
-    0,                                      /* tp_hash */
-    0,                                      /* tp_call */
-    0,                                      /* tp_str */
-    0,                                      /* tp_getattro */
-    0,                                      /* tp_setattro */
-    0,                                      /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    Boolean_tp_doc,                         /* tp_doc */
-    0,                                      /* tp_traverse */
-    0,                                      /* tp_clear */
-    0,                                      /* tp_richcompare */
-    0,                                      /* tp_weaklistoffset */
-    0,                                      /* tp_iter */
-    0,                                      /* tp_iternext */
-    0,                                      /* tp_methods */
-    0,                                      /* tp_members */
-    0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyIntBase_Type),  /* tp_base */
-    0,                                      /* tp_dict */
-    0,                                      /* tp_descr_get */
-    0,                                      /* tp_descr_set */
-    0,                                      /* tp_dictoffset */
-    0,                                      /* tp_init */
-    0,                                      /* tp_alloc */
-    Boolean_tp_new,                         /* tp_new */
-};
-
-/* Int16 ============================================================ */
-
-static PyTypeObject DBusPyInt16_Type;
-
 int
 DBusPyInt16_Check(PyObject *o)
 {
-    return PyObject_TypeCheck(o, &DBusPyInt16_Type);
+    if (!Int16 && !do_import())
+        return 0;
+    return PyObject_TypeCheck(o, (PyTypeObject *)Int16);
+}
+
+int
+DBusPyUInt16_Check(PyObject *o)
+{
+    if (!UInt16 && !do_import())
+        return 0;
+    return PyObject_TypeCheck(o, (PyTypeObject *)UInt16);
+}
+
+int
+DBusPyInt32_Check(PyObject *o)
+{
+    if (!Int32 && !do_import())
+        return 0;
+    return PyObject_TypeCheck(o, (PyTypeObject *)Int32);
+}
+
+int
+DBusPyUInt32_Check(PyObject *o)
+{
+    if (!UInt32 && !do_import())
+        return 0;
+    return PyObject_TypeCheck(o, (PyTypeObject *)UInt32);
+}
+
+int
+DBusPyInt64_Check(PyObject *o)
+{
+    if (!Int64 && !do_import())
+        return 0;
+    return PyObject_TypeCheck(o, (PyTypeObject *)Int64);
+}
+
+int
+DBusPyUInt64_Check(PyObject *o)
+{
+    if (!UInt64 && !do_import())
+        return 0;
+    return PyObject_TypeCheck(o, (PyTypeObject *)UInt64);
 }
 
 PyObject *
@@ -173,6 +196,9 @@ DBusPyInt16_New(dbus_int16_t value, long variant_level)
     PyObject *args = NULL;
     PyObject *kwargs = NULL;
     PyObject *ret = NULL;
+
+    if (!Int16 && !do_import())
+        return NULL;
 
     if (variant_level != 0) {
         kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
@@ -184,34 +210,13 @@ DBusPyInt16_New(dbus_int16_t value, long variant_level)
     if (!args)
         goto finally;
 
-    ret = PyObject_Call((PyObject *)&DBusPyInt16_Type, args, kwargs);
+    ret = PyObject_Call(Int16, args, kwargs);
 
 finally:
     Py_XDECREF(args);
     Py_XDECREF(kwargs);
     return ret;
 }
-
-PyDoc_STRVAR(Int16_tp_doc,
-"A signed 16-bit integer between -0x8000 and +0x7FFF, represented as\n"
-"a subtype of `int`.\n"
-"\n"
-"Constructor::\n"
-"\n"
-"    dbus.Int16(value: int[, variant_level: int]) -> Int16\n"
-"\n"
-"value must be within the allowed range, or OverflowError will be\n"
-"raised.\n"
-"\n"
-"    variant_level must be non-negative; the default is 0.\n"
-"\n"
-":IVariables:\n"
-"  `variant_level` : int\n"
-"    Indicates how many nested Variant containers this object\n"
-"    is contained in: if a message's wire format has a variant containing a\n"
-"    variant containing an int16, this is represented in Python by an\n"
-"    Int16 with variant_level==2.\n"
-);
 
 dbus_int16_t
 dbus_py_int16_range_check(PyObject *obj)
@@ -226,75 +231,15 @@ dbus_py_int16_range_check(PyObject *obj)
     return i;
 }
 
-static PyObject *
-Int16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
-{
-    PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
-    if (self && dbus_py_int16_range_check(self) == -1 && PyErr_Occurred()) {
-        Py_DECREF(self);
-        return NULL;
-    }
-    return self;
-}
-
-static PyTypeObject DBusPyInt16_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
-    "dbus.Int16",
-    0,
-    0,
-    0,                                      /* tp_dealloc */
-    0,                                      /* tp_print */
-    0,                                      /* tp_getattr */
-    0,                                      /* tp_setattr */
-    0,                                      /* tp_compare */
-    0,                                      /* tp_repr */
-    0,                                      /* tp_as_number */
-    0,                                      /* tp_as_sequence */
-    0,                                      /* tp_as_mapping */
-    0,                                      /* tp_hash */
-    0,                                      /* tp_call */
-    0,                                      /* tp_str */
-    0,                                      /* tp_getattro */
-    0,                                      /* tp_setattro */
-    0,                                      /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    Int16_tp_doc,                           /* tp_doc */
-    0,                                      /* tp_traverse */
-    0,                                      /* tp_clear */
-    0,                                      /* tp_richcompare */
-    0,                                      /* tp_weaklistoffset */
-    0,                                      /* tp_iter */
-    0,                                      /* tp_iternext */
-    0,                                      /* tp_methods */
-    0,                                      /* tp_members */
-    0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyIntBase_Type),  /* tp_base */
-    0,                                      /* tp_dict */
-    0,                                      /* tp_descr_get */
-    0,                                      /* tp_descr_set */
-    0,                                      /* tp_dictoffset */
-    0,                                      /* tp_init */
-    0,                                      /* tp_alloc */
-    Int16_tp_new,                           /* tp_new */
-};
-
-/* UInt16 =========================================================== */
-
-static PyTypeObject DBusPyUInt16_Type;
-
-int
-DBusPyUInt16_Check(PyObject *o)
-{
-    return PyObject_TypeCheck(o, &DBusPyUInt16_Type);
-}
-
 PyObject *
 DBusPyUInt16_New(dbus_uint16_t value, long variant_level)
 {
     PyObject *args = NULL;
     PyObject *kwargs = NULL;
     PyObject *ret = NULL;
+
+    if (!UInt16 && !do_import())
+        return NULL;
 
     if (variant_level != 0) {
         kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
@@ -306,34 +251,13 @@ DBusPyUInt16_New(dbus_uint16_t value, long variant_level)
     if (!args)
         goto finally;
 
-    ret = PyObject_Call((PyObject *)&DBusPyUInt16_Type, args, kwargs);
+    ret = PyObject_Call(UInt16, args, kwargs);
 
 finally:
     Py_XDECREF(args);
     Py_XDECREF(kwargs);
     return ret;
 }
-
-PyDoc_STRVAR(UInt16_tp_doc,
-"An unsigned 16-bit integer between 0 and 0xFFFF, represented as\n"
-"a subtype of `int`.\n"
-"\n"
-"Constructor::\n"
-"\n"
-"    dbus.UInt16(value: int[, variant_level: int]) -> UInt16\n"
-"\n"
-"``value`` must be within the allowed range, or `OverflowError` will be\n"
-"raised.\n"
-"\n"
-"``variant_level`` must be non-negative; the default is 0.\n"
-"\n"
-":IVariables:\n"
-"  `variant_level` : int\n"
-"    Indicates how many nested Variant containers this object\n"
-"    is contained in: if a message's wire format has a variant containing a\n"
-"    variant containing a uint16, this is represented in Python by a\n"
-"    UInt16 with variant_level==2.\n"
-);
 
 dbus_uint16_t
 dbus_py_uint16_range_check(PyObject *obj)
@@ -348,76 +272,15 @@ dbus_py_uint16_range_check(PyObject *obj)
     return i;
 }
 
-static PyObject *
-UInt16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
-{
-    PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
-    if (self && dbus_py_uint16_range_check(self) == (dbus_uint16_t)(-1)
-        && PyErr_Occurred()) {
-        Py_DECREF (self);
-        return NULL;
-    }
-    return self;
-}
-
-static PyTypeObject DBusPyUInt16_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
-    "dbus.UInt16",
-    0,
-    0,
-    0,                                      /* tp_dealloc */
-    0,                                      /* tp_print */
-    0,                                      /* tp_getattr */
-    0,                                      /* tp_setattr */
-    0,                                      /* tp_compare */
-    0,                                      /* tp_repr */
-    0,                                      /* tp_as_number */
-    0,                                      /* tp_as_sequence */
-    0,                                      /* tp_as_mapping */
-    0,                                      /* tp_hash */
-    0,                                      /* tp_call */
-    0,                                      /* tp_str */
-    0,                                      /* tp_getattro */
-    0,                                      /* tp_setattro */
-    0,                                      /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    UInt16_tp_doc,                          /* tp_doc */
-    0,                                      /* tp_traverse */
-    0,                                      /* tp_clear */
-    0,                                      /* tp_richcompare */
-    0,                                      /* tp_weaklistoffset */
-    0,                                      /* tp_iter */
-    0,                                      /* tp_iternext */
-    0,                                      /* tp_methods */
-    0,                                      /* tp_members */
-    0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyIntBase_Type),   /* tp_base */
-    0,                                      /* tp_dict */
-    0,                                      /* tp_descr_get */
-    0,                                      /* tp_descr_set */
-    0,                                      /* tp_dictoffset */
-    0,                                      /* tp_init */
-    0,                                      /* tp_alloc */
-    UInt16_tp_new,                          /* tp_new */
-};
-
-/* Int32 ============================================================ */
-
-static PyTypeObject DBusPyInt32_Type;
-
-int
-DBusPyInt32_Check(PyObject *o)
-{
-    return PyObject_TypeCheck(o, &DBusPyInt32_Type);
-}
-
 PyObject *
 DBusPyInt32_New(dbus_int32_t value, long variant_level)
 {
     PyObject *args = NULL;
     PyObject *kwargs = NULL;
     PyObject *ret = NULL;
+
+    if (!Int32 && !do_import())
+        return NULL;
 
     if (variant_level != 0) {
         kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
@@ -429,34 +292,13 @@ DBusPyInt32_New(dbus_int32_t value, long variant_level)
     if (!args)
         goto finally;
 
-    ret = PyObject_Call((PyObject *)&DBusPyInt32_Type, args, kwargs);
+    ret = PyObject_Call(Int32, args, kwargs);
 
 finally:
     Py_XDECREF(args);
     Py_XDECREF(kwargs);
     return ret;
 }
-
-PyDoc_STRVAR(Int32_tp_doc,
-"A signed 32-bit integer between -0x8000 0000 and +0x7FFF FFFF, represented as\n"
-"a subtype of `int`.\n"
-"\n"
-"Constructor::\n"
-"\n"
-"    dbus.Int32(value: int[, variant_level: int]) -> Int32\n"
-"\n"
-"``value`` must be within the allowed range, or `OverflowError` will be\n"
-"raised.\n"
-"\n"
-"``variant_level`` must be non-negative; the default is 0.\n"
-"\n"
-":IVariables:\n"
-"  `variant_level` : int\n"
-"    Indicates how many nested Variant containers this object\n"
-"    is contained in: if a message's wire format has a variant containing a\n"
-"    variant containing an int32, this is represented in Python by an\n"
-"    Int32 with variant_level==2.\n"
-);
 
 dbus_int32_t
 dbus_py_int32_range_check(PyObject *obj)
@@ -471,75 +313,15 @@ dbus_py_int32_range_check(PyObject *obj)
     return i;
 }
 
-static PyObject *
-Int32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
-{
-    PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
-    if (self && dbus_py_int32_range_check(self) == -1 && PyErr_Occurred()) {
-        Py_DECREF(self);
-        return NULL;
-    }
-    return self;
-}
-
-static PyTypeObject DBusPyInt32_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
-    "dbus.Int32",
-    0,
-    0,
-    0,                                      /* tp_dealloc */
-    0,                                      /* tp_print */
-    0,                                      /* tp_getattr */
-    0,                                      /* tp_setattr */
-    0,                                      /* tp_compare */
-    0,                                      /* tp_repr */
-    0,                                      /* tp_as_number */
-    0,                                      /* tp_as_sequence */
-    0,                                      /* tp_as_mapping */
-    0,                                      /* tp_hash */
-    0,                                      /* tp_call */
-    0,                                      /* tp_str */
-    0,                                      /* tp_getattro */
-    0,                                      /* tp_setattro */
-    0,                                      /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    Int32_tp_doc,                           /* tp_doc */
-    0,                                      /* tp_traverse */
-    0,                                      /* tp_clear */
-    0,                                      /* tp_richcompare */
-    0,                                      /* tp_weaklistoffset */
-    0,                                      /* tp_iter */
-    0,                                      /* tp_iternext */
-    0,                                      /* tp_methods */
-    0,                                      /* tp_members */
-    0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyIntBase_Type),   /* tp_base */
-    0,                                      /* tp_dict */
-    0,                                      /* tp_descr_get */
-    0,                                      /* tp_descr_set */
-    0,                                      /* tp_dictoffset */
-    0,                                      /* tp_init */
-    0,                                      /* tp_alloc */
-    Int32_tp_new,                           /* tp_new */
-};
-
-/* UInt32 =========================================================== */
-
-static PyTypeObject DBusPyUInt32_Type;
-
-int
-DBusPyUInt32_Check(PyObject *o)
-{
-    return PyObject_TypeCheck(o, &DBusPyUInt32_Type);
-}
-
 PyObject *
 DBusPyUInt32_New(dbus_uint32_t value, long variant_level)
 {
     PyObject *args = NULL;
     PyObject *kwargs = NULL;
     PyObject *ret = NULL;
+
+    if (!UInt32 && !do_import())
+        return NULL;
 
     if (variant_level != 0) {
         kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
@@ -551,37 +333,13 @@ DBusPyUInt32_New(dbus_uint32_t value, long variant_level)
     if (!args)
         goto finally;
 
-    ret = PyObject_Call((PyObject *)&DBusPyUInt32_Type, args, kwargs);
+    ret = PyObject_Call(UInt32, args, kwargs);
 
 finally:
     Py_XDECREF(args);
     Py_XDECREF(kwargs);
     return ret;
 }
-
-PyDoc_STRVAR(UInt32_tp_doc,
-"An unsigned 32-bit integer between 0 and 0xFFFF FFFF, represented as a\n"
-"subtype of `long`.\n"
-"\n"
-"Note that this may be changed in future to be a subtype of `int` on\n"
-"64-bit platforms; applications should not rely on either behaviour.\n"
-"\n"
-"Constructor::\n"
-"\n"
-"    dbus.UInt32(value: long[, variant_level: int]) -> UInt32\n"
-"\n"
-"``value`` must be within the allowed range, or `OverflowError` will be\n"
-"raised.\n"
-"\n"
-"``variant_level`` must be non-negative; the default is 0.\n"
-"\n"
-":IVariables:\n"
-"  `variant_level` : int\n"
-"    Indicates how many nested Variant containers this object\n"
-"    is contained in: if a message's wire format has a variant containing a\n"
-"    variant containing a uint32, this is represented in Python by a\n"
-"    UInt32 with variant_level==2.\n"
-);
 
 dbus_uint32_t
 dbus_py_uint32_range_check(PyObject *obj)
@@ -605,76 +363,15 @@ dbus_py_uint32_range_check(PyObject *obj)
     return i;
 }
 
-static PyObject *
-UInt32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
-{
-    PyObject *self = (DBusPyLongBase_Type.tp_new)(cls, args, kwargs);
-    if (self && dbus_py_uint32_range_check(self) == (dbus_uint32_t)(-1)
-        && PyErr_Occurred()) {
-        Py_DECREF(self);
-        return NULL;
-    }
-    return self;
-}
-
-static PyTypeObject DBusPyUInt32_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
-    "dbus.UInt32",
-    0,
-    0,
-    0,                                      /* tp_dealloc */
-    0,                                      /* tp_print */
-    0,                                      /* tp_getattr */
-    0,                                      /* tp_setattr */
-    0,                                      /* tp_compare */
-    0,                                      /* tp_repr */
-    0,                                      /* tp_as_number */
-    0,                                      /* tp_as_sequence */
-    0,                                      /* tp_as_mapping */
-    0,                                      /* tp_hash */
-    0,                                      /* tp_call */
-    0,                                      /* tp_str */
-    0,                                      /* tp_getattro */
-    0,                                      /* tp_setattro */
-    0,                                      /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    UInt32_tp_doc,                          /* tp_doc */
-    0,                                      /* tp_traverse */
-    0,                                      /* tp_clear */
-    0,                                      /* tp_richcompare */
-    0,                                      /* tp_weaklistoffset */
-    0,                                      /* tp_iter */
-    0,                                      /* tp_iternext */
-    0,                                      /* tp_methods */
-    0,                                      /* tp_members */
-    0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyLongBase_Type),  /* tp_base */
-    0,                                      /* tp_dict */
-    0,                                      /* tp_descr_get */
-    0,                                      /* tp_descr_set */
-    0,                                      /* tp_dictoffset */
-    0,                                      /* tp_init */
-    0,                                      /* tp_alloc */
-    UInt32_tp_new,                          /* tp_new */
-};
-
-/* Int64 =========================================================== */
-
-static PyTypeObject DBusPyInt64_Type;
-
-int
-DBusPyInt64_Check(PyObject *o)
-{
-    return PyObject_TypeCheck(o, &DBusPyInt64_Type);
-}
-
 PyObject *
 DBusPyInt64_New(dbus_int64_t value, long variant_level)
 {
     PyObject *args = NULL;
     PyObject *kwargs = NULL;
     PyObject *ret = NULL;
+
+    if (!Int64 && !do_import())
+        return NULL;
 
     if (variant_level != 0) {
         kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
@@ -686,47 +383,13 @@ DBusPyInt64_New(dbus_int64_t value, long variant_level)
     if (!args)
         goto finally;
 
-    ret = PyObject_Call((PyObject *)&DBusPyInt64_Type, args, kwargs);
+    ret = PyObject_Call(Int64, args, kwargs);
 
 finally:
     Py_XDECREF(args);
     Py_XDECREF(kwargs);
     return ret;
 }
-
-PyDoc_STRVAR(Int64_tp_doc,
-"A signed 64-bit integer between -0x8000 0000 0000 0000 and\n"
-"+0x7FFF FFFF FFFF FFFF, represented as a subtype of `long`.\n"
-"\n"
-"Note that this may be changed in future to be a subtype of `int` on\n"
-"64-bit platforms; applications should not rely on either behaviour.\n"
-"\n"
-"This type only works on platforms where the C compiler has suitable\n"
-"64-bit types, such as C99 ``long long``.\n"
-#ifdef DBUS_PYTHON_64_BIT_WORKS
-    "This is the case on your current platform.\n"
-#else /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
-    "This is not the case on your current platform, so this type's\n"
-    "constructor will always raise NotImplementedError. Try a better\n"
-    "compiler, if one is available.\n"
-#endif /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
-"\n"
-"Constructor::\n"
-"\n"
-"    dbus.Int64(value: long[, variant_level: int]) -> Int64\n"
-"\n"
-"``value`` must be within the allowed range, or `OverflowError` will be\n"
-"raised.\n"
-"\n"
-"``variant_level`` must be non-negative; the default is 0.\n"
-"\n"
-":IVariables:\n"
-"  `variant_level` : int\n"
-"    Indicates how many nested Variant containers this object\n"
-"    is contained in: if a message's wire format has a variant containing a\n"
-"    variant containing an int64, this is represented in Python by an\n"
-"    Int64 with variant_level==2.\n"
-);
 
 #ifdef DBUS_PYTHON_64_BIT_WORKS
 dbus_int64_t
@@ -751,81 +414,15 @@ dbus_py_int64_range_check(PyObject *obj)
 }
 #endif
 
-static PyObject *
-Int64_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
-{
-#ifdef DBUS_PYTHON_64_BIT_WORKS
-    PyObject *self = (DBusPyLongBase_Type.tp_new)(cls, args, kwargs);
-    if (self && dbus_py_int64_range_check(self) == -1 && PyErr_Occurred()) {
-        Py_DECREF(self);
-        return NULL;
-    }
-    return self;
-#else
-    PyErr_SetString(PyExc_NotImplementedError,
-                    "64-bit types are not available on this platform");
-    return NULL;
-#endif
-}
-
-static PyTypeObject DBusPyInt64_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
-    "dbus.Int64",
-    0,
-    0,
-    0,                                      /* tp_dealloc */
-    0,                                      /* tp_print */
-    0,                                      /* tp_getattr */
-    0,                                      /* tp_setattr */
-    0,                                      /* tp_compare */
-    0,                                      /* tp_repr */
-    0,                                      /* tp_as_number */
-    0,                                      /* tp_as_sequence */
-    0,                                      /* tp_as_mapping */
-    0,                                      /* tp_hash */
-    0,                                      /* tp_call */
-    0,                                      /* tp_str */
-    0,                                      /* tp_getattro */
-    0,                                      /* tp_setattro */
-    0,                                      /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    Int64_tp_doc,                           /* tp_doc */
-    0,                                      /* tp_traverse */
-    0,                                      /* tp_clear */
-    0,                                      /* tp_richcompare */
-    0,                                      /* tp_weaklistoffset */
-    0,                                      /* tp_iter */
-    0,                                      /* tp_iternext */
-    0,                                      /* tp_methods */
-    0,                                      /* tp_members */
-    0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyLongBase_Type),  /* tp_base */
-    0,                                      /* tp_dict */
-    0,                                      /* tp_descr_get */
-    0,                                      /* tp_descr_set */
-    0,                                      /* tp_dictoffset */
-    0,                                      /* tp_init */
-    0,                                      /* tp_alloc */
-    Int64_tp_new,                           /* tp_new */
-};
-
-/* UInt64 =========================================================== */
-
-static PyTypeObject DBusPyUInt64_Type;
-
-int
-DBusPyUInt64_Check(PyObject *o)
-{
-    return PyObject_TypeCheck(o, &DBusPyUInt64_Type);
-}
-
 PyObject *
 DBusPyUInt64_New(dbus_uint64_t value, long variant_level)
 {
     PyObject *args = NULL;
     PyObject *kwargs = NULL;
     PyObject *ret = NULL;
+
+    if (!UInt64 && !do_import())
+        return NULL;
 
     if (variant_level != 0) {
         kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, NULL);
@@ -837,7 +434,7 @@ DBusPyUInt64_New(dbus_uint64_t value, long variant_level)
     if (!args)
         goto finally;
 
-    ret = PyObject_Call((PyObject *)&DBusPyUInt64_Type, args, kwargs);
+    ret = PyObject_Call(UInt64, args, kwargs);
 
 finally:
     Py_XDECREF(args);
@@ -845,180 +442,38 @@ finally:
     return ret;
 }
 
-PyDoc_STRVAR(UInt64_tp_doc,
-"An unsigned 64-bit integer between 0 and 0xFFFF FFFF FFFF FFFF,\n"
-"represented as a subtype of `long`.\n"
-"\n"
-"This type only exists on platforms where the C compiler has suitable\n"
-"64-bit types, such as C99 ``unsigned long long``.\n"
 #ifdef DBUS_PYTHON_64_BIT_WORKS
-    "This is the case on your current platform.\n"
-#else /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
-    "This is not the case on your current platform, so this type's\n"
-    "constructor will always raise NotImplementedError. Try a better\n"
-    "compiler, if one is available.\n"
-#endif /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
-"\n"
-"Constructor::\n"
-"\n"
-"    dbus.UInt64(value: long[, variant_level: int]) -> UInt64\n"
-"\n"
-"``value`` must be within the allowed range, or `OverflowError` will be\n"
-"raised.\n"
-"\n"
-"``variant_level`` must be non-negative; the default is 0.\n"
-"\n"
-":IVariables:\n"
-"  `variant_level` : int\n"
-"    Indicates how many nested Variant containers this object\n"
-"    is contained in: if a message's wire format has a variant containing a\n"
-"    variant containing a uint64, this is represented in Python by a\n"
-"    UInt64 with variant_level==2.\n"
-);
-
 dbus_uint64_t
 dbus_py_uint64_range_check(PyObject *obj)
 {
     unsigned PY_LONG_LONG i;
     PyObject *long_obj = PyNumber_Long(obj);
 
-    if (!long_obj) return (dbus_uint64_t)(-1);
+    if (!long_obj) return -1;
     i = PyLong_AsUnsignedLongLong(long_obj);
-    if (i == (unsigned PY_LONG_LONG)(-1) && PyErr_Occurred()) {
+    if (i == (unsigned PY_LONG_LONG)-1 && PyErr_Occurred()) {
         Py_DECREF(long_obj);
-        return (dbus_uint64_t)(-1);
+        return -1;
     }
     if (i > UINT64_MAX) {
         PyErr_SetString(PyExc_OverflowError, "Value out of range for UInt64");
         Py_DECREF(long_obj);
-        return (dbus_uint64_t)(-1);
+        return -1;
     }
     Py_DECREF(long_obj);
     return i;
 }
-
-static PyObject *
-UInt64_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
-{
-#ifdef DBUS_PYTHON_64_BIT_WORKS
-    PyObject *self = (DBusPyLongBase_Type.tp_new)(cls, args, kwargs);
-    if (self && dbus_py_uint64_range_check(self) == (dbus_uint64_t)(-1)
-        && PyErr_Occurred()) {
-        Py_DECREF(self);
-        return NULL;
-    }
-    return self;
-#else
-    PyErr_SetString(PyExc_NotImplementedError,
-                    "64-bit integer types are not supported on this platform");
-    return NULL;
 #endif
-}
-
-static PyTypeObject DBusPyUInt64_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
-    "dbus.UInt64",
-    0,
-    0,
-    0,                                      /* tp_dealloc */
-    0,                                      /* tp_print */
-    0,                                      /* tp_getattr */
-    0,                                      /* tp_setattr */
-    0,                                      /* tp_compare */
-    0,                                      /* tp_repr */
-    0,                                      /* tp_as_number */
-    0,                                      /* tp_as_sequence */
-    0,                                      /* tp_as_mapping */
-    0,                                      /* tp_hash */
-    0,                                      /* tp_call */
-    0,                                      /* tp_str */
-    0,                                      /* tp_getattro */
-    0,                                      /* tp_setattro */
-    0,                                      /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    UInt64_tp_doc,                          /* tp_doc */
-    0,                                      /* tp_traverse */
-    0,                                      /* tp_clear */
-    0,                                      /* tp_richcompare */
-    0,                                      /* tp_weaklistoffset */
-    0,                                      /* tp_iter */
-    0,                                      /* tp_iternext */
-    0,                                      /* tp_methods */
-    0,                                      /* tp_members */
-    0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyLongBase_Type),  /* tp_base */
-    0,                                      /* tp_dict */
-    0,                                      /* tp_descr_get */
-    0,                                      /* tp_descr_set */
-    0,                                      /* tp_dictoffset */
-    0,                                      /* tp_init */
-    0,                                      /* tp_alloc */
-    UInt64_tp_new,                          /* tp_new */
-};
 
 dbus_bool_t
 dbus_py_init_int_types(void)
 {
-    DBusPyBoolean_Type.tp_base = &DBusPyIntBase_Type;
-    if (PyType_Ready(&DBusPyBoolean_Type) < 0) return 0;
-    /* disable the tp_print copied from PyInt_Type, so tp_repr gets called as
-    desired */
-    DBusPyBoolean_Type.tp_print = NULL;
-
-    DBusPyInt16_Type.tp_base = &DBusPyIntBase_Type;
-    if (PyType_Ready(&DBusPyInt16_Type) < 0) return 0;
-    DBusPyInt16_Type.tp_print = NULL;
-
-    DBusPyUInt16_Type.tp_base = &DBusPyIntBase_Type;
-    if (PyType_Ready(&DBusPyUInt16_Type) < 0) return 0;
-    DBusPyUInt16_Type.tp_print = NULL;
-
-    DBusPyInt32_Type.tp_base = &DBusPyIntBase_Type;
-    if (PyType_Ready(&DBusPyInt32_Type) < 0) return 0;
-    DBusPyInt32_Type.tp_print = NULL;
-
-    DBusPyUInt32_Type.tp_base = &DBusPyLongBase_Type;
-    if (PyType_Ready(&DBusPyUInt32_Type) < 0) return 0;
-    DBusPyUInt32_Type.tp_print = NULL;
-
-#if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
-    DBusPyInt64_Type.tp_base = &DBusPyLongBase_Type;
-    if (PyType_Ready(&DBusPyInt64_Type) < 0) return 0;
-    DBusPyInt64_Type.tp_print = NULL;
-
-    DBusPyUInt64_Type.tp_base = &DBusPyLongBase_Type;
-    if (PyType_Ready(&DBusPyUInt64_Type) < 0) return 0;
-    DBusPyUInt64_Type.tp_print = NULL;
-#endif
     return 1;
 }
 
 dbus_bool_t
-dbus_py_insert_int_types(PyObject *this_module)
+dbus_py_insert_int_types(PyObject *this_module UNUSED)
 {
-    Py_INCREF(&DBusPyInt16_Type);
-    Py_INCREF(&DBusPyUInt16_Type);
-    Py_INCREF(&DBusPyInt32_Type);
-    Py_INCREF(&DBusPyUInt32_Type);
-    Py_INCREF(&DBusPyInt64_Type);
-    Py_INCREF(&DBusPyUInt64_Type);
-    Py_INCREF(&DBusPyBoolean_Type);
-    if (PyModule_AddObject(this_module, "Int16",
-                           (PyObject *)&DBusPyInt16_Type) < 0) return 0;
-    if (PyModule_AddObject(this_module, "UInt16",
-                           (PyObject *)&DBusPyUInt16_Type) < 0) return 0;
-    if (PyModule_AddObject(this_module, "Int32",
-                           (PyObject *)&DBusPyInt32_Type) < 0) return 0;
-    if (PyModule_AddObject(this_module, "UInt32",
-                           (PyObject *)&DBusPyUInt32_Type) < 0) return 0;
-    if (PyModule_AddObject(this_module, "Int64",
-                           (PyObject *)&DBusPyInt64_Type) < 0) return 0;
-    if (PyModule_AddObject(this_module, "UInt64",
-                           (PyObject *)&DBusPyUInt64_Type) < 0) return 0;
-    if (PyModule_AddObject(this_module, "Boolean",
-                           (PyObject *)&DBusPyBoolean_Type) < 0) return 0;
-
     return 1;
 }
 

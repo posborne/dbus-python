@@ -54,6 +54,22 @@ do_import(void)
     ObjectPath = PyObject_GetAttrString(module, "ObjectPath");
     Py_DECREF(module);
 
+    if (String && !PyType_Check(String)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.String, type)");
+        String = NULL;
+    }
+    if (UTF8String && !PyType_Check(UTF8String)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.UTF8String, type)");
+        UTF8String = NULL;
+    }
+    if (ObjectPath && !PyType_Check(ObjectPath)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.ObjectPath, type)");
+        ObjectPath = NULL;
+    }
+
     return (String != NULL && UTF8String != NULL && ObjectPath != NULL);
 }
 

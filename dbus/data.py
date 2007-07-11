@@ -27,11 +27,11 @@ __all__ = ('ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
            'Double', 'String', 'Array', 'Struct', 'Dictionary',
            'UTF8String')
 
+from sys import maxint
 
 from _dbus_bindings import Signature, \
-                           Int16, UInt16, Int32, UInt32,\
-                           Int64, UInt64, Dictionary, Array, \
-                           Boolean, Double, Struct
+                           Dictionary, Array, \
+                           Double, Struct
 
 from _dbus_bindings import validate_object_path
 
@@ -232,3 +232,124 @@ class ObjectPath(_DBusTypeMixin, str):
         validate_object_path(value)
 
         return super(ObjectPath, cls).__new__(cls, value, variant_level)
+
+
+class Boolean(_DBusTypeMixin, int):
+    """A boolean, represented as a subtype of `int` (not `bool`, because
+    `bool` cannot be subclassed).
+    """
+
+    __slots__ = ('_dbus_variant_level',)
+
+    def __new__(cls, value=False, variant_level=0):
+        return super(Boolean, cls).__new__(cls, bool(value), variant_level)
+
+    def __repr__(self):
+        variant_level = self._dbus_variant_level
+        bool_repr = self and 'True' or 'False'
+        if variant_level:
+            return '%s(%s, variant_level=%d)' % (self.__class__.__name__,
+                                                 bool_repr, variant_level)
+        else:
+            return '%s(%s)' % (self.__class__.__name__, bool_repr)
+
+
+if maxint >= 0x7FFFFFFFFFFFFFFFL:
+    _I64 = int
+    if maxint >= 0xFFFFFFFFFFFFFFFFL:
+        _U64 = int
+    else:
+        _U64 = long
+else:
+    _I64 = long
+    _U64 = long
+
+class Int16(_DBusTypeMixin, int):
+    """A signed 16-bit integer between -0x8000 and +0x7FFF, represented as a
+    subtype of `int`.
+    """
+
+    __slots__ = ('_dbus_variant_level',)
+
+    def __new__(cls, value=0, variant_level=0):
+        self = super(Int16, cls).__new__(cls, value, variant_level)
+        if self < -0x8000 or self > 0x7FFF:
+            raise OverflowError('Value %r out of range for Int16'
+                                % value)
+        return self
+
+class UInt16(_DBusTypeMixin, int):
+    """An unsigned 16-bit integer between 0 and +0xFFFF, represented as a
+    subtype of `int`.
+    """
+
+    __slots__ = ('_dbus_variant_level',)
+
+    def __new__(cls, value=0, variant_level=0):
+        self = super(UInt16, cls).__new__(cls, value, variant_level)
+        if self < 0 or self > 0xFFFF:
+            raise OverflowError('Value %r out of range for UInt16'
+                                % value)
+        return self
+
+class Int32(_DBusTypeMixin, int):
+    """A signed 32-bit integer between -0x8000 0000 and +0x7FFF FFFF,
+    represented as a subtype of `int`.
+    """
+
+    __slots__ = ('_dbus_variant_level',)
+
+    def __new__(cls, value=0, variant_level=0):
+        self = super(Int32, cls).__new__(cls, value, variant_level)
+        if self < -0x80000000 or self > 0x7FFFFFFF:
+            raise OverflowError('Value %r out of range for Int32'
+                                % value)
+        return self
+
+class UInt32(_DBusTypeMixin, _I64):
+    """An unsigned 32-bit integer between 0 and +0xFFFF FFFF, represented as a
+    subtype of either `int` or `long` (platform-dependent and subject to
+    change).
+    """
+
+    if _I64 is int:
+        __slots__ = ('_dbus_variant_level',)
+
+    def __new__(cls, value=0, variant_level=0):
+        self = super(UInt32, cls).__new__(cls, value, variant_level)
+        if self < 0 or self > 0xFFFFFFFFL:
+            raise OverflowError('Value %r out of range for UInt32'
+                                % value)
+        return self
+
+class Int64(_DBusTypeMixin, _I64):
+    """A signed 64-bit integer between -0x8000 0000 0000 0000 and
+    +0x7FFF FFFF FFFF FFFF,
+    represented as a subtype of `int`.
+    """
+
+    if _I64 is int:
+        __slots__ = ('_dbus_variant_level',)
+
+    def __new__(cls, value=0, variant_level=0):
+        self = super(Int64, cls).__new__(cls, value, variant_level)
+        if self < -0x8000000000000000L or self > 0x7FFFFFFFFFFFFFFFL:
+            raise OverflowError('Value %r out of range for Int64'
+                                % value)
+        return self
+
+class UInt64(_DBusTypeMixin, _U64):
+    """An unsigned 64-bit integer between 0 and +0xFFFF FFFF FFFF FFFF,
+    represented as a subtype of either `int` or `long` (platform-dependent and
+    subject to change).
+    """
+
+    if _U64 is int:
+        __slots__ = ('_dbus_variant_level',)
+
+    def __new__(cls, value=0, variant_level=0):
+        self = super(UInt64, cls).__new__(cls, value, variant_level)
+        if self < 0 or self > 0xFFFFFFFFFFFFFFFFL:
+            raise OverflowError('Value %r out of range for UInt64'
+                                % value)
+        return self

@@ -56,6 +56,17 @@ do_import(void)
     ByteArray = PyObject_GetAttrString(module, "ByteArray");
     Py_DECREF(module);
 
+    if (Byte && !PyType_Check(Byte)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.Byte, type)");
+        Byte = NULL;
+    }
+    if (ByteArray && !PyType_Check(ByteArray)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.ByteArray, type)");
+        ByteArray = NULL;
+    }
+
     return (ByteArray != NULL && Byte != NULL);
 }
 

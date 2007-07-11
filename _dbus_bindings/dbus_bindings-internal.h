@@ -184,6 +184,7 @@ dbus_bool_t dbus_py_validate_object_path(const char *path);
 #define dbus_py_validate_error_name dbus_py_validate_interface_name
 
 /* debugging support */
+
 void _dbus_py_assertion_failed(const char *);
 #define DBUS_PY_RAISE_VIA_NULL_IF_FAIL(assertion) \
     do { if (!(assertion)) { \
