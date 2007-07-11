@@ -2,11 +2,11 @@
 AC_PREREQ(2.59c)
 
 dnl If not 1, append datestamp to the version number
-m4_define(dbus_python_released, 0)
+m4_define(dbus_python_released, 1)
 dnl The dbus-python version number (must actually be numeric at the moment)
 m4_define(dbus_python_major_version, 0)
 m4_define(dbus_python_minor_version, 82)
-m4_define(dbus_python_micro_version, 0)
+m4_define(dbus_python_micro_version, 1)
 
 m4_define(dbus_python_maybe_datestamp,
           m4_esyscmd([if test x]dbus_python_released[ != x1; then date +.%Y%m%d | tr -d '\n\r'; fi]))
