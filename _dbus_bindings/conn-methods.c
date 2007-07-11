@@ -370,7 +370,7 @@ Connection_send_message_with_reply(Connection *self, PyObject *args, PyObject *k
     TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
     if (!PyArg_ParseTupleAndKeywords(args, kw,
-                                     "OO|fi:send_message_with_reply",
+                                     "OO|di:send_message_with_reply",
                                      argnames,
                                      &obj, &callable, &timeout_s,
                                      &require_main_loop)) {
@@ -447,7 +447,7 @@ Connection_send_message_with_reply_and_block(Connection *self, PyObject *args)
 
     TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
-    if (!PyArg_ParseTuple(args, "O|f:send_message_with_reply_and_block", &obj,
+    if (!PyArg_ParseTuple(args, "O|d:send_message_with_reply_and_block", &obj,
                           &timeout_s)) {
         return NULL;
     }

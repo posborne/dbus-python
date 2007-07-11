@@ -5,6 +5,9 @@ Features:
 
 Fixes:
 
+* Parse the timeout correctly in send_message_with_reply() and
+  send_message_with_reply_and_block(), fixing the use of non-default timeouts
+  (bugs.fd.o #11489)
 * The tutorial no longer uses interactive-Python syntax, as it confused users.
   (bugs.fd.o #11209)
 * When making a call via a proxy object with ignore_reply=True, also get the
