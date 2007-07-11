@@ -33,7 +33,7 @@ pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
 
 import _dbus_bindings
 import dbus
-import dbus.types as types
+import dbus.data as types
 
 # Check that we're using the right versions
 if not dbus.__file__.startswith(pydir):

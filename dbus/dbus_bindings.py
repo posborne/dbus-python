@@ -20,7 +20,7 @@ from dbus.exceptions import DBusException
 class ConnectionError(Exception): pass
 
 # Types
-from dbus.types import *
+from dbus.data import *
 
 # Messages
 from _dbus_bindings import Message, SignalMessage as Signal,\

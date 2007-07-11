@@ -72,7 +72,7 @@ except ImportError:
 
 # OLPC Sugar compatibility
 import dbus.exceptions as exceptions
-import dbus.types as types
+import dbus.data as types
 
 from _dbus_bindings import get_default_main_loop, set_default_main_loop,\
                            validate_interface_name, validate_member_name,\
@@ -89,10 +89,10 @@ from dbus.exceptions import MissingErrorHandlerException, \
                             UnknownMethodException, \
                             NameExistsException, \
                             DBusException
-from _dbus_bindings import ObjectPath, ByteArray, Signature, Byte, Boolean,\
-                           Int16, UInt16, Int32, UInt32, Int64, UInt64,\
-                           Double, String, Array, Struct, Dictionary, \
-                           UTF8String
+from dbus.data import ObjectPath, ByteArray, Signature, Byte, Boolean,\
+                      Int16, UInt16, Int32, UInt32, Int64, UInt64,\
+                      Double, String, Array, Struct, Dictionary, \
+                      UTF8String
 from dbus._dbus import Bus, SystemBus, SessionBus, StarterBus
 from dbus.proxies import Interface
 
