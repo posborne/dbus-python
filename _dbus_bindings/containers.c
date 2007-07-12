@@ -302,11 +302,7 @@ PyDoc_STRVAR(Dict_tp_doc,
 "\n"
 "``signature`` is either a string or None. If a string, it must consist\n"
 "of exactly two complete type signatures, representing the 'key' type\n"
-"(which must be a primitive type, i.e. one of \"bd"
-#ifdef WITH_DBUS_FLOAT32
-"f"
-#endif
-"ginoqstuxy\")\n"
+"(which must be a primitive type, i.e. one of \"bdginoqstuxy\")\n"
 "and the 'value' type. The signature of the whole Dictionary will be\n"
 "``a{xx}`` where ``xx`` is replaced by the given signature.\n"
 "\n"
