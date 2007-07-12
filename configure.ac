@@ -9,7 +9,7 @@ m4_define(dbus_python_minor_version, 82)
 m4_define(dbus_python_micro_version, 1)
 
 m4_define(dbus_python_maybe_datestamp,
-          m4_esyscmd([if test x]dbus_python_released[ != x1; then date +.%Y%m%d | tr -d '\n\r'; fi]))
+          m4_esyscmd([if test x]dbus_python_released[ != x1; then date +.purity%Y%m%d | tr -d '\n\r'; fi]))
 
 m4_define(dbus_python_version, dbus_python_major_version.dbus_python_minor_version.dbus_python_micro_version[]dbus_python_maybe_datestamp)
 
