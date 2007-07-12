@@ -505,13 +505,6 @@ PyDoc_STRVAR(Int64_tp_doc,
 "\n"
 "This type only works on platforms where the C compiler has suitable\n"
 "64-bit types, such as C99 ``long long``.\n"
-#ifdef DBUS_PYTHON_64_BIT_WORKS
-    "This is the case on your current platform.\n"
-#else /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
-    "This is not the case on your current platform, so this type's\n"
-    "constructor will always raise NotImplementedError. Try a better\n"
-    "compiler, if one is available.\n"
-#endif /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
 "\n"
 "Constructor::\n"
 "\n"
@@ -620,13 +613,6 @@ PyDoc_STRVAR(UInt64_tp_doc,
 "\n"
 "This type only exists on platforms where the C compiler has suitable\n"
 "64-bit types, such as C99 ``unsigned long long``.\n"
-#ifdef DBUS_PYTHON_64_BIT_WORKS
-    "This is the case on your current platform.\n"
-#else /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
-    "This is not the case on your current platform, so this type's\n"
-    "constructor will always raise NotImplementedError. Try a better\n"
-    "compiler, if one is available.\n"
-#endif /* !defined(DBUS_PYTHON_64_BIT_WORKS) */
 "\n"
 "Constructor::\n"
 "\n"
