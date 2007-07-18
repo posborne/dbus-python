@@ -28,25 +28,6 @@
 #ifndef DBUS_BINDINGS_TYPES_INTERNAL_H
 #define DBUS_BINDINGS_TYPES_INTERNAL_H
 
-extern PyTypeObject DBusPyIntBase_Type;
-DEFINE_CHECK(DBusPyIntBase)
-
-typedef struct {
-    PyIntObject base;
-    long variant_level;
-} DBusPyIntBase;
-
-extern PyTypeObject DBusPyLongBase_Type;
-DEFINE_CHECK(DBusPyLongBase)
-
-extern PyTypeObject DBusPyFloatBase_Type;
-DEFINE_CHECK(DBusPyFloatBase)
-
-typedef struct {
-    PyFloatObject base;
-    long variant_level;
-} DBusPyFloatBase;
-
 extern PyTypeObject DBusPyStrBase_Type;
 DEFINE_CHECK(DBusPyStrBase)
 
