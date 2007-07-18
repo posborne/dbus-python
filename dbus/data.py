@@ -29,7 +29,7 @@ __all__ = ('ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
 
 from sys import maxint
 
-from _dbus_bindings import Signature, Struct
+from _dbus_bindings import Signature
 
 from _dbus_bindings import validate_object_path
 
@@ -452,3 +452,37 @@ class Dictionary(_DBusTypeMixin, dict):
     def __init__(self, mapping_or_iterable=(), signature=None,
                  variant_level=0):
         super(Dictionary, self).__init__(mapping_or_iterable)
+
+class Struct(_DBusTypeMixin, tuple):
+    """A structure containing items of fixed, possibly different types.
+
+    D-Bus structs may not be empty, so the iterable argument is required and
+    may not be an empty iterable.
+    """
+
+    @property
+    def signature(self):
+        """The D-Bus signature of each pair in this Dictionary (a Signature
+        instance), or None if unspecified. Read-only.
+
+        The signature of a Struct ``s`` is given by
+        ``'(' + s.signature + ')'``.
+
+        If None, when the Struct is sent over D-Bus, the signature will be
+        guessed from the elements.
+        """
+        return self._signature
+
+    def __new__(cls, iterable, signature=None, variant_level=0):
+        """"""
+
+        if signature is not None:
+            signature = Signature(signature)
+
+            if len(tuple(signature)) < 1:
+                raise ValueError("D-Bus structs cannot be empty")
+
+        self = super(Struct, cls).__new__(cls, iterable,
+                                          variant_level=variant_level)
+        self._signature = signature
+        return self

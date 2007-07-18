@@ -33,6 +33,7 @@ except ImportError:
 
 import _dbus_bindings
 from dbus import SessionBus
+from dbus.data import Struct
 from dbus.exceptions import DBusException, \
                             NameExistsException, \
                             UnknownMethodException
@@ -696,7 +697,7 @@ class Object(Interface):
                 if retval is None:
                     retval = ()
                 elif (isinstance(retval, tuple)
-                      and not isinstance(retval, _dbus_bindings.Struct)):
+                      and not isinstance(retval, Struct)):
                 # If the return is a tuple that is not a Struct, we use it
                 # as-is on the assumption that there are multiple return
                 # values - this is the usual Python idiom. (fd.o #10174)
