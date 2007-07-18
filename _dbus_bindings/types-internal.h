@@ -49,12 +49,6 @@ extern PyObject *dbus_py_signature_const;
 extern PyObject *dbus_py__dbus_object_path__const;
 
 typedef struct {
-    PyListObject super;
-    PyObject *signature;
-    long variant_level;
-} DBusPyArray;
-
-typedef struct {
     PyDictObject super;
     PyObject *signature;
     long variant_level;

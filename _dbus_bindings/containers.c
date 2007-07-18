@@ -30,12 +30,63 @@
 
 /* Array ============================================================ */
 
-static PyTypeObject DBusPyArray_Type;
+static PyObject *Array = NULL;
+static PyObject *Struct = NULL;
+static PyObject *Dictionary = NULL;
+
+static dbus_bool_t
+do_import(void)
+{
+    PyObject *name;
+    PyObject *module;
+
+    if (Array /* && Struct */ /* && Dictionary */)
+        return TRUE;
+
+    Py_CLEAR(Array);
+    /* Py_CLEAR(Struct); */
+    /* Py_CLEAR(Dictionary); */
+
+    name = PyString_FromString("dbus.data");
+    if (!name)
+        return FALSE;
+
+    module = PyImport_Import(name);
+    Py_DECREF(name);
+    if (!module)
+        return FALSE;
+
+    Array = PyObject_GetAttrString(module, "Array");
+    Struct = PyObject_GetAttrString(module, "Struct");
+    Dictionary = PyObject_GetAttrString(module, "Dictionary");
+
+    Py_DECREF(module);
+
+    if (Array && !PyType_Check(Array)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.Array, type)");
+        Array = NULL;
+    }
+    /* if (Struct && !PyType_Check(Struct)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.Struct, type)");
+        Struct = NULL;
+    } */
+    /* if (Dictionary && !PyType_Check(Dictionary)) {
+        PyErr_SetString(PyExc_AssertionError, "Assertion failed: "
+                        "isinstance(dbus.data.Dictionary, type)");
+        Dictionary = NULL;
+    } */
+
+    return (Array != NULL /* && Struct != NULL */ /* && Dictionary != NULL */);
+}
 
 int
 DBusPyArray_Check(PyObject *o)
 {
-    return PyObject_TypeCheck(o, &DBusPyArray_Type);
+    if (!Array && !do_import())
+        return 0;
+    return PyObject_TypeCheck(o, (PyTypeObject *)Array);
 }
 
 PyObject *
@@ -44,216 +95,21 @@ DBusPyArray_New(const char *signature, long variant_level)
     PyObject *kwargs = NULL;
     PyObject *ret = NULL;
 
+    if (!Array && !do_import())
+        return NULL;
+
     if (variant_level != 0) {
         kwargs = DBusPy_BuildConstructorKeywordArgs(variant_level, signature);
         if (!kwargs)
             goto finally;
     }
 
-    ret = PyObject_Call((PyObject *)&DBusPyArray_Type, dbus_py_empty_tuple,
-                        kwargs);
+    ret = PyObject_Call(Array, dbus_py_empty_tuple, kwargs);
 
 finally:
     Py_XDECREF(kwargs);
     return ret;
 }
-
-PyDoc_STRVAR(Array_tp_doc,
-"An array of similar items, implemented as a subtype of list.\n"
-"\n"
-"As currently implemented, an Array behaves just like a list, but\n"
-"with the addition of a ``signature`` property set by the constructor;\n"
-"conversion of its items to D-Bus types is only done when it's sent in\n"
-"a Message. This might change in future so validation is done earlier.\n"
-"\n"
-"Constructor::\n"
-"\n"
-"    dbus.Array([iterable][, signature][, variant_level])\n"
-"\n"
-"``variant_level`` must be non-negative; the default is 0.\n"
-"\n"
-"``signature`` is the D-Bus signature string for a single element of the\n"
-"array, or None. If not None it must represent a single complete type, the\n"
-"type of a single array item; the signature of the whole Array may be\n"
-"obtained by prepending ``a`` to the given signature.\n"
-"\n"
-"If None (the default), when the Array is sent over\n"
-"D-Bus, the item signature will be guessed from the first element.\n"
-"\n"
-":IVariables:\n"
-"  `variant_level` : int\n"
-"    Indicates how many nested Variant containers this object\n"
-"    is contained in: if a message's wire format has a variant containing a\n"
-"    variant containing an array, this is represented in Python by an\n"
-"    Array with variant_level==2.\n"
-);
-
-static struct PyMemberDef Array_tp_members[] = {
-    {"signature", T_OBJECT, offsetof(DBusPyArray, signature), READONLY,
-     "The D-Bus signature of each element of this Array (a Signature "
-     "instance)"},
-    {"variant_level", T_LONG, offsetof(DBusPyArray, variant_level),
-     READONLY,
-     "The number of nested variants wrapping the real data. "
-     "0 if not in a variant."},
-    {NULL},
-};
-
-static void
-Array_tp_dealloc (DBusPyArray *self)
-{
-    Py_XDECREF(self->signature);
-    self->signature = NULL;
-    (PyList_Type.tp_dealloc)((PyObject *)self);
-}
-
-static PyObject *
-Array_tp_repr(DBusPyArray *self)
-{
-    PyObject *parent_repr = (PyList_Type.tp_repr)((PyObject *)self);
-    PyObject *sig_repr = PyObject_Repr(self->signature);
-    PyObject *my_repr = NULL;
-    long variant_level = self->variant_level;
-
-    if (!parent_repr) goto finally;
-    if (!sig_repr) goto finally;
-    if (variant_level > 0) {
-        my_repr = PyString_FromFormat("%s(%s, signature=%s, "
-                                      "variant_level=%ld)",
-                                      self->super.ob_type->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      PyString_AS_STRING(sig_repr),
-                                      variant_level);
-    }
-    else {
-        my_repr = PyString_FromFormat("%s(%s, signature=%s)",
-                                      self->super.ob_type->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      PyString_AS_STRING(sig_repr));
-    }
-finally:
-    Py_XDECREF(parent_repr);
-    Py_XDECREF(sig_repr);
-    return my_repr;
-}
-
-static PyObject *
-Array_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
-{
-    PyObject *variant_level = NULL;
-    DBusPyArray *self = (DBusPyArray *)(PyList_Type.tp_new)(cls, args, kwargs);
-
-    /* variant_level is immutable, so handle it in __new__ rather than
-    __init__ */
-    if (!self) return NULL;
-    Py_INCREF(Py_None);
-    self->signature = Py_None;
-    self->variant_level = 0;
-    if (kwargs) {
-        variant_level = PyDict_GetItem(kwargs, dbus_py_variant_level_const);
-    }
-    if (variant_level) {
-        self->variant_level = PyInt_AsLong(variant_level);
-        if (PyErr_Occurred()) {
-            Py_DECREF((PyObject *)self);
-            return NULL;
-        }
-    }
-    return (PyObject *)self;
-}
-
-static int
-Array_tp_init (DBusPyArray *self, PyObject *args, PyObject *kwargs)
-{
-    PyObject *obj = dbus_py_empty_tuple;
-    PyObject *signature = Py_None;
-    PyObject *tuple;
-    PyObject *variant_level;
-    /* variant_level is accepted but ignored - it's immutable, so
-     * __new__ handles it */
-    static char *argnames[] = {"iterable", "signature", "variant_level", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOO:__init__", argnames,
-                                     &obj, &signature, &variant_level)) {
-        return -1;
-    }
-
-    /* convert signature from a borrowed ref of unknown type to an owned ref
-    of type Signature (or None) */
-    signature = DBusPySignature_FromStringObject(signature, TRUE);
-    if (!signature)
-        return -1;
-
-    if (signature != Py_None) {
-        const char *c_str = PyString_AS_STRING(signature);
-
-        if (!dbus_signature_validate_single(c_str, NULL)) {
-            Py_DECREF(signature);
-            PyErr_SetString(PyExc_ValueError,
-                            "There must be exactly one complete type in "
-                            "an Array's signature parameter");
-            return -1;
-        }
-    }
-
-    tuple = Py_BuildValue("(O)", obj);
-    if (!tuple) {
-        Py_DECREF(signature);
-        return -1;
-    }
-    if ((PyList_Type.tp_init)((PyObject *)self, tuple, NULL) < 0) {
-        Py_DECREF(tuple);
-        Py_DECREF(signature);
-        return -1;
-    }
-    Py_DECREF(tuple);
-
-    Py_XDECREF(self->signature);
-    self->signature = signature;
-    return 0;
-}
-
-static PyTypeObject DBusPyArray_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
-    "dbus.Array",
-    sizeof(DBusPyArray),
-    0,
-    (destructor)Array_tp_dealloc,           /* tp_dealloc */
-    0,                                      /* tp_print */
-    0,                                      /* tp_getattr */
-    0,                                      /* tp_setattr */
-    0,                                      /* tp_compare */
-    (reprfunc)Array_tp_repr,                /* tp_repr */
-    0,                                      /* tp_as_number */
-    0,                                      /* tp_as_sequence */
-    0,                                      /* tp_as_mapping */
-    0,                                      /* tp_hash */
-    0,                                      /* tp_call */
-    0,                                      /* tp_str */
-    0,                                      /* tp_getattro */
-    0,                                      /* tp_setattro */
-    0,                                      /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    Array_tp_doc,                           /* tp_doc */
-    0,                                      /* tp_traverse */
-    0,                                      /* tp_clear */
-    0,                                      /* tp_richcompare */
-    0,                                      /* tp_weaklistoffset */
-    0,                                      /* tp_iter */
-    0,                                      /* tp_iternext */
-    0,                                      /* tp_methods */
-    Array_tp_members,                       /* tp_members */
-    0,                                      /* tp_getset */
-    0,                                      /* tp_base */
-    0,                                      /* tp_dict */
-    0,                                      /* tp_descr_get */
-    0,                                      /* tp_descr_set */
-    0,                                      /* tp_dictoffset */
-    (initproc)Array_tp_init,                /* tp_init */
-    0,                                      /* tp_alloc */
-    Array_tp_new,                           /* tp_new */
-};
 
 /* Dict ============================================================= */
 
@@ -795,10 +651,6 @@ dbus_py_init_container_types(void)
     struct_signatures = PyDict_New();
     if (!struct_signatures) return 0;
 
-    DBusPyArray_Type.tp_base = &PyList_Type;
-    if (PyType_Ready(&DBusPyArray_Type) < 0) return 0;
-    DBusPyArray_Type.tp_print = NULL;
-
     DBusPyDictionary_Type.tp_base = &PyDict_Type;
     if (PyType_Ready(&DBusPyDictionary_Type) < 0) return 0;
     DBusPyDictionary_Type.tp_print = NULL;
@@ -813,10 +665,6 @@ dbus_py_init_container_types(void)
 dbus_bool_t
 dbus_py_insert_container_types(PyObject *this_module)
 {
-    Py_INCREF(&DBusPyArray_Type);
-    if (PyModule_AddObject(this_module, "Array",
-                           (PyObject *)&DBusPyArray_Type) < 0) return 0;
-
     Py_INCREF(&DBusPyDictionary_Type);
     if (PyModule_AddObject(this_module, "Dictionary",
                            (PyObject *)&DBusPyDictionary_Type) < 0) return 0;

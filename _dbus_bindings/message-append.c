@@ -67,10 +67,8 @@ DBusTypeMixin_Check(PyObject *o)
                                               (PyTypeObject *)DBusPyTypeMixin))
         return 1;
 
-    return (DBusPyStrBase_Check(o) || DBusPyFloatBase_Check(o) ||
-            DBusPyIntBase_Check(o) || DBusPyLongBase_Check(o) ||
-            DBusPyArray_Check(o) ||
-            DBusPyStruct_Check(o) || DBusPyDictionary_Check(o));
+    return (DBusPyStruct_Check(o) || DBusPyDictionary_Check(o)
+            || DBusPySignature_Check(o));
 }
 
 /* Return the number of variants wrapping the given object. Return 0
@@ -331,10 +329,15 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
     else if (PyList_Check(obj)) {
         PyObject *tmp;
         PyObject *ret = PyString_FromString(DBUS_TYPE_ARRAY_AS_STRING);
-        if (!ret) return NULL;
-        if (DBusPyArray_Check(obj) && PyString_Check(((DBusPyArray *)obj)->signature)) {
-            PyString_Concat(&ret, ((DBusPyArray *)obj)->signature);
-            return ret;
+        if (!ret)
+            return NULL;
+        if (DBusPyArray_Check(obj)) {
+            PyObject *sig = PyObject_GetAttr(obj, dbus_py_signature_const);
+
+            if (PyString_Check(sig)) {
+                PyString_Concat(&ret, sig);
+                return ret;
+            }
         }
         if (PyList_GET_SIZE(obj) == 0) {
             /* No items, so fail. Or should we guess "av"? */

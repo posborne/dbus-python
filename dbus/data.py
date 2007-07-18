@@ -30,7 +30,7 @@ __all__ = ('ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
 from sys import maxint
 
 from _dbus_bindings import Signature, \
-                           Dictionary, Array, \
+                           Dictionary, \
                            Struct
 
 from _dbus_bindings import validate_object_path
@@ -362,3 +362,45 @@ class Double(_DBusTypeMixin, float):
 
     def __new__(cls, value=0.0, variant_level=0):
         return super(Double, cls).__new__(cls, value, variant_level)
+
+class Array(_DBusTypeMixin, list):
+    """An array of items of the same type, implemented as a subtype of
+    list.
+
+    As currently implemented, an Array behaves just like a list, but with
+    the addition of a ``signature`` property set by the constructor;
+    conversion of its items to D-Bus types is only done when it's sent
+    in a Message. This might change in future so validation is done earlier.
+    """
+
+    __slots__ = ('_dbus_variant_level', '_signature')
+
+    @property
+    def signature(self):
+        """The D-Bus signature of each element of this Array (a Signature
+        instance), or None if unspecified. Read-only.
+
+        The signature of an Array ``arr`` is given by ``'a' + arr.signature``.
+
+        If None, when the Array is sent over D-Bus, the signature will be
+        guessed from the first element. Try to avoid this if possible.
+        """
+        return self._signature
+
+    def __new__(cls, iterable=(), signature=None, variant_level=0):
+        """"""
+
+        if signature is not None:
+            signature = Signature(signature)
+
+            if len(tuple(signature)) != 1:
+                raise ValueError("There must be exactly one complete type "
+                                 "in an Array's signature parameter")
+
+        self = super(Array, cls).__new__(cls, iterable,
+                                         variant_level=variant_level)
+        self._signature = signature
+        return self
+
+    def __init__(self, iterable=(), signature=None, variant_level=0):
+        super(Array, self).__init__(iterable)
