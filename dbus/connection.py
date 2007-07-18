@@ -859,5 +859,5 @@ class Connection(_Connection):
         # We should be the only ones doing anything with messages now, so...
         return HANDLER_RESULT_HANDLED
 
-    def add_message_filter():
+    def add_message_filter(self):
         self._filters.append(filter)
