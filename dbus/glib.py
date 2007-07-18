@@ -31,8 +31,6 @@ equivalent code::
 __docformat__ = 'restructuredtext'
 
 from dbus.mainloop.glib import DBusGMainLoop, threads_init
-import _dbus_glib_bindings
-import _dbus_bindings
 
 init_threads = threads_init
 

@@ -26,8 +26,8 @@ __docformat__ = 'restructuredtext'
 
 import inspect
 
-import _dbus_bindings
-
+from dbus import validate_interface_name, Signature, validate_member_name
+from dbus.lowlevel import SignalMessage
 from dbus.exceptions import DBusException
 
 
@@ -134,7 +134,7 @@ def method(dbus_interface, in_signature=None, out_signature=None,
 
             :Since: 0.80.0
     """
-    _dbus_bindings.validate_interface_name(dbus_interface)
+    validate_interface_name(dbus_interface)
 
     def decorator(func):
         args = inspect.getargspec(func)[0]
@@ -160,7 +160,7 @@ def method(dbus_interface, in_signature=None, out_signature=None,
             args.remove(connection_keyword)
 
         if in_signature:
-            in_sig = tuple(_dbus_bindings.Signature(in_signature))
+            in_sig = tuple(Signature(in_signature))
 
             if len(in_sig) > len(args):
                 raise ValueError, 'input signature is longer than the number of arguments taken'
@@ -236,7 +236,7 @@ def signal(dbus_interface, signature=None, path_keyword=None,
 
             :Since: 0.82.0
     """
-    _dbus_bindings.validate_interface_name(dbus_interface)
+    validate_interface_name(dbus_interface)
 
     if path_keyword is not None:
         from warnings import warn
@@ -251,7 +251,7 @@ def signal(dbus_interface, signature=None, path_keyword=None,
 
     def decorator(func):
         member_name = func.__name__
-        _dbus_bindings.validate_member_name(member_name)
+        validate_member_name(member_name)
 
         def emit_signal(self, *args, **keywords):
             abs_path = None
@@ -283,7 +283,7 @@ def signal(dbus_interface, signature=None, path_keyword=None,
                 else:
                     object_path = abs_path
 
-                message = _dbus_bindings.SignalMessage(object_path,
+                message = SignalMessage(object_path,
                                                        dbus_interface,
                                                        member_name)
                 message.append(signature=signature, *args)
@@ -302,7 +302,7 @@ def signal(dbus_interface, signature=None, path_keyword=None,
                     raise ValueError('function has no argument "%s"' % keyword)
 
         if signature:
-            sig = tuple(_dbus_bindings.Signature(signature))
+            sig = tuple(Signature(signature))
 
             if len(sig) > len(args):
                 raise ValueError, 'signal signature is longer than the number of arguments provided'

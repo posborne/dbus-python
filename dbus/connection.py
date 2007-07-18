@@ -26,15 +26,15 @@ except ImportError:
     import dummy_thread as thread
 import weakref
 
-from _dbus_bindings import Connection as _Connection, ErrorMessage, \
-                           MethodCallMessage, MethodReturnMessage, \
+from _dbus_bindings import Connection as _Connection, \
                            LOCAL_PATH, LOCAL_IFACE, \
                            validate_interface_name, validate_member_name,\
                            validate_bus_name, validate_object_path,\
                            validate_error_name, \
-                           HANDLER_RESULT_NOT_YET_HANDLED, \
-                           UTF8String, SignalMessage
+                           UTF8String
 from dbus.exceptions import DBusException
+from dbus.lowlevel import ErrorMessage, MethodCallMessage, SignalMessage, \
+                          MethodReturnMessage, HANDLER_RESULT_NOT_YET_HANDLED
 from dbus.proxies import ProxyObject
 
 

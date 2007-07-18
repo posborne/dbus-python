@@ -29,7 +29,6 @@ from _dbus_bindings import validate_interface_name, validate_member_name,\
                            DBUS_START_REPLY_SUCCESS, \
                            DBUS_START_REPLY_ALREADY_RUNNING, \
                            BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE,\
-                           HANDLER_RESULT_NOT_YET_HANDLED, \
                            NAME_FLAG_ALLOW_REPLACEMENT, \
                            NAME_FLAG_DO_NOT_QUEUE, \
                            NAME_FLAG_REPLACE_EXISTING, \
@@ -42,6 +41,7 @@ from _dbus_bindings import validate_interface_name, validate_member_name,\
                            REQUEST_NAME_REPLY_PRIMARY_OWNER
 from dbus.connection import Connection
 from dbus.exceptions import DBusException
+from dbus.lowlevel import HANDLER_RESULT_NOT_YET_HANDLED
 
 
 _NAME_OWNER_CHANGE_MATCH = ("type='signal',sender='%s',"
