@@ -48,12 +48,6 @@ extern PyObject *dbus_py_variant_level_const;
 extern PyObject *dbus_py_signature_const;
 extern PyObject *dbus_py__dbus_object_path__const;
 
-typedef struct {
-    PyDictObject super;
-    PyObject *signature;
-    long variant_level;
-} DBusPyDictionary;
-
 PyObject *dbus_py_variant_level_getattro(PyObject *obj, PyObject *name);
 dbus_bool_t dbus_py_variant_level_set(PyObject *obj, long variant_level);
 void dbus_py_variant_level_clear(PyObject *obj);

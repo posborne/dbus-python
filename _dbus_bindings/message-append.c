@@ -334,7 +334,7 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         if (DBusPyArray_Check(obj)) {
             PyObject *sig = PyObject_GetAttr(obj, dbus_py_signature_const);
 
-            if (PyString_Check(sig)) {
+            if (sig != NULL && PyString_Check(sig)) {
                 PyString_Concat(&ret, sig);
                 return ret;
             }
@@ -356,16 +356,16 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         Py_ssize_t pos = 0;
         PyObject *ret = NULL;
 
-        if (DBusPyDictionary_Check(obj) &&
-            ((DBusPyDictionary *)obj)->signature != NULL &&
-            PyString_Check(((DBusPyDictionary *)obj)->signature)) {
-            const char *sig = PyString_AS_STRING(((DBusPyDictionary *)obj)->signature);
+        if (DBusPyDictionary_Check(obj)) {
+            PyObject *sig = PyObject_GetAttr(obj, dbus_py_signature_const);
 
-            return PyString_FromFormat((DBUS_TYPE_ARRAY_AS_STRING
-                                        DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
-                                        "%s"
-                                        DBUS_DICT_ENTRY_END_CHAR_AS_STRING),
-                                       sig);
+            if (sig != NULL && PyString_Check(sig)) {
+                return PyString_FromFormat((DBUS_TYPE_ARRAY_AS_STRING
+                            DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
+                            "%s"
+                            DBUS_DICT_ENTRY_END_CHAR_AS_STRING),
+                        PyString_AS_STRING(sig));
+            }
         }
         if (!PyDict_Next(obj, &pos, &key, &value)) {
             /* No items, so fail. Or should we guess "a{vv}"? */

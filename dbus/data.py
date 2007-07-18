@@ -29,9 +29,7 @@ __all__ = ('ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
 
 from sys import maxint
 
-from _dbus_bindings import Signature, \
-                           Dictionary, \
-                           Struct
+from _dbus_bindings import Signature, Struct
 
 from _dbus_bindings import validate_object_path
 
@@ -404,3 +402,53 @@ class Array(_DBusTypeMixin, list):
 
     def __init__(self, iterable=(), signature=None, variant_level=0):
         super(Array, self).__init__(iterable)
+
+class Dictionary(_DBusTypeMixin, dict):
+    """A mapping from keys of consistent types to values of consistent types,
+    implemented as a subtype of dict.
+
+    As currently implemented, a Dictionary behaves just like a dict, but with
+    the addition of a ``signature`` property set by the constructor;
+    conversion of its items to D-Bus types is only done when it's sent
+    in a Message. This might change in future so validation is done earlier.
+    """
+
+    __slots__ = ('_dbus_variant_level', '_signature')
+
+    @property
+    def signature(self):
+        """The D-Bus signature of each pair in this Dictionary (a Signature
+        instance), or None if unspecified. Read-only.
+
+        The signature of a Dictionary ``d`` is given by
+        ``'a{' + d.signature + '}'``.
+
+        If None, when the Dictionary is sent over D-Bus, the signature will be
+        guessed from an arbitrarily chosen element. Try to avoid this if
+        possible.
+        """
+        return self._signature
+
+    def __new__(cls, mapping_or_iterable=(), signature=None, variant_level=0):
+        """"""
+
+        if signature is not None:
+            signature = Signature(signature)
+
+            if len(tuple(signature)) != 2:
+                raise ValueError("There must be exactly two complete types "
+                                 "in a Dictionary's signature parameter")
+
+            # FIXME: there should be a better way to do this
+            if signature[0] not in 'ybnhiutxdsog':
+                raise ValueError("The key type in a Dictionary's signature "
+                                 "must be a primitive type")
+
+        self = super(Dictionary, cls).__new__(cls, mapping_or_iterable,
+                                              variant_level=variant_level)
+        self._signature = signature
+        return self
+
+    def __init__(self, mapping_or_iterable=(), signature=None,
+                 variant_level=0):
+        super(Dictionary, self).__init__(mapping_or_iterable)
