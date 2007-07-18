@@ -32,13 +32,13 @@ except ImportError:
     import dummy_thread as thread
 
 import _dbus_bindings
-from dbus import SessionBus
+from dbus import SessionBus, validate_bus_name, validate_object_path
 from dbus.data import Struct, Signature
+from dbus.decorators import method, signal
 from dbus.exceptions import DBusException, \
                             NameExistsException, \
                             UnknownMethodException
-from dbus.decorators import method
-from dbus.decorators import signal
+from dbus.lowlevel import ErrorMessage, MethodReturnMessage
 from dbus.proxies import LOCAL_PATH
 
 
@@ -101,8 +101,7 @@ class BusName(object):
                 services waiting for the requested name if another service
                 already holds it.
         """
-        _dbus_bindings.validate_bus_name(name, allow_well_known=True,
-                                         allow_unique=False)
+        validate_bus_name(name, allow_well_known=True, allow_unique=False)
 
         # if necessary, get default bus (deprecated)
         if bus is None:
@@ -244,7 +243,7 @@ def _method_lookup(self, method_name, dbus_interface):
 
 
 def _method_reply_return(connection, message, method_name, signature, *retval):
-    reply = _dbus_bindings.MethodReturnMessage(message)
+    reply = MethodReturnMessage(message)
     try:
         reply.append(signature=signature, *retval)
     except Exception, e:
@@ -274,7 +273,7 @@ def _method_reply_error(connection, message, exception):
         name = 'org.freedesktop.DBus.Python.%s.%s' % (exception.__module__, exception.__class__.__name__)
 
     contents = traceback.format_exc()
-    reply = _dbus_bindings.ErrorMessage(message, name, contents)
+    reply = ErrorMessage(message, name, contents)
 
     connection.send_message(reply)
 
@@ -432,7 +431,7 @@ class Object(Interface):
                 Object's lifetime (unless it's released manually).
         """
         if object_path is not None:
-            _dbus_bindings.validate_object_path(object_path)
+            validate_object_path(object_path)
 
         if isinstance(conn, BusName):
             # someone's using the old API; don't gratuitously break them

@@ -26,10 +26,10 @@ __docformat__ = 'restructuredtext'
 
 import inspect
 
-import _dbus_bindings
-
+from dbus import validate_interface_name, validate_member_name
 from dbus.data import Signature
 from dbus.exceptions import DBusException
+from dbus.lowlevel import SignalMessage
 
 
 def method(dbus_interface, in_signature=None, out_signature=None,
@@ -135,7 +135,7 @@ def method(dbus_interface, in_signature=None, out_signature=None,
 
             :Since: 0.80.0
     """
-    _dbus_bindings.validate_interface_name(dbus_interface)
+    validate_interface_name(dbus_interface)
 
     def decorator(func):
         args = inspect.getargspec(func)[0]
@@ -237,7 +237,7 @@ def signal(dbus_interface, signature=None, path_keyword=None,
 
             :Since: 0.82.0
     """
-    _dbus_bindings.validate_interface_name(dbus_interface)
+    validate_interface_name(dbus_interface)
 
     if path_keyword is not None:
         from warnings import warn
@@ -252,7 +252,7 @@ def signal(dbus_interface, signature=None, path_keyword=None,
 
     def decorator(func):
         member_name = func.__name__
-        _dbus_bindings.validate_member_name(member_name)
+        validate_member_name(member_name)
 
         def emit_signal(self, *args, **keywords):
             abs_path = None
@@ -284,7 +284,7 @@ def signal(dbus_interface, signature=None, path_keyword=None,
                 else:
                     object_path = abs_path
 
-                message = _dbus_bindings.SignalMessage(object_path,
+                message = SignalMessage(object_path,
                                                        dbus_interface,
                                                        member_name)
                 message.append(signature=signature, *args)

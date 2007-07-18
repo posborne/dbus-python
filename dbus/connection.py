@@ -35,10 +35,10 @@ from _dbus_bindings import DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE \
         as _INTROSPECT_DOCTYPE
 from dbus.data import UTF8String, ObjectPath
 from dbus.exceptions import DBusException
-from dbus.lowlevel import ErrorMessage, MethodCallMessage, \
-                          MethodReturnMessage, SignalMessage, \
-                           HANDLER_RESULT_HANDLED, \
-                           HANDLER_RESULT_NOT_YET_HANDLED
+from dbus.lowlevel import ErrorMessage, MethodCallMessage, SignalMessage, \
+                          MethodReturnMessage, \
+                          HANDLER_RESULT_NOT_YET_HANDLED, \
+                          HANDLER_RESULT_HANDLED
 from dbus.proxies import ProxyObject
 
 

@@ -38,12 +38,10 @@ from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH,\
                            validate_bus_name, validate_object_path,\
                            BUS_SESSION, BUS_SYSTEM, BUS_STARTER,\
                            DBUS_START_REPLY_SUCCESS, \
-                           DBUS_START_REPLY_ALREADY_RUNNING, \
-                           SignalMessage,\
-                           HANDLER_RESULT_NOT_YET_HANDLED,\
-                           HANDLER_RESULT_HANDLED
+                           DBUS_START_REPLY_ALREADY_RUNNING
 from dbus.bus import BusConnection
 from dbus.data import UTF8String
+from dbus.lowlevel import SignalMessage
 
 try:
     import thread
