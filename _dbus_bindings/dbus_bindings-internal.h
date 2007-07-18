@@ -92,6 +92,7 @@ PyObject *DBusPySignature_FromStringObject(PyObject *o, int allow_none);
 PyObject *DBusPySignature_FromStringAndSize(const char *str, Py_ssize_t size);
 PyObject *DBusPySignature_FromStringAndVariantLevel(const char *str,
                                                     long variant_level);
+PyObject *dbus_py_get_signature_iter(PyObject *unused, PyObject *sig);
 
 int DBusPyBoolean_Check(PyObject *o);
 PyObject *DBusPyBoolean_New(int is_true, long variant_level);

@@ -146,6 +146,25 @@ validate_object_path(PyObject *unused UNUSED, PyObject *args)
     Py_RETURN_NONE;
 }
 
+PyDoc_STRVAR(validate_signature__doc__,
+"validate_signature(signature)\n\n"
+"Raise ValueError if the given string is not a valid signature.\n");
+
+static PyObject *
+validate_signature(PyObject *unused UNUSED, PyObject *args)
+{
+    const char *s;
+
+    if (!PyArg_ParseTuple(args, "s:validate_signature", &s)) {
+        return NULL;
+    }
+    if (!dbus_signature_validate(s, NULL)) {
+        PyErr_SetString(PyExc_ValueError, "Corrupt type signature");
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
 /* Global functions - main loop =====================================*/
 
 /* The main loop if none is passed to the constructor */
@@ -221,11 +240,13 @@ static PyMethodDef module_functions[] = {
     ENTRY(validate_member_name, METH_VARARGS),
     ENTRY(validate_bus_name, METH_VARARGS|METH_KEYWORDS),
     ENTRY(validate_object_path, METH_VARARGS),
+    ENTRY(validate_signature, METH_VARARGS),
     ENTRY(set_default_main_loop, METH_VARARGS),
     ENTRY(get_default_main_loop, METH_NOARGS),
     /* validate_error_name is just implemented as validate_interface_name */
     {"validate_error_name", validate_interface_name,
      METH_VARARGS, validate_error_name__doc__},
+    {"get_signature_iter", dbus_py_get_signature_iter, METH_O, ""},
 #undef ENTRY
     {NULL, NULL, 0, NULL}
 };

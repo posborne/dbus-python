@@ -160,7 +160,7 @@ def method(dbus_interface, in_signature=None, out_signature=None,
             args.remove(connection_keyword)
 
         if in_signature:
-            in_sig = tuple(_dbus_bindings.Signature(in_signature))
+            in_sig = tuple(Signature(in_signature))
 
             if len(in_sig) > len(args):
                 raise ValueError, 'input signature is longer than the number of arguments taken'
@@ -302,7 +302,7 @@ def signal(dbus_interface, signature=None, path_keyword=None,
                     raise ValueError('function has no argument "%s"' % keyword)
 
         if signature:
-            sig = tuple(_dbus_bindings.Signature(signature))
+            sig = tuple(Signature(signature))
 
             if len(sig) > len(args):
                 raise ValueError, 'signal signature is longer than the number of arguments provided'

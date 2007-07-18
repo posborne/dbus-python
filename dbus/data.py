@@ -29,9 +29,8 @@ __all__ = ('ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
 
 from sys import maxint
 
-from _dbus_bindings import Signature
-
-from _dbus_bindings import validate_object_path
+from _dbus_bindings import validate_object_path, validate_signature, \
+                           get_signature_iter
 
 
 class _DBusTypeMixin(object):
@@ -403,6 +402,26 @@ class Array(_DBusTypeMixin, list):
     def __init__(self, iterable=(), signature=None, variant_level=0):
         super(Array, self).__init__(iterable)
 
+def TypedArray(inner_signature):
+    inner_signature = Signature(inner_signature)
+
+    class Subclass(Array):
+        signature = inner_signature
+
+        def __new__(self, iterable=(), variant_level=0):
+            return super(Subclass, cls).__new__(cls, iterable,
+                                        signature=inner_signature,
+                                        variant_level=variant_level)
+
+        def __init__(self, iterable=(), variant_level=0):
+            return super(Subclass, cls).__new__(cls, iterable,
+                                        signature=inner_signature,
+                                        variant_level=variant_level)
+
+    Subclass.__name__ = "TypedArray('%s')" % inner_signature
+    return Subclass
+
+
 class Dictionary(_DBusTypeMixin, dict):
     """A mapping from keys of consistent types to values of consistent types,
     implemented as a subtype of dict.
@@ -453,6 +472,26 @@ class Dictionary(_DBusTypeMixin, dict):
                  variant_level=0):
         super(Dictionary, self).__init__(mapping_or_iterable)
 
+def TypedDictionary(inner_signature):
+    inner_signature = Signature(inner_signature)
+
+    class Subclass(Dictionary):
+        signature = inner_signature
+
+        def __new__(self, iterable=(), variant_level=0):
+            return super(Subclass, cls).__new__(cls, iterable,
+                                        signature=inner_signature,
+                                        variant_level=variant_level)
+
+        def __init__(self, iterable=(), variant_level=0):
+            return super(Subclass, cls).__new__(cls, iterable,
+                                        signature=inner_signature,
+                                        variant_level=variant_level)
+
+    Subclass.__name__ = "TypedDictionary('%s')" % inner_signature
+    return Subclass
+
+
 class Struct(_DBusTypeMixin, tuple):
     """A structure containing items of fixed, possibly different types.
 
@@ -486,3 +525,35 @@ class Struct(_DBusTypeMixin, tuple):
                                           variant_level=variant_level)
         self._signature = signature
         return self
+
+def TypedStruct(inner_signature):
+    inner_signature = Signature(inner_signature)
+
+    class Subclass(Struct):
+        signature = inner_signature
+
+        def __new__(self, iterable=(), variant_level=0):
+            return super(Subclass, cls).__new__(cls, iterable,
+                                        signature=inner_signature,
+                                        variant_level=variant_level)
+
+        def __init__(self, iterable=(), variant_level=0):
+            return super(Subclass, cls).__new__(cls, iterable,
+                                        signature=inner_signature,
+                                        variant_level=variant_level)
+
+    Subclass.__name__ = "TypedStruct('%s')" % inner_signature
+    return Subclass
+
+
+class Signature(_DBusTypeMixin, str):
+    """A string subclass whose values are restricted to valid D-Bus signatures.
+    When iterated over, instead of individual characters it produces
+    Signature instances representing single complete types."""
+
+    def __new__(cls, signature, variant_level=0):
+        validate_signature(signature)
+        return super(Signature, cls).__new__(cls, signature, variant_level)
+
+    def __iter__(self):
+        return get_signature_iter(self)

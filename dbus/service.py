@@ -33,7 +33,7 @@ except ImportError:
 
 import _dbus_bindings
 from dbus import SessionBus
-from dbus.data import Struct
+from dbus.data import Struct, Signature
 from dbus.exceptions import DBusException, \
                             NameExistsException, \
                             UnknownMethodException
@@ -313,15 +313,15 @@ class InterfaceType(type):
             # convert signature into a tuple so length refers to number of
             # types, not number of characters. the length is checked by
             # the decorator to make sure it matches the length of args.
-            in_sig = tuple(_dbus_bindings.Signature(func._dbus_in_signature))
+            in_sig = tuple(Signature(func._dbus_in_signature))
         else:
             # magic iterator which returns as many v's as we need
             in_sig = _VariantSignature()
 
         if func._dbus_out_signature:
-            out_sig = _dbus_bindings.Signature(func._dbus_out_signature)
+            out_sig = Signature(func._dbus_out_signature)
         else:
-            # its tempting to default to _dbus_bindings.Signature('v'), but
+            # its tempting to default to Signature('v'), but
             # for methods that return nothing, providing incorrect
             # introspection data is worse than providing none at all
             out_sig = []
@@ -341,7 +341,7 @@ class InterfaceType(type):
         if func._dbus_signature:
             # convert signature into a tuple so length refers to number of
             # types, not number of characters
-            sig = tuple(_dbus_bindings.Signature(func._dbus_signature))
+            sig = tuple(Signature(func._dbus_signature))
         else:
             # magic iterator which returns as many v's as we need
             sig = _VariantSignature()
@@ -639,7 +639,7 @@ class Object(Interface):
             keywords = {}
 
             if parent_method._dbus_out_signature is not None:
-                signature = _dbus_bindings.Signature(parent_method._dbus_out_signature)
+                signature = Signature(parent_method._dbus_out_signature)
             else:
                 signature = None
 
