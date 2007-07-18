@@ -28,6 +28,7 @@ import inspect
 
 import _dbus_bindings
 
+from dbus.data import Signature
 from dbus.exceptions import DBusException
 
 
