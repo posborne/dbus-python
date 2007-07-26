@@ -356,7 +356,7 @@ class TestDBusBindings(unittest.TestCase):
         for (name, succeed) in test:
             try:
                 print "requesting %s" % name
-                busname = dbus.service.BusName(name)
+                busname = dbus.service.BusName(name, dbus.SessionBus())
             except Exception, e:
                 print "%s:\n%s" % (e.__class__, e)
                 self.assert_(not succeed, 'did not expect registering bus name %s to fail' % name)
