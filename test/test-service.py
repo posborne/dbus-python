@@ -22,6 +22,7 @@
 import sys
 import os
 import logging
+from time import sleep
 
 builddir = os.path.normpath(os.environ["DBUS_TOP_BUILDDIR"])
 pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
@@ -278,6 +279,18 @@ class TestObject(dbus.service.Object, TestInterface):
     def MultipleReturnWithoutSignature(self):
         # https://bugs.freedesktop.org/show_bug.cgi?id=10174
         return dbus.String('abc'), dbus.Int32(123)
+
+    @dbus.service.method(IFACE, in_signature='', out_signature='')
+    def BlockFor500ms(self):
+        sleep(0.5)
+
+    @dbus.service.method(IFACE, in_signature='', out_signature='',
+                         async_callbacks=('return_cb', 'raise_cb'))
+    def AsyncWait500ms(self, return_cb, raise_cb):
+        def return_from_async_wait():
+            return_cb()
+            return False
+        gobject.timeout_add(500, return_from_async_wait)
 
 session_bus = dbus.SessionBus()
 global_name = dbus.service.BusName(NAME, bus=session_bus)

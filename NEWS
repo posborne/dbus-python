@@ -14,6 +14,19 @@ Roadmap:
 * Implement message serialization and deserialization in pure Python
   (may need to be conditional on having dbus >= 1.1)
 
+D-Bus Python Bindings 0.82.2 (unreleased)
+=========================================
+
+Fixes:
+
+* Connection.call_async() measures timeouts in seconds, as was always intended.
+  This means that calls through a proxy object with a reply_handler and
+  error_handler will measure the timeout in seconds too. call_blocking()
+  already used seconds, and still does. Existing code using timeouts for
+  async calls (which would only have worked with 0.82.1) will have to adjust
+  the timeout length. This applies to the OLPC Sugar environment as used in
+  Trial 2, for instance.
+
 D-Bus Python Bindings 0.82.1 (2007-07-11)
 =========================================
 
