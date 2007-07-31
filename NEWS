@@ -27,6 +27,10 @@ Fixes:
   the timeout length. This applies to the OLPC Sugar environment as used in
   Trial 2, for instance.
 
+* Building against Python 2.4 on non-Debian-derived distributions, or a
+  non-default Python version on Gentoo, should work again (revenge
+  of fd.o #11282, thanks Eyal Ben David).
+
 D-Bus Python Bindings 0.82.1 (2007-07-11)
 =========================================
 
