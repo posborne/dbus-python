@@ -564,7 +564,7 @@ class Connection(_Connection):
                 error_handler(TypeError('Unexpected type for reply '
                                         'message: %r' % message))
         return self.send_message_with_reply(message, msg_reply_handler,
-                                        timeout/1000.0,
+                                        timeout,
                                         require_main_loop=require_main_loop)
 
     def call_blocking(self, bus_name, object_path, dbus_interface, method,

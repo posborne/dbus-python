@@ -424,6 +424,46 @@ class TestDBusBindings(unittest.TestCase):
         #self.assertEquals(rel, '/Badger/Mushroom')
         self.assertEquals(unique_name, obj.bus_name)
 
+    def testTimeoutSync(self):
+        self.assert_(self.iface.BlockFor500ms(timeout=1.0) is None)
+        self.assertRaises(dbus.DBusException,
+                          lambda: self.iface.BlockFor500ms(timeout=0.25))
+
+    def testTimeoutAsyncClient(self):
+        loop = gobject.MainLoop()
+        passes = []
+        fails = []
+        def correctly_returned():
+            passes.append('1000')
+            if len(passes) + len(fails) >= 2:
+                loop.quit()
+        def correctly_failed(exc):
+            passes.append('250')
+            if len(passes) + len(fails) >= 2:
+                loop.quit()
+        def incorrectly_returned():
+            fails.append('250')
+            if len(passes) + len(fails) >= 2:
+                loop.quit()
+        def incorrectly_failed(exc):
+            fails.append('1000')
+            if len(passes) + len(fails) >= 2:
+                loop.quit()
+        self.iface.BlockFor500ms(timeout=1.0,
+                                 reply_handler=correctly_returned,
+                                 error_handler=incorrectly_failed)
+        self.iface.BlockFor500ms(timeout=0.25,
+                                 reply_handler=incorrectly_returned,
+                                 error_handler=correctly_failed)
+        loop.run()
+        self.assertEquals(passes, ['250', '1000'])
+        self.assertEquals(fails, [])
+
+    def testTimeoutAsyncService(self):
+        self.assert_(self.iface.AsyncWait500ms(timeout=1.0) is None)
+        self.assertRaises(dbus.DBusException,
+                          lambda: self.iface.AsyncWait500ms(timeout=0.25))
+
 """ Remove this for now
 class TestDBusPythonToGLibBindings(unittest.TestCase):
     def setUp(self):
