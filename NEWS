@@ -1,6 +1,15 @@
 D-Bus Python Bindings 0.82.2 (unreleased)
 =========================================
 
+Incompatibility with 0.82.1:
+
+* If you pass the timeout argument to call_async or an asynchronous proxy
+  method call and expect it to be in milliseconds, you should change the
+  argument to be in seconds, and require dbus-python >= 0.82.2.
+
+  This feature didn't work at all in versions prior to 0.82.1, so any code
+  that works with 0.82.0 or earlier is unaffected.
+
 Features:
 
 * @dbus.service.method supports a rel_path_keyword argument for the benefit
@@ -13,13 +22,10 @@ Features:
 
 Fixes:
 
-* Connection.call_async() measures timeouts in seconds, as was always intended.
+* As mentioned under "Incompatibilities" above, Connection.call_async()
+  measures timeouts in seconds, as was always intended.
   This means that calls through a proxy object with a reply_handler and
-  error_handler will measure the timeout in seconds too. call_blocking()
-  already used seconds, and still does. Existing code using timeouts for
-  async calls (which would only have worked with 0.82.1) will have to adjust
-  the timeout length. This applies to the OLPC Sugar environment as used in
-  Trial 2, for instance.
+  error_handler will measure the timeout in seconds too.
 
 * Introspect() now works on objects exported in more than one location.
   (fd.o #11794)
