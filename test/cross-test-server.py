@@ -258,19 +258,21 @@ class TestsImpl(dbus.service.Object):
         tested_things.add(INTERFACE_TESTS + '.Invert')
         return not input
 
-    @dbus.service.method(INTERFACE_TESTS, 'st', '', utf8_strings=True)
-    def Trigger(self, object, parameter):
+    @dbus.service.method(INTERFACE_TESTS, 'st', '', utf8_strings=True,
+                         connection_keyword='conn')
+    def Trigger(self, object, parameter, conn=None):
         assert isinstance(object, str)
         logger.info('method/signal: client wants me to emit Triggered(%r) from %r', parameter, object)
         tested_things.add(INTERFACE_TESTS + '.Trigger')
-        gobject.idle_add(lambda: self.emit_Triggered_from(object, parameter))
+        gobject.idle_add(lambda: self.emit_Triggered_from(conn, object,
+                                                          parameter))
     
-    def emit_Triggered_from(self, object, parameter):
+    def emit_Triggered_from(self, conn, object, parameter):
         assert isinstance(object, str)
         logger.info('method/signal: Emitting Triggered(%r) from %r', parameter, object)
         obj = objects.get(object, None)
         if obj is None:
-            obj = SignalTestsImpl(dbus.service.BusName(CROSS_TEST_BUS_NAME, SessionBus()), object)
+            obj = SignalTestsImpl(conn, object)
             objects[object] = obj
         obj.Triggered(parameter)
         logger.info('method/signal: Emitted Triggered')
@@ -300,7 +302,7 @@ class Server(SingleTestsImpl, TestsImpl, SignalTestsImpl):
 
 if __name__ == '__main__':
     bus = SessionBus()
-    bus_name = BusName(CROSS_TEST_BUS_NAME, SessionBus())
+    bus_name = BusName(CROSS_TEST_BUS_NAME, bus=bus)
     loop = gobject.MainLoop()
     obj = Server(bus_name, CROSS_TEST_PATH, loop.quit)
     objects[CROSS_TEST_PATH] = obj

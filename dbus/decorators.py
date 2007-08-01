@@ -36,7 +36,8 @@ def method(dbus_interface, in_signature=None, out_signature=None,
         async_callbacks=None,
         sender_keyword=None, path_keyword=None, destination_keyword=None,
         message_keyword=None, connection_keyword=None,
-        utf8_strings=False, byte_arrays=False):
+        utf8_strings=False, byte_arrays=False,
+        rel_path_keyword=None):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to be exported on the D-Bus.
 
@@ -87,7 +88,19 @@ def method(dbus_interface, in_signature=None, out_signature=None,
             case of "fallback paths" you'll usually want to use the object
             path in the method's implementation.
 
+            For fallback objects, `rel_path_keyword` (new in 0.82.2) is
+            likely to be more useful.
+
             :Since: 0.80.0?
+
+        `rel_path_keyword` : str or None
+            If not None (the default), the decorated method will receive
+            the destination object path, relative to the path at which the
+            object was exported, as a keyword argument with this
+            name. For non-fallback objects the relative path will always be
+            '/'.
+
+            :Since: 0.82.2
 
         `destination_keyword` : str or None
             If not None (the default), the decorated method will receive
@@ -151,6 +164,8 @@ def method(dbus_interface, in_signature=None, out_signature=None,
 
         if sender_keyword:
             args.remove(sender_keyword)
+        if rel_path_keyword:
+            args.remove(rel_path_keyword)
         if path_keyword:
             args.remove(path_keyword)
         if destination_keyword:
@@ -175,6 +190,7 @@ def method(dbus_interface, in_signature=None, out_signature=None,
         func._dbus_out_signature = out_signature
         func._dbus_sender_keyword = sender_keyword
         func._dbus_path_keyword = path_keyword
+        func._dbus_rel_path_keyword = rel_path_keyword
         func._dbus_destination_keyword = destination_keyword
         func._dbus_message_keyword = message_keyword
         func._dbus_connection_keyword = connection_keyword

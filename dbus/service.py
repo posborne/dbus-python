@@ -32,8 +32,9 @@ except ImportError:
     import dummy_thread as thread
 
 import _dbus_bindings
-from dbus import SessionBus, validate_bus_name, validate_object_path
-from dbus.data import Struct, Signature
+from dbus import SessionBus, validate_bus_name, validate_object_path, \
+                 INTROSPECTABLE_INTERFACE
+from dbus.data import Struct, Signature, ObjectPath
 from dbus.decorators import method, signal
 from dbus.exceptions import DBusException, \
                             NameExistsException, \
@@ -653,6 +654,29 @@ class Object(Interface):
                 keywords[parent_method._dbus_sender_keyword] = message.get_sender()
             if parent_method._dbus_path_keyword:
                 keywords[parent_method._dbus_path_keyword] = message.get_path()
+            if parent_method._dbus_rel_path_keyword:
+                path = message.get_path()
+                rel_path = path
+                for exp in self._locations:
+                    # pathological case: if we're exported in two places,
+                    # one of which is a subtree of the other, then pick the
+                    # subtree by preference (i.e. minimize the length of
+                    # rel_path)
+                    if exp[0] is connection:
+                        if path == exp[1]:
+                            rel_path = '/'
+                            break
+                        if exp[1] == '/':
+                            # we already have rel_path == path at the beginning
+                            continue
+                        if path.startswith(exp[1] + '/'):
+                            # yes we're in this exported subtree
+                            suffix = path[len(exp[1]):]
+                            if len(suffix) < len(rel_path):
+                                rel_path = suffix
+                rel_path = ObjectPath(rel_path)
+                keywords[parent_method._dbus_rel_path_keyword] = rel_path
+
             if parent_method._dbus_destination_keyword:
                 keywords[parent_method._dbus_destination_keyword] = message.get_destination()
             if parent_method._dbus_message_keyword:
@@ -709,13 +733,14 @@ class Object(Interface):
             # send error reply
             _method_reply_error(connection, message, exception)
 
-    @method('org.freedesktop.DBus.Introspectable', in_signature='', out_signature='s')
-    def Introspect(self):
+    @method(INTROSPECTABLE_IFACE, in_signature='', out_signature='s',
+            path_keyword='object_path', connection_keyword='connection')
+    def Introspect(self, object_path, connection):
         """Return a string of XML encoding this object's supported interfaces,
         methods and signals.
         """
         reflection_data = _dbus_bindings.DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE
-        reflection_data += '<node name="%s">\n' % (self._object_path)
+        reflection_data += '<node name="%s">\n' % object_path
 
         interfaces = self._dbus_class_table[self.__class__.__module__ + '.' + self.__class__.__name__]
         for (name, funcs) in interfaces.iteritems():
@@ -729,8 +754,7 @@ class Object(Interface):
 
             reflection_data += '  </interface>\n'
 
-        for name in self._connection.list_exported_child_objects(
-                self._object_path):
+        for name in connection.list_exported_child_objects(object_path):
             reflection_data += '  <node name="%s"/>\n' % name
 
         reflection_data += '</node>\n'

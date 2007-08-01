@@ -74,20 +74,21 @@ class TestInterface(dbus.service.Interface):
         return False
 
 class Fallback(dbus.service.FallbackObject):
-    def __init__(self, bus_name, object_path=OBJECT + '/Fallback'):
-        super(Fallback, self).__init__(bus_name, object_path)
+    def __init__(self, conn, object_path=OBJECT + '/Fallback'):
+        super(Fallback, self).__init__(conn, object_path)
+        self.add_to_connection(conn, object_path + '/Nested')
 
-    @dbus.service.method(IFACE, in_signature='', out_signature='os',
-                         path_keyword='path', # rel_path_keyword='rel',
+    @dbus.service.method(IFACE, in_signature='', out_signature='oos',
+                         path_keyword='path', rel_path_keyword='rel',
                          connection_keyword='conn')
-    def TestPathAndConnKeywords(self, path=None, conn=None):
-        return path, conn.get_unique_name()
+    def TestPathAndConnKeywords(self, path=None, conn=None, rel=None):
+        return path, rel, conn.get_unique_name()
 
     @dbus.service.signal(IFACE, signature='s', rel_path_keyword='rel_path')
     def SignalOneString(self, test, rel_path=None):
         logger.info('SignalOneString(%r) @ %r', test, rel_path)
 
-    # Deprecated
+    # Deprecated usage
     @dbus.service.signal(IFACE, signature='ss', path_keyword='path')
     def SignalTwoStrings(self, test, test2, path=None):
         logger.info('SignalTwoStrings(%r, %r) @ %r', test, test2, path)
@@ -111,10 +112,18 @@ class Fallback(dbus.service.FallbackObject):
             logger.info('Emitting %s from abs %r', signal, path)
             sig('I am', 'a deprecated fallback', path=path)
 
+class MultiPathObject(dbus.service.Object):
+    SUPPORTS_MULTIPLE_OBJECT_PATHS = True
+
 class TestObject(dbus.service.Object, TestInterface):
     def __init__(self, bus_name, object_path=OBJECT):
         dbus.service.Object.__init__(self, bus_name, object_path)
         self._removable = RemovableObject()
+        self._multi = MultiPathObject(bus_name, object_path + '/Multi1')
+        self._multi.add_to_connection(bus_name.get_bus(),
+                                      object_path + '/Multi2')
+        self._multi.add_to_connection(bus_name.get_bus(),
+                                      object_path + '/Multi2/3')
 
     """ Echo whatever is sent
     """
