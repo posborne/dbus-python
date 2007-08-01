@@ -422,17 +422,32 @@ class TestDBusBindings(unittest.TestCase):
     def testFallbackObjectTrivial(self):
         obj = self.bus.get_object(NAME, OBJECT + '/Fallback')
         iface = dbus.Interface(obj, IFACE)
-        path, unique_name = iface.TestPathAndConnKeywords()
+        path, rel, unique_name = iface.TestPathAndConnKeywords()
         self.assertEquals(path, OBJECT + '/Fallback')
-        #self.assertEquals(rel, '/Badger/Mushroom')
+        self.assertEquals(rel, '/')
+        self.assertEquals(unique_name, obj.bus_name)
+
+    def testFallbackObjectNested(self):
+        obj = self.bus.get_object(NAME, OBJECT + '/Fallback/Nested')
+        iface = dbus.Interface(obj, IFACE)
+        path, rel, unique_name = iface.TestPathAndConnKeywords()
+        self.assertEquals(path, OBJECT + '/Fallback/Nested')
+        self.assertEquals(rel, '/')
+        self.assertEquals(unique_name, obj.bus_name)
+
+        obj = self.bus.get_object(NAME, OBJECT + '/Fallback/Nested/Badger/Mushroom')
+        iface = dbus.Interface(obj, IFACE)
+        path, rel, unique_name = iface.TestPathAndConnKeywords()
+        self.assertEquals(path, OBJECT + '/Fallback/Nested/Badger/Mushroom')
+        self.assertEquals(rel, '/Badger/Mushroom')
         self.assertEquals(unique_name, obj.bus_name)
 
     def testFallbackObject(self):
         obj = self.bus.get_object(NAME, OBJECT + '/Fallback/Badger/Mushroom')
         iface = dbus.Interface(obj, IFACE)
-        path, unique_name = iface.TestPathAndConnKeywords()
+        path, rel, unique_name = iface.TestPathAndConnKeywords()
         self.assertEquals(path, OBJECT + '/Fallback/Badger/Mushroom')
-        #self.assertEquals(rel, '/Badger/Mushroom')
+        self.assertEquals(rel, '/Badger/Mushroom')
         self.assertEquals(unique_name, obj.bus_name)
 
     def testTimeoutSync(self):

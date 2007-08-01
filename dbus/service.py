@@ -33,7 +33,7 @@ except ImportError:
 
 import _dbus_bindings
 from dbus import SessionBus, Signature, Struct, validate_bus_name, \
-                 validate_object_path, INTROSPECTABLE_IFACE
+                 validate_object_path, INTROSPECTABLE_IFACE, ObjectPath
 from dbus.decorators import method, signal
 from dbus.exceptions import DBusException, \
                             NameExistsException, \
@@ -653,6 +653,29 @@ class Object(Interface):
                 keywords[parent_method._dbus_sender_keyword] = message.get_sender()
             if parent_method._dbus_path_keyword:
                 keywords[parent_method._dbus_path_keyword] = message.get_path()
+            if parent_method._dbus_rel_path_keyword:
+                path = message.get_path()
+                rel_path = path
+                for exp in self._locations:
+                    # pathological case: if we're exported in two places,
+                    # one of which is a subtree of the other, then pick the
+                    # subtree by preference (i.e. minimize the length of
+                    # rel_path)
+                    if exp[0] is connection:
+                        if path == exp[1]:
+                            rel_path = '/'
+                            break
+                        if exp[1] == '/':
+                            # we already have rel_path == path at the beginning
+                            continue
+                        if path.startswith(exp[1] + '/'):
+                            # yes we're in this exported subtree
+                            suffix = path[len(exp[1]):]
+                            if len(suffix) < len(rel_path):
+                                rel_path = suffix
+                rel_path = ObjectPath(rel_path)
+                keywords[parent_method._dbus_rel_path_keyword] = rel_path
+
             if parent_method._dbus_destination_keyword:
                 keywords[parent_method._dbus_destination_keyword] = message.get_destination()
             if parent_method._dbus_message_keyword:
