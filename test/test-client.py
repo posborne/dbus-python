@@ -118,6 +118,17 @@ class TestDBusBindings(unittest.TestCase):
         print "Introspection test passed"
         self.assert_(True)
 
+    def testMultiPathIntrospection(self):
+        # test introspection on an object exported in multiple places
+        # https://bugs.freedesktop.org/show_bug.cgi?id=11794
+        remote_object = self.bus.get_object(NAME, OBJECT + '/Multi1')
+        remote_object.Introspect(dbus_interface="org.freedesktop.DBus.Introspectable")
+        remote_object = self.bus.get_object(NAME, OBJECT + '/Multi2')
+        remote_object.Introspect(dbus_interface="org.freedesktop.DBus.Introspectable")
+        remote_object = self.bus.get_object(NAME, OBJECT + '/Multi2/3')
+        remote_object.Introspect(dbus_interface="org.freedesktop.DBus.Introspectable")
+        self.assert_(True)
+
     def testPythonTypes(self):
         #test sending python types and getting them back
         print "\n********* Testing Python Types ***********"

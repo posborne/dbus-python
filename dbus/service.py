@@ -33,7 +33,7 @@ except ImportError:
 
 import _dbus_bindings
 from dbus import SessionBus, Signature, Struct, validate_bus_name, \
-                 validate_object_path
+                 validate_object_path, INTROSPECTABLE_IFACE
 from dbus.decorators import method, signal
 from dbus.exceptions import DBusException, \
                             NameExistsException, \
@@ -709,13 +709,14 @@ class Object(Interface):
             # send error reply
             _method_reply_error(connection, message, exception)
 
-    @method('org.freedesktop.DBus.Introspectable', in_signature='', out_signature='s')
-    def Introspect(self):
+    @method(INTROSPECTABLE_IFACE, in_signature='', out_signature='s',
+            path_keyword='object_path', connection_keyword='connection')
+    def Introspect(self, object_path, connection):
         """Return a string of XML encoding this object's supported interfaces,
         methods and signals.
         """
         reflection_data = _dbus_bindings.DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE
-        reflection_data += '<node name="%s">\n' % (self._object_path)
+        reflection_data += '<node name="%s">\n' % object_path
 
         interfaces = self._dbus_class_table[self.__class__.__module__ + '.' + self.__class__.__name__]
         for (name, funcs) in interfaces.iteritems():
@@ -729,8 +730,7 @@ class Object(Interface):
 
             reflection_data += '  </interface>\n'
 
-        for name in self._connection.list_exported_child_objects(
-                self._object_path):
+        for name in connection.list_exported_child_objects(object_path):
             reflection_data += '  <node name="%s"/>\n' % name
 
         reflection_data += '</node>\n'

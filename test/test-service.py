@@ -111,10 +111,18 @@ class Fallback(dbus.service.FallbackObject):
             logger.info('Emitting %s from abs %r', signal, path)
             sig('I am', 'a deprecated fallback', path=path)
 
+class MultiPathObject(dbus.service.Object):
+    SUPPORTS_MULTIPLE_OBJECT_PATHS = True
+
 class TestObject(dbus.service.Object, TestInterface):
     def __init__(self, bus_name, object_path=OBJECT):
         dbus.service.Object.__init__(self, bus_name, object_path)
         self._removable = RemovableObject()
+        self._multi = MultiPathObject(bus_name, object_path + '/Multi1')
+        self._multi.add_to_connection(bus_name.get_bus(),
+                                      object_path + '/Multi2')
+        self._multi.add_to_connection(bus_name.get_bus(),
+                                      object_path + '/Multi2/3')
 
     """ Echo whatever is sent
     """
