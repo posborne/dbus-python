@@ -376,13 +376,12 @@ class Client(SignalTestsImpl):
 
 if __name__ == '__main__':
     # FIXME: should be possible to export objects without a bus name
-    bus_name = BusName('com.example.Argh')
     if 0:
-        client = Client(bus_name, '/Client')
+        client = Client(dbus.SessionBus(), '/Client')
     else:
         # the Java cross test's interpretation is that the client should be
         # at /Test too
-        client = Client(bus_name, '/Test')
+        client = Client(dbus.SessionBus(), '/Test')
     gobject.idle_add(client.run_client)
 
     loop = gobject.MainLoop()
