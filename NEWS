@@ -1,6 +1,16 @@
 D-Bus Python Bindings 0.82.2 (unreleased)
 =========================================
 
+Features:
+
+* @dbus.service.method supports a rel_path_keyword argument for the benefit
+  of fallback objects, which provides the method implementation with the path
+  of the object within the exported subtree. For instance, if you have a
+  fallback object exported at /Fallback, and you call a method that has
+  rel_path_keyword='rel_path' on /Fallback and on /Fallback/Some/Where, the
+  method implementation will be called with rel_path='/' and with
+  rel_path='/Some/Where' respectively. (fd.o #11623)
+
 Fixes:
 
 * Connection.call_async() measures timeouts in seconds, as was always intended.
