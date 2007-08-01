@@ -60,7 +60,7 @@ AC_MSG_RESULT([$enable_html_docs])
 
 AC_MSG_CHECKING([whether you want to build API docs])
 AC_ARG_ENABLE(api-docs,
-AC_HELP_STRING([--enable-api-docs], [Enable API documentation building (requires epydoc 3 and docutils)]), enable_api_docs=$enableval, enable_api_docs=no)
+AC_HELP_STRING([--enable-api-docs], [Enable API documentation building (requires epydoc 3 and docutils)]), enable_api_docs=$enableval, enable_api_docs="if possible")
 AC_MSG_RESULT([$enable_api_docs])
 
 
@@ -81,13 +81,26 @@ fi
 
 if test "${enable_api_docs}" != no; then
   AC_PATH_PROG([EPYDOC], [epydoc])
+  AC_MSG_CHECKING([epydoc 3])
+  if test -n "$EPYDOC"; then
+    EPYDOC_VERSION=`$EPYDOC --version`
+    case "$EPYDOC_VERSION" in
+      *ersion?3*)
+        AC_MSG_RESULT([yes, $EPYDOC_VERSION])
+        ;;
+      *)
+        AC_MSG_RESULT([no, $EPYDOC_VERSION])
+        EPYDOC=
+        ;;
+    esac
+  fi
   if test -z "$EPYDOC"; then
     case "$enable_api_docs" in
       if*possible)
         enable_api_docs=no
         ;;
       *)
-        AC_MSG_ERROR([cannot compile API documentation without epydoc installed])
+        AC_MSG_ERROR([cannot compile API documentation without epydoc 3.0beta1 or newer installed])
         ;;
     esac
   fi
