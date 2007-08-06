@@ -1,6 +1,10 @@
 D-Bus Python Bindings 0.82.3 (unreleased)
 =========================================
 
+Fixes:
+
+* Out-of-tree builds with an absolute $(srcdir) can now build docs and run tests
+
 D-Bus Python Bindings 0.82.2 (2007-08-01)
 =========================================
 
