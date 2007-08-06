@@ -1,3 +1,6 @@
+abs_top_srcdir = @abs_top_srcdir@
+abs_top_builddir = @abs_top_builddir@
+
 ACLOCAL_AMFLAGS = -I m4
 
 # the api, doc, include subdirs don't need their own Makefile.am
@@ -80,8 +83,7 @@ _dbus_bindings/_dbus_bindings.la:
 _dbus_glib_bindings/_dbus_glib_bindings.la:
 	$(MAKE) -C _dbus_glib_bindings
 
-PWD = `pwd`
-APIDOC_PYTHONPATH = $(PWD)/$(top_srcdir):$(PWD)/_dbus_bindings/.libs:$(PWD)/_dbus_glib_bindings/.libs
+APIDOC_PYTHONPATH = $(abs_top_srcdir):$(abs_top_builddir)/_dbus_bindings/.libs:$(abs_top_builddir)/_dbus_glib_bindings/.libs
 
 api api/index.html: $(python_PYTHON) dbus/.doc-needs-rebuild-stamp \
 		    _dbus_bindings/_dbus_bindings.la \

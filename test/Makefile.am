@@ -1,3 +1,6 @@
+abs_top_srcdir = @abs_top_srcdir@
+abs_top_builddir = @abs_top_builddir@
+
 EXTRA_DIST = \
 	     cross-test-client.py \
 	     cross-test-server.py \
@@ -28,11 +31,10 @@ dbus_py_test_la_LDFLAGS = -module -avoid-version \
 dbus_py_test_la_SOURCES = dbus_py_test.c \
 			  $(top_srcdir)/include/dbus-python.h
 
-PWD = `pwd`
-TESTS_ENVIRONMENT = DBUS_TOP_SRCDIR="$(PWD)/$(top_srcdir)" \
-		    DBUS_TOP_BUILDDIR="$(PWD)/$(top_builddir)" \
+TESTS_ENVIRONMENT = DBUS_TOP_SRCDIR="$(abs_top_srcdir)" \
+		    DBUS_TOP_BUILDDIR="$(abs_top_builddir)" \
 		    DBUS_PYTHON_VERSION='$(PACKAGE_VERSION)' \
-		    PYTHONPATH="$(PWD)/.libs:$(PWD)/$(top_srcdir):$(PWD)/$(top_srcdir)/test:$(PWD)/../_dbus_bindings/.libs:$(PWD)/../_dbus_glib_bindings/.libs" \
+		    PYTHONPATH="$(abs_top_builddir)/test/.libs:$(abs_top_srcdir):$(abs_top_srcdir)/test:$(abs_top_builddir)/_dbus_bindings/.libs:$(abs_top_builddir)/_dbus_glib_bindings/.libs" \
 		    PYTHON='$(PYTHON)'
 
 TESTS = run-test.sh
