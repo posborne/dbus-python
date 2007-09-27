@@ -301,6 +301,14 @@ class TestObject(dbus.service.Object, TestInterface):
             return False
         gobject.timeout_add(500, return_from_async_wait)
 
+    @dbus.service.method(IFACE, in_signature='', out_signature='',
+                         async_callbacks=('return_cb', 'raise_cb'))
+    def AsyncRaise(self, return_cb, raise_cb):
+        class Fdo12403Error(dbus.DBusException):
+            _dbus_error_name = 'org.freedesktop.bugzilla.bug12403'
+
+        raise_cb(Fdo12403Error())
+
 session_bus = dbus.SessionBus()
 global_name = dbus.service.BusName(NAME, bus=session_bus)
 object = TestObject(global_name)
