@@ -16,6 +16,11 @@ Deprecations:
 * dbus.Bus(private=True) (use dbus.bus.BusConnection in new code, dbus.Bus
   basically just adds the shared-connection behaviour)
 
+Licensing:
+* Code for which Collabora is the only copyright holder is now under the
+  same permissive MIT/X11 license under which dbus core is being relicensed
+  (this allows everything the old license would have allowed, and more)
+
 D-Bus Python Bindings 0.82.2 (2007-08-01)
 =========================================
 
