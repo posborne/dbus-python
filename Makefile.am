@@ -7,8 +7,13 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = _dbus_bindings _dbus_glib_bindings dbus examples m4 test tools
 
 CLEANFILES =
-EXTRA_DIST = dbus-python.pc.in AUTHORS COPYING ChangeLog \
-	     COPYING.LGPL-2.1 COPYING.GPL-2 COPYING.AFL-2.1
+EXTRA_DIST = \
+	dbus-python.pc.in \
+	AUTHORS \
+	COPYING \
+	ChangeLog \
+	COPYING.GPL-2 \
+	COPYING.AFL-2.1
 # miss out the gconf examples for now - they don't work
 
 pkgconfigdir = $(libdir)/pkgconfig
