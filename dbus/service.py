@@ -582,10 +582,6 @@ class Object(Interface):
         and object path. If no connection or path is specified,
         the object ceases to be accessible via any connection or path.
 
-        It's not currently possible to export an object on more than one
-        connection or with more than one object-path, but this will be
-        supported in future.
-
         :Parameters:
             `connection` : dbus.connection.Connection or None
                 Only remove the object from this Connection. If None,
