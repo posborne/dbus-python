@@ -20,6 +20,23 @@ D-Bus Python Bindings 0.82.3 (unreleased)
 Fixes:
 
 * Out-of-tree builds with an absolute $(srcdir) can now build docs and run tests
+* Closing private dbus.Bus no longer raises KeyError (fd.o #12096)
+* async_err_cb(MyException()) now works (fd.o #12403)
+* dbus.service.Object.remove_from_connection no longer claims that multiple
+  exports aren't possible (fd.o #12432)
+* Setting _dbus_error_name as a class attribute of DBusException subclasses
+  works again
+
+Deprecations:
+
+* dbus.Bus(private=True) (use dbus.bus.BusConnection in new code, dbus.Bus
+  basically just adds the shared-connection behaviour)
+
+Licensing:
+
+* Code for which Collabora is the only copyright holder is now under the
+  same permissive MIT/X11 license under which dbus core is being relicensed
+  (this allows everything the old license would have allowed, and more)
 
 D-Bus Python Bindings 0.82.2 (2007-08-01)
 =========================================

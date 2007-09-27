@@ -455,6 +455,21 @@ class TestDBusBindings(unittest.TestCase):
         self.assertRaises(dbus.DBusException,
                           lambda: self.iface.BlockFor500ms(timeout=0.25))
 
+    def testAsyncRaise(self):
+        self.assertRaises(dbus.DBusException, self.iface.AsyncRaise)
+        try:
+            self.iface.AsyncRaise()
+        except dbus.DBusException, e:
+            self.assert_(e.get_dbus_name() ==
+                         'org.freedesktop.bugzilla.bug12403',
+                         e.get_dbus_name())
+        else:
+            self.assert_(False)
+
+    def testClosePrivateBus(self):
+        # fd.o #12096
+        dbus.Bus(private=True).close()
+
     def testTimeoutAsyncClient(self):
         loop = gobject.MainLoop()
         passes = []

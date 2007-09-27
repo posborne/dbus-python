@@ -72,16 +72,13 @@ class Bus(BusConnection):
                 Connect to the appropriate bus
             `private` : bool
                 If true, never return an existing shared instance, but instead
-                return a private connection
+                return a private connection.
+                :Deprecated: since 0.82.3. Use dbus.bus.BusConnection for
+                    private connections.
             `mainloop` : dbus.mainloop.NativeMainLoop
                 The main loop to use. The default is to use the default
                 main loop if one has been set up, or raise an exception
                 if none has been.
-        :ToDo:
-            - There is currently no way to connect this class to a custom
-              address.
-            - Some of this functionality should be available on
-              peer-to-peer D-Bus connections too.
         :Changed: in dbus-python 0.80:
             converted from a wrapper around a Connection to a Connection
             subclass.
@@ -114,7 +111,7 @@ class Bus(BusConnection):
 
     def close(self):
         t = self._bus_type
-        if self.__class__._shared_instances[t] is self:
+        if self.__class__._shared_instances.get(t) is self:
             del self.__class__._shared_instances[t]
         super(Bus, self).close()
 
