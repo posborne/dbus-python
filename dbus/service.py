@@ -273,7 +273,16 @@ def _method_reply_error(connection, message, exception):
     else:
         name = 'org.freedesktop.DBus.Python.%s.%s' % (exception.__module__, exception.__class__.__name__)
 
-    contents = traceback.format_exc()
+    et, ev, etb = sys.exc_info()
+    if ev is exception:
+        # The exception was actually thrown, so we can get a traceback
+        contents = ''.join(traceback.format_exception(et, ev, etb))
+    else:
+        # We don't have any traceback for it, e.g.
+        #   async_err_cb(MyException('Failed to badger the mushroom'))
+        # see also https://bugs.freedesktop.org/show_bug.cgi?id=12403
+        contents = ''.join(traceback.format_exception_only(exception.__class__,
+            exception))
     reply = ErrorMessage(message, name, contents)
 
     connection.send_message(reply)
