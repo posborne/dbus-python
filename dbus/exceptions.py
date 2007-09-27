@@ -29,7 +29,9 @@ __all__ = ('DBusException', 'MissingErrorHandlerException',
 
 class DBusException(Exception):
     def __init__(self, *args, **kwargs):
-        self._dbus_error_name = kwargs.pop('name', None)
+        name = kwargs.pop('name', None)
+        if name is not None or getattr(self, '_dbus_error_name', None) is None:
+            self._dbus_error_name = name
         if kwargs:
             raise TypeError('DBusException does not take keyword arguments: %s'
                             % ', '.join(kwargs.keys()))
