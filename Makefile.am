@@ -4,7 +4,8 @@ abs_top_builddir = @abs_top_builddir@
 ACLOCAL_AMFLAGS = -I m4
 
 # the api, doc, include subdirs don't need their own Makefile.am
-SUBDIRS = _dbus_bindings _dbus_glib_bindings dbus examples m4 test tools
+# the dbus subdir is handled with non-recursive make because of #12741
+SUBDIRS = _dbus_bindings _dbus_glib_bindings examples m4 test tools
 
 CLEANFILES =
 EXTRA_DIST = \
@@ -16,13 +17,38 @@ EXTRA_DIST = \
 	COPYING.AFL-2.1
 # miss out the gconf examples for now - they don't work
 
+# === dbus package ===
+
+nobase_python_PYTHON = \
+    dbus_bindings.py \
+    dbus/bus.py \
+    dbus/connection.py \
+    dbus/dbus_bindings.py \
+    dbus/_dbus.py \
+    dbus/_version.py \
+    dbus/decorators.py \
+    dbus/exceptions.py \
+    dbus/_expat_introspect_parser.py \
+    dbus/glib.py \
+    dbus/gobject_service.py \
+    dbus/__init__.py \
+    dbus/lowlevel.py \
+    dbus/mainloop/__init__.py \
+    dbus/mainloop/glib.py \
+    dbus/proxies.py \
+    dbus/service.py \
+    dbus/types.py
+
+check_py_sources = $(nobase_python_PYTHON)
+include $(top_srcdir)/tools/check-coding-style.mk
+
+# === Devel stuff ===
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = dbus-python.pc
 
 dbusincludedir = $(includedir)/dbus-1.0/dbus
 dbusinclude_HEADERS = include/dbus-python.h
-
-python_PYTHON = dbus_bindings.py
 
 # === Tests ===
 
@@ -81,8 +107,6 @@ all: api/index.html
 clean-local:
 	rm -rf api
 
-dbus/.doc-needs-rebuild-stamp:
-	$(MAKE) -C dbus
 _dbus_bindings/_dbus_bindings.la:
 	$(MAKE) -C _dbus_bindings
 _dbus_glib_bindings/_dbus_glib_bindings.la:
@@ -90,7 +114,7 @@ _dbus_glib_bindings/_dbus_glib_bindings.la:
 
 APIDOC_PYTHONPATH = $(abs_top_srcdir):$(abs_top_builddir)/_dbus_bindings/.libs:$(abs_top_builddir)/_dbus_glib_bindings/.libs
 
-api api/index.html: $(python_PYTHON) dbus/.doc-needs-rebuild-stamp \
+api api/index.html: $(nobase_python_PYTHON) \
 		    _dbus_bindings/_dbus_bindings.la \
 		    _dbus_glib_bindings/_dbus_glib_bindings.la
 	rm -rf api
