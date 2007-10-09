@@ -1,5 +1,9 @@
 #! /bin/bash
 
+# Copyright (C) 2003-2005 Red Hat Inc. <http://www.redhat.com/>
+# Copyright (C) 2005 Colin Walters
+# Copyright (C) 2007 Collabora Ltd. <http://www.collabora.co.uk/>
+
 SCRIPTNAME=$0
 WRAPPED_SCRIPT=$1
 shift
