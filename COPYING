@@ -1,13 +1,5 @@
-D-Bus is licensed to you under your choice of the Academic Free
-License version 2.1 (reproduced in the file COPYING.AFL-2.1), or the GNU
-General Public License version 2 (reproduced in the file COPYING.GPL-2).
-
-Some files have been relicensed under the MIT/X11 license, a permissive
-non-copyleft license compatible with both of the licenses above. I plan to
-relicense the rest of the project when approval has been received from all
-copyright holders. The relicensed files are noted in the copyright headers.
-
-The license to be used for new code is as follows:
+As of version 0.82.4, dbus-python is released under the following permissive
+non-copyleft license (the same one used for D-Bus core):
 
 	Permission is hereby granted, free of charge, to any person
 	obtaining a copy of this software and associated documentation
@@ -28,3 +20,5 @@ The license to be used for new code is as follows:
 	WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 	DEALINGS IN THE SOFTWARE.
+
+Copyright holders and licensing are indicated in the source files.

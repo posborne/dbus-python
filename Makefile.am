@@ -108,11 +108,6 @@ all: api/index.html
 clean-local:
 	rm -rf api
 
-_dbus_bindings/_dbus_bindings.la:
-	$(MAKE) -C _dbus_bindings
-_dbus_glib_bindings/_dbus_glib_bindings.la:
-	$(MAKE) -C _dbus_glib_bindings
-
 APIDOC_PYTHONPATH = $(abs_top_srcdir):$(abs_top_builddir)/_dbus_bindings/.libs:$(abs_top_builddir)/_dbus_glib_bindings/.libs
 
 api api/index.html: $(nobase_python_PYTHON) \
