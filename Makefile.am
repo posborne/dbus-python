@@ -12,7 +12,7 @@ EXTRA_DIST = \
 	dbus-python.pc.in \
 	AUTHORS \
 	COPYING \
-	ChangeLog \
+	ChangeLog
 # miss out the gconf examples for now - they don't work
 
 # === dbus package ===
