@@ -1,5 +1,8 @@
 #! /bin/bash
 
+# Copyright (C) 2006 Red Hat Inc. <http://www.redhat.com/>
+# Copyright (C) 2006-2007 Collabora Ltd. <http://www.collabora.co.uk/>
+
 export DBUS_FATAL_WARNINGS=1
 ulimit -c unlimited
 
