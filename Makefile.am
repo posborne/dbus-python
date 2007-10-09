@@ -13,8 +13,6 @@ EXTRA_DIST = \
 	AUTHORS \
 	COPYING \
 	ChangeLog \
-	COPYING.GPL-2 \
-	COPYING.AFL-2.1
 # miss out the gconf examples for now - they don't work
 
 # === dbus package ===
