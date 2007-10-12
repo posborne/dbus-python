@@ -5,16 +5,14 @@ ACLOCAL_AMFLAGS = -I m4
 
 # the api, doc, include subdirs don't need their own Makefile.am
 # the dbus subdir is handled with non-recursive make because of #12741
-SUBDIRS = _dbus_bindings _dbus_glib_bindings examples m4 test tools .
+SUBDIRS = _dbus_bindings _dbus_glib_bindings examples m4 test tools
 
 CLEANFILES =
 EXTRA_DIST = \
 	dbus-python.pc.in \
 	AUTHORS \
 	COPYING \
-	ChangeLog \
-	COPYING.GPL-2 \
-	COPYING.AFL-2.1
+	ChangeLog
 # miss out the gconf examples for now - they don't work
 
 # === dbus package ===
@@ -107,6 +105,11 @@ all: api/index.html
 
 clean-local:
 	rm -rf api
+
+_dbus_bindings/_dbus_bindings.la:
+	$(MAKE) -C _dbus_bindings
+_dbus_glib_bindings/_dbus_glib_bindings.la:
+	$(MAKE) -C _dbus_glib_bindings
 
 APIDOC_PYTHONPATH = $(abs_top_srcdir):$(abs_top_builddir)/_dbus_bindings/.libs:$(abs_top_builddir)/_dbus_glib_bindings/.libs
 
