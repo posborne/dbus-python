@@ -1,3 +1,17 @@
+D-Bus Python Bindings 0.82.4 (unreleased)
+=========================================
+
+Fixes:
+
+* Using non-recursive make for dbus/ directory should fix builds in some
+  environments (fd.o #12741)
+
+Licensing:
+
+* Everything is now under the same MIT/X11 license used for Collabora code in
+  the previous release
+* Added copyright headers to some files that were still missing them
+
 D-Bus Python Bindings 0.82.3 (2007-09-27)
 =========================================
 
