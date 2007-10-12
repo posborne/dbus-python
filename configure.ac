@@ -177,7 +177,6 @@ AC_CONFIG_FILES(
   Makefile
   _dbus_bindings/Makefile
   _dbus_glib_bindings/Makefile
-  dbus/Makefile
   dbus-python.pc
   dbus/_version.py
   examples/Makefile
