@@ -1,8 +1,11 @@
-D-Bus Python Bindings 0.82.4 (unreleased)
+D-Bus Python Bindings 0.82.4 (2007-12-10)
 =========================================
 
 Fixes:
 
+* supplying reply_handler but not error_handler raises
+  MissingReplyHandlerException instead of MissingErrorHandlerException,
+  and vice versa (fd.o #12304, patch from René Neumann)
 * Using non-recursive make for dbus/ directory should fix builds in some
   environments (fd.o #12741)
 
