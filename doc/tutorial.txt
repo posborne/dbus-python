@@ -375,7 +375,11 @@ backwards-compatible code.
 The Qt main loop
 ~~~~~~~~~~~~~~~~
 
-FIXME: describe how to use the Qt event loop too (requires recent pyqt)
+PyQt v4.2 and later includes support for integrating dbus-python with
+the Qt event loop. To connect D-Bus to this main loop, call
+``dbus.mainloop.qt.DBusQtMainLoop`` instead of
+``dbus.mainloop.glib.DBusGMainLoop``. Otherwise the Qt loop is used in
+exactly the same way as the GLib loop.
 
 Making asynchronous calls
 -------------------------
