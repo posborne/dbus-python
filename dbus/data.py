@@ -26,7 +26,6 @@ types module, which is problematic in Scratchbox.
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-Copyright holders and licensing are indicated in the source files.
 __all__ = ('ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
            'Int16', 'UInt16', 'Int32', 'UInt32', 'Int64', 'UInt64',
            'Double', 'String', 'Array', 'Struct', 'Dictionary',
