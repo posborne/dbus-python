@@ -14,11 +14,21 @@ Roadmap:
 * Implement message serialization and deserialization in pure Python
   (may need to be conditional on having dbus >= 1.1)
 
-D-Bus Python Bindings 0.82.4 (unreleased)
+D-Bus Python Bindings 0.82.5 (unreleased)
+=========================================
+
+Features:
+
+Fixes:
+
+D-Bus Python Bindings 0.82.4 (2007-12-10)
 =========================================
 
 Fixes:
 
+* supplying reply_handler but not error_handler raises
+  MissingReplyHandlerException instead of MissingErrorHandlerException,
+  and vice versa (fd.o #12304, patch from René Neumann)
 * Using non-recursive make for dbus/ directory should fix builds in some
   environments (fd.o #12741)
 

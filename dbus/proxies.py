@@ -105,9 +105,9 @@ class _ProxyMethod:
 
         if reply_handler is not None or error_handler is not None:
             if reply_handler is None:
-                raise MissingErrorHandlerException()
-            elif error_handler is None:
                 raise MissingReplyHandlerException()
+            elif error_handler is None:
+                raise MissingErrorHandlerException()
             elif ignore_reply:
                 raise TypeError('ignore_reply and reply_handler cannot be '
                                 'used together')

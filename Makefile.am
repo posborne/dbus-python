@@ -73,6 +73,10 @@ TXT_RSTDOCS = doc/tutorial.txt doc/API_CHANGES.txt doc/HACKING.txt
 RSTDOCS = README NEWS TODO
 dist_doc_DATA = $(TXT_RSTDOCS) $(RSTDOCS)
 
+maintainer-upload:
+	rsync -tvpP --chmod=ugo=r $(DIST_ARCHIVES) $(DIST_ARCHIVES:%=%.asc) \
+	dbus.freedesktop.org:/srv/dbus.freedesktop.org/www/releases/dbus-python/
+
 maintainer-update-website: _maintainer-update-apidocs \
 	_maintainer-update-htmldocs
 
@@ -136,4 +140,5 @@ endif
 
 .PHONY: cross-test-compile cross-test-server cross-test-client \
 	always-rebuild maintainer-update-website \
-	_maintainer-update-apidocs _maintainer-update-htmldocs
+	_maintainer-update-apidocs _maintainer-update-htmldocs \
+	maintainer-upload
