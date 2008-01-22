@@ -42,7 +42,7 @@ from dbus.decorators import method, signal
 from dbus.exceptions import DBusException, \
                             NameExistsException, \
                             UnknownMethodException
-from dbus.lowlevel import ErrorMessage, MethodReturnMessage
+from dbus.lowlevel import ErrorMessage, MethodReturnMessage, MethodCallMessage
 from dbus.proxies import LOCAL_PATH
 
 
@@ -636,6 +636,9 @@ class Object(Interface):
                      'on %r', self, connection)
 
     def _message_cb(self, connection, message):
+        if not isinstance(message, MethodCallMessage):
+            return
+
         try:
             # lookup candidate method and parent method
             method_name = message.get_member()
