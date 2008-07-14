@@ -3,7 +3,7 @@
 from dbus.mainloop.glib import DBusGMainLoop
 
 import dbus
-import dbus.bus
+import dbus.connection
 import dbus.service
 import dbus.server
 
@@ -61,7 +61,7 @@ else:
     address = os.read(pin, 128)
     os.close(pin)
 
-    client = dbus.bus.Connection(address)
+    client = dbus.connection.Connection(address)
     proxy = client.get_object(TestService.NAME, TestService.PATH)
     object = dbus.Interface(proxy, TestService.NAME)
 
