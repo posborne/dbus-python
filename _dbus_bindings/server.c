@@ -527,24 +527,22 @@ dbus_bool_t
 dbus_py_init_server_types(void)
 {
     /* Get a slot to store our weakref on DBus Server */
-printf("%s:%d\n", __func__, __LINE__);
     _server_python_slot = -1;
     if (!dbus_server_allocate_data_slot(&_server_python_slot))
         return FALSE;
-printf("%s:%d\n", __func__, __LINE__);
+
     if (PyType_Ready(&DBusPyServer_Type) < 0)
         return FALSE;
-printf("%s:%d\n", __func__, __LINE__);
+
     return TRUE;
 }
 
 dbus_bool_t
 dbus_py_insert_server_types(PyObject *this_module)
 {
-printf("%s:%d\n", __func__, __LINE__);
     if (PyModule_AddObject(this_module, "Server",
                            (PyObject *)&DBusPyServer_Type) < 0) return FALSE;
-printf("%s:%d\n", __func__, __LINE__);
+
     return TRUE;
 }
 
