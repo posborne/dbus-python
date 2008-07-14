@@ -24,7 +24,7 @@
 __all__ = ('Server', )
 __docformat__ = 'reStructuredText'
 
-from _dbus_bindings import Server as _Server
+from _dbus_bindings import _Server
 from dbus.connection import Connection
 
 class Server(_Server):

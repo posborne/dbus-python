@@ -47,7 +47,8 @@ PyDoc_STRVAR(Server_tp_doc,
 "\n"
 "::\n"
 "\n"
-"   Server(address, mainloop=None, auth_mechanisms=None) -> Server\n"
+"   Server(address, connection_subtype, mainloop=None, auth_mechanisms=None)\n"
+"     -> Server\n"
 );
 
 /* D-Bus Server user data slot, containing an owned reference to either
@@ -66,7 +67,7 @@ DBusPyServer_BorrowDBusServer(PyObject *self)
 
     TRACE(self);
     if (!DBusPyServer_Check(self)) {
-        PyErr_SetString(PyExc_TypeError, "A dbus.Server is required");
+        PyErr_SetString(PyExc_TypeError, "A dbus.server.Server is required");
         return NULL;
     }
     dbs = ((Server *)self)->server;
@@ -499,7 +500,7 @@ struct PyMethodDef DBusPyServer_tp_methods[] = {
 PyTypeObject DBusPyServer_Type = {
     PyObject_HEAD_INIT(NULL)
     0,                      /*ob_size*/
-    "_dbus_bindings.Server",/*tp_name*/
+    "_dbus_bindings._Server",/*tp_name*/
     sizeof(Server),         /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
@@ -558,7 +559,7 @@ dbus_py_init_server_types(void)
 dbus_bool_t
 dbus_py_insert_server_types(PyObject *this_module)
 {
-    if (PyModule_AddObject(this_module, "Server",
+    if (PyModule_AddObject(this_module, "_Server",
                            (PyObject *)&DBusPyServer_Type) < 0) return FALSE;
 
     return TRUE;
