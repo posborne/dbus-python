@@ -364,7 +364,6 @@ static void Server_tp_dealloc(Server *self)
     DBusServer *server = self->server;
     PyObject *et, *ev, *etb;
 
-printf("%s:%d\n", __func__, __LINE__);
     /* avoid clobbering any pending exception */
     PyErr_Fetch(&et, &ev, &etb);
 
