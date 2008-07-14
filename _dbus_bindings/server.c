@@ -192,12 +192,15 @@ out:
  * created. For use by the Server constructor.
  *
  * Raises AssertionError if the DBusServer already has a Server.
+ *
+ * One reference to server is stolen - either the returned DBusPyServer
+ * claims it, or it's unreffed.
  */
 static PyObject *
-DBusPyServer_NewDBusServer(PyTypeObject *cls,
-                           DBusServer *server,
-                           PyObject *mainloop,
-                           PyObject *auth_mechanisms)
+DBusPyServer_NewConsumingDBusServer(PyTypeObject *cls,
+                                    DBusServer *server,
+                                    PyObject *mainloop,
+                                    PyObject *auth_mechanisms)
 {
     Server *self = NULL;
     PyObject *ref;
@@ -338,7 +341,8 @@ printf("%s:%d\n", __func__, __LINE__);
         return NULL;
     }
 
-    self = DBusPyServer_NewDBusServer(cls, server, mainloop, auth_mechanisms);
+    self = DBusPyServer_NewConsumingDBusServer(cls, server, mainloop,
+            auth_mechanisms);
     TRACE(self);
 
     return self;
