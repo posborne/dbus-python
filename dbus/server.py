@@ -31,6 +31,9 @@ class Server(_Server):
     """An opaque object representing a server that listens for connections from
     other applications.
 
+    This class is not useful to instantiate directly: you must subclass it and
+    provide an implementation of the _on_new_connection method.
+
     :Since: 0.82.5
     """
 
@@ -53,6 +56,20 @@ class Server(_Server):
         """
         return super(Server, cls).__new__(cls, address, connection_class,
                 mainloop, auth_mechanisms)
+
+    def _on_new_connection(self, conn):
+        """Respond to the creation of a new Connection.
+
+        :Parameters:
+            `conn` : dbus.connection.Connection
+                A D-Bus connection.
+
+                The type of this parameter is whatever was passed
+                to the Server constructor as the ``connection_class``.
+        """
+        raise NotImplementedError('Subclasses of Server must implement '
+                '_on_new_connection')
+
 
     address      = property(_Server.get_address)
     id           = property(_Server.get_id)
