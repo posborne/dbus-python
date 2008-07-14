@@ -51,7 +51,7 @@ class Server(_Server):
                 Authentication mechanisms to allow. The default is to allow
                 any authentication mechanism supported by ``libdbus``.
         """
-        return super(Server, cls).__new__(address, connection_class,
+        return super(Server, cls).__new__(cls, address, connection_class,
                 mainloop, auth_mechanisms)
 
     address      = property(_Server.get_address)
