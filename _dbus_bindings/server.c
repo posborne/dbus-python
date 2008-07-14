@@ -309,7 +309,8 @@ err:
     DBG("Failed to construct Server from DBusServer at %p", server);
     Py_XDECREF(mainloop);
 //    Py_XDECREF(self);
-//    Py_XDECREF(ref);
+    Py_XDECREF(ref);
+
     if (server) {
         Py_BEGIN_ALLOW_THREADS
         dbus_server_disconnect(server);
