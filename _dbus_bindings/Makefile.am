@@ -24,6 +24,7 @@ _dbus_bindings_la_SOURCES = \
 			    message-internal.h \
 			    module.c \
 			    pending-call.c \
+			    server.c \
 			    signature.c \
 			    string.c \
 			    types-internal.h \

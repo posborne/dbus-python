@@ -140,10 +140,18 @@ extern dbus_bool_t dbus_py_insert_pending_call(PyObject *this_module);
 /* mainloop.c */
 extern dbus_bool_t dbus_py_set_up_connection(PyObject *conn,
                                              PyObject *mainloop);
+extern dbus_bool_t dbus_py_set_up_server(PyObject *server,
+                                         PyObject *mainloop);
 extern PyObject *dbus_py_get_default_main_loop(void);
 extern dbus_bool_t dbus_py_check_mainloop_sanity(PyObject *);
 extern dbus_bool_t dbus_py_init_mainloop(void);
 extern dbus_bool_t dbus_py_insert_mainloop_types(PyObject *);
+
+/* server.c */
+extern PyTypeObject DBusPyServer_Type;
+DEFINE_CHECK(DBusPyServer)
+extern dbus_bool_t dbus_py_init_server_types(void);
+extern dbus_bool_t dbus_py_insert_server_types(PyObject *this_module);
 
 /* validation.c */
 dbus_bool_t dbus_py_validate_bus_name(const char *name,

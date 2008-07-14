@@ -1,6 +1,7 @@
 /* Implementation of main-loop integration for dbus-python.
  *
  * Copyright (C) 2006 Collabora Ltd. <http://www.collabora.co.uk/>
+ * Copyright (C) 2008 Huang Peng <phuang@redhat.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -125,6 +126,24 @@ dbus_py_set_up_connection(PyObject *conn, PyObject *mainloop)
             return FALSE;
         }
         return (nml->set_up_connection_cb)(dbc, nml->data);
+    }
+    PyErr_SetString(PyExc_TypeError,
+                    "A dbus.mainloop.NativeMainLoop instance is required");
+    return FALSE;
+}
+
+dbus_bool_t
+dbus_py_set_up_server(PyObject *server, PyObject *mainloop)
+{
+    if (NativeMainLoop_Check(mainloop)) {
+        /* Native mainloops are allowed to do arbitrary strange things */
+        NativeMainLoop *nml = (NativeMainLoop *)mainloop;
+        DBusServer *dbs = DBusPyServer_BorrowDBusServer(server);
+
+        if (!dbs) {
+            return FALSE;
+        }
+        return (nml->set_up_server_cb)(dbs, nml->data);
     }
     PyErr_SetString(PyExc_TypeError,
                     "A dbus.mainloop.NativeMainLoop instance is required");
