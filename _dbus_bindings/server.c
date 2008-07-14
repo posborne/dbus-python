@@ -232,8 +232,14 @@ DBusPyServer_NewConsumingDBusServer(PyTypeObject *cls,
     /* Change mainloop from a borrowed reference to an owned reference */
     if (!mainloop || mainloop == Py_None) {
         mainloop = dbus_py_get_default_main_loop();
-        if (!mainloop)
+
+        if (!mainloop || mainloop == Py_None) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "To run a D-Bus server, you need to either "
+                            "pass mainloop=... to the constructor or cal "
+                            "dbus.set_default_main_loop(...)");
             goto err;
+        }
     }
     else {
         Py_INCREF(mainloop);
