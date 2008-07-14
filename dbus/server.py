@@ -1,4 +1,5 @@
 # Copyright (C) 2008 Openismus GmbH <http://openismus.com/>
+# Copyright (C) 2008 Collabora Ltd. <http://www.collabora.co.uk/>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -24,6 +25,7 @@ __all__ = ('Server', )
 __docformat__ = 'reStructuredText'
 
 from _dbus_bindings import Server as _Server
+from dbus.connection import Connection
 
 class Server(_Server):
     """An opaque object representing a server that listens for connections from
@@ -31,6 +33,24 @@ class Server(_Server):
 
     :Since: 0.82.5
     """
+
+    def __new__(cls, address, connection_class=Connection,
+        mainloop=None, auth_mechanisms=None):
+        """Construct a new Server.
+
+        :Parameters:
+            `address` : str
+                Listen on this address.
+            `connection_class` : type
+                When new connections come in, instantiate this subclass
+                of dbus.connection.Connection to represent them.
+                The default is Connection.
+            `mainloop` : dbus.mainloop.NativeMainLoop or None
+                The main loop with which to associate the new connections.
+            `auth_mechanisms` : sequence of str
+                Authentication mechanisms to allow. The default is to allow
+                any authentication mechanism supported by ``libdbus``.
+        """
 
     address      = property(_Server.get_address)
     id           = property(_Server.get_id)

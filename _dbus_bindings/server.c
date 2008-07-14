@@ -2,6 +2,7 @@
  * for DBusServer.
  *
  * Copyright (C) 2008 Openismus GmbH <http://openismus.com/>
+ * Copyright (C) 2008 Collabora Ltd. <http://www.collabora.co.uk/>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -31,6 +32,9 @@
 typedef struct {
     PyObject_HEAD
     DBusServer *server;
+
+    /* The Connection subtype for which this Server is a factory */
+    PyObject *conn_class;
 
     /* Weak-references list to make server weakly referenceable */
     PyObject *weaklist;
@@ -199,6 +203,7 @@ out:
 static PyObject *
 DBusPyServer_NewConsumingDBusServer(PyTypeObject *cls,
                                     DBusServer *server,
+                                    PyObject *conn_class,
                                     PyObject *mainloop,
                                     PyObject *auth_mechanisms)
 {
@@ -254,6 +259,9 @@ DBusPyServer_NewConsumingDBusServer(PyTypeObject *cls,
     DBG_WHEREAMI;
 
     self->server = NULL;
+
+    Py_INCREF(conn_class);
+    self->conn_class = conn_class;
 
     self->mainloop = mainloop;
     mainloop = NULL;    /* don't DECREF it - the DBusServer owns it now */
@@ -331,12 +339,22 @@ Server_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     DBusServer *server;
     const char *address;
     DBusError error;
-    PyObject *self, *mainloop = NULL, *auth_mechanisms = NULL;
-    static char *argnames[] = {"address", "mainloop", "auth_mechanisms", NULL};
+    PyObject *self, *conn_class, *mainloop = NULL, *auth_mechanisms = NULL;
+    static char *argnames[] = { "address", "connection_class", "mainloop",
+        "auth_mechanisms", NULL};
 
-printf("%s:%d\n", __func__, __LINE__);
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|OO", argnames,
-                                     &address, &mainloop, &auth_mechanisms)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sO|OO", argnames,
+            &address, &conn_class, &mainloop, &auth_mechanisms)) {
+        return NULL;
+    }
+
+    if (!PyType_Check(conn_class) ||
+        !PyType_IsSubtype((PyTypeObject *) conn_class, &DBusPyConnection_Type)) {
+        /* strictly speaking, it can be any subtype of
+         * _dbus_bindings._Connection - but nobody else should be subtyping
+         * that, so let's keep this slightly inaccurate message */
+        PyErr_SetString(PyExc_TypeError, "connection_class must be "
+                "dbus.connection.Connection or a subtype");
         return NULL;
     }
 
@@ -351,8 +369,8 @@ printf("%s:%d\n", __func__, __LINE__);
         return NULL;
     }
 
-    self = DBusPyServer_NewConsumingDBusServer(cls, server, mainloop,
-            auth_mechanisms);
+    self = DBusPyServer_NewConsumingDBusServer(cls, server, conn_class,
+            mainloop, auth_mechanisms);
     TRACE(self);
 
     return self;
