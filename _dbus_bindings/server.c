@@ -236,7 +236,7 @@ DBusPyServer_NewConsumingDBusServer(PyTypeObject *cls,
         if (!mainloop || mainloop == Py_None) {
             PyErr_SetString(PyExc_RuntimeError,
                             "To run a D-Bus server, you need to either "
-                            "pass mainloop=... to the constructor or cal "
+                            "pass mainloop=... to the constructor or call "
                             "dbus.set_default_main_loop(...)");
             goto err;
         }
