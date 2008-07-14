@@ -160,7 +160,6 @@ DBusPyServer_new_connection_cb(DBusServer *server,
     PyObject *self = NULL, *conn_obj = NULL;
     PyObject *method = NULL, *result = NULL;
 
-printf("%s:%d\n", __func__, __LINE__);
     self = DBusPyServer_ExistingFromDBusServer(server);
     if (!self) goto out;
     TRACE(self);
@@ -168,7 +167,6 @@ printf("%s:%d\n", __func__, __LINE__);
     method = PyObject_GetAttrString(self, "_on_new_connection");
     TRACE(method);
 
-printf("%s:%d\n", __func__, __LINE__);
     if (method) {
         conn_obj = DBusPyConnection_NewConsumingDBusConnection(&DBusPyConnection_Type,
                                                                dbus_connection_ref(conn),
@@ -178,7 +176,6 @@ printf("%s:%d\n", __func__, __LINE__);
     }
 
 out:
-printf("%s:%d\n", __func__, __LINE__);
     Py_XDECREF(result);
     Py_XDECREF(method);
     Py_XDECREF(conn_obj);
