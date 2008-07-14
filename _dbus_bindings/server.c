@@ -253,8 +253,10 @@ DBusPyServer_NewConsumingDBusServer(PyTypeObject *cls,
 
     DBG_WHEREAMI;
 
-    self->mainloop = mainloop;
     self->server = NULL;
+
+    self->mainloop = mainloop;
+    mainloop = NULL;    /* don't DECREF it - the DBusServer owns it now */
 
     ref = PyWeakref_NewRef((PyObject *)self, NULL);
     if (!ref) goto err;
@@ -305,7 +307,7 @@ DBusPyServer_NewConsumingDBusServer(PyTypeObject *cls,
 
 err:
     DBG("Failed to construct Server from DBusServer at %p", server);
-//    Py_XDECREF(mainloop);
+    Py_XDECREF(mainloop);
 //    Py_XDECREF(self);
 //    Py_XDECREF(ref);
     if (server) {
