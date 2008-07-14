@@ -308,7 +308,7 @@ DBusPyServer_NewConsumingDBusServer(PyTypeObject *cls,
 err:
     DBG("Failed to construct Server from DBusServer at %p", server);
     Py_XDECREF(mainloop);
-//    Py_XDECREF(self);
+    Py_XDECREF(self);
     Py_XDECREF(ref);
 
     if (server) {
@@ -317,6 +317,7 @@ err:
         dbus_server_unref(server);
         Py_END_ALLOW_THREADS
     }
+
     DBG("%s() fail", __func__);
     DBG_WHEREAMI;
     return NULL;
