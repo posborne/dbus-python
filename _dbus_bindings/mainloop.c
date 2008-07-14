@@ -114,6 +114,24 @@ dbus_py_check_mainloop_sanity(PyObject *mainloop)
 }
 
 dbus_bool_t
+dbus_py_set_up_server(PyObject *server, PyObject *mainloop)
+{
+    if (NativeMainLoop_Check(mainloop)) {
+        /* Native mainloops are allowed to do arbitrary strange things */
+        NativeMainLoop *nml = (NativeMainLoop *)mainloop;
+        DBusServer *dbs = DBusPyServer_BorrowDBusServer(server);
+
+        if (!dbs) {
+            return FALSE;
+        }
+        return (nml->set_up_server_cb)(dbs, nml->data);
+    }
+    PyErr_SetString(PyExc_TypeError,
+                    "A dbus.mainloop.NativeMainLoop instance is required");
+    return FALSE;
+}
+
+dbus_bool_t
 dbus_py_set_up_connection(PyObject *conn, PyObject *mainloop)
 {
     if (NativeMainLoop_Check(mainloop)) {

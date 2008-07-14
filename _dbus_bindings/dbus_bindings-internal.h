@@ -54,6 +54,12 @@ static inline int type##_Check (PyObject *o) \
     return (PyObject_TypeCheck (o, &type##_Type)); \
 }
 
+/* server.c */
+extern PyTypeObject DBusPyServer_Type;
+DEFINE_CHECK(DBusPyServer)
+extern dbus_bool_t dbus_py_init_server_types(void);
+extern dbus_bool_t dbus_py_insert_server_types(PyObject *this_module);
+
 /* conn.c */
 extern PyTypeObject DBusPyConnection_Type;
 DEFINE_CHECK(DBusPyConnection)
@@ -138,6 +144,8 @@ extern dbus_bool_t dbus_py_init_pending_call(void);
 extern dbus_bool_t dbus_py_insert_pending_call(PyObject *this_module);
 
 /* mainloop.c */
+extern dbus_bool_t dbus_py_set_up_server(PyObject *server,
+                                         PyObject *mainloop);
 extern dbus_bool_t dbus_py_set_up_connection(PyObject *conn,
                                              PyObject *mainloop);
 extern PyObject *dbus_py_get_default_main_loop(void);

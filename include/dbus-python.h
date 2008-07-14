@@ -46,6 +46,7 @@ typedef void (*_dbus_py_free_func)(void *);
 #ifdef INSIDE_DBUS_PYTHON_BINDINGS
 
 extern DBusConnection *DBusPyConnection_BorrowDBusConnection(PyObject *);
+extern DBusServer *DBusPyServer_BorrowDBusServer(PyObject *);
 extern PyObject *DBusPyNativeMainLoop_New4(_dbus_py_conn_setup_func,
                                            _dbus_py_srv_setup_func,
                                            _dbus_py_free_func,

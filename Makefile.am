@@ -35,6 +35,7 @@ nobase_python_PYTHON = \
     dbus/mainloop/glib.py \
     dbus/proxies.py \
     dbus/service.py \
+    dbus/server.py \
     dbus/types.py
 
 check_py_sources = $(nobase_python_PYTHON)
