@@ -173,9 +173,10 @@ DBusPyServer_new_connection_cb(DBusServer *server,
     TRACE(method);
 
     if (method) {
-        conn_obj = DBusPyConnection_NewConsumingDBusConnection(&DBusPyConnection_Type,
-                                                               dbus_connection_ref(conn),
-                                                               ((Server*) self)->mainloop);
+        conn_obj = DBusPyConnection_NewConsumingDBusConnection(
+                ((Server *) self)->conn_class,
+                dbus_connection_ref(conn),
+                ((Server*) self)->mainloop);
 
         result = PyObject_CallFunctionObjArgs(method, conn_obj, NULL);
     }
