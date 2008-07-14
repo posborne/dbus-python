@@ -76,42 +76,46 @@ DBusPyServer_BorrowDBusServer(PyObject *self)
 
 /* Internal C API =================================================== */
 
-static void
-DBusPyServer_set_auth_mechanisms(Server   *self,
+static dbus_bool_t
+DBusPyServer_set_auth_mechanisms(Server *self,
                                  PyObject *auth_mechanisms)
 {
-    const char **list = NULL;
+    PyObject *fast_seq;
+    Py_ssize_t length;
+    Py_ssize_t i;
 
-    if (auth_mechanisms) {
-        Py_ssize_t length;
-        Py_ssize_t i;
+    fast_seq = PySequence_Fast(auth_mechanisms,
+            "Expecting sequence for auth_mechanisms parameter");
 
-        if (!PySequence_Check(auth_mechanisms)) {
-            PyErr_SetString(PyExc_TypeError, "Expecting sequence for auth_mechanisms parameter");
-            return;
-        }
+    if (!fast_seq)
+        return FALSE;
 
-        length = PySequence_Fast_GET_SIZE(auth_mechanisms);
+    length = PySequence_Fast_GET_SIZE(fast_seq);
 
-        Py_BEGIN_ALLOW_THREADS
-        list = PyMem_New(const char*, length + 1);
-        Py_END_ALLOW_THREADS
+    /* scope for list */
+    {
+        const char *list[length + 1];
 
         for (i = 0; i < length; ++i) {
-            PyObject* am;
+            PyObject *am;
 
             am = PySequence_Fast_GET_ITEM(auth_mechanisms, i);
-            am = PyObject_Str(am);
+            /* this supports either str or unicode, raising TypeError
+             * on failure */
+            list[i] = PyString_AsString(am);
 
-            list[i] = PyString_AS_STRING(am);
+            if (!list[i])
+                return FALSE;
         }
+
+        list[length] = NULL;
+
+        Py_BEGIN_ALLOW_THREADS
+        dbus_server_set_auth_mechanisms(self->server, list);
+        Py_END_ALLOW_THREADS
     }
 
-    Py_BEGIN_ALLOW_THREADS
-    dbus_server_set_auth_mechanisms(self->server, list);
-    Py_END_ALLOW_THREADS
-
-    PyMem_Free(list);
+    return TRUE;
 }
 
 /* Return a new reference to a Python Server or subclass corresponding
@@ -279,7 +283,9 @@ DBusPyServer_NewDBusServer(PyTypeObject *cls,
         !dbus_py_set_up_server((PyObject *)self, self->mainloop))
         goto err;
 
-    DBusPyServer_set_auth_mechanisms(self, auth_mechanisms);
+    if (auth_mechanisms && auth_mechanisms != Py_None &&
+        !DBusPyServer_set_auth_mechanisms(self, auth_mechanisms))
+        goto err;
 
     Py_BEGIN_ALLOW_THREADS
     dbus_server_set_new_connection_function(self->server,
