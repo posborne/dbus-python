@@ -417,7 +417,7 @@ Server_disconnect (Server *self, PyObject *args UNUSED)
 }
 
 PyDoc_STRVAR(Server_get_address__doc__,
-"get_address() -> String\n\n"
+"get_address() -> str\n\n"
 "Returns the address of the server.");
 static PyObject *
 Server_get_address(Server *self, PyObject *args UNUSED)
@@ -434,7 +434,7 @@ Server_get_address(Server *self, PyObject *args UNUSED)
 }
 
 PyDoc_STRVAR(Server_get_id__doc__,
-"get_id() -> String\n\n"
+"get_id() -> str\n\n"
 "Returns the unique ID of the server.");
 static PyObject *
 Server_get_id(Server *self, PyObject *args UNUSED)
