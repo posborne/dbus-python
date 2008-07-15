@@ -21,6 +21,10 @@ Features:
 
 Fixes:
 
+* don't emit spurious Error messages if libdbus gives object-path handlers
+  a message that isn't a method call (most likely because of binding to a
+  locally emitted signal, as in fd.o #14199)
+
 D-Bus Python Bindings 0.82.4 (2007-12-10)
 =========================================
 

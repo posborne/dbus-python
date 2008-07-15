@@ -73,6 +73,7 @@ _filter_message(DBusConnection *conn, DBusMessage *message, void *user_data)
         callable = PyList_GET_ITEM(conn_obj->filters, i);
         if (callable == user_data) {
             Py_INCREF(callable);
+            break;
         }
         else {
             callable = NULL;
