@@ -642,7 +642,7 @@ Struct_tp_dealloc(PyObject *self)
     (PyTuple_Type.tp_dealloc)(self);
 }
 
-PyObject *
+static PyObject *
 Struct_tp_getattro(PyObject *obj, PyObject *name)
 {
     PyObject *key, *value;
