@@ -1,7 +1,7 @@
 /* Implementation of the _dbus_bindings Connection type, a Python wrapper
  * for DBusConnection. See also conn-methods.c.
  *
- * Copyright (C) 2006 Collabora Ltd. <http://www.collabora.co.uk/>
+ * Copyright (C) 2006-2008 Collabora Ltd. <http://www.collabora.co.uk/>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -293,34 +293,48 @@ err:
 
 /* Connection type-methods ========================================== */
 
-/* "Constructor" (the real constructor is Connection_NewFromDBusConnection,
- * to which this delegates). */
+/* Constructor */
 static PyObject *
 Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     DBusConnection *conn;
     const char *address;
+    PyObject *address_or_conn;
     DBusError error;
     PyObject *self, *mainloop = NULL;
     static char *argnames[] = {"address", "mainloop", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|O", argnames,
-                                     &address, &mainloop)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", argnames,
+                                     &address_or_conn, &mainloop)) {
         return NULL;
     }
 
-    dbus_error_init(&error);
+    if (DBusPyLibDBusConnection_CheckExact(address_or_conn)) {
+        DBusPyLibDBusConnection *wrapper =
+            (DBusPyLibDBusConnection *) address_or_conn;
 
-    /* We always open a private connection (at the libdbus level). Sharing
-     * is done in Python, to keep things simple. */
-    Py_BEGIN_ALLOW_THREADS
-    conn = dbus_connection_open_private(address, &error);
-    Py_END_ALLOW_THREADS
+        DBUS_PY_RAISE_VIA_NULL_IF_FAIL(wrapper->conn);
 
-    if (!conn) {
-        DBusPyException_ConsumeError(&error);
+        conn = dbus_connection_ref (wrapper->conn);
+    }
+    else if ((address = PyString_AsString(address_or_conn)) != NULL) {
+        dbus_error_init(&error);
+
+        /* We always open a private connection (at the libdbus level). Sharing
+         * is done in Python, to keep things simple. */
+        Py_BEGIN_ALLOW_THREADS
+        conn = dbus_connection_open_private(address, &error);
+        Py_END_ALLOW_THREADS
+
+        if (!conn) {
+            DBusPyException_ConsumeError(&error);
+            return NULL;
+        }
+    }
+    else {
         return NULL;
     }
+
     self = DBusPyConnection_NewConsumingDBusConnection(cls, conn, mainloop);
     TRACE(self);
 
