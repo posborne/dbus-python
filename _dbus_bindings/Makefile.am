@@ -17,6 +17,7 @@ _dbus_bindings_la_SOURCES = \
 			    float.c \
 			    generic.c \
 			    int.c \
+			    libdbusconn.c \
 			    mainloop.c \
 			    message-append.c \
 			    message.c \

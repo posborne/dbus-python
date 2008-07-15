@@ -46,6 +46,11 @@ typedef struct {
     dbus_bool_t has_mainloop;
 } Connection;
 
+typedef struct {
+    PyObject_HEAD
+    DBusConnection *conn;
+} DBusPyLibDBusConnection;
+
 extern struct PyMethodDef DBusPyConnection_tp_methods[];
 extern DBusHandlerResult DBusPyConnection_HandleMessage(Connection *,
                                                         PyObject *,
