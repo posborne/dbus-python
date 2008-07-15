@@ -32,7 +32,8 @@ class Server(_Server):
     other applications.
 
     This class is not useful to instantiate directly: you must subclass it and
-    provide an implementation of the _on_new_connection method.
+    either extend the method connection_added, or append to the
+    list on_connection_added.
 
     :Since: 0.82.5
     """
@@ -57,19 +58,58 @@ class Server(_Server):
         return super(Server, cls).__new__(cls, address, connection_class,
                 mainloop, auth_mechanisms)
 
+    def __init__(self, *args, **kwargs):
+
+        self.__connections = {}
+
+        self.on_connection_added = []
+        """A list of callbacks to invoke when a connection is added.
+        They receive two arguments: this Server and the new Connection."""
+
+        self.on_connection_removed = []
+        """A list of callbacks to invoke when a connection becomes
+        disconnected. They receive two arguments: this Server and the removed
+        Connection."""
+
+    # This method name is hard-coded in _dbus_bindings._Server.
+    # This is not public API.
     def _on_new_connection(self, conn):
+        conn.call_on_disconnection(self.connection_removed)
+        self.connection_added(conn)
+
+    def connection_added(self, conn):
         """Respond to the creation of a new Connection.
+
+        This base-class implementation just invokes the callbacks in
+        the on_connection_added attribute.
 
         :Parameters:
             `conn` : dbus.connection.Connection
-                A D-Bus connection.
+                A D-Bus connection which has just been added.
 
                 The type of this parameter is whatever was passed
                 to the Server constructor as the ``connection_class``.
         """
-        raise NotImplementedError('Subclasses of Server must implement '
-                '_on_new_connection')
+        if self.on_connection_added:
+            for cb in self.on_connection_added:
+                cb(conn)
 
+    def connection_removed(self, conn):
+        """Respond to the disconnection of a Connection.
+
+        This base-class implementation just invokes the callbacks in
+        the on_connection_removed attribute.
+
+        :Parameters:
+            `conn` : dbus.connection.Connection
+                A D-Bus connection which has just become disconnected.
+
+                The type of this parameter is whatever was passed
+                to the Server constructor as the ``connection_class``.
+        """
+        if self.on_connection_removed:
+            for cb in self.on_connection_removed:
+                cb(conn)
 
     address      = property(_Server.get_address)
     id           = property(_Server.get_id)

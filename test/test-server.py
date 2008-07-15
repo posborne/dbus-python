@@ -26,22 +26,23 @@ class TestService(dbus.service.Object):
 
         return ''.join(text)
 
-class TestServer(dbus.server.Server):
-    def __init__(self, *args, **kwargs):
-        super(TestServer, self).__init__(*args, **kwargs)
-        self.__connections = list()
-
-    def _on_new_connection(self, conn):
-        print 'new connection: %r' % conn
-        self.__connections.append(conn)
-        TestService(conn)
-
 pin, pout = os.pipe()
 child = os.fork()
 
 if 0 == child:
     DBusGMainLoop(set_as_default=True)
-    server = TestServer('unix:tmpdir=/tmp')
+    server = dbus.server.Server('unix:tmpdir=/tmp')
+
+    def new_connection(conn):
+        print "new connection, %r" % conn
+        TestService(conn)
+
+    def connection_gone(conn):
+        print "goodbye, %r" % conn
+
+    # Instantiate a TestService every time a connection is created
+    server.on_connection_added.append(new_connection)
+    server.on_connection_removed.append(connection_gone)
 
     os.write(pout, server.address)
     os.close(pout)
@@ -72,3 +73,4 @@ else:
         text = line.strip()
         print 'reverse(%s): %s' % (text, object.reverse(text))
 
+    client.close()
