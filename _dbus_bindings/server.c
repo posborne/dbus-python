@@ -162,8 +162,8 @@ DBusPyServer_new_connection_cb(DBusServer *server,
                                void *data UNUSED)
 {
     PyGILState_STATE gil = PyGILState_Ensure();
-    PyObject *self = NULL, *conn_obj = NULL;
-    PyObject *method = NULL, *result = NULL;
+    PyObject *self = NULL;
+    PyObject *method = NULL;
 
     self = DBusPyServer_ExistingFromDBusServer(server);
     if (!self) goto out;
@@ -173,18 +173,30 @@ DBusPyServer_new_connection_cb(DBusServer *server,
     TRACE(method);
 
     if (method) {
-        conn_obj = DBusPyConnection_NewConsumingDBusConnection(
-                ((Server *) self)->conn_class,
-                dbus_connection_ref(conn),
-                ((Server*) self)->mainloop);
+        PyObject *conn_class = ((Server *)self)->conn_class;
+        PyObject *wrapper = DBusPyLibDBusConnection_New(conn);
+        PyObject *conn_obj;
+        PyObject *result;
+
+        if (!wrapper)
+            goto out;
+
+        conn_obj = PyObject_CallFunctionObjArgs((PyObject *)conn_class,
+                wrapper, ((Server*) self)->mainloop, NULL);
+        Py_DECREF(wrapper);
+
+        if (!conn_obj)
+            goto out;
 
         result = PyObject_CallFunctionObjArgs(method, conn_obj, NULL);
+        Py_XDECREF (conn_obj);
+
+        /* discard result if not NULL, and fall through regardless */
+        Py_XDECREF(result);
     }
 
 out:
-    Py_XDECREF(result);
     Py_XDECREF(method);
-    Py_XDECREF(conn_obj);
     Py_XDECREF(self);
 
     if (PyErr_Occurred())
