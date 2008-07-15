@@ -180,7 +180,7 @@ DBusPyConnection_ExistingFromDBusConnection(DBusConnection *conn)
  *
  * Raises AssertionError if the DBusConnection already has a Connection.
  */
-PyObject *
+static PyObject *
 DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
                                             DBusConnection *conn,
                                             PyObject *mainloop)
