@@ -305,6 +305,28 @@ class TestObject(dbus.service.Object, TestInterface):
             return False
         gobject.timeout_add(500, return_from_async_wait)
 
+    @dbus.service.method(IFACE, in_signature='', out_signature='')
+    def RaiseValueError(self):
+        raise ValueError('Wrong!')
+
+    @dbus.service.method(IFACE, in_signature='', out_signature='')
+    def RaiseDBusExceptionNoTraceback(self):
+        class ServerError(dbus.DBusException):
+            """Exception representing a normal "environmental" error"""
+            include_traceback = False
+            _dbus_error_name = 'com.example.Networking.ServerError'
+
+        raise ServerError('Server not responding')
+
+    @dbus.service.method(IFACE, in_signature='', out_signature='')
+    def RaiseDBusExceptionWithTraceback(self):
+        class RealityFailure(dbus.DBusException):
+            """Exception representing a programming error"""
+            include_traceback = True
+            _dbus_error_name = 'com.example.Misc.RealityFailure'
+
+        raise RealityFailure('Botched invariant')
+
     @dbus.service.method(IFACE, in_signature='', out_signature='',
                          async_callbacks=('return_cb', 'raise_cb'))
     def AsyncRaise(self, return_cb, raise_cb):
