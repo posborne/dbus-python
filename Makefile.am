@@ -35,6 +35,7 @@ nobase_python_PYTHON = \
     dbus/mainloop/__init__.py \
     dbus/mainloop/glib.py \
     dbus/proxies.py \
+    dbus/server.py \
     dbus/service.py \
     dbus/types.py
 

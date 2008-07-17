@@ -278,7 +278,10 @@ def _method_reply_error(connection, message, exception):
         name = 'org.freedesktop.DBus.Python.%s.%s' % (exception.__module__, exception.__class__.__name__)
 
     et, ev, etb = sys.exc_info()
-    if ev is exception:
+    if isinstance(exception, DBusException) and not exception.include_traceback:
+        # We don't actually want the traceback anyway
+        contents = exception.get_dbus_message()
+    elif ev is exception:
         # The exception was actually thrown, so we can get a traceback
         contents = ''.join(traceback.format_exception(et, ev, etb))
     else:

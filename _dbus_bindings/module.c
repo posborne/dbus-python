@@ -288,7 +288,9 @@ init_dbus_bindings(void)
     if (!dbus_py_init_message_types()) return;
     if (!dbus_py_init_pending_call()) return;
     if (!dbus_py_init_mainloop()) return;
+    if (!dbus_py_init_libdbus_conn_types()) return;
     if (!dbus_py_init_conn_types()) return;
+    if (!dbus_py_init_server_types()) return;
 
     this_module = Py_InitModule3("_dbus_bindings", module_functions, module_doc);
     if (!this_module) return;
@@ -303,7 +305,9 @@ init_dbus_bindings(void)
     if (!dbus_py_insert_message_types(this_module)) return;
     if (!dbus_py_insert_pending_call(this_module)) return;
     if (!dbus_py_insert_mainloop_types(this_module)) return;
+    if (!dbus_py_insert_libdbus_conn_types(this_module)) return;
     if (!dbus_py_insert_conn_types(this_module)) return;
+    if (!dbus_py_insert_server_types(this_module)) return;
 
     if (PyModule_AddStringConstant(this_module, "BUS_DAEMON_NAME",
                                    DBUS_SERVICE_DBUS) < 0) return;

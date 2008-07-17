@@ -33,8 +33,6 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     DBusConnection *conn;
     DBusError error;
     Connection *self;
-    dbus_bool_t ret;
-    long type;
     static char *argnames[] = {"address_or_type", "mainloop", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO", argnames,
@@ -45,6 +43,8 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     dbus_error_init(&error);
 
     if (first && PyString_Check(first)) {
+        dbus_bool_t ret;
+
         /* It's a custom address. First connect to it, then register. */
 
         self = (Connection *)(DBusPyConnection_Type.tp_new)(cls, args, kwargs);
@@ -62,37 +62,70 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
         return (PyObject *)self;
     }
+    else if (!first || PyInt_Check(first)) {
+        long type;
+        PyObject *libdbusconn;
+        PyObject *new_args;
+        PyObject *new_kwargs;
 
-    /* If the first argument isn't a string, it must be an integer
-    representing one of the well-known bus types. */
+        /* If the first argument isn't a string, it must be an integer
+        representing one of the well-known bus types. The default is
+        DBUS_BUS_SESSION. */
 
-    if (first && !PyInt_Check(first)) {
+        if (first) {
+            type = PyInt_AsLong(first);
+
+            if (type != DBUS_BUS_SESSION && type != DBUS_BUS_SYSTEM
+                && type != DBUS_BUS_STARTER) {
+                PyErr_Format(PyExc_ValueError, "Unknown bus type %ld", type);
+                return NULL;
+            }
+        }
+        else {
+            type = DBUS_BUS_SESSION;
+        }
+
+        Py_BEGIN_ALLOW_THREADS
+        conn = dbus_bus_get_private(type, &error);
+        Py_END_ALLOW_THREADS
+
+        if (!conn) {
+            DBusPyException_ConsumeError(&error);
+            return NULL;
+        }
+
+        libdbusconn = DBusPyLibDBusConnection_New (conn);
+        dbus_connection_unref (conn);
+
+        if (!libdbusconn)
+            return NULL;
+
+        new_args = PyTuple_Pack(2, libdbusconn, mainloop ? mainloop : Py_None);
+        Py_DECREF(libdbusconn);
+
+        if (!new_args) {
+            return NULL;
+        }
+
+        new_kwargs = PyDict_New();
+
+        if (!new_kwargs) {
+            Py_DECREF(new_args);
+            return NULL;
+        }
+
+        self = (Connection *)(DBusPyConnection_Type.tp_new)(cls, new_args,
+                new_kwargs);
+        Py_DECREF(new_args);
+        Py_DECREF(new_kwargs);
+
+        return (PyObject *)self;    /* whether NULL or not */
+    }
+    else {
         PyErr_SetString(PyExc_TypeError, "A string address or an integer "
                                          "bus type is required");
         return NULL;
     }
-    if (first) {
-        type = PyInt_AsLong(first);
-    }
-    else {
-        type = DBUS_BUS_SESSION;
-    }
-
-    if (type != DBUS_BUS_SESSION && type != DBUS_BUS_SYSTEM
-        && type != DBUS_BUS_STARTER) {
-        PyErr_Format(PyExc_ValueError, "Unknown bus type %d", (int)type);
-        return NULL;
-    }
-
-    Py_BEGIN_ALLOW_THREADS
-    conn = dbus_bus_get_private(type, &error);
-    Py_END_ALLOW_THREADS
-
-    if (!conn) {
-        DBusPyException_ConsumeError(&error);
-        return NULL;
-    }
-    return DBusPyConnection_NewConsumingDBusConnection(cls, conn, mainloop);
 }
 
 PyObject *

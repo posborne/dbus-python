@@ -52,16 +52,26 @@ typedef int Py_ssize_t;
 static inline int type##_Check (PyObject *o) \
 { \
     return (PyObject_TypeCheck (o, &type##_Type)); \
+} \
+static inline int type##_CheckExact (PyObject *o) \
+{ \
+    return ((o)->ob_type == &type##_Type); \
 }
+
+PyMODINIT_FUNC init_dbus_bindings(void);
 
 /* conn.c */
 extern PyTypeObject DBusPyConnection_Type;
 DEFINE_CHECK(DBusPyConnection)
-extern PyObject *DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *,
-                                                             DBusConnection *,
-                                                             PyObject *);
 extern dbus_bool_t dbus_py_init_conn_types(void);
 extern dbus_bool_t dbus_py_insert_conn_types(PyObject *this_module);
+
+/* libdbusconn.c */
+extern PyTypeObject DBusPyLibDBusConnection_Type;
+DEFINE_CHECK(DBusPyLibDBusConnection)
+PyObject *DBusPyLibDBusConnection_New(DBusConnection *conn);
+extern dbus_bool_t dbus_py_init_libdbus_conn_types(void);
+extern dbus_bool_t dbus_py_insert_libdbus_conn_types(PyObject *this_module);
 
 /* bus.c */
 extern dbus_bool_t dbus_py_init_bus_types(void);
@@ -173,10 +183,18 @@ extern dbus_bool_t dbus_py_insert_pending_call(PyObject *this_module);
 /* mainloop.c */
 extern dbus_bool_t dbus_py_set_up_connection(PyObject *conn,
                                              PyObject *mainloop);
+extern dbus_bool_t dbus_py_set_up_server(PyObject *server,
+                                         PyObject *mainloop);
 extern PyObject *dbus_py_get_default_main_loop(void);
 extern dbus_bool_t dbus_py_check_mainloop_sanity(PyObject *);
 extern dbus_bool_t dbus_py_init_mainloop(void);
 extern dbus_bool_t dbus_py_insert_mainloop_types(PyObject *);
+
+/* server.c */
+extern PyTypeObject DBusPyServer_Type;
+DEFINE_CHECK(DBusPyServer)
+extern dbus_bool_t dbus_py_init_server_types(void);
+extern dbus_bool_t dbus_py_insert_server_types(PyObject *this_module);
 
 /* validation.c */
 dbus_bool_t dbus_py_validate_bus_name(const char *name,

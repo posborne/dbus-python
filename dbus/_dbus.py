@@ -77,8 +77,10 @@ class Bus(BusConnection):
             `private` : bool
                 If true, never return an existing shared instance, but instead
                 return a private connection.
+
                 :Deprecated: since 0.82.3. Use dbus.bus.BusConnection for
                     private connections.
+
             `mainloop` : dbus.mainloop.NativeMainLoop
                 The main loop to use. The default is to use the default
                 main loop if one has been set up, or raise an exception

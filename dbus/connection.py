@@ -253,6 +253,8 @@ class Connection(_Connection):
         if not hasattr(self, '_dbus_Connection_initialized'):
             self._dbus_Connection_initialized = 1
 
+            self.__call_on_disconnection = []
+
             self._signal_recipients_by_object_path = {}
             """Map from object path to dict mapping dbus_interface to dict
             mapping member to list of SignalMatch objects."""
@@ -822,6 +824,19 @@ class Connection(_Connection):
             path = message.get_path()
             signal_name = message.get_member()
 
+            if (dbus_interface == LOCAL_IFACE and
+                path == LOCAL_PATH and
+                signal_name == 'Disconnected'):
+                for cb in self.__call_on_disconnection:
+                    try:
+                        cb(self)
+                    except Exception, e:
+                        # basicConfig is a no-op if logging is already
+                        # configured
+                        logging.basicConfig()
+                        _logger.error('Exception in handler for Disconnected '
+                            'signal:', exc_info=1)
+
             for match in self._iter_easy_matches(path, dbus_interface,
                                                  signal_name):
                 try:
@@ -865,3 +880,12 @@ class Connection(_Connection):
 
     def add_message_filter(self):
         self._filters.append(filter)
+
+    def call_on_disconnection(self, callable):
+        """Arrange for `callable` to be called with one argument (this
+        Connection object) when the Connection becomes
+        disconnected.
+
+        :Since: 0.83.0
+        """
+        self.__call_on_disconnection.append(callable)

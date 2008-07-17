@@ -17,6 +17,7 @@ _dbus_bindings_la_SOURCES = \
 			    float.c \
 			    generic.c \
 			    int.c \
+			    libdbusconn.c \
 			    mainloop.c \
 			    message-append.c \
 			    message.c \
@@ -24,6 +25,7 @@ _dbus_bindings_la_SOURCES = \
 			    message-internal.h \
 			    module.c \
 			    pending-call.c \
+			    server.c \
 			    signature.c \
 			    string.c \
 			    types-internal.h \

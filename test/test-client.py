@@ -508,6 +508,43 @@ class TestDBusBindings(unittest.TestCase):
         self.assertRaises(dbus.DBusException,
                           lambda: self.iface.AsyncWait500ms(timeout=0.25))
 
+    def testExceptions(self):
+        #self.assertRaises(dbus.DBusException,
+        #                  lambda: self.iface.RaiseValueError)
+        #self.assertRaises(dbus.DBusException,
+        #                  lambda: self.iface.RaiseDBusExceptionNoTraceback)
+        #self.assertRaises(dbus.DBusException,
+        #                  lambda: self.iface.RaiseDBusExceptionWithTraceback)
+
+        try:
+            self.iface.RaiseValueError()
+        except Exception, e:
+            self.assert_(isinstance(e, dbus.DBusException), e.__class__)
+            self.assert_('.ValueError: Traceback ' in str(e),
+                         'Wanted a traceback but got:\n"""%s"""' % str(e))
+        else:
+            raise AssertionError('Wanted an exception')
+
+        try:
+            self.iface.RaiseDBusExceptionNoTraceback()
+        except Exception, e:
+            self.assert_(isinstance(e, dbus.DBusException), e.__class__)
+            self.assertEquals(str(e),
+                              'com.example.Networking.ServerError: '
+                              'Server not responding')
+        else:
+            raise AssertionError('Wanted an exception')
+
+        try:
+            self.iface.RaiseDBusExceptionWithTraceback()
+        except Exception, e:
+            self.assert_(isinstance(e, dbus.DBusException), e.__class__)
+            self.assert_(str(e).startswith('com.example.Misc.RealityFailure: '
+                                           'Traceback '),
+                         'Wanted a traceback but got:\n%s' % str(e))
+        else:
+            raise AssertionError('Wanted an exception')
+
 """ Remove this for now
 class TestDBusPythonToGLibBindings(unittest.TestCase):
     def setUp(self):
