@@ -37,7 +37,7 @@ except ImportError:
 
 import _dbus_bindings
 from dbus import SessionBus, validate_bus_name, validate_object_path, \
-                 INTROSPECTABLE_INTERFACE
+                 INTROSPECTABLE_IFACE
 from dbus.data import Struct, Signature, ObjectPath
 from dbus.decorators import method, signal
 from dbus.exceptions import DBusException, \
