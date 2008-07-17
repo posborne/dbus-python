@@ -3,17 +3,22 @@ D-Bus Python Bindings 0.83.0 (unreleased)
 
 Features:
 
-* add bindings for DBusServer (thanks to Mathias Hasselmann, Huang Peng;
-  fd.o #14322, #15514)
+* Add bindings for DBusServer (thanks to Mathias Hasselmann, Huang Peng;
+  fd.o #14322, #15514).
+
+* Omit the service's traceback from certain D-Bus errors: specifically, those
+  that were probably deliberately raised as part of an API. Subclasses
+  of DBusException that indicate programmer error can turn the traceback
+  back on if it seems likely to be useful.
 
 Fixes:
 
-* don't emit spurious Error messages if libdbus gives object-path handlers
+* Don't emit spurious Error messages if libdbus gives object-path handlers
   a message that isn't a method call (most likely because of binding to a
-  locally emitted signal, as in fd.o #14199)
+  locally emitted signal, as in fd.o #14199).
 
 * Make multiple filters added by Connection.add_message_filter work
-  (fd.o #15547, thanks to Huang Peng)
+  (fd.o #15547, thanks to Huang Peng).
 
 D-Bus Python Bindings 0.82.4 (2007-12-10)
 =========================================
