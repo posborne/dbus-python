@@ -1,13 +1,19 @@
-D-Bus Python Bindings 0.82.5 (unreleased)
+D-Bus Python Bindings 0.83.0 (unreleased)
 =========================================
 
 Features:
+
+* add bindings for DBusServer (thanks to Mathias Hasselmann, Huang Peng;
+  fd.o #14322, #15514)
 
 Fixes:
 
 * don't emit spurious Error messages if libdbus gives object-path handlers
   a message that isn't a method call (most likely because of binding to a
   locally emitted signal, as in fd.o #14199)
+
+* Make multiple filters added by Connection.add_message_filter work
+  (fd.o #15547, thanks to Huang Peng)
 
 D-Bus Python Bindings 0.82.4 (2007-12-10)
 =========================================

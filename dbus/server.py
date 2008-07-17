@@ -35,7 +35,7 @@ class Server(_Server):
     either extend the method connection_added, or append to the
     list on_connection_added.
 
-    :Since: 0.82.5
+    :Since: 0.83
     """
 
     def __new__(cls, address, connection_class=Connection,
