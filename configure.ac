@@ -134,7 +134,7 @@ AC_SUBST([RST2HTMLFLAGS])
 AM_CONDITIONAL([ENABLE_API_DOCS], [test "$enable_api_docs" != no])
 AM_CONDITIONAL([ENABLE_DOCS], [test "$enable_html_docs" != no])
 
-PKG_CHECK_MODULES(DBUS, [dbus-1 >= 0.93])
+PKG_CHECK_MODULES(DBUS, [dbus-1 >= 1.0])
 PKG_CHECK_MODULES(DBUS_GLIB, [dbus-glib-1 >= 0.70])
 
 dnl avoid deprecated stuff if possible

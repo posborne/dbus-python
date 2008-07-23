@@ -30,7 +30,6 @@
 #define DBUS_PYTHON_H
 
 #include <Python.h>
-#define DBUS_API_SUBJECT_TO_CHANGE 1
 #include <dbus/dbus.h>
 
 DBUS_BEGIN_DECLS
