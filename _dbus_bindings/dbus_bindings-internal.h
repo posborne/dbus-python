@@ -162,6 +162,7 @@ extern PyTypeObject DBusPyServer_Type;
 DEFINE_CHECK(DBusPyServer)
 extern dbus_bool_t dbus_py_init_server_types(void);
 extern dbus_bool_t dbus_py_insert_server_types(PyObject *this_module);
+extern DBusServer *DBusPyServer_BorrowDBusServer(PyObject *self);
 
 /* validation.c */
 dbus_bool_t dbus_py_validate_bus_name(const char *name,

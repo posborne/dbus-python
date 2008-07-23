@@ -26,6 +26,8 @@
 #include <Python.h>
 #include "dbus-python.h"
 
+PyMODINIT_FUNC initdbus_py_test(void);
+
 #if defined(__GNUC__)
 #   if __GNUC__ >= 3
 #       define UNUSED __attribute__((__unused__))
