@@ -122,7 +122,10 @@ api api/index.html: $(nobase_python_PYTHON) \
 		    _dbus_glib_bindings/_dbus_glib_bindings.la
 	rm -rf api
 	mkdir api
-	PYTHONPATH=$(APIDOC_PYTHONPATH) DBUS_PYTHON_NO_DEPRECATED=1 $(PYTHON) -Wignore::DeprecationWarning $(EPYDOC) -o api --html \
+	cd $(abs_top_srcdir) && \
+	PYTHONPATH=$(APIDOC_PYTHONPATH) DBUS_PYTHON_NO_DEPRECATED=1 \
+	$(PYTHON) -Wignore::DeprecationWarning \
+	$(EPYDOC) -o $(abs_top_builddir)/api --html \
 		--docformat restructuredtext -v \
 		`find dbus -name '*.py' | grep -v dbus_bindings \
 			| sed -e 's#/__init__\.py##g' \

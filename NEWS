@@ -20,6 +20,8 @@ Fixes:
 * Make multiple filters added by Connection.add_message_filter work
   (fd.o #15547, thanks to Huang Peng).
 
+* Make the API docs build correctly when out-of-tree
+
 * Require dbus 1.0 so we can get rid of DBUS_API_SUBJECT_TO_CHANGE
 
 D-Bus Python Bindings 0.82.4 (2007-12-10)
