@@ -484,7 +484,15 @@ class Connection(_Connection):
                     deletions.append(match)
                 else:
                     new.append(match)
-            by_member[signal_name] = new
+
+            if new:
+                by_member[signal_name] = new
+            else:
+                del by_member[signal_name]
+                if not by_member:
+                    del by_interface[dbus_interface]
+                    if not by_interface:
+                        del self._signal_recipients_by_object_path[path]
         finally:
             self._signals_lock.release()
 
