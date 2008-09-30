@@ -606,7 +606,7 @@ Message_set_sender(Message *self, PyObject *args)
         return NULL;
     }
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    if (!dbus_py_validate_bus_name(name, 1, 0)) return NULL;
+    if (!dbus_py_validate_bus_name(name, 1, 1)) return NULL;
     if (!dbus_message_set_sender(self->msg, name)) return PyErr_NoMemory();
     Py_RETURN_NONE;
 }
