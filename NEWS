@@ -7,6 +7,10 @@ Features:
 
 Fixes:
 
+* When removing signal matches, clean up internal state, avoiding a memory
+  leak in long-lived Python processes that connect to signals from arbitrarily
+  many object paths (fd.o #17551, thanks to Marco Pesenti Gritti)
+
 D-Bus Python Bindings 0.83.0 (2008-07-23)
 =========================================
 
