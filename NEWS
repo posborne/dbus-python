@@ -11,6 +11,9 @@ Fixes:
   leak in long-lived Python processes that connect to signals from arbitrarily
   many object paths (fd.o #17551, thanks to Marco Pesenti Gritti)
 
+* When setting the sender of a message, allow it to be org.freedesktop.DBus
+  so you can implement a D-Bus daemon in pure Python (patch from Huang Peng)
+
 D-Bus Python Bindings 0.83.0 (2008-07-23)
 =========================================
 
