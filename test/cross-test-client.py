@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from sets import Set
 from time import sleep
 import logging
 
@@ -43,7 +42,7 @@ logger = logging.getLogger('cross-test-client')
 
 class Client(SignalTestsImpl):
     fail_id = 0
-    expected = Set()
+    expected = set()
 
     def quit(self):
         for x in self.expected:

@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from sets import Set
 import logging
 
 import gobject
@@ -40,10 +39,10 @@ logging.getLogger().setLevel(1)
 logger = logging.getLogger('cross-test-server')
 
 
-class VerboseSet(Set):
+class VerboseSet(set):
     def add(self, thing):
         print '%s ok' % thing
-        Set.add(self, thing)
+        set.add(self, thing)
 
 
 objects = {}
