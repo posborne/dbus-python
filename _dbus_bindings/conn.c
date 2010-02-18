@@ -341,6 +341,13 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     return self;
 }
 
+/* Post-construction: nothing to do (but don't chain up to object.__init__,
+ * which takes no arguments and does nothing) */
+static int
+Connection_tp_init(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
+{
+}
+
 /* Destructor */
 static void Connection_tp_dealloc(Connection *self)
 {
@@ -432,7 +439,7 @@ PyTypeObject DBusPyConnection_Type = {
     0,                      /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    0,                      /*tp_init*/
+    Connection_tp_init,     /*tp_init*/
     0,                      /*tp_alloc*/
     Connection_tp_new,      /*tp_new*/
     0,                      /*tp_free*/
