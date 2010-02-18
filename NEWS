@@ -1,11 +1,12 @@
-D-Bus Python Bindings 0.83.1 (UNRELEASED)
+D-Bus Python Bindings 0.83.1 (2010-02-18)
 =========================================
 
-Deprecations:
-
-Features:
-
 Fixes:
+
+* fd.o #21172: avoid some deprecation warnings in Python 2.6
+
+* fd.o #15013: add dbus.lowlevel.MESSAGE_TYPE_SIGNAL etc., for those who care
+  about message types at a low level
 
 * When removing signal matches, clean up internal state, avoiding a memory
   leak in long-lived Python processes that connect to signals from arbitrarily
