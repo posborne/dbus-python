@@ -62,10 +62,10 @@ cross-test-client:
 dist-hook:
 	chmod u+w $(distdir)/ChangeLog
 	if test -d $(top_srcdir)/.git; then \
-		if git-log --stat > $(distdir)/ChangeLog; then \
+		if git log --stat > $(distdir)/ChangeLog; then \
 			: ; \
 		else \
-			git-log > $(distdir)/ChangeLog; \
+			git log > $(distdir)/ChangeLog; \
 		fi; \
 	fi
 
