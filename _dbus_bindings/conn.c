@@ -344,8 +344,10 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 /* Post-construction: nothing to do (but don't chain up to object.__init__,
  * which takes no arguments and does nothing) */
 static int
-Connection_tp_init(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
+Connection_tp_init(PyObject *self UNUSED, PyObject *args UNUSED,
+        PyObject *kwargs UNUSED)
 {
+    return 0;
 }
 
 /* Destructor */
