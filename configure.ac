@@ -144,16 +144,22 @@ AC_CHECK_LIB([dbus-1], [dbus_watch_get_unix_fd],
                         [Define if libdbus-1 has dbus_watch_get_unix_fd])],
              [:], [$DBUS_LIBS])
 
-dnl add required cflags ...
-JH_ADD_CFLAG([-Wall])
-JH_ADD_CFLAG([-Wextra])
-JH_ADD_CFLAG([-Wno-missing-field-initializers])
-JH_ADD_CFLAG([-Wdeclaration-after-statement])
-JH_ADD_CFLAG([-Wshadow])
-JH_ADD_CFLAG([-Wstrict-prototypes])
-JH_ADD_CFLAG([-Wmissing-prototypes])
-JH_ADD_CFLAG([-Wmissing-declarations])
-JH_ADD_CFLAG([-Wdeprecated-declarations])
+TP_COMPILER_WARNINGS([CFLAGS], [test] dbus_python_released [= 0],
+  [all \
+   extra \
+   declaration-after-statement \
+   deprecated-declarations \
+   shadow \
+   strict-prototypes \
+   missing-prototypes \
+   missing-declarations \
+   sign-compare \
+   nested-externs \
+   pointer-arith \
+   format-security \
+   init-self],
+  [missing-field-initializers])
+
 JH_ADD_CFLAG([-std=c9x])
 JH_ADD_CFLAG([-fno-strict-aliasing])
 
