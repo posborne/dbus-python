@@ -339,7 +339,7 @@ class BusConnection(Connection):
         :Since: 0.81.0
         """
         return self.call_blocking(BUS_DAEMON_NAME, BUS_DAEMON_PATH,
-                                  BUS_DAEMON_IFACE, 'ListNames',
+                                  BUS_DAEMON_IFACE, 'ListActivatableNames',
                                   '', (), utf8_strings=True)
 
     def get_name_owner(self, bus_name):
