@@ -144,7 +144,7 @@ AC_CHECK_LIB([dbus-1], [dbus_watch_get_unix_fd],
                         [Define if libdbus-1 has dbus_watch_get_unix_fd])],
              [:], [$DBUS_LIBS])
 
-TP_COMPILER_WARNINGS([CFLAGS], [test] dbus_python_released [= 0],
+TP_COMPILER_WARNINGS([CFLAGS_WARNINGS], [test] dbus_python_released [= 0],
   [all \
    extra \
    declaration-after-statement \
@@ -159,6 +159,8 @@ TP_COMPILER_WARNINGS([CFLAGS], [test] dbus_python_released [= 0],
    format-security \
    init-self],
   [missing-field-initializers])
+
+CFLAGS="$CFLAGS $CFLAGS_WARNINGS"
 
 JH_ADD_CFLAG([-std=c9x])
 JH_ADD_CFLAG([-fno-strict-aliasing])
