@@ -388,6 +388,9 @@ Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
 #ifdef WITH_DBUS_FLOAT32
             case DBUS_TYPE_FLOAT:
 #endif
+#ifdef DBUS_TYPE_UNIX_FD
+            case DBUS_TYPE_UNIX_FD:
+#endif
             case DBUS_TYPE_STRING:
             case DBUS_TYPE_OBJECT_PATH:
             case DBUS_TYPE_SIGNATURE:
