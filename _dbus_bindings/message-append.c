@@ -493,7 +493,7 @@ _message_iter_append_byte(DBusMessageIter *appender, PyObject *obj)
         if (PyString_GET_SIZE(obj) != 1) {
             PyErr_Format(PyExc_ValueError, "Expected a string of "
                          "length 1 byte, but found %d bytes",
-                         PyString_GET_SIZE(obj));
+                         (int) PyString_GET_SIZE(obj));
             return -1;
         }
         y = *(unsigned char *)PyString_AS_STRING(obj);
