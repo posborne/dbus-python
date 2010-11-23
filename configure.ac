@@ -160,8 +160,6 @@ TP_COMPILER_WARNINGS([CFLAGS_WARNINGS], [test] dbus_python_released [= 0],
    init-self],
   [missing-field-initializers])
 
-CFLAGS="$CFLAGS $CFLAGS_WARNINGS"
-
 JH_ADD_CFLAG([-std=c9x])
 JH_ADD_CFLAG([-fno-strict-aliasing])
 
@@ -172,6 +170,8 @@ enable_Werror=$enableval, enable_Werror=no)
 if test "x$enable_Werror" = xyes; then
   JH_ADD_CFLAG([-Werror])
 fi
+
+CFLAGS="$CFLAGS $CFLAGS_WARNINGS"
 
 ifelse(dbus_python_released, 1,
     [ # version x.y.z - disable coding style checks by default
