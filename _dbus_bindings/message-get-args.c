@@ -387,6 +387,12 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 dbus_message_iter_get_fixed_array(&sub,
                                                   (const unsigned char **)&u.s,
                                                   &n);
+                if (n == 0 && u.s == NULL) {
+                    /* fd.o #21831: s# turns (NULL, 0) into None, but
+                     * dbus_message_iter_get_fixed_array produces (NULL, 0)
+                     * for an empty byte-blob... */
+                    u.s = "";
+                }
                 args = Py_BuildValue("(s#)", u.s, (Py_ssize_t)n);
                 if (!args) break;
                 ret = PyObject_Call((PyObject *)&DBusPyByteArray_Type,

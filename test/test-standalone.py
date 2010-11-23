@@ -82,6 +82,9 @@ class TestTypes(unittest.TestCase):
     def test_Byte(self):
         self.assertEquals(types.Byte('x', variant_level=2), types.Byte(ord('x')))
 
+    def test_ByteArray(self):
+        self.assertEquals(types.ByteArray(''), '')
+
     def test_object_path_attr(self):
         class MyObject(object):
             __dbus_object_path__ = '/foo'
@@ -175,6 +178,10 @@ class TestMessageMarshalling(unittest.TestCase):
         s = SignalMessage('/', 'foo.bar', 'baz')
         s.append(types.ByteArray('ab'), signature='av')
         aeq(s.get_args_list(), [[types.Byte('a'), types.Byte('b')]])
+        s = SignalMessage('/', 'foo.bar', 'baz')
+        s.append(types.ByteArray(''), signature='ay')
+        aeq(s.get_args_list(), [[]])
+        aeq(s.get_args_list(byte_arrays=True), [types.ByteArray('')])
 
     def test_append_Variant(self):
         a = self.assert_
