@@ -24,6 +24,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <config.h>
+
 #include <assert.h>
 
 #define DBG_IS_TOO_VERBOSE
@@ -519,6 +521,22 @@ _message_iter_append_byte(DBusMessageIter *appender, PyObject *obj)
     return 0;
 }
 
+static dbus_bool_t
+dbuspy_message_iter_close_container(DBusMessageIter *iter,
+                                    DBusMessageIter *sub,
+                                    dbus_bool_t is_ok)
+{
+#ifdef HAVE_DBUS_MESSAGE_ITER_ABANDON_CONTAINER
+    if (!is_ok) {
+        dbus_message_iter_abandon_container(iter, sub);
+        return TRUE;
+    }
+#else
+    (void) is_ok;
+#endif
+    return dbus_message_iter_close_container(iter, sub);
+}
+
 static int
 _message_iter_append_dictentry(DBusMessageIter *appender,
                                DBusSignatureIter *sig_iter,
@@ -565,7 +583,7 @@ _message_iter_append_dictentry(DBusMessageIter *appender,
         ret = _message_iter_append_pyobject(&sub, &sub_sig_iter, value, &more);
     }
     DBG("%s", "Closing DICT_ENTRY container");
-    if (!dbus_message_iter_close_container(appender, &sub)) {
+    if (!dbuspy_message_iter_close_container(appender, &sub, (ret == 0))) {
         PyErr_NoMemory();
         ret = -1;
     }
@@ -700,7 +718,7 @@ _message_iter_append_multi(DBusMessageIter *appender,
 
     /* This must be run as cleanup, even on failure. */
     DBG("Closing %c container", container);
-    if (!dbus_message_iter_close_container(appender, &sub_appender)) {
+    if (!dbuspy_message_iter_close_container(appender, &sub_appender, (ret == 0))) {
         PyErr_NoMemory();
         ret = -1;
     }
