@@ -37,7 +37,13 @@ TESTS_ENVIRONMENT = DBUS_TOP_SRCDIR="$(abs_top_srcdir)" \
 		    PYTHONPATH="$(abs_top_builddir)/test/.libs:$(abs_top_srcdir):$(abs_top_srcdir)/test:$(abs_top_builddir)/_dbus_bindings/.libs:$(abs_top_builddir)/_dbus_glib_bindings/.libs" \
 		    PYTHON='$(PYTHON)'
 
-TESTS = run-test.sh
+TESTS = run-test.sh test-import-repeatedly
+
+check_PROGRAMS = test-import-repeatedly
+
+test_import_repeatedly_SOURCES = import-repeatedly.c
+test_import_repeatedly_CPPFLAGS = $(PYTHON_INCLUDES)
+test_import_repeatedly_LDFLAGS = $(PYTHON_LIBS)
 
 cross-test-server:
 	$(TESTS_ENVIRONMENT) $(PYTHON) $(top_srcdir)/test/cross-test-server.py

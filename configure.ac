@@ -44,6 +44,7 @@ dnl (copied from libglade/configure.in)
 m4_define([_LT_AC_TAGCONFIG],[])
 
 AC_PROG_LIBTOOL
+AM_PROG_CC_C_O
 
 AM_PATH_PYTHON(2.4.0)
 
@@ -51,6 +52,9 @@ AM_CHECK_PYTHON_HEADERS(,[AC_MSG_ERROR(could not find Python headers)])
 
 PLATFORM=`$PYTHON -c "from distutils import util; print util.get_platform()"`
 AC_SUBST(PLATFORM)
+
+PYTHON_LIBS=`$PYTHON-config --ldflags`
+AC_SUBST([PYTHON_LIBS])
 
 dnl Building documentation
 
