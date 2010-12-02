@@ -66,7 +66,7 @@ Boolean_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     tuple = Py_BuildValue("(i)", PyObject_IsTrue(value) ? 1 : 0);
     if (!tuple) return NULL;
     self = (DBusPyIntBase_Type.tp_new)(cls, tuple, kwargs);
-    Py_DECREF(tuple);
+    Py_CLEAR(tuple);
     return self;
 }
 
@@ -168,7 +168,7 @@ Int16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
     if (self && dbus_py_int16_range_check(self) == -1 && PyErr_Occurred()) {
-        Py_DECREF(self);
+        Py_CLEAR(self);
         return NULL;
     }
     return self;
@@ -258,7 +258,7 @@ UInt16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
     if (self && dbus_py_uint16_range_check(self) == (dbus_uint16_t)(-1)
         && PyErr_Occurred()) {
-        Py_DECREF (self);
+        Py_CLEAR (self);
         return NULL;
     }
     return self;
@@ -347,7 +347,7 @@ Int32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
     if (self && dbus_py_int32_range_check(self) == -1 && PyErr_Occurred()) {
-        Py_DECREF(self);
+        Py_CLEAR(self);
         return NULL;
     }
     return self;
@@ -430,16 +430,16 @@ dbus_py_uint32_range_check(PyObject *obj)
     if (!long_obj) return (dbus_uint32_t)(-1);
     i = PyLong_AsUnsignedLong(long_obj);
     if (i == (unsigned long)(-1) && PyErr_Occurred()) {
-        Py_DECREF(long_obj);
+        Py_CLEAR(long_obj);
         return (dbus_uint32_t)(-1);
     }
     if (i > UINT32_MAX) {
         PyErr_Format(PyExc_OverflowError, "Value %d out of range for UInt32",
                      (int)i);
-        Py_DECREF(long_obj);
+        Py_CLEAR(long_obj);
         return (dbus_uint32_t)(-1);
     }
-    Py_DECREF(long_obj);
+    Py_CLEAR(long_obj);
     return i;
 }
 
@@ -449,7 +449,7 @@ UInt32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     PyObject *self = (DBusPyLongBase_Type.tp_new)(cls, args, kwargs);
     if (self && dbus_py_uint32_range_check(self) == (dbus_uint32_t)(-1)
         && PyErr_Occurred()) {
-        Py_DECREF(self);
+        Py_CLEAR(self);
         return NULL;
     }
     return self;
@@ -536,15 +536,15 @@ dbus_py_int64_range_check(PyObject *obj)
     if (!long_obj) return -1;
     i = PyLong_AsLongLong(long_obj);
     if (i == -1 && PyErr_Occurred()) {
-        Py_DECREF(long_obj);
+        Py_CLEAR(long_obj);
         return -1;
     }
     if (i < INT64_MIN || i > INT64_MAX) {
         PyErr_SetString(PyExc_OverflowError, "Value out of range for Int64");
-        Py_DECREF(long_obj);
+        Py_CLEAR(long_obj);
         return -1;
     }
-    Py_DECREF(long_obj);
+    Py_CLEAR(long_obj);
     return i;
 }
 #endif
@@ -555,7 +555,7 @@ Int64_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 #ifdef DBUS_PYTHON_64_BIT_WORKS
     PyObject *self = (DBusPyLongBase_Type.tp_new)(cls, args, kwargs);
     if (self && dbus_py_int64_range_check(self) == -1 && PyErr_Occurred()) {
-        Py_DECREF(self);
+        Py_CLEAR(self);
         return NULL;
     }
     return self;
@@ -643,15 +643,15 @@ dbus_py_uint64_range_check(PyObject *obj)
     if (!long_obj) return (dbus_uint64_t)(-1);
     i = PyLong_AsUnsignedLongLong(long_obj);
     if (i == (unsigned PY_LONG_LONG)(-1) && PyErr_Occurred()) {
-        Py_DECREF(long_obj);
+        Py_CLEAR(long_obj);
         return (dbus_uint64_t)(-1);
     }
     if (i > UINT64_MAX) {
         PyErr_SetString(PyExc_OverflowError, "Value out of range for UInt64");
-        Py_DECREF(long_obj);
+        Py_CLEAR(long_obj);
         return (dbus_uint64_t)(-1);
     }
-    Py_DECREF(long_obj);
+    Py_CLEAR(long_obj);
     return i;
 }
 
@@ -662,7 +662,7 @@ UInt64_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     PyObject *self = (DBusPyLongBase_Type.tp_new)(cls, args, kwargs);
     if (self && dbus_py_uint64_range_check(self) == (dbus_uint64_t)(-1)
         && PyErr_Occurred()) {
-        Py_DECREF(self);
+        Py_CLEAR(self);
         return NULL;
     }
     return self;

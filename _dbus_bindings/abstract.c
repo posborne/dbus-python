@@ -50,7 +50,7 @@ dbus_py_variant_level_get(PyObject *obj)
     }
 
     vl_obj = PyDict_GetItem(_dbus_py_variant_levels, key);
-    Py_DECREF(key);
+    Py_CLEAR(key);
 
     if (!vl_obj)
         return 0;
@@ -70,7 +70,7 @@ dbus_py_variant_level_set(PyObject *obj, long variant_level)
     if (variant_level <= 0) {
         if (PyDict_GetItem (_dbus_py_variant_levels, key)) {
             if (PyDict_DelItem (_dbus_py_variant_levels, key) < 0) {
-                Py_DECREF(key);
+                Py_CLEAR(key);
                 return FALSE;
             }
         }
@@ -78,15 +78,15 @@ dbus_py_variant_level_set(PyObject *obj, long variant_level)
     else {
         PyObject *vl_obj = PyInt_FromLong(variant_level);
         if (!vl_obj) {
-            Py_DECREF(key);
+            Py_CLEAR(key);
             return FALSE;
         }
         if (PyDict_SetItem (_dbus_py_variant_levels, key, vl_obj) < 0) {
-            Py_DECREF(key);
+            Py_CLEAR(key);
             return FALSE;
         }
     }
-    Py_DECREF(key);
+    Py_CLEAR(key);
     return TRUE;
 }
 
@@ -111,11 +111,11 @@ dbus_py_variant_level_getattro(PyObject *obj, PyObject *name)
 
     if (strcmp(PyString_AS_STRING(name), "variant_level")) {
         value = PyObject_GenericGetAttr(obj, name);
-        Py_DECREF(name);
+        Py_CLEAR(name);
         return value;
     }
 
-    Py_DECREF(name);
+    Py_CLEAR(name);
 
     key = PyLong_FromVoidPtr(obj);
 
@@ -124,7 +124,7 @@ dbus_py_variant_level_getattro(PyObject *obj, PyObject *name)
     }
 
     value = PyDict_GetItem(_dbus_py_variant_levels, key);
-    Py_DECREF(key);
+    Py_CLEAR(key);
 
     if (!value)
         return PyInt_FromLong(0);
@@ -210,7 +210,7 @@ DBusPythonInt_tp_repr(PyObject *self)
                                       PyString_AS_STRING(parent_repr));
     }
     /* whether my_repr is NULL or not: */
-    Py_DECREF(parent_repr);
+    Py_CLEAR(parent_repr);
     return my_repr;
 }
 
@@ -322,7 +322,7 @@ DBusPythonFloat_tp_repr(PyObject *self)
                                       PyString_AS_STRING(parent_repr));
     }
     /* whether my_repr is NULL or not: */
-    Py_DECREF(parent_repr);
+    Py_CLEAR(parent_repr);
     return my_repr;
 }
 
@@ -399,7 +399,7 @@ DBusPythonString_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     self = (PyString_Type.tp_new)(cls, args, NULL);
     if (self) {
         if (!dbus_py_variant_level_set(self, variantness)) {
-            Py_DECREF(self);
+            Py_CLEAR(self);
             return NULL;
         }
     }
@@ -417,11 +417,11 @@ DBusPythonString_tp_repr(PyObject *self)
     if (!parent_repr) return NULL;
     vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
     if (!vl_obj) {
-        Py_DECREF(parent_repr);
+        Py_CLEAR(parent_repr);
         return NULL;
     }
     variant_level = PyInt_AsLong(vl_obj);
-    Py_DECREF(vl_obj);
+    Py_CLEAR(vl_obj);
     if (variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
                                       self->ob_type->tp_name,
@@ -433,7 +433,7 @@ DBusPythonString_tp_repr(PyObject *self)
                                       PyString_AS_STRING(parent_repr));
     }
     /* whether my_repr is NULL or not: */
-    Py_DECREF(parent_repr);
+    Py_CLEAR(parent_repr);
     return my_repr;
 }
 
@@ -517,7 +517,7 @@ DBusPythonLong_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     self = (PyLong_Type.tp_new)(cls, args, NULL);
     if (self) {
         if (!dbus_py_variant_level_set(self, variantness)) {
-            Py_DECREF(self);
+            Py_CLEAR(self);
             return NULL;
         }
     }
@@ -535,11 +535,11 @@ DBusPythonLong_tp_repr(PyObject *self)
     if (!parent_repr) return NULL;
     vl_obj = PyObject_GetAttr(self, dbus_py_variant_level_const);
     if (!vl_obj) {
-        Py_DECREF(parent_repr);
+        Py_CLEAR(parent_repr);
         return NULL;
     }
     variant_level = PyInt_AsLong(vl_obj);
-    Py_DECREF(vl_obj);
+    Py_CLEAR(vl_obj);
     if (variant_level) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
                                       self->ob_type->tp_name,
@@ -551,7 +551,7 @@ DBusPythonLong_tp_repr(PyObject *self)
                                       PyString_AS_STRING(parent_repr));
     }
     /* whether my_repr is NULL or not: */
-    Py_DECREF(parent_repr);
+    Py_CLEAR(parent_repr);
     return my_repr;
 }
 

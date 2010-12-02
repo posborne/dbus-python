@@ -80,13 +80,13 @@ DBusPyConnection_HandleMessage(Connection *conn,
                                                  NULL);
     if (obj == Py_None) {
         DBG("%p: OK, handler %p returned None", conn, callable);
-        Py_DECREF(obj);
+        Py_CLEAR(obj);
         return DBUS_HANDLER_RESULT_HANDLED;
     }
     else if (obj == Py_NotImplemented) {
         DBG("%p: handler %p returned NotImplemented, continuing",
             conn, callable);
-        Py_DECREF(obj);
+        Py_CLEAR(obj);
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
     else if (!obj) {
@@ -101,7 +101,7 @@ DBusPyConnection_HandleMessage(Connection *conn,
     else {
         long i = PyInt_AsLong(obj);
         DBG("%p: handler %p returned %ld", conn, callable, i);
-        Py_DECREF(obj);
+        Py_CLEAR(obj);
         if (i == -1 && PyErr_Occurred()) {
             PyErr_SetString(PyExc_TypeError, "Return from D-Bus message "
                             "handler callback should be None, "
@@ -269,7 +269,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
         goto err;
     }
 
-    Py_DECREF(mainloop);
+    Py_CLEAR(mainloop);
 
     DBG("%s() -> %p", __func__, self);
     TRACE(self);
@@ -277,9 +277,9 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
 
 err:
     DBG("Failed to construct Connection from DBusConnection at %p", conn);
-    Py_XDECREF(mainloop);
-    Py_XDECREF(self);
-    Py_XDECREF(ref);
+    Py_CLEAR(mainloop);
+    Py_CLEAR(self);
+    Py_CLEAR(ref);
     if (conn) {
         Py_BEGIN_ALLOW_THREADS
         dbus_connection_close(conn);
@@ -371,9 +371,9 @@ static void Connection_tp_dealloc(Connection *self)
 
     DBG("Connection at %p: deleting callbacks", self);
     self->filters = NULL;
-    Py_XDECREF(filters);
+    Py_CLEAR(filters);
     self->object_paths = NULL;
-    Py_XDECREF(object_paths);
+    Py_CLEAR(object_paths);
 
     if (conn) {
         /* Might trigger callbacks if we're unlucky... */

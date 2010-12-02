@@ -147,7 +147,7 @@ get_object_path(PyObject *obj)
             return magic_attr;
         }
         else {
-            Py_DECREF(magic_attr);
+            Py_CLEAR(magic_attr);
             PyErr_SetString(PyExc_TypeError, "__dbus_object_path__ must be "
                             "a string");
             return NULL;
@@ -186,10 +186,10 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
     if (!magic_attr)
         return NULL;
     if (magic_attr != Py_None) {
-        Py_DECREF(magic_attr);
+        Py_CLEAR(magic_attr);
         return PyString_FromString(DBUS_TYPE_OBJECT_PATH_AS_STRING);
     }
-    Py_DECREF(magic_attr);
+    Py_CLEAR(magic_attr);
 
     /* Ordering is important: some of these are subclasses of each other. */
     if (PyInt_Check(obj)) {
@@ -250,22 +250,22 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         if (!list) return NULL;
         if (len == 0) {
             PyErr_SetString(PyExc_ValueError, "D-Bus structs cannot be empty");
-            Py_DECREF(list);
+            Py_CLEAR(list);
             return NULL;
         }
         /* Set the first and last elements of list to be the parentheses */
         item = PyString_FromString(DBUS_STRUCT_BEGIN_CHAR_AS_STRING);
         if (PyList_SetItem(list, 0, item) < 0) {
-            Py_DECREF(list);
+            Py_CLEAR(list);
             return NULL;
         }
         item = PyString_FromString(DBUS_STRUCT_END_CHAR_AS_STRING);
         if (PyList_SetItem(list, len + 1, item) < 0) {
-            Py_DECREF(list);
+            Py_CLEAR(list);
             return NULL;
         }
         if (!item || !PyList_GET_ITEM(list, 0)) {
-            Py_DECREF(list);
+            Py_CLEAR(list);
             return NULL;
         }
         item = NULL;
@@ -273,16 +273,16 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         for (i = 0; i < len; i++) {
             item = PyTuple_GetItem(obj, i);
             if (!item) {
-                Py_DECREF(list);
+                Py_CLEAR(list);
                 return NULL;
             }
             item = _signature_string_from_pyobject(item, NULL);
             if (!item) {
-                Py_DECREF(list);
+                Py_CLEAR(list);
                 return NULL;
             }
             if (PyList_SetItem(list, i + 1, item) < 0) {
-                Py_DECREF(list);
+                Py_CLEAR(list);
                 return NULL;
             }
             item = NULL;
@@ -290,13 +290,13 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         empty_str = PyString_FromString("");
         if (!empty_str) {
             /* really shouldn't happen */
-            Py_DECREF(list);
+            Py_CLEAR(list);
             return NULL;
         }
         ret = PyObject_CallMethod(empty_str, "join", "(O)", list); /* new ref */
         /* whether ret is NULL or not, */
-        Py_DECREF(empty_str);
-        Py_DECREF(list);
+        Py_CLEAR(empty_str);
+        Py_CLEAR(list);
         return ret;
     }
     else if (PyList_Check(obj)) {
@@ -349,8 +349,8 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
                                       PyString_AS_STRING(keysig),
                                       PyString_AS_STRING(valuesig));
         }
-        Py_XDECREF(keysig);
-        Py_XDECREF(valuesig);
+        Py_CLEAR(keysig);
+        Py_CLEAR(valuesig);
         return ret;
     }
     else {
@@ -403,7 +403,7 @@ dbus_py_Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
         PyErr_SetString(PyExc_RuntimeError, "Internal error: "
                         "_signature_string_from_pyobject returned "
                         "a bad result");
-        Py_DECREF(tmp);
+        Py_CLEAR(tmp);
         return NULL;
     }
     ret = PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s#)",
@@ -411,7 +411,7 @@ dbus_py_Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
                                 PyString_GET_SIZE(tmp) - 2);
     DBG("Message_guess_signature: returning Signature at %p \"%s\"", ret,
         ret ? PyString_AS_STRING(ret) : "(NULL)");
-    Py_DECREF(tmp);
+    Py_CLEAR(tmp);
     return ret;
 }
 
@@ -433,7 +433,7 @@ _message_iter_append_string(DBusMessageIter *appender,
         PyObject *object_path = get_object_path (obj);
 
         if (object_path == Py_None) {
-            Py_DECREF(object_path);
+            Py_CLEAR(object_path);
         }
         else if (!object_path) {
             return -1;
@@ -441,7 +441,7 @@ _message_iter_append_string(DBusMessageIter *appender,
         else {
             int ret = _message_iter_append_string(appender, sig_type,
                                                   object_path, FALSE);
-            Py_DECREF(object_path);
+            Py_CLEAR(object_path);
             return ret;
         }
     }
@@ -458,8 +458,7 @@ _message_iter_append_string(DBusMessageIter *appender,
                             "to be sent over D-Bus must be valid UTF-8");
             return -1;
         }
-        Py_DECREF(unicode);
-        unicode = NULL;
+        Py_CLEAR(unicode);
 
         DBG("Performing actual append: string %s", s);
         if (!dbus_message_iter_append_basic(appender, sig_type,
@@ -478,7 +477,7 @@ _message_iter_append_string(DBusMessageIter *appender,
             PyErr_NoMemory();
             return -1;
         }
-        Py_DECREF(utf8);
+        Py_CLEAR(utf8);
     }
     else {
         PyErr_SetString(PyExc_TypeError,
@@ -588,7 +587,7 @@ _message_iter_append_dictentry(DBusMessageIter *appender,
         ret = -1;
     }
 out:
-    Py_DECREF(value);
+    Py_CLEAR(value);
     return ret;
 }
 
@@ -697,11 +696,11 @@ _message_iter_append_multi(DBusMessageIter *appender,
             if (!args)
                 break;
             byte = PyObject_Call((PyObject *)&DBusPyByte_Type, args, NULL);
-            Py_DECREF(args);
+            Py_CLEAR(args);
             if (!byte)
                 break;
             ret = _message_iter_append_variant(&sub_appender, byte);
-            Py_DECREF(byte);
+            Py_CLEAR(byte);
         }
         else {
             /* advances sub_sig_iter and sets more on success - for array
@@ -710,7 +709,7 @@ _message_iter_append_multi(DBusMessageIter *appender,
                                                 contents, &more);
         }
 
-        Py_DECREF(contents);
+        Py_CLEAR(contents);
         if (ret < 0) {
             break;
         }
@@ -733,7 +732,7 @@ _message_iter_append_multi(DBusMessageIter *appender,
     }
 
 out:
-    Py_XDECREF(iterator);
+    Py_CLEAR(iterator);
     dbus_free(sig);
     return ret;
 }
@@ -851,7 +850,7 @@ _message_iter_append_variant(DBusMessageIter *appender, PyObject *obj)
     }
 
 out:
-    Py_XDECREF(obj_sig);
+    Py_CLEAR(obj_sig);
     return ret;
 }
 
@@ -1114,7 +1113,7 @@ dbus_py_Message_append(Message *self, PyObject *args, PyObject *kwargs)
     }
 
     /* success! */
-    Py_XDECREF(signature_obj);
+    Py_CLEAR(signature_obj);
     Py_RETURN_NONE;
 
 hosed:
@@ -1125,7 +1124,7 @@ hosed:
     dbus_message_unref(self->msg);
     self->msg = NULL;
 err:
-    Py_XDECREF(signature_obj);
+    Py_CLEAR(signature_obj);
     return NULL;
 }
 

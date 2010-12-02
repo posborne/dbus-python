@@ -77,7 +77,7 @@ UTF8String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
                                      &str, &variantness)) return NULL;
     unicode = PyUnicode_DecodeUTF8(str, strlen(str), NULL);
     if (!unicode) return NULL;
-    Py_DECREF(unicode);
+    Py_CLEAR(unicode);
     return (DBusPyStrBase_Type.tp_new)(cls, args, kwargs);
 }
 
@@ -285,7 +285,7 @@ String_tp_repr(PyObject *self)
                                       PyString_AS_STRING(parent_repr));
     }
     /* whether my_repr is NULL or not: */
-    Py_DECREF(parent_repr);
+    Py_CLEAR(parent_repr);
     return my_repr;
 }
 

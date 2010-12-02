@@ -214,7 +214,7 @@ set_default_main_loop(PyObject *always_null UNUSED,
     old_loop = default_main_loop;
     Py_INCREF(new_loop);
     default_main_loop = new_loop;
-    Py_XDECREF(old_loop);
+    Py_CLEAR(old_loop);
     Py_RETURN_NONE;
 }
 

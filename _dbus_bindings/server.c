@@ -183,21 +183,21 @@ DBusPyServer_new_connection_cb(DBusServer *server,
 
         conn_obj = PyObject_CallFunctionObjArgs((PyObject *)conn_class,
                 wrapper, ((Server*) self)->mainloop, NULL);
-        Py_DECREF(wrapper);
+        Py_CLEAR(wrapper);
 
         if (!conn_obj)
             goto out;
 
         result = PyObject_CallFunctionObjArgs(method, conn_obj, NULL);
-        Py_XDECREF (conn_obj);
+        Py_CLEAR (conn_obj);
 
         /* discard result if not NULL, and fall through regardless */
-        Py_XDECREF(result);
+        Py_CLEAR(result);
     }
 
 out:
-    Py_XDECREF(method);
-    Py_XDECREF(self);
+    Py_CLEAR(method);
+    Py_CLEAR(self);
 
     if (PyErr_Occurred())
         PyErr_Print();
@@ -329,9 +329,9 @@ DBusPyServer_NewConsumingDBusServer(PyTypeObject *cls,
 
 err:
     DBG("Failed to construct Server from DBusServer at %p", server);
-    Py_XDECREF(mainloop);
-    Py_XDECREF(self);
-    Py_XDECREF(ref);
+    Py_CLEAR(mainloop);
+    Py_CLEAR(self);
+    Py_CLEAR(ref);
 
     if (server) {
         Py_BEGIN_ALLOW_THREADS
@@ -414,7 +414,7 @@ static void Server_tp_dealloc(Server *self)
         Py_END_ALLOW_THREADS
     }
 
-    Py_DECREF(self->mainloop);
+    Py_CLEAR(self->mainloop);
 
     /* make sure to do this last to preserve the invariant that
      * self->server is always non-NULL for any referenced Server.

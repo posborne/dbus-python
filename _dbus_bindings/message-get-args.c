@@ -97,8 +97,7 @@ _message_iter_append_all_to_list(DBusMessageIter *iter, PyObject *list,
         fprintf(stderr, " of type %p\n", item->ob_type);
 #endif
         ret = PyList_Append(list, item);
-        Py_DECREF(item);
-        item = NULL;
+        Py_CLEAR(item);
         if (ret < 0) return -1;
 #ifdef USING_DBG
         fprintf(stderr, "DBG/%ld: list now contains: ", (long)getpid());
@@ -133,7 +132,7 @@ _message_iter_get_dict(DBusMessageIter *iter,
         return NULL;
     }
     status = PyDict_SetItem(kwargs, dbus_py_signature_const, sig);
-    Py_DECREF(sig);
+    Py_CLEAR(sig);
     if (status < 0) {
         return NULL;
     }
@@ -155,24 +154,24 @@ _message_iter_get_dict(DBusMessageIter *iter,
 
         key = _message_iter_get_pyobject(&kv, opts, 0);
         if (!key) {
-            Py_DECREF(ret);
+            Py_CLEAR(ret);
             return NULL;
         }
         dbus_message_iter_next(&kv);
 
         value = _message_iter_get_pyobject(&kv, opts, 0);
         if (!value) {
-            Py_DECREF(key);
-            Py_DECREF(ret);
+            Py_CLEAR(key);
+            Py_CLEAR(ret);
             return NULL;
         }
 
         status = PyDict_SetItem(ret, key, value);
-        Py_DECREF(key);
-        Py_DECREF(value);
+        Py_CLEAR(key);
+        Py_CLEAR(value);
 
         if (status < 0) {
-            Py_DECREF(ret);
+            Py_CLEAR(ret);
             return NULL;
         }
         dbus_message_iter_next(&entries);
@@ -219,16 +218,16 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
         }
         kwargs = PyDict_New();
         if (!kwargs) {
-            Py_DECREF(variant_level_int);
+            Py_CLEAR(variant_level_int);
             return NULL;
         }
         if (PyDict_SetItem(kwargs, dbus_py_variant_level_const,
                            variant_level_int) < 0) {
-            Py_DECREF(variant_level_int);
-            Py_DECREF(kwargs);
+            Py_CLEAR(variant_level_int);
+            Py_CLEAR(kwargs);
             return NULL;
         }
-        Py_DECREF(variant_level_int);
+        Py_CLEAR(variant_level_int);
     }
     /* From here down you need to break from the switch to exit, so the
      * dict is freed if necessary
@@ -417,14 +416,13 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 dbus_free(sig);
                 if (!sig_obj) break;
                 status = PyDict_SetItem(kwargs, dbus_py_signature_const, sig_obj);
-                Py_DECREF(sig_obj);
+                Py_CLEAR(sig_obj);
                 if (status < 0) break;
                 ret = PyObject_Call((PyObject *)&DBusPyArray_Type,
                                     dbus_py_empty_tuple, kwargs);
                 if (!ret) break;
                 if (_message_iter_append_all_to_list(&sub, ret, opts) < 0) {
-                    Py_DECREF(ret);
-                    ret = NULL;
+                    Py_CLEAR(ret);
                 }
             }
             break;
@@ -439,7 +437,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 if (!list) break;
                 dbus_message_iter_recurse(iter, &sub);
                 if (_message_iter_append_all_to_list(&sub, list, opts) < 0) {
-                    Py_DECREF(list);
+                    Py_CLEAR(list);
                     break;
                 }
                 tuple = Py_BuildValue("(O)", list);
@@ -450,8 +448,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                     ret = NULL;
                 }
                 /* whether successful or not, we take the same action: */
-                Py_DECREF(list);
-                Py_XDECREF(tuple);
+                Py_CLEAR(list);
+                Py_CLEAR(tuple);
             }
             break;
 
@@ -470,8 +468,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                          "message", type);
     }
 
-    Py_XDECREF(args);
-    Py_XDECREF(kwargs);
+    Py_CLEAR(args);
+    Py_CLEAR(kwargs);
     return ret;
 }
 
@@ -511,7 +509,7 @@ dbus_py_Message_get_args_list(Message *self, PyObject *args, PyObject *kwargs)
     /* Iterate over args, if any, appending to list */
     if (dbus_message_iter_init(self->msg, &iter)) {
         if (_message_iter_append_all_to_list(&iter, list, &opts) < 0) {
-            Py_DECREF(list);
+            Py_CLEAR(list);
             DBG_EXC("%s", "Message_get_args: appending all to list failed:");
             return NULL;
         }

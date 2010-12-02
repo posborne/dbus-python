@@ -115,22 +115,22 @@ DBusGMainLoop (PyObject *always_null UNUSED, PyObject *args, PyObject *kwargs)
     if (mainloop && set_as_default) {
         if (!_dbus_bindings_module) {
             PyErr_SetString(PyExc_ImportError, "_dbus_bindings not imported");
-            Py_DECREF(mainloop);
+            Py_CLEAR(mainloop);
             return NULL;
         }
         function = PyObject_GetAttrString(_dbus_bindings_module,
                                           "set_default_main_loop");
         if (!function) {
-            Py_DECREF(mainloop);
+            Py_CLEAR(mainloop);
             return NULL;
         }
         result = PyObject_CallFunctionObjArgs(function, mainloop, NULL);
-        Py_DECREF(function);
+        Py_CLEAR(function);
         if (!result) {
-            Py_DECREF(mainloop);
+            Py_CLEAR(mainloop);
             return NULL;
         }
-        Py_DECREF(result);
+        Py_CLEAR(result);
     }
     return mainloop;
 }

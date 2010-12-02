@@ -56,7 +56,7 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         Py_END_ALLOW_THREADS
         if (!ret) {
             DBusPyException_ConsumeError(&error);
-            Py_DECREF(self);
+            Py_CLEAR(self);
             return NULL;
         }
 
@@ -101,7 +101,7 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
             return NULL;
 
         new_args = PyTuple_Pack(2, libdbusconn, mainloop ? mainloop : Py_None);
-        Py_DECREF(libdbusconn);
+        Py_CLEAR(libdbusconn);
 
         if (!new_args) {
             return NULL;
@@ -110,14 +110,14 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         new_kwargs = PyDict_New();
 
         if (!new_kwargs) {
-            Py_DECREF(new_args);
+            Py_CLEAR(new_args);
             return NULL;
         }
 
         self = (Connection *)(DBusPyConnection_Type.tp_new)(cls, new_args,
                 new_kwargs);
-        Py_DECREF(new_args);
-        Py_DECREF(new_kwargs);
+        Py_CLEAR(new_args);
+        Py_CLEAR(new_kwargs);
 
         return (PyObject *)self;    /* whether NULL or not */
     }

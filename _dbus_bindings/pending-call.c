@@ -113,15 +113,15 @@ _pending_call_notify_function(DBusPendingCall *pc,
             if (!ret) {
                 PyErr_Print();
             }
-            Py_XDECREF(ret);
-            Py_DECREF(msg_obj);
+            Py_CLEAR(ret);
+            Py_CLEAR(msg_obj);
         }
         /* else OOM has happened - not a lot we can do about that,
          * except possibly making it fatal (FIXME?) */
     }
 
 release:
-    Py_XDECREF(handler);
+    Py_CLEAR(handler);
     PyGILState_Release(gil);
 }
 
@@ -151,8 +151,8 @@ DBusPyPendingCall_ConsumeDBusPendingCall(DBusPendingCall *pc,
     PendingCall *self = PyObject_New(PendingCall, &PendingCallType);
 
     if (!list || !self) {
-        Py_XDECREF(list);
-        Py_XDECREF(self);
+        Py_CLEAR(list);
+        Py_CLEAR(self);
         Py_BEGIN_ALLOW_THREADS
         dbus_pending_call_cancel(pc);
         dbus_pending_call_unref(pc);
@@ -177,8 +177,8 @@ DBusPyPendingCall_ConsumeDBusPendingCall(DBusPendingCall *pc,
         PyErr_NoMemory();
         /* DECREF twice - one for the INCREF and one for the allocation */
         Py_DECREF(list);
-        Py_DECREF(list);
-        Py_DECREF(self);
+        Py_CLEAR(list);
+        Py_CLEAR(self);
         Py_BEGIN_ALLOW_THREADS
         dbus_pending_call_cancel(pc);
         dbus_pending_call_unref(pc);
@@ -206,7 +206,7 @@ DBusPyPendingCall_ConsumeDBusPendingCall(DBusPendingCall *pc,
         _pending_call_notify_function(pc, list);
     }
 
-    Py_DECREF(list);
+    Py_CLEAR(list);
     self->pc = pc;
     return (PyObject *)self;
 }

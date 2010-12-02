@@ -55,10 +55,10 @@ _object_path_unregister(DBusConnection *conn, void *user_data)
         Py_XDECREF(PyObject_CallFunctionObjArgs(callable, conn_obj, NULL));
     }
 out:
-    Py_XDECREF(conn_obj);
-    Py_XDECREF(tuple);
+    Py_CLEAR(conn_obj);
+    Py_CLEAR(tuple);
     /* the user_data (a Python str) is no longer ref'd by the DBusConnection */
-    Py_XDECREF((PyObject *)user_data);
+    Py_CLEAR(user_data);
     if (PyErr_Occurred()) {
         PyErr_Print();
     }
@@ -118,9 +118,9 @@ _object_path_message(DBusConnection *conn, DBusMessage *message,
     }
 
 out:
-    Py_XDECREF(msg_obj);
-    Py_XDECREF(conn_obj);
-    Py_XDECREF(tuple);
+    Py_CLEAR(msg_obj);
+    Py_CLEAR(conn_obj);
+    Py_CLEAR(tuple);
     if (PyErr_Occurred()) {
         PyErr_Print();
     }
@@ -196,9 +196,9 @@ _filter_message(DBusConnection *conn, DBusMessage *message, void *user_data)
 
     ret = DBusPyConnection_HandleMessage(conn_obj, msg_obj, callable);
 out:
-    Py_XDECREF(msg_obj);
-    Py_XDECREF(conn_obj);
-    Py_XDECREF(callable);
+    Py_CLEAR(msg_obj);
+    Py_CLEAR(conn_obj);
+    Py_CLEAR(callable);
     PyGILState_Release(gil);
     return ret;
 }
@@ -643,7 +643,7 @@ Connection_remove_message_filter(Connection *self, PyObject *callable)
      * to it. */
     obj = PyObject_CallMethod(self->filters, "remove", "(O)", callable);
     if (!obj) return NULL;
-    Py_DECREF(obj);
+    Py_CLEAR(obj);
 
     Py_BEGIN_ALLOW_THREADS
     dbus_connection_remove_filter(self->conn, _filter_message, callable);
@@ -720,13 +720,13 @@ Connection__register_object_path(Connection *self, PyObject *args,
     }
 
     if (!dbus_py_validate_object_path(PyString_AS_STRING(path))) {
-        Py_DECREF(path);
+        Py_CLEAR(path);
         return NULL;
     }
 
     tuple = Py_BuildValue("(OO)", on_unregister, on_message);
     if (!tuple) {
-        Py_DECREF(path);
+        Py_CLEAR(path);
         return NULL;
     }
 
@@ -736,8 +736,8 @@ Connection__register_object_path(Connection *self, PyObject *args,
         PyErr_Format(PyExc_KeyError, "Can't register the object-path "
                      "handler for '%s': there is already a handler",
                      PyString_AS_STRING(path));
-        Py_DECREF(tuple);
-        Py_DECREF(path);
+        Py_CLEAR(tuple);
+        Py_CLEAR(path);
         return NULL;
     }
 
@@ -746,8 +746,8 @@ Connection__register_object_path(Connection *self, PyObject *args,
      * This ensures we can keep libdbus' opinion of whether those
      * paths are handled in sync with our own. */
     if (PyDict_SetItem(self->object_paths, path, Py_None) < 0) {
-        Py_DECREF(tuple);
-        Py_DECREF(path);
+        Py_CLEAR(tuple);
+        Py_CLEAR(path);
         return NULL;
     }
 
@@ -779,15 +779,15 @@ Connection__register_object_path(Connection *self, PyObject *args,
             return NULL;
         }
         /* don't DECREF path: libdbus owns a ref now */
-        Py_DECREF(tuple);
+        Py_CLEAR(tuple);
         Py_RETURN_NONE;
     }
     else {
         /* Oops, OOM. Tidy up, if we can, ignoring any error. */
         PyDict_DelItem(self->object_paths, path);
         PyErr_Clear();
-        Py_DECREF(tuple);
-        Py_DECREF(path);
+        Py_CLEAR(tuple);
+        Py_CLEAR(path);
         PyErr_NoMemory();
         return NULL;
     }
@@ -842,7 +842,7 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
         PyErr_Format(PyExc_KeyError, "Can't unregister the object-path "
                      "handler for '%s': there is no such handler",
                      PyString_AS_STRING(path));
-        Py_DECREF(path);
+        Py_CLEAR(path);
         return NULL;
     }
 
@@ -860,8 +860,8 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
         /* If that failed, there's no need to be paranoid as below - the
         callbacks are still set, so we failed, but at least everything
         is in sync. */
-        Py_DECREF(callbacks);
-        Py_DECREF(path);
+        Py_CLEAR(callbacks);
+        Py_CLEAR(path);
         return NULL;
     }
 
@@ -881,12 +881,12 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
     Py_END_ALLOW_THREADS
 
     if (ok) {
-        Py_DECREF(callbacks);
+        Py_CLEAR(callbacks);
         PyDict_DelItem(self->object_paths, path);
         /* END PARANOIA on successful code path */
         /* The above can't fail unless by some strange trickery the key is no
         longer present. Ignore any errors. */
-        Py_DECREF(path);
+        Py_CLEAR(path);
         PyErr_Clear();
         Py_RETURN_NONE;
     }
@@ -899,8 +899,8 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
         /* If the SetItem failed, there's nothing we can do about it - but
         since we know it's an existing entry, it shouldn't be able to fail
         anyway. */
-        Py_DECREF(path);
-        Py_DECREF(callbacks);
+        Py_CLEAR(path);
+        Py_CLEAR(callbacks);
         return PyErr_NoMemory();
     }
 }
@@ -950,15 +950,15 @@ Connection_list_exported_child_objects (Connection *self, PyObject *args,
         PyObject *tmp = PyString_FromString(*kid_ptr);
 
         if (!tmp) {
-            Py_DECREF(ret);
+            Py_CLEAR(ret);
             return NULL;
         }
         if (PyList_Append(ret, tmp) < 0) {
-            Py_DECREF(tmp);
-            Py_DECREF(ret);
+            Py_CLEAR(tmp);
+            Py_CLEAR(ret);
             return NULL;
         }
-        Py_DECREF(tmp);
+        Py_CLEAR(tmp);
     }
 
     dbus_free_string_array(kids);

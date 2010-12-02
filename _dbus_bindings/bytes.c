@@ -104,12 +104,10 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
     tuple = Py_BuildValue("(O)", obj);
     if (!tuple) return NULL;
-    Py_DECREF(obj);
-    obj = NULL;
+    Py_CLEAR(obj);
 
     obj = DBusPyIntBase_Type.tp_new(cls, tuple, kwargs);
-    Py_DECREF(tuple);
-    tuple = NULL;
+    Py_CLEAR(tuple);
     return obj;
 
 bad_arg:

@@ -478,31 +478,29 @@ Message_get_path_decomposed(Message *self, PyObject *unused UNUSED)
 
     if (!ret) return NULL;
     if (!self->msg) {
-        Py_DECREF(ret);
+        Py_CLEAR(ret);
         return DBusPy_RaiseUnusableMessage();
     }
     if (!dbus_message_get_path_decomposed(self->msg, &paths)) {
-        Py_DECREF(ret);
+        Py_CLEAR(ret);
         return PyErr_NoMemory();
     }
     if (!paths) {
-        Py_DECREF(ret);
+        Py_CLEAR(ret);
         Py_RETURN_NONE;
     }
     for (ptr = paths; *ptr; ptr++) {
         PyObject *str = PyString_FromString(*ptr);
 
         if (!str) {
-            Py_DECREF(ret);
-            ret = NULL;
+            Py_CLEAR(ret);
             break;
         }
         if (PyList_Append(ret, str) < 0) {
-            Py_DECREF(ret);
-            ret = NULL;
+            Py_CLEAR(ret);
             break;
         }
-        Py_DECREF(str);
+        Py_CLEAR(str);
         str = NULL;
     }
     dbus_free_string_array(paths);

@@ -62,8 +62,7 @@ typedef struct {
 static void
 SignatureIter_tp_dealloc (SignatureIter *self)
 {
-    Py_XDECREF(self->string);
-    self->string = NULL;
+    Py_CLEAR(self->string);
     PyObject_Del(self);
 }
 
@@ -84,8 +83,7 @@ SignatureIter_tp_iternext (SignatureIter *self)
 
     if (!dbus_signature_iter_next(&(self->iter))) {
         /* mark object as having been finished with */
-        Py_DECREF(self->string);
-        self->string = NULL;
+        Py_CLEAR(self->string);
     }
 
     return obj;

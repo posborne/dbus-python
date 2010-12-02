@@ -69,7 +69,7 @@ void
 dbus_py_take_gil_and_xdecref(PyObject *obj)
 {
     PyGILState_STATE gil = PyGILState_Ensure();
-    Py_XDECREF(obj);
+    Py_CLEAR(obj);
     PyGILState_Release(gil);
 }
 
