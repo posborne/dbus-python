@@ -1,7 +1,29 @@
 D-Bus Python Bindings 0.83.2 (UNRELEASED)
 =========================================
 
-...
+Dependencies:
+
+* libdbus 1.2 is still supported, but libdbus >= 1.4 is recommended.
+
+Fixes:
+
+* Make BusConnection.list_activatable_names actually call ListActivatableNames,
+  not ListNames (Johan Sandelin)
+
+* Don't override CFLAGS when adding compiler warnings
+  (Louis-Francis Ratté-Boulianne)
+
+* Fix compilation on platforms where Py_ssize_t is larger than int, like x86-64
+  (Elvis Pfützenreuter)
+
+* fd.o #21831: deserialize empty byte arrays with byte_arrays=True as
+  ByteArray(''), not ByteArray('None') (Simon McVittie)
+
+* fd.o #25105: fix crashes when trying to append more struct entries than the
+  signature allows with libdbus 1.4 (Simon McVittie)
+
+* fd.o #23831: fix crashes when an embedded Python interpreter imports dbus,
+  is finalized, is re-initialized, and re-imports dbus
 
 D-Bus Python Bindings 0.83.1 (2010-02-18)
 =========================================
