@@ -5,7 +5,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 # the api, doc, include subdirs don't need their own Makefile.am
 # the dbus subdir is handled with non-recursive make because of #12741
-SUBDIRS = _dbus_bindings _dbus_glib_bindings examples m4 test tools
+SUBDIRS = _dbus_bindings _dbus_glib_bindings examples m4 test tools .
 
 CLEANFILES =
 EXTRA_DIST = \
