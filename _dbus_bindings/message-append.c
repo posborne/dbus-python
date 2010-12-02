@@ -1053,10 +1053,7 @@ dbus_py_Message_append(Message *self, PyObject *args, PyObject *kwargs)
     PyObject *signature_obj = NULL;
     DBusSignatureIter sig_iter;
     DBusMessageIter appender;
-    int i;
     static char *argnames[] = {"signature", NULL};
-    /* must start FALSE for the case where there's nothing there and we
-     * never iterate at all */
     dbus_bool_t more;
 
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
@@ -1089,20 +1086,31 @@ dbus_py_Message_append(Message *self, PyObject *args, PyObject *kwargs)
         PyErr_SetString(PyExc_ValueError, "Corrupt type signature");
         goto err;
     }
-    dbus_signature_iter_init(&sig_iter, signature);
     dbus_message_iter_init_append(self->msg, &appender);
-    more = (signature[0] != '\0');
-    for (i = 0; i < PyTuple_GET_SIZE(args); i++) {
-        if (_message_iter_append_pyobject(&appender, &sig_iter,
-                                          PyTuple_GET_ITEM(args, i),
-                                          &more) < 0) {
+
+    if (signature[0] != '\0') {
+        int i = 0;
+
+        more = TRUE;
+        dbus_signature_iter_init(&sig_iter, signature);
+        while (more) {
+            if (i >= PyTuple_GET_SIZE(args)) {
+                PyErr_SetString(PyExc_TypeError, "More items found in D-Bus "
+                                "signature than in Python arguments");
+                goto hosed;
+            }
+            if (_message_iter_append_pyobject(&appender, &sig_iter,
+                                              PyTuple_GET_ITEM(args, i),
+                                              &more) < 0) {
+                goto hosed;
+            }
+            i++;
+        }
+        if (i < PyTuple_GET_SIZE(args)) {
+            PyErr_SetString(PyExc_TypeError, "Fewer items found in D-Bus "
+                    "signature than in Python arguments");
             goto hosed;
         }
-    }
-    if (more) {
-        PyErr_SetString(PyExc_TypeError, "More items found in D-Bus "
-                        "signature than in Python arguments");
-        goto hosed;
     }
 
     /* success! */
