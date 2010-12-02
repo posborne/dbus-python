@@ -653,6 +653,7 @@ _message_iter_append_multi(DBusMessageIter *appender,
         goto out;
     }
     ret = 0;
+    more = TRUE;
     while ((contents = PyIter_Next(iterator))) {
 
         if (mode == DBUS_TYPE_ARRAY || mode == DBUS_TYPE_DICT_ENTRY) {
@@ -669,6 +670,14 @@ _message_iter_append_multi(DBusMessageIter *appender,
                 dbus_free(s);
             }
 #endif
+        }
+        else /* struct */ {
+            if (!more) {
+                PyErr_Format(PyExc_TypeError, "Fewer items found in struct's "
+                             "D-Bus signature than in Python arguments ");
+                ret = -1;
+                break;
+            }
         }
 
         if (mode == DBUS_TYPE_DICT_ENTRY) {
