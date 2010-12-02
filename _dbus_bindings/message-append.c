@@ -24,6 +24,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <assert.h>
+
 #define DBG_IS_TOO_VERBOSE
 #include "types-internal.h"
 #include "message-internal.h"
@@ -587,6 +589,9 @@ _message_iter_append_multi(DBusMessageIter *appender,
     dbus_bool_t is_byte_array = DBusPyByteArray_Check(obj);
     int inner_type;
     dbus_bool_t more;
+
+    assert(mode == DBUS_TYPE_DICT_ENTRY || mode == DBUS_TYPE_ARRAY ||
+            mode == DBUS_TYPE_STRUCT);
 
 #ifdef USING_DBG
     fprintf(stderr, "Appending multiple: ");
