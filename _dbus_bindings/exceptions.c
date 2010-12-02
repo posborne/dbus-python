@@ -75,6 +75,11 @@ DBusPyException_ConsumeError(DBusError *error)
                                       "s",
                                       error->message ? error->message
                                                      : "");
+
+    if (!exc_value) {
+        goto finally;
+    }
+
     if (error->name) {
         PyObject *name = PyString_FromString(error->name);
         int ret;
