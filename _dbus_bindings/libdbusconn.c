@@ -114,6 +114,9 @@ dbus_py_init_libdbus_conn_types(void)
 dbus_bool_t
 dbus_py_insert_libdbus_conn_types(PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
+    Py_INCREF (&DBusPyLibDBusConnection_Type);
+
     if (PyModule_AddObject(this_module, "_LibDBusConnection",
                            (PyObject *)&DBusPyLibDBusConnection_Type) < 0)
         return FALSE;

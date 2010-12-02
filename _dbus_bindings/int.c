@@ -751,6 +751,7 @@ dbus_py_init_int_types(void)
 dbus_bool_t
 dbus_py_insert_int_types(PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
     Py_INCREF(&DBusPyInt16_Type);
     Py_INCREF(&DBusPyUInt16_Type);
     Py_INCREF(&DBusPyInt32_Type);

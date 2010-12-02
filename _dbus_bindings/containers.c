@@ -748,6 +748,7 @@ dbus_py_init_container_types(void)
 dbus_bool_t
 dbus_py_insert_container_types(PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
     Py_INCREF(&DBusPyArray_Type);
     if (PyModule_AddObject(this_module, "Array",
                            (PyObject *)&DBusPyArray_Type) < 0) return 0;

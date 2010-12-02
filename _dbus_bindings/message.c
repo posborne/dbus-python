@@ -1040,6 +1040,13 @@ dbus_py_init_message_types(void)
 dbus_bool_t
 dbus_py_insert_message_types(PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
+    Py_INCREF (&MessageType);
+    Py_INCREF (&MethodCallMessageType);
+    Py_INCREF (&MethodReturnMessageType);
+    Py_INCREF (&ErrorMessageType);
+    Py_INCREF (&SignalMessageType);
+
     if (PyModule_AddObject(this_module, "Message",
                          (PyObject *)&MessageType) < 0) return 0;
 

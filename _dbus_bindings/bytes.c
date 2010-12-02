@@ -252,6 +252,7 @@ dbus_py_init_byte_types(void)
 dbus_bool_t
 dbus_py_insert_byte_types(PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
     Py_INCREF(&DBusPyByte_Type);
     if (PyModule_AddObject(this_module, "Byte",
                            (PyObject *)&DBusPyByte_Type) < 0) return 0;

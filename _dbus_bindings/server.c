@@ -572,6 +572,8 @@ dbus_py_init_server_types(void)
 dbus_bool_t
 dbus_py_insert_server_types(PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
+    Py_INCREF (&DBusPyServer_Type);
     if (PyModule_AddObject(this_module, "_Server",
                            (PyObject *)&DBusPyServer_Type) < 0) return FALSE;
 

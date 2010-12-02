@@ -145,6 +145,7 @@ dbus_py_init_float_types(void)
 dbus_bool_t
 dbus_py_insert_float_types(PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
     Py_INCREF(&DBusPyDouble_Type);
     if (PyModule_AddObject(this_module, "Double",
                            (PyObject *)&DBusPyDouble_Type) < 0) return 0;

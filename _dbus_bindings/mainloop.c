@@ -198,6 +198,8 @@ dbus_py_insert_mainloop_types(PyObject *this_module)
                                                          NULL);
     if (!null_main_loop) return 0;
 
+    /* PyModule_AddObject steals a ref */
+    Py_INCREF (&NativeMainLoop_Type);
     if (PyModule_AddObject (this_module, "NativeMainLoop",
                             (PyObject *)&NativeMainLoop_Type) < 0) return 0;
     if (PyModule_AddObject (this_module, "NULL_MAIN_LOOP",

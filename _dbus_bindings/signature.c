@@ -232,6 +232,7 @@ dbus_py_init_signature(void)
 dbus_bool_t
 dbus_py_insert_signature(PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
     Py_INCREF(&DBusPySignature_Type);
     if (PyModule_AddObject(this_module, "Signature",
                            (PyObject *)&DBusPySignature_Type) < 0) return 0;

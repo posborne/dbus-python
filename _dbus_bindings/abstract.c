@@ -647,6 +647,7 @@ dbus_py_init_abstract(void)
 dbus_bool_t
 dbus_py_insert_abstract_types(PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
     Py_INCREF(&DBusPyIntBase_Type);
     Py_INCREF(&DBusPyLongBase_Type);
     Py_INCREF(&DBusPyStrBase_Type);

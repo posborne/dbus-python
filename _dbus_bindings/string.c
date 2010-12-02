@@ -364,6 +364,7 @@ dbus_py_init_string_types(void)
 dbus_bool_t
 dbus_py_insert_string_types(PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
     Py_INCREF(&DBusPyObjectPath_Type);
     Py_INCREF(&DBusPyUTF8String_Type);
     Py_INCREF(&DBusPyString_Type);

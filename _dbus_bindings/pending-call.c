@@ -285,6 +285,8 @@ dbus_py_init_pending_call (void)
 dbus_bool_t
 dbus_py_insert_pending_call (PyObject *this_module)
 {
+    /* PyModule_AddObject steals a ref */
+    Py_INCREF (&PendingCallType);
     if (PyModule_AddObject (this_module, "PendingCall",
                             (PyObject *)&PendingCallType) < 0) return 0;
     return 1;
