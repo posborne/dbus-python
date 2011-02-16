@@ -335,6 +335,25 @@ Connection_send_message(Connection *self, PyObject *args)
     return PyLong_FromUnsignedLong(serial);
 }
 
+PyDoc_STRVAR(Connection_set_allow_anonymous__doc__,
+"set_allow_anonymous(bool)\n\n"
+"Allows anonymous clients. Call this on the server side of a connection in a on_connection_added callback"
+);
+static PyObject *
+Connection_set_allow_anonymous(Connection *self, PyObject *args)
+{
+    dbus_bool_t t;
+
+    TRACE(self);
+    DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
+    if (!PyArg_ParseTuple(args, "i", &t)) return NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    dbus_connection_set_allow_anonymous(self->conn, t);
+    Py_END_ALLOW_THREADS
+    Py_RETURN_NONE;
+}
+
 /* The timeout is in seconds here, since that's conventional in Python. */
 PyDoc_STRVAR(Connection_send_message_with_reply__doc__,
 "send_message_with_reply(msg, reply_handler, timeout_s=-1, "
@@ -1030,6 +1049,7 @@ struct PyMethodDef DBusPyConnection_tp_methods[] = {
     {"set_unique_name", (PyCFunction)DBusPyConnection_SetUniqueName,
         METH_VARARGS,
         set_unique_name__doc__},
+    ENTRY(set_allow_anonymous, METH_VARARGS),
     {NULL},
 #undef ENTRY
 };
