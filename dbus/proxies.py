@@ -376,6 +376,7 @@ class ProxyObject(object):
         # and do one message per idle
         for (proxy_method, args, keywords) in self._pending_introspect_queue:
             proxy_method(*args, **keywords)
+        self._pending_introspect_queue = []
 
     def _introspect_reply_handler(self, data):
         self._introspect_lock.acquire()
