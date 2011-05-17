@@ -346,10 +346,12 @@ Connection_set_allow_anonymous(Connection *self, PyObject *args)
 
     TRACE(self);
     DBUS_PY_RAISE_VIA_NULL_IF_FAIL(self->conn);
-    if (!PyArg_ParseTuple(args, "i", &t)) return NULL;
+    if (!PyArg_ParseTuple(args, "i", &t)) {
+        return NULL;
+    }
 
     Py_BEGIN_ALLOW_THREADS
-    dbus_connection_set_allow_anonymous(self->conn, t);
+    dbus_connection_set_allow_anonymous(self->conn, t ? 1 : 0);
     Py_END_ALLOW_THREADS
     Py_RETURN_NONE;
 }
