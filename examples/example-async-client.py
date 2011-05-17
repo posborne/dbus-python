@@ -60,18 +60,6 @@ def handle_hello_error(e):
     if hello_replied and raise_replied:
         loop.quit()
 
-def handle_hello_error(e):
-    global failed
-    global hello_replied
-    hello_replied = True
-    failed = True
-
-    print "HelloWorld raised an exception! That's not meant to happen..."
-    print "\t", str(e)
-
-    if hello_replied and raise_replied:
-        loop.quit()
-
 def handle_raise_reply():
     global failed
     global raise_replied
