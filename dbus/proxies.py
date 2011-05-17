@@ -102,6 +102,7 @@ class _ProxyMethod:
         reply_handler = keywords.pop('reply_handler', None)
         error_handler = keywords.pop('error_handler', None)
         ignore_reply = keywords.pop('ignore_reply', False)
+        signature = keywords.pop('signature', None)
 
         if reply_handler is not None or error_handler is not None:
             if reply_handler is None:
@@ -114,18 +115,20 @@ class _ProxyMethod:
 
         dbus_interface = keywords.pop('dbus_interface', self._dbus_interface)
 
-        if dbus_interface is None:
-            key = self._method_name
-        else:
-            key = dbus_interface + '.' + self._method_name
-        introspect_sig = self._proxy._introspect_method_map.get(key, None)
+        if signature is None:
+            if dbus_interface is None:
+                key = self._method_name
+            else:
+                key = dbus_interface + '.' + self._method_name
+
+            signature = self._proxy._introspect_method_map.get(key, None)
 
         if ignore_reply or reply_handler is not None:
             self._connection.call_async(self._named_service,
                                         self._object_path,
                                         dbus_interface,
                                         self._method_name,
-                                        introspect_sig,
+                                        signature,
                                         args,
                                         reply_handler,
                                         error_handler,
@@ -135,27 +138,29 @@ class _ProxyMethod:
                                                   self._object_path,
                                                   dbus_interface,
                                                   self._method_name,
-                                                  introspect_sig,
+                                                  signature,
                                                   args,
                                                   **keywords)
 
     def call_async(self, *args, **keywords):
         reply_handler = keywords.pop('reply_handler', None)
         error_handler = keywords.pop('error_handler', None)
+        signature = keywords.pop('signature', None)
 
         dbus_interface = keywords.pop('dbus_interface', self._dbus_interface)
 
-        if dbus_interface:
-            key = dbus_interface + '.' + self._method_name
-        else:
-            key = self._method_name
-        introspect_sig = self._proxy._introspect_method_map.get(key, None)
+        if signature is None:
+            if dbus_interface:
+                key = dbus_interface + '.' + self._method_name
+            else:
+                key = self._method_name
+            signature = self._proxy._introspect_method_map.get(key, None)
 
         self._connection.call_async(self._named_service,
                                     self._object_path,
                                     dbus_interface,
                                     self._method_name,
-                                    introspect_sig,
+                                    signature,
                                     args,
                                     reply_handler,
                                     error_handler,
