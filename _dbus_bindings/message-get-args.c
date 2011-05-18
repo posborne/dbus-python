@@ -200,7 +200,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
         dbus_uint64_t u64;
         dbus_int64_t i64;
 #endif
-	int fd;
+        int fd;
     } u;
     int type = dbus_message_iter_get_arg_type(iter);
     PyObject *args = NULL;
