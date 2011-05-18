@@ -39,17 +39,22 @@ import random
 
 class SomeObject(dbus.service.Object):
 
+    counter = 0
+
     @dbus.service.method("com.example.SampleInterface",
                          in_signature='', out_signature='h')
     def GetFd(self):
-        # both forms are acceptable while sending fd
-	if random.random() > 0.5:
+        self.counter = (self.counter + 1) % 3
+
+        if self.counter == 0:
+            print "sending UnixFd(filelike)"
             return dbus.types.UnixFd(f)
-        else:
+        elif self.counter == 1:
+            print "sending int"
             return f.fileno()
-	# The only unacceptable form to send fd would be
-        # UnixFd(f.fileno()) because UnixFd takes fd
-        # ownership when receives an integer.
+        else:
+            print "sending UnixFd(int)"
+            return dbus.types.UnixFd(f.fileno())
 
 if len(sys.argv) < 2:
     print usage
