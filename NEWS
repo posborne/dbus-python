@@ -1,3 +1,20 @@
+D-Bus Python Bindings 0.84.0 (UNRELEASED)
+=========================================
+
+Enhancements:
+
+* fd.o #34342: add Connection.set_allow_anonymous(bool) (Scott Tsai)
+
+Fixes:
+
+* fd.o #35626: clear ProxyObject's pending introspection queue after
+  execution (Scott Tsai)
+
+* fd.o #22560: remove duplicate code from example-async-client (Simon McVittie)
+
+* fd.o #36206: allow signature='x' among ProxyObject method arguments
+  (Simon McVittie)
+
 D-Bus Python Bindings 0.83.2 (2010-12-02)
 =========================================
 
