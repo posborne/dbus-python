@@ -31,13 +31,15 @@ PyDoc_STRVAR(UnixFd_tp_doc,
 "\n"
 "Constructor::\n"
 "\n"
-"    dbus.UnixFd(value: int or file object, variant_level: int]) -> UnixFd\n"
-"``value`` must be an integer related to a file descriptor, or an object that\n"
+"    dbus.UnixFd(value: int or file object[, variant_level: int]) -> UnixFd\n"
+"\n"
+"``value`` must be the integer value of a file descriptor, or an object that\n"
 "implements the fileno() method. Otherwise, `ValueError` will be\n"
 "raised.\n"
 "\n"
 "UnixFd keeps a dup() (duplicate) of the supplied file descriptor. The\n"
 "caller remains responsible for closing the original fd.\n"
+"\n"
 "``variant_level`` must be non-negative; the default is 0.\n"
 "\n"
 ":IVariables:\n"
@@ -46,17 +48,6 @@ PyDoc_STRVAR(UnixFd_tp_doc,
 "    is contained in: if a message's wire format has a variant containing a\n"
 "    variant containing an Unix Fd, this is represented in Python by an\n"
 "    Unix Fd with variant_level==2.\n"
-"\n"
-"\n"
-"take():\n"
-"\n"
-"This method returns the file descriptor owned by UnixFd object.\n"
-"Note that, once this method is called, file descriptor management is\n"
-"application's responsability.\n"
-"\n"
-"This method may be called at most once; UnixFd 'forgets' the file descriptor\n"
-"after yielding it.\n"
-"\n"
 );
 
 typedef struct {
@@ -128,8 +119,20 @@ UnixFd_dealloc(UnixFdObject *self)
     }
 }
 
+PyDoc_STRVAR(UnixFd_take__doc__,
+"take() -> int\n"
+"\n"
+"This method returns the file descriptor owned by UnixFd object.\n"
+"Note that, once this method is called, closing the file descriptor is\n"
+"the caller's responsibility.\n"
+"\n"
+"This method may be called at most once; UnixFd 'forgets' the file\n"
+"descriptor after it is taken.\n"
+"\n"
+":Raises ValueError: if this method has already been called\n"
+);
 static PyObject *
-UnixFd_takefd(UnixFdObject *self)
+UnixFd_take(UnixFdObject *self)
 {
     PyObject *fdnumber;
 
@@ -151,10 +154,7 @@ dbus_py_unix_fd_get_fd(PyObject *self)
 }
 
 static PyMethodDef UnixFd_methods[] = {
-    {"take", (PyCFunction) UnixFd_takefd, METH_NOARGS,
-     "Returns the file descriptor number and yields ownership.\n"
-     "User becomes responsible by closing the file descriptor."
-    },
+    {"take", (PyCFunction) UnixFd_take, METH_NOARGS, UnixFd_take__doc__ },
     {NULL}
 };
 
