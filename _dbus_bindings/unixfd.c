@@ -69,9 +69,9 @@ typedef struct {
 static PyObject *
 UnixFd_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs UNUSED)
 {
-    UnixFdObject* self = NULL;
-    PyObject* arg;
-    PyObject* fdnumber;
+    UnixFdObject *self = NULL;
+    PyObject *arg;
+    PyObject *fdnumber;
     int fd_original, fd;
 
     if (! PyArg_ParseTuple(args, "O", &arg, NULL)) {
@@ -115,17 +115,17 @@ UnixFd_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs UNUSED)
         return NULL;
     }
 
-    self = (UnixFdObject*) cls->tp_alloc(cls, 0);
+    self = (UnixFdObject *) cls->tp_alloc(cls, 0);
     if (!self)
         return NULL;
 
     self->fd = fd;
 
-    return (PyObject*) self;
+    return (PyObject *) self;
 }
 
 static void
-UnixFd_dealloc(UnixFdObject* self)
+UnixFd_dealloc(UnixFdObject *self)
 {
     if (self->fd >= 0) {
         close(self->fd);
@@ -134,9 +134,9 @@ UnixFd_dealloc(UnixFdObject* self)
 }
 
 static PyObject *
-UnixFd_takefd(UnixFdObject* self)
+UnixFd_takefd(UnixFdObject *self)
 {
-    PyObject* fdnumber;
+    PyObject *fdnumber;
 
     if (self->fd < 0) {
         PyErr_SetString(PyExc_ValueError, "File descriptor already taken");
@@ -152,7 +152,7 @@ UnixFd_takefd(UnixFdObject* self)
 int
 dbus_py_unix_fd_get_fd(PyObject *self)
 {
-    return ((UnixFdObject*) self)->fd;
+    return ((UnixFdObject *) self)->fd;
 }
 
 static PyMethodDef UnixFd_methods[] = {
