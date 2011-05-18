@@ -61,7 +61,6 @@ DEFINE_CHECK(DBusPyStrBase)
 dbus_int16_t dbus_py_int16_range_check(PyObject *);
 dbus_uint16_t dbus_py_uint16_range_check(PyObject *);
 dbus_int32_t dbus_py_int32_range_check(PyObject *);
-dbus_int32_t dbus_py_unixfd_range_check(PyObject *);
 dbus_uint32_t dbus_py_uint32_range_check(PyObject *);
 
 #if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
