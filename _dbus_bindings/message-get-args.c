@@ -327,8 +327,13 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             DBG("%s", "found an unix fd");
             dbus_message_iter_get_basic(iter, &u.fd);
             args = Py_BuildValue("(i)", u.fd);
-            if (!args) break;
-            ret = PyObject_Call((PyObject *)&DBusPyUnixFd_Type, args, kwargs);
+            if (args) {
+                ret = PyObject_Call((PyObject *)&DBusPyUnixFd_Type, args,
+                                    kwargs);
+            }
+            if (u.fd >= 0) {
+                close(u.fd);
+            }
             break;
 #endif
 

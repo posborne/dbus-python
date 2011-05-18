@@ -36,10 +36,8 @@ PyDoc_STRVAR(UnixFd_tp_doc,
 "implements the fileno() method. Otherwise, `ValueError` will be\n"
 "raised.\n"
 "\n"
-"UnixFd keeps a dup() (duplicate) of the supplied file descriptor. If an integer\n"
-"value is supplied, UnixFd takes the ownership, and the original file descriptor\n"
-"\nis closed. If a file or socket object is supplied, the original fd is not closed\n"
-"and file descriptor ownership is shared between both.\n"
+"UnixFd keeps a dup() (duplicate) of the supplied file descriptor. The\n"
+"caller remains responsible for closing the original fd.\n"
 "``variant_level`` must be non-negative; the default is 0.\n"
 "\n"
 ":IVariables:\n"
@@ -84,9 +82,7 @@ UnixFd_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs UNUSED)
         if (fd < 0) {
             PyErr_Format(PyExc_ValueError, "Invalid file descriptor");
             return NULL;
-	}
-	/* takes ownership of original fd */
-	close(fd_original);
+        }
 
     } else if (PyObject_HasAttrString(arg, "fileno")) {
         fdnumber = PyObject_CallMethod(arg, "fileno", NULL);
@@ -106,8 +102,7 @@ UnixFd_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs UNUSED)
         if (fd < 0) {
             PyErr_Format(PyExc_ValueError, "Invalid file descriptor from fileno()");
             return NULL;
-	}
-	/* does not close fd_original because we keep sharing ownership */
+        }
 
     } else {
         PyErr_Format(PyExc_ValueError, "Argument is not int and does not "
