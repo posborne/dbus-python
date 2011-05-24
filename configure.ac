@@ -53,7 +53,16 @@ AM_CHECK_PYTHON_HEADERS(,[AC_MSG_ERROR(could not find Python headers)])
 PLATFORM=`$PYTHON -c "from distutils import util; print util.get_platform()"`
 AC_SUBST(PLATFORM)
 
-PYTHON_LIBS=`$PYTHON-config --ldflags`
+AC_ARG_VAR([PYTHON_LIBS], [LDFLAGS for Python, overriding output of python2.x-config --ldflags, e.g. "-L/opt/misc/lib -lpython2.7"])
+
+if test "${PYTHON_LIBS+set}" = set; then
+  AC_MSG_NOTICE([PYTHON_LIBS overridden to: $PYTHON_LIBS])
+else
+  AC_MSG_CHECKING([for Python library linker flags])
+  PYTHON_LIBS=`$PYTHON-config --ldflags`
+  AC_MSG_RESULT([$PYTHON_LIBS])
+fi
+
 AC_SUBST([PYTHON_LIBS])
 
 dnl Building documentation
