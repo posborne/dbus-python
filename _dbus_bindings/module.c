@@ -260,6 +260,7 @@ init_dbus_bindings(void)
     if (!dbus_py_init_abstract()) return;
     if (!dbus_py_init_signature()) return;
     if (!dbus_py_init_int_types()) return;
+    if (!dbus_py_init_unixfd_type()) return;
     if (!dbus_py_init_string_types()) return;
     if (!dbus_py_init_float_types()) return;
     if (!dbus_py_init_container_types()) return;
@@ -277,6 +278,7 @@ init_dbus_bindings(void)
     if (!dbus_py_insert_abstract_types(this_module)) return;
     if (!dbus_py_insert_signature(this_module)) return;
     if (!dbus_py_insert_int_types(this_module)) return;
+    if (!dbus_py_insert_unixfd_type(this_module)) return;
     if (!dbus_py_insert_string_types(this_module)) return;
     if (!dbus_py_insert_float_types(this_module)) return;
     if (!dbus_py_insert_container_types(this_module)) return;
@@ -351,6 +353,9 @@ init_dbus_bindings(void)
     ADD_CONST_PREFIXED(TYPE_INT16)
     ADD_CONST_PREFIXED(TYPE_UINT16)
     ADD_CONST_PREFIXED(TYPE_INT32)
+#ifdef DBUS_TYPE_UNIX_FD
+    ADD_CONST_PREFIXED(TYPE_UNIX_FD)
+#endif
     ADD_CONST_PREFIXED(TYPE_UINT32)
     ADD_CONST_PREFIXED(TYPE_INT64)
     ADD_CONST_PREFIXED(TYPE_UINT64)

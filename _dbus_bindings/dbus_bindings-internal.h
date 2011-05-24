@@ -107,12 +107,15 @@ DEFINE_CHECK(DBusPyUInt16)
 extern PyTypeObject DBusPyInt32_Type, DBusPyUInt32_Type;
 DEFINE_CHECK(DBusPyInt32)
 DEFINE_CHECK(DBusPyUInt32)
+extern PyTypeObject DBusPyUnixFd_Type;
+DEFINE_CHECK(DBusPyUnixFd)
 extern PyTypeObject DBusPyInt64_Type, DBusPyUInt64_Type;
 DEFINE_CHECK(DBusPyInt64)
 DEFINE_CHECK(DBusPyUInt64)
 extern dbus_bool_t dbus_py_init_abstract(void);
 extern dbus_bool_t dbus_py_init_signature(void);
 extern dbus_bool_t dbus_py_init_int_types(void);
+extern dbus_bool_t dbus_py_init_unixfd_type(void);
 extern dbus_bool_t dbus_py_init_string_types(void);
 extern dbus_bool_t dbus_py_init_float_types(void);
 extern dbus_bool_t dbus_py_init_container_types(void);
@@ -120,10 +123,13 @@ extern dbus_bool_t dbus_py_init_byte_types(void);
 extern dbus_bool_t dbus_py_insert_abstract_types(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_signature(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_int_types(PyObject *this_module);
+extern dbus_bool_t dbus_py_insert_unixfd_type(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_string_types(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_float_types(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_container_types(PyObject *this_module);
 extern dbus_bool_t dbus_py_insert_byte_types(PyObject *this_module);
+
+int dbus_py_unix_fd_get_fd(PyObject *self);
 
 /* generic */
 extern void dbus_py_take_gil_and_xdecref(PyObject *);

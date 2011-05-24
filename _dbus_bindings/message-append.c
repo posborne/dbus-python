@@ -218,6 +218,10 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
     }
     else if (PyUnicode_Check(obj))
         return PyString_FromString(DBUS_TYPE_STRING_AS_STRING);
+#if defined(DBUS_TYPE_UNIX_FD)
+    else if (DBusPyUnixFd_Check(obj))
+        return PyString_FromString(DBUS_TYPE_UNIX_FD_AS_STRING);
+#endif
     else if (PyFloat_Check(obj)) {
 #ifdef WITH_DBUS_FLOAT32
         if (DBusPyDouble_Check(obj))
@@ -535,6 +539,29 @@ dbuspy_message_iter_close_container(DBusMessageIter *iter,
 #endif
     return dbus_message_iter_close_container(iter, sub);
 }
+
+#if defined(DBUS_TYPE_UNIX_FD)
+static int
+_message_iter_append_unixfd(DBusMessageIter *appender, PyObject *obj)
+{
+    int fd;
+
+    if (PyInt_Check(obj)) {
+        fd = PyInt_AsLong(obj);
+    } else if (PyObject_IsInstance(obj, (PyObject*) &DBusPyUnixFd_Type)) {
+	fd = dbus_py_unix_fd_get_fd(obj);
+    } else {
+        return -1;
+    }
+
+    DBG("Performing actual append: fd %d", fd);
+    if (!dbus_message_iter_append_basic(appender, DBUS_TYPE_UNIX_FD, &fd)) {
+        PyErr_NoMemory();
+        return -1;
+    }
+    return 0;
+}
+#endif
 
 static int
 _message_iter_append_dictentry(DBusMessageIter *appender,
@@ -1025,6 +1052,12 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
                           "signature than in Python arguments");
           ret = -1;
           break;
+
+#if defined(DBUS_TYPE_UNIX_FD)
+      case DBUS_TYPE_UNIX_FD:
+          ret = _message_iter_append_unixfd(appender, obj);
+          break;
+#endif
 
       default:
           PyErr_Format(PyExc_TypeError, "Unknown type '\\x%x' in D-Bus "

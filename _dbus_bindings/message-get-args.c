@@ -200,6 +200,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
         dbus_uint64_t u64;
         dbus_int64_t i64;
 #endif
+        int fd;
     } u;
     int type = dbus_message_iter_get_arg_type(iter);
     PyObject *args = NULL;
@@ -320,6 +321,21 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
             if (!args) break;
             ret = PyObject_Call((PyObject *)&DBusPyUInt32_Type, args, kwargs);
             break;
+
+#ifdef DBUS_TYPE_UNIX_FD
+        case DBUS_TYPE_UNIX_FD:
+            DBG("%s", "found an unix fd");
+            dbus_message_iter_get_basic(iter, &u.fd);
+            args = Py_BuildValue("(i)", u.fd);
+            if (args) {
+                ret = PyObject_Call((PyObject *)&DBusPyUnixFd_Type, args,
+                                    kwargs);
+            }
+            if (u.fd >= 0) {
+                close(u.fd);
+            }
+            break;
+#endif
 
 #if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
         case DBUS_TYPE_INT64:
