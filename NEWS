@@ -1,9 +1,18 @@
-D-Bus Python Bindings 0.84.0 (UNRELEASED)
+D-Bus Python Bindings 0.84.0 (2011-05-25)
 =========================================
+
+The "Comrade Bill Bartram's Egalitarian Anti-Imperialist Soviet Stout" release.
 
 Enhancements:
 
+* fd.o #30812: add the UnixFd type, and support Unix fd passing if
+  compiled against a new enough libdbus (Elvis Pfützenreuter)
+
 * fd.o #34342: add Connection.set_allow_anonymous(bool) (Scott Tsai)
+
+* fd.o #21017: add configure arguments PYTHON_INCLUDES and PYTHON_LIBS which
+  can be used to override $PYTHON-config (Simon McVittie, based on a patch from
+  Robert Schwebel)
 
 Fixes:
 
