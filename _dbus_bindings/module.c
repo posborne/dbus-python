@@ -246,16 +246,6 @@ init_dbus_bindings(void)
 
     default_main_loop = NULL;
 
-    /* I'd rather not initialize threads if we can help it - dbus-python and
-    pygobject both release and re-obtain the GIL on a regular basis, which is
-    much simpler (basically free) before threads are initialized.
-
-    However, on Python < 2.4.2c1 you aren't allowed to call
-    PyGILState_Release without initializing threads first. */
-    if (strcmp(Py_GetVersion(), "2.4.2c1") < 0) {
-        PyEval_InitThreads();
-    }
-
     if (!dbus_py_init_generic()) return;
     if (!dbus_py_init_abstract()) return;
     if (!dbus_py_init_signature()) return;

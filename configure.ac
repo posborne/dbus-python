@@ -46,7 +46,7 @@ m4_define([_LT_AC_TAGCONFIG],[])
 AC_PROG_LIBTOOL
 AM_PROG_CC_C_O
 
-AM_PATH_PYTHON(2.4.0)
+AM_PATH_PYTHON([2.5])
 
 AM_CHECK_PYTHON_HEADERS(,[AC_MSG_ERROR(could not find Python headers)])
 
