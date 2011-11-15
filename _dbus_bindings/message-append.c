@@ -529,14 +529,10 @@ dbuspy_message_iter_close_container(DBusMessageIter *iter,
                                     DBusMessageIter *sub,
                                     dbus_bool_t is_ok)
 {
-#ifdef HAVE_DBUS_MESSAGE_ITER_ABANDON_CONTAINER
     if (!is_ok) {
         dbus_message_iter_abandon_container(iter, sub);
         return TRUE;
     }
-#else
-    (void) is_ok;
-#endif
     return dbus_message_iter_close_container(iter, sub);
 }
 

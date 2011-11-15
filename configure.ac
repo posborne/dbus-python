@@ -148,18 +148,8 @@ AC_SUBST([RST2HTMLFLAGS])
 AM_CONDITIONAL([ENABLE_API_DOCS], [test "$enable_api_docs" != no])
 AM_CONDITIONAL([ENABLE_DOCS], [test "$enable_html_docs" != no])
 
-PKG_CHECK_MODULES(DBUS, [dbus-1 >= 1.0])
+PKG_CHECK_MODULES(DBUS, [dbus-1 >= 1.4])
 PKG_CHECK_MODULES(DBUS_GLIB, [dbus-glib-1 >= 0.70])
-
-dnl avoid deprecated stuff if possible
-AC_CHECK_LIB([dbus-1], [dbus_watch_get_unix_fd],
-             [AC_DEFINE([HAVE_DBUS_WATCH_GET_UNIX_FD], [],
-                        [Define if libdbus-1 has dbus_watch_get_unix_fd])],
-             [:], [$DBUS_LIBS])
-AC_CHECK_LIB([dbus-1], [dbus_message_iter_abandon_container],
-             [AC_DEFINE([HAVE_DBUS_MESSAGE_ITER_ABANDON_CONTAINER], [],
-                        [Define if libdbus-1 has dbus_message_iter_abandon_container])],
-             [:], [$DBUS_LIBS])
 
 TP_COMPILER_WARNINGS([CFLAGS_WARNINGS], [test] dbus_python_released [= 0],
   [all \
