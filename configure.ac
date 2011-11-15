@@ -152,6 +152,11 @@ AM_CONDITIONAL([ENABLE_DOCS], [test "$enable_html_docs" != no])
 PKG_CHECK_MODULES(DBUS, [dbus-1 >= 1.4])
 PKG_CHECK_MODULES(DBUS_GLIB, [dbus-glib-1 >= 0.70])
 
+dbuspy_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $DBUS_CFLAGS"
+AC_CHECK_TYPES([DBusBasicValue], [], [], [#include <dbus/dbus.h>])
+CFLAGS="$dbuspy_save_CFLAGS"
+
 TP_COMPILER_WARNINGS([CFLAGS_WARNINGS], [test] dbus_python_released [= 0],
   [all \
    extra \

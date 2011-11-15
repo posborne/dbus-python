@@ -27,6 +27,7 @@
 #define PY_SIZE_T_CLEAN 1
 
 #define DBG_IS_TOO_VERBOSE
+#include "compat-internal.h"
 #include "types-internal.h"
 #include "message-internal.h"
 
@@ -190,22 +191,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                            Message_get_args_options *opts,
                            long variant_level)
 {
-    union {
-        const char *s;
-        unsigned char y;
-        dbus_bool_t b;
-        double d;
-        float f;
-        dbus_uint16_t u16;
-        dbus_int16_t i16;
-        dbus_uint32_t u32;
-        dbus_int32_t i32;
-#if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
-        dbus_uint64_t u64;
-        dbus_int64_t i64;
-#endif
-        int fd;
-    } u;
+    DBusBasicValue u;
     int type = dbus_message_iter_get_arg_type(iter);
     PyObject *args = NULL;
     PyObject *kwargs = NULL;
@@ -243,17 +229,17 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
 
         case DBUS_TYPE_STRING:
             DBG("%s", "found a string");
-            dbus_message_iter_get_basic(iter, &u.s);
+            dbus_message_iter_get_basic(iter, &u.str);
 #ifndef PY3
             if (opts->utf8_strings) {
-                args = Py_BuildValue("(s)", u.s);
+                args = Py_BuildValue("(s)", u.str);
                 if (!args) break;
                 ret = PyObject_Call((PyObject *)&DBusPyUTF8String_Type,
                                     args, kwargs);
             }
             else {
 #endif
-                unicode = PyUnicode_DecodeUTF8(u.s, strlen(u.s), NULL);
+                unicode = PyUnicode_DecodeUTF8(u.str, strlen(u.str), NULL);
                 if (!unicode) {
                     break;
                 }
@@ -270,24 +256,24 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
 
         case DBUS_TYPE_SIGNATURE:
             DBG("%s", "found a signature");
-            dbus_message_iter_get_basic(iter, &u.s);
-            args = Py_BuildValue("(s)", u.s);
+            dbus_message_iter_get_basic(iter, &u.str);
+            args = Py_BuildValue("(s)", u.str);
             if (!args) break;
             ret = PyObject_Call((PyObject *)&DBusPySignature_Type, args, kwargs);
             break;
 
         case DBUS_TYPE_OBJECT_PATH:
             DBG("%s", "found an object path");
-            dbus_message_iter_get_basic(iter, &u.s);
-            args = Py_BuildValue("(s)", u.s);
+            dbus_message_iter_get_basic(iter, &u.str);
+            args = Py_BuildValue("(s)", u.str);
             if (!args) break;
             ret = PyObject_Call((PyObject *)&DBusPyObjectPath_Type, args, kwargs);
             break;
 
         case DBUS_TYPE_DOUBLE:
             DBG("%s", "found a double");
-            dbus_message_iter_get_basic(iter, &u.d);
-            args = Py_BuildValue("(f)", u.d);
+            dbus_message_iter_get_basic(iter, &u.dbl);
+            args = Py_BuildValue("(f)", u.dbl);
             if (!args) break;
             ret = PyObject_Call((PyObject *)&DBusPyDouble_Type, args, kwargs);
             break;
@@ -295,6 +281,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
 #ifdef WITH_DBUS_FLOAT32
         case DBUS_TYPE_FLOAT:
             DBG("%s", "found a float");
+            /* FIXME: DBusBasicValue will need to grow a float member if
+             * float32 becomes supported */
             dbus_message_iter_get_basic(iter, &u.f);
             args = Py_BuildValue("(f)", (double)u.f);
             if (!args) break;
@@ -376,8 +364,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
 
         case DBUS_TYPE_BYTE:
             DBG("%s", "found a byte");
-            dbus_message_iter_get_basic(iter, &u.y);
-            args = Py_BuildValue("(l)", (long)u.y);
+            dbus_message_iter_get_basic(iter, &u.byt);
+            args = Py_BuildValue("(l)", (long)u.byt);
             if (!args)
                 break;
             ret = PyObject_Call((PyObject *)&DBusPyByte_Type, args, kwargs);
@@ -385,8 +373,8 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
 
         case DBUS_TYPE_BOOLEAN:
             DBG("%s", "found a bool");
-            dbus_message_iter_get_basic(iter, &u.b);
-            args = Py_BuildValue("(l)", (long)u.b);
+            dbus_message_iter_get_basic(iter, &u.bool_val);
+            args = Py_BuildValue("(l)", (long)u.bool_val);
             if (!args)
                 break;
             ret = PyObject_Call((PyObject *)&DBusPyBoolean_Type, args, kwargs);
@@ -412,18 +400,18 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                 DBG("%s", "actually, a byte array...");
                 dbus_message_iter_recurse(iter, &sub);
                 dbus_message_iter_get_fixed_array(&sub,
-                                                  (const unsigned char **)&u.s,
+                                                  (const unsigned char **)&u.str,
                                                   &n);
-                if (n == 0 && u.s == NULL) {
+                if (n == 0 && u.str == NULL) {
                     /* fd.o #21831: s# turns (NULL, 0) into None, but
                      * dbus_message_iter_get_fixed_array produces (NULL, 0)
                      * for an empty byte-blob... */
-                    u.s = "";
+                    u.str = "";
                 }
 #ifdef PY3
-                args = Py_BuildValue("(y#)", u.s, (Py_ssize_t)n);
+                args = Py_BuildValue("(y#)", u.str, (Py_ssize_t)n);
 #else
-                args = Py_BuildValue("(s#)", u.s, (Py_ssize_t)n);
+                args = Py_BuildValue("(s#)", u.str, (Py_ssize_t)n);
 #endif
                 if (!args) break;
                 ret = PyObject_Call((PyObject *)&DBusPyByteArray_Type,

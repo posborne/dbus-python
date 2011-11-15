@@ -8,6 +8,7 @@ _dbus_bindings_la_SOURCES = \
 			    abstract.c \
 			    bus.c \
 			    bytes.c \
+			    compat-internal.h \
 			    conn.c \
 			    conn-internal.h \
 			    conn-methods.c \

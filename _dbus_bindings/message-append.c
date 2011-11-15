@@ -29,6 +29,7 @@
 #include <assert.h>
 
 #define DBG_IS_TOO_VERBOSE
+#include "compat-internal.h"
 #include "types-internal.h"
 #include "message-internal.h"
 
@@ -999,18 +1000,7 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
                               dbus_bool_t *more)
 {
     int sig_type = dbus_signature_iter_get_current_type(sig_iter);
-    union {
-      dbus_bool_t b;
-      double d;
-      dbus_uint16_t uint16;
-      dbus_int16_t int16;
-      dbus_uint32_t uint32;
-      dbus_int32_t int32;
-#if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
-      dbus_uint64_t uint64;
-      dbus_int64_t int64;
-#endif
-    } u;
+    DBusBasicValue u;
     int ret = -1;
 
 #ifdef USING_DBG
@@ -1026,13 +1016,13 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
 
       case DBUS_TYPE_BOOLEAN:
           if (PyObject_IsTrue(obj)) {
-              u.b = 1;
+              u.bool_val = 1;
           }
           else {
-              u.b = 0;
+              u.bool_val = 0;
           }
-          DBG("Performing actual append: bool(%ld)", (long)u.b);
-          if (!dbus_message_iter_append_basic(appender, sig_type, &u.b)) {
+          DBG("Performing actual append: bool(%ld)", (long)u.bool_val);
+          if (!dbus_message_iter_append_basic(appender, sig_type, &u.bool_val)) {
               PyErr_NoMemory();
               ret = -1;
               break;
@@ -1041,13 +1031,13 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
           break;
 
       case DBUS_TYPE_DOUBLE:
-          u.d = PyFloat_AsDouble(obj);
+          u.dbl = PyFloat_AsDouble(obj);
           if (PyErr_Occurred()) {
               ret = -1;
               break;
           }
-          DBG("Performing actual append: double(%f)", u.d);
-          if (!dbus_message_iter_append_basic(appender, sig_type, &u.d)) {
+          DBG("Performing actual append: double(%f)", u.dbl);
+          if (!dbus_message_iter_append_basic(appender, sig_type, &u.dbl)) {
               PyErr_NoMemory();
               ret = -1;
               break;
@@ -1057,12 +1047,14 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
 
 #ifdef WITH_DBUS_FLOAT32
       case DBUS_TYPE_FLOAT:
-          u.d = PyFloat_AsDouble(obj);
+          u.dbl = PyFloat_AsDouble(obj);
           if (PyErr_Occurred()) {
               ret = -1;
               break;
           }
-          u.f = (float)u.d;
+          /* FIXME: DBusBasicValue will need to grow a float member if
+           * float32 becomes supported */
+          u.f = (float)u.dbl;
           DBG("Performing actual append: float(%f)", u.f);
           if (!dbus_message_iter_append_basic(appender, sig_type, &u.f)) {
               PyErr_NoMemory();
@@ -1075,14 +1067,14 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
 
           /* The integer types are all basically the same - we delegate to
           intNN_range_check() */
-#define PROCESS_INTEGER(size) \
-          u.size = dbus_py_##size##_range_check(obj);\
-          if (u.size == (dbus_##size##_t)(-1) && PyErr_Occurred()) {\
+#define PROCESS_INTEGER(size, member) \
+          u.member = dbus_py_##size##_range_check(obj);\
+          if (u.member == (dbus_##size##_t)(-1) && PyErr_Occurred()) {\
               ret = -1; \
               break; \
           }\
-          DBG("Performing actual append: " #size "(%lld)", (long long)u.size); \
-          if (!dbus_message_iter_append_basic(appender, sig_type, &u.size)) {\
+          DBG("Performing actual append: " #size "(%lld)", (long long)u.member); \
+          if (!dbus_message_iter_append_basic(appender, sig_type, &u.member)) {\
               PyErr_NoMemory();\
               ret = -1;\
               break;\
@@ -1090,23 +1082,23 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
           ret = 0;
 
       case DBUS_TYPE_INT16:
-          PROCESS_INTEGER(int16)
+          PROCESS_INTEGER(int16, i16)
           break;
       case DBUS_TYPE_UINT16:
-          PROCESS_INTEGER(uint16)
+          PROCESS_INTEGER(uint16, u16)
           break;
       case DBUS_TYPE_INT32:
-          PROCESS_INTEGER(int32)
+          PROCESS_INTEGER(int32, i32)
           break;
       case DBUS_TYPE_UINT32:
-          PROCESS_INTEGER(uint32)
+          PROCESS_INTEGER(uint32, u32)
           break;
 #if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
       case DBUS_TYPE_INT64:
-          PROCESS_INTEGER(int64)
+          PROCESS_INTEGER(int64, i64)
           break;
       case DBUS_TYPE_UINT64:
-          PROCESS_INTEGER(uint64)
+          PROCESS_INTEGER(uint64, u64)
           break;
 #else
       case DBUS_TYPE_INT64:
