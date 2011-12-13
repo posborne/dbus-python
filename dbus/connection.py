@@ -24,10 +24,7 @@ __all__ = ('Connection', 'SignalMatch')
 __docformat__ = 'reStructuredText'
 
 import logging
-try:
-    import thread
-except ImportError:
-    import dummy_thread as thread
+import threading
 import weakref
 
 from _dbus_bindings import Connection as _Connection, \
@@ -252,7 +249,7 @@ class Connection(_Connection):
             """Map from object path to dict mapping dbus_interface to dict
             mapping member to list of SignalMatch objects."""
 
-            self._signals_lock = thread.allocate_lock()
+            self._signals_lock = threading.Lock()
             """Lock used to protect signal data structures"""
 
             self.add_message_filter(self.__class__._signal_func)

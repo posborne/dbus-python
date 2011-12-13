@@ -29,11 +29,8 @@ __docformat__ = 'restructuredtext'
 import sys
 import logging
 import operator
+import threading
 import traceback
-try:
-    import thread
-except ImportError:
-    import dummy_thread as thread
 
 import _dbus_bindings
 from dbus import SessionBus, Signature, Struct, validate_bus_name, \
@@ -466,7 +463,7 @@ class Object(Interface):
         #: is for future expansion (to support fallback paths)
         self._locations = []
         #: Lock protecting `_locations`, `_connection` and `_object_path`
-        self._locations_lock = thread.allocate_lock()
+        self._locations_lock = threading.Lock()
 
         #: True if this is a fallback object handling a whole subtree.
         self._fallback = False

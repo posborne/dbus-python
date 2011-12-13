@@ -46,11 +46,6 @@ from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH,\
 from dbus.bus import BusConnection
 from dbus.lowlevel import SignalMessage
 
-try:
-    import thread
-except ImportError:
-    import dummy_thread as thread
-
 
 class Bus(BusConnection):
     """A connection to one of three possible standard buses, the SESSION,
