@@ -204,7 +204,7 @@ PyTypeObject DBusPySignature_Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPythonStringType), /* tp_base */
+    DEFERRED_ADDRESS(&DBusPyStrBase_Type),  /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
