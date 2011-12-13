@@ -232,6 +232,7 @@ DBusPyConnection_NewConsumingDBusConnection(PyTypeObject *cls,
     self->has_mainloop = (mainloop != Py_None);
     self->conn = NULL;
     self->filters = PyList_New(0);
+    self->weaklist = NULL;
     if (!self->filters) goto err;
     self->object_paths = PyDict_New();
     if (!self->object_paths) goto err;
