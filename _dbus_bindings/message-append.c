@@ -668,7 +668,7 @@ _message_iter_append_multi(DBusMessageIter *appender,
     }
     /* else leave sig set to NULL. */
 
-    DBG("Opening %c container", container);
+    DBG("Opening '%c' container", container);
     if (!dbus_message_iter_open_container(appender, container,
                                           sig, &sub_appender)) {
         PyErr_NoMemory();
@@ -749,7 +749,7 @@ _message_iter_append_multi(DBusMessageIter *appender,
     }
 
     /* This must be run as cleanup, even on failure. */
-    DBG("Closing %c container", container);
+    DBG("Closing '%c' container", container);
     if (!dbuspy_message_iter_close_container(appender, &sub_appender, (ret == 0))) {
         PyErr_NoMemory();
         ret = -1;
@@ -778,7 +778,7 @@ _message_iter_append_string_as_byte_array(DBusMessageIter *appender,
         PyErr_NoMemory();
         return -1;
     }
-    DBG("Appending fixed array of %d bytes", len);
+    DBG("Appending fixed array of %d bytes", (int)len);
     if (dbus_message_iter_append_fixed_array(&sub, DBUS_TYPE_BYTE, &s, len)) {
         ret = 0;
     }
