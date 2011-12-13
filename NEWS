@@ -7,6 +7,11 @@ Dependencies:
 
 * Python 2.6 or later is now required.
 
+API changes:
+
+* dbus_bindings, which was never meant to be public API and has been
+  deprecated for nearly 5 years, has finally been removed.
+
 D-Bus Python Bindings 0.84.0 (2011-05-25)
 =========================================
 

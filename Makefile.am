@@ -18,10 +18,8 @@ EXTRA_DIST = \
 # === dbus package ===
 
 nobase_python_PYTHON = \
-    dbus_bindings.py \
     dbus/bus.py \
     dbus/connection.py \
-    dbus/dbus_bindings.py \
     dbus/_dbus.py \
     dbus/_version.py \
     dbus/decorators.py \
@@ -127,7 +125,7 @@ api api/index.html: $(nobase_python_PYTHON) \
 	$(PYTHON) -Wignore::DeprecationWarning \
 	$(EPYDOC) -o $(abs_top_builddir)/api --html \
 		--docformat restructuredtext -v \
-		`find dbus -name '*.py' | grep -v dbus_bindings \
+		`find dbus -name '*.py' \
 			| sed -e 's#/__init__\.py##g' \
 				-e 's/\.py\>//g' -e 's#/#.#'g` \
 		|| { rm -rf api; exit 1; }

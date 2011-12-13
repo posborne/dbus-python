@@ -99,7 +99,3 @@ from _dbus_bindings import ObjectPath, ByteArray, Signature, Byte, Boolean,\
                            UTF8String
 from dbus._dbus import Bus, SystemBus, SessionBus, StarterBus
 from dbus.proxies import Interface
-
-
-if 'DBUS_PYTHON_NO_DEPRECATED' not in os.environ:
-    from dbus._dbus import dbus_bindings    # for backwards compat

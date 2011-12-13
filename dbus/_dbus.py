@@ -236,21 +236,3 @@ class StarterBus(Bus):
         """
         return Bus.__new__(cls, Bus.TYPE_STARTER, private=private,
                            mainloop=mainloop)
-
-
-if 'DBUS_PYTHON_NO_DEPRECATED' not in os.environ:
-
-    class _DBusBindingsEmulation:
-        """A partial emulation of the dbus_bindings module."""
-        def __str__(self):
-            return '_DBusBindingsEmulation()'
-        def __repr__(self):
-            return '_DBusBindingsEmulation()'
-        def __getattr__(self, attr):
-            global dbus_bindings
-            import dbus.dbus_bindings as m
-            dbus_bindings = m
-            return getattr(m, attr)
-
-    dbus_bindings = _DBusBindingsEmulation()
-    """Deprecated, don't use."""
