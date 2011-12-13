@@ -546,7 +546,7 @@ _message_iter_append_unixfd(DBusMessageIter *appender, PyObject *obj)
     if (PyInt_Check(obj)) {
         fd = PyInt_AsLong(obj);
     } else if (PyObject_IsInstance(obj, (PyObject*) &DBusPyUnixFd_Type)) {
-	fd = dbus_py_unix_fd_get_fd(obj);
+        fd = dbus_py_unix_fd_get_fd(obj);
     } else {
         return -1;
     }

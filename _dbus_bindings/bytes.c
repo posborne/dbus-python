@@ -127,7 +127,7 @@ Byte_tp_str(PyObject *self)
 }
 
 PyTypeObject DBusPyByte_Type = {
-	PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
+        PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
         "dbus.Byte",
         0,
         0,

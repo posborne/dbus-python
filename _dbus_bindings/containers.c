@@ -94,14 +94,14 @@ Array_tp_repr(DBusPyArray *self)
     if (variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, signature=%s, "
                                       "variant_level=%ld)",
-                                      self->super.ob_type->tp_name,
+                                      Py_TYPE(&self->super)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       PyString_AS_STRING(sig_repr),
                                       variant_level);
     }
     else {
         my_repr = PyString_FromFormat("%s(%s, signature=%s)",
-                                      self->super.ob_type->tp_name,
+                                      Py_TYPE(&self->super)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       PyString_AS_STRING(sig_repr));
     }
@@ -301,14 +301,14 @@ Dict_tp_repr(DBusPyDict *self)
     if (variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, signature=%s, "
                                       "variant_level=%ld)",
-                                      self->super.ob_type->tp_name,
+                                      Py_TYPE(&self->super)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       PyString_AS_STRING(sig_repr),
                                       variant_level);
     }
     else {
         my_repr = PyString_FromFormat("%s(%s, signature=%s)",
-                                      self->super.ob_type->tp_name,
+                                      Py_TYPE(&self->super)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       PyString_AS_STRING(sig_repr));
     }
