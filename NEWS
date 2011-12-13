@@ -12,6 +12,15 @@ API changes:
 * dbus_bindings, which was never meant to be public API and has been
   deprecated for nearly 5 years, has finally been removed.
 
+Fixes:
+
+* OOM while appending a unicode object to a message no longer leaks a string
+  (Barry Warsaw)
+
+* If libdbus somehow gives us invalid UTF-8, don't crash (Barry Warsaw)
+
+* Start to port to Python 3 compatibility (Barry Warsaw)
+
 D-Bus Python Bindings 0.84.0 (2011-05-25)
 =========================================
 
