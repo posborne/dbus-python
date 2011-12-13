@@ -478,6 +478,7 @@ _message_iter_append_string(DBusMessageIter *appender,
         if (PyString_AsStringAndSize(utf8, &s, NULL) < 0) return -1;
         DBG("Performing actual append: string (from unicode) %s", s);
         if (!dbus_message_iter_append_basic(appender, sig_type, &s)) {
+            Py_CLEAR(utf8);
             PyErr_NoMemory();
             return -1;
         }
