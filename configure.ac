@@ -140,6 +140,7 @@ if test "${enable_html_docs}" != no; then
     DBUS_PY_ADD_RST2HTMLFLAG([--no-raw])
     DBUS_PY_ADD_RST2HTMLFLAG([--no-file-insertion])
     DBUS_PY_ADD_RST2HTMLFLAG([--cloak-email-addresses])
+    DBUS_PY_ADD_RST2HTMLFLAG([--input-encoding=UTF-8])
   fi
 fi
 AC_SUBST([RST2HTML])

@@ -19,6 +19,8 @@ Fixes:
 
 * If libdbus somehow gives us invalid UTF-8, don't crash (Barry Warsaw)
 
+* Fix rst2html failure in non-UTF-8 locales (Alexandre Rostovtsev)
+
 * Start to port to Python 3 compatibility (Barry Warsaw)
 
 D-Bus Python Bindings 0.84.0 (2011-05-25)
