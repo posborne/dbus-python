@@ -5,7 +5,7 @@ Dependencies:
 
 * libdbus 1.4 or later is now required.
 
-* Python 2.5 or later is now required.
+* Python 2.6 or later is now required.
 
 D-Bus Python Bindings 0.84.0 (2011-05-25)
 =========================================
