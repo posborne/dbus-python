@@ -165,7 +165,8 @@ TP_COMPILER_WARNINGS([CFLAGS_WARNINGS], [test] dbus_python_released [= 0],
    pointer-arith \
    format-security \
    init-self],
-  [missing-field-initializers])
+  [missing-field-initializers \
+   unused-parameter])
 
 JH_ADD_CFLAG([-std=c9x])
 JH_ADD_CFLAG([-fno-strict-aliasing])
