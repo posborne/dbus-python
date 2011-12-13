@@ -182,9 +182,9 @@ def method(dbus_interface, in_signature=None, out_signature=None,
             in_sig = tuple(Signature(in_signature))
 
             if len(in_sig) > len(args):
-                raise ValueError, 'input signature is longer than the number of arguments taken'
+                raise ValueError('input signature is longer than the number of arguments taken')
             elif len(in_sig) < len(args):
-                raise ValueError, 'input signature is shorter than the number of arguments taken'
+                raise ValueError('input signature is shorter than the number of arguments taken')
 
         func._dbus_is_method = True
         func._dbus_async_callbacks = async_callbacks
@@ -325,9 +325,9 @@ def signal(dbus_interface, signature=None, path_keyword=None,
             sig = tuple(Signature(signature))
 
             if len(sig) > len(args):
-                raise ValueError, 'signal signature is longer than the number of arguments provided'
+                raise ValueError('signal signature is longer than the number of arguments provided')
             elif len(sig) < len(args):
-                raise ValueError, 'signal signature is shorter than the number of arguments provided'
+                raise ValueError('signal signature is shorter than the number of arguments provided')
 
         emit_signal.__name__ = func.__name__
         emit_signal.__doc__ = func.__doc__
