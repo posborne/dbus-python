@@ -89,7 +89,7 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     else if (PyInt_Check(obj)) {
         long i = PyInt_AS_LONG(obj);
 
-        if (obj->ob_type == cls &&
+        if (Py_TYPE(obj) == cls &&
             ((DBusPyIntBase *)obj)->variant_level == variantness) {
             Py_INCREF(obj);
             return obj;

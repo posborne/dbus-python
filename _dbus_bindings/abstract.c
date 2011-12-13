@@ -201,12 +201,12 @@ DBusPythonInt_tp_repr(PyObject *self)
     if (!parent_repr) return NULL;
     if (variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                      self->ob_type->tp_name,
+                                      Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s)", self->ob_type->tp_name,
+        my_repr = PyString_FromFormat("%s(%s)", Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr));
     }
     /* whether my_repr is NULL or not: */
@@ -313,12 +313,12 @@ DBusPythonFloat_tp_repr(PyObject *self)
     if (!parent_repr) return NULL;
     if (variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                      self->ob_type->tp_name,
+                                      Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s)", self->ob_type->tp_name,
+        my_repr = PyString_FromFormat("%s(%s)", Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr));
     }
     /* whether my_repr is NULL or not: */
@@ -424,12 +424,12 @@ DBusPythonString_tp_repr(PyObject *self)
     Py_CLEAR(vl_obj);
     if (variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                      self->ob_type->tp_name,
+                                      Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s)", self->ob_type->tp_name,
+        my_repr = PyString_FromFormat("%s(%s)", Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr));
     }
     /* whether my_repr is NULL or not: */
@@ -542,12 +542,12 @@ DBusPythonLong_tp_repr(PyObject *self)
     Py_CLEAR(vl_obj);
     if (variant_level) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                      self->ob_type->tp_name,
+                                      Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s)", self->ob_type->tp_name,
+        my_repr = PyString_FromFormat("%s(%s)", Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr));
     }
     /* whether my_repr is NULL or not: */

@@ -360,7 +360,7 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
     else {
         PyErr_Format(PyExc_TypeError, "Don't know how which D-Bus type "
                      "to use to encode type \"%s\"",
-                     obj->ob_type->tp_name);
+                     Py_TYPE(obj)->tp_name);
         return NULL;
     }
 }

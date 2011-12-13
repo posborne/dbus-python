@@ -525,14 +525,14 @@ Struct_tp_repr(PyObject *self)
     if (variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, signature=%s, "
                                       "variant_level=%ld)",
-                                      self->ob_type->tp_name,
+                                      Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       PyString_AS_STRING(sig_repr),
                                       variant_level);
     }
     else {
         my_repr = PyString_FromFormat("%s(%s, signature=%s)",
-                                      self->ob_type->tp_name,
+                                      Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       PyString_AS_STRING(sig_repr));
     }

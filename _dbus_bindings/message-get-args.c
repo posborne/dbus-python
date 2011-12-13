@@ -94,7 +94,7 @@ _message_iter_append_all_to_list(DBusMessageIter *iter, PyObject *list,
 #ifdef USING_DBG
         fprintf(stderr, "DBG/%ld: appending to list: %p == ", (long)getpid(), item);
         PyObject_Print(item, stderr, 0);
-        fprintf(stderr, " of type %p\n", item->ob_type);
+        fprintf(stderr, " of type %p\n", Py_TYPE(item));
 #endif
         ret = PyList_Append(list, item);
         Py_CLEAR(item);

@@ -34,7 +34,7 @@ static PyTypeObject PendingCallType;
 
 static inline int PendingCall_Check (PyObject *o)
 {
-    return (o->ob_type == &PendingCallType)
+    return (Py_TYPE(o) == &PendingCallType)
             || PyObject_IsInstance(o, (PyObject *)&PendingCallType);
 }
 

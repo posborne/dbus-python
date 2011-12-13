@@ -398,7 +398,7 @@ static void Connection_tp_dealloc(Connection *self)
 
     DBG("Connection at %p: freeing self", self);
     PyErr_Restore(et, ev, etb);
-    (self->ob_type->tp_free)((PyObject *)self);
+    (Py_TYPE(self)->tp_free)((PyObject *)self);
 }
 
 /* Connection type object =========================================== */

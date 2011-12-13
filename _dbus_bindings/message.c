@@ -32,7 +32,7 @@ static PyTypeObject MethodReturnMessageType, MethodCallMessageType;
 
 static inline int Message_Check(PyObject *o)
 {
-    return (o->ob_type == &MessageType)
+    return (Py_TYPE(o) == &MessageType)
             || PyObject_IsInstance(o, (PyObject *)&MessageType);
 }
 
@@ -53,7 +53,7 @@ static void Message_tp_dealloc(Message *self)
     if (self->msg) {
         dbus_message_unref(self->msg);
     }
-    self->ob_type->tp_free((PyObject *)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyObject *

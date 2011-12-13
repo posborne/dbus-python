@@ -76,12 +76,12 @@ Boolean_tp_repr (PyObject *self)
     long variant_level = ((DBusPyIntBase *)self)->variant_level;
     if (variant_level > 0) {
         return PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                   self->ob_type->tp_name,
+                                   Py_TYPE(self)->tp_name,
                                    PyInt_AsLong(self) ? "True" : "False",
                                    variant_level);
     }
     return PyString_FromFormat("%s(%s)",
-                               self->ob_type->tp_name,
+                               Py_TYPE(self)->tp_name,
                                PyInt_AsLong(self) ? "True" : "False");
 }
 

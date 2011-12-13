@@ -48,7 +48,7 @@ static inline int type##_Check (PyObject *o) \
 } \
 static inline int type##_CheckExact (PyObject *o) \
 { \
-    return ((o)->ob_type == &type##_Type); \
+    return (Py_TYPE(o) == &type##_Type); \
 }
 
 PyMODINIT_FUNC init_dbus_bindings(void);
@@ -203,7 +203,7 @@ void _dbus_py_dbg_dump_message(DBusMessage *);
 
 #   define TRACE(self) do { fprintf(stderr, "TRACE: <%s at %p> in %s, " \
                                     "%d refs\n", \
-                                    self->ob_type->tp_name, \
+                                    Py_TYPE(self)->tp_name, \
                                     self, __func__, \
                                     self->ob_refcnt); } while (0)
 #   define DBG(format, ...) fprintf(stderr, "DEBUG: " format "\n",\

@@ -73,7 +73,7 @@ DBusPyLibDBusConnection_tp_dealloc(Connection *self)
     }
 
     PyErr_Restore(et, ev, etb);
-    (self->ob_type->tp_free)((PyObject *) self);
+    (Py_TYPE(self)->tp_free)((PyObject *) self);
 }
 
 PyTypeObject DBusPyLibDBusConnection_Type = {

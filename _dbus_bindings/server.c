@@ -429,7 +429,7 @@ static void Server_tp_dealloc(Server *self)
 
     DBG("Server at %p: freeing self", self);
     PyErr_Restore(et, ev, etb);
-    (self->ob_type->tp_free)((PyObject *)self);
+    (Py_TYPE(self)->tp_free)((PyObject *)self);
 }
 
 PyDoc_STRVAR(Server_disconnect__doc__,

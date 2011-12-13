@@ -276,12 +276,12 @@ String_tp_repr(PyObject *self)
     }
     if (((DBusPyString *)self)->variant_level > 0) {
         my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                      self->ob_type->tp_name,
+                                      Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr),
                                       ((DBusPyString *)self)->variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s)", self->ob_type->tp_name,
+        my_repr = PyString_FromFormat("%s(%s)", Py_TYPE(self)->tp_name,
                                       PyString_AS_STRING(parent_repr));
     }
     /* whether my_repr is NULL or not: */
