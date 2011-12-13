@@ -31,29 +31,6 @@
  */
 PyObject *dbus_py_empty_tuple = NULL;
 
-PyObject *
-dbus_py_tp_richcompare_by_pointer(PyObject *self,
-                                  PyObject *other,
-                                  int op)
-{
-    if (op == Py_EQ || op == Py_NE) {
-        if (self == other) {
-            return PyInt_FromLong(op == Py_EQ);
-        }
-        return PyInt_FromLong(op == Py_NE);
-    }
-    PyErr_SetString(PyExc_TypeError,
-                    "Instances of this type are not ordered");
-    return NULL;
-}
-
-long
-dbus_py_tp_hash_by_pointer(PyObject *self)
-{
-    long hash = (long)self;
-    return (hash == -1L ? -2L : hash);
-}
-
 int
 dbus_py_immutable_setattro(PyObject *obj UNUSED,
                         PyObject *name UNUSED,

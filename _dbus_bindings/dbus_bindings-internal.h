@@ -127,10 +127,6 @@ int dbus_py_unix_fd_get_fd(PyObject *self);
 /* generic */
 extern void dbus_py_take_gil_and_xdecref(PyObject *);
 extern int dbus_py_immutable_setattro(PyObject *, PyObject *, PyObject *);
-extern PyObject *dbus_py_tp_richcompare_by_pointer(PyObject *,
-                                                   PyObject *,
-                                                   int);
-extern long dbus_py_tp_hash_by_pointer(PyObject *self);
 extern PyObject *dbus_py_empty_tuple;
 extern dbus_bool_t dbus_py_init_generic(void);
 
