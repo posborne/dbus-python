@@ -245,9 +245,13 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
                                     args, kwargs);
             }
             else {
-                args = Py_BuildValue("(N)", PyUnicode_DecodeUTF8(u.s,
-                                                                 strlen(u.s),
-                                                                 NULL));
+                PyObject *unicode;
+
+                unicode = PyUnicode_DecodeUTF8(u.s, strlen(u.s), NULL);
+                if (!unicode) {
+                    break;
+                }
+                args = Py_BuildValue("(N)", unicode);
                 if (!args) {
                     break;
                 }
