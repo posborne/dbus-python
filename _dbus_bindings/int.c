@@ -175,8 +175,7 @@ Int16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPyInt16_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.Int16",
     0,
     0,
@@ -265,8 +264,7 @@ UInt16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPyUInt16_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.UInt16",
     0,
     0,
@@ -354,8 +352,7 @@ Int32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPyInt32_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.Int32",
     0,
     0,
@@ -456,8 +453,7 @@ UInt32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPyUInt32_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.UInt32",
     0,
     0,
@@ -567,8 +563,7 @@ Int64_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPyInt64_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.Int64",
     0,
     0,
@@ -674,8 +669,7 @@ UInt64_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPyUInt64_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.UInt64",
     0,
     0,

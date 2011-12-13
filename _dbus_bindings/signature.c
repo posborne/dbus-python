@@ -97,8 +97,7 @@ SignatureIter_tp_iter(PyObject *self)
 }
 
 static PyTypeObject SignatureIterType = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "_dbus_bindings._SignatureIter",
     sizeof(SignatureIter),
     0,
@@ -175,8 +174,7 @@ Signature_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPySignature_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.Signature",
     0,
     0,

@@ -59,8 +59,7 @@ static void NativeMainLoop_tp_dealloc(NativeMainLoop *self)
 }
 
 static PyTypeObject NativeMainLoop_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.mainloop.NativeMainLoop",
     sizeof(NativeMainLoop),
     0,

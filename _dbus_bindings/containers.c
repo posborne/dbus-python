@@ -195,8 +195,7 @@ Array_tp_init (DBusPyArray *self, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPyArray_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.Array",
     sizeof(DBusPyArray),
     0,
@@ -431,8 +430,7 @@ Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPyDict_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.Dictionary",
     sizeof(DBusPyDict),
     0,
@@ -686,8 +684,7 @@ Struct_tp_getattro(PyObject *obj, PyObject *name)
 }
 
 PyTypeObject DBusPyStruct_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.Struct",
     0,
     0,

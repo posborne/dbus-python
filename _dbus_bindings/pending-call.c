@@ -233,8 +233,7 @@ static PyMethodDef PendingCall_tp_methods[] = {
 };
 
 static PyTypeObject PendingCallType = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.lowlevel.PendingCall",
     sizeof(PendingCall),
     0,

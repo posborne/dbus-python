@@ -82,8 +82,7 @@ UTF8String_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPyUTF8String_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.UTF8String",
     0,
     0,
@@ -161,8 +160,7 @@ ObjectPath_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 }
 
 PyTypeObject DBusPyObjectPath_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.ObjectPath",
     0,
     0,
@@ -290,8 +288,7 @@ String_tp_repr(PyObject *self)
 }
 
 PyTypeObject DBusPyString_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.String",
     sizeof(DBusPyString),
     0,

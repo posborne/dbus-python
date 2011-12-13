@@ -40,8 +40,7 @@ PyDoc_STRVAR(Float_tp_doc,
 #endif
 
 PyTypeObject DBusPyDouble_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.Double",
     0,
     0,
@@ -84,8 +83,7 @@ PyTypeObject DBusPyDouble_Type = {
 #ifdef WITH_DBUS_FLOAT32
 
 PyTypeObject DBusPyFloat_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.Float",
     0,
     0,

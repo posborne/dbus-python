@@ -159,8 +159,7 @@ static PyMethodDef UnixFd_methods[] = {
 };
 
 PyTypeObject DBusPyUnixFd_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,
+    PyVarObject_HEAD_INIT(NULL, 0)
     "dbus.UnixFd",
     sizeof(UnixFdObject),
     0,
