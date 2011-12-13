@@ -109,8 +109,10 @@ DBusPyServer_set_auth_mechanisms(Server *self,
              * on failure */
             list[i] = PyString_AsString(am);
 
-            if (!list[i])
+            if (!list[i]) {
+                Py_CLEAR(fast_seq);
                 return FALSE;
+            }
         }
 
         list[length] = NULL;
@@ -120,6 +122,7 @@ DBusPyServer_set_auth_mechanisms(Server *self,
         Py_END_ALLOW_THREADS
     }
 
+    Py_CLEAR(fast_seq);
     return TRUE;
 }
 
