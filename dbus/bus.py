@@ -26,23 +26,16 @@ __docformat__ = 'reStructuredText'
 import logging
 import weakref
 
-from _dbus_bindings import validate_interface_name, validate_member_name,\
-                           validate_bus_name, validate_object_path,\
-                           validate_error_name,\
-                           BUS_SESSION, BUS_STARTER, BUS_SYSTEM, \
-                           DBUS_START_REPLY_SUCCESS, \
-                           DBUS_START_REPLY_ALREADY_RUNNING, \
-                           BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE,\
-                           NAME_FLAG_ALLOW_REPLACEMENT, \
-                           NAME_FLAG_DO_NOT_QUEUE, \
-                           NAME_FLAG_REPLACE_EXISTING, \
-                           RELEASE_NAME_REPLY_NON_EXISTENT, \
-                           RELEASE_NAME_REPLY_NOT_OWNER, \
-                           RELEASE_NAME_REPLY_RELEASED, \
-                           REQUEST_NAME_REPLY_ALREADY_OWNER, \
-                           REQUEST_NAME_REPLY_EXISTS, \
-                           REQUEST_NAME_REPLY_IN_QUEUE, \
-                           REQUEST_NAME_REPLY_PRIMARY_OWNER
+from _dbus_bindings import (
+    BUS_DAEMON_IFACE, BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_SESSION,
+    BUS_STARTER, BUS_SYSTEM, DBUS_START_REPLY_ALREADY_RUNNING,
+    DBUS_START_REPLY_SUCCESS, NAME_FLAG_ALLOW_REPLACEMENT,
+    NAME_FLAG_DO_NOT_QUEUE, NAME_FLAG_REPLACE_EXISTING,
+    RELEASE_NAME_REPLY_NON_EXISTENT, RELEASE_NAME_REPLY_NOT_OWNER,
+    RELEASE_NAME_REPLY_RELEASED, REQUEST_NAME_REPLY_ALREADY_OWNER,
+    REQUEST_NAME_REPLY_EXISTS, REQUEST_NAME_REPLY_IN_QUEUE,
+    REQUEST_NAME_REPLY_PRIMARY_OWNER, validate_bus_name, validate_error_name,
+    validate_interface_name, validate_member_name, validate_object_path)
 from dbus.connection import Connection
 from dbus.exceptions import DBusException
 from dbus.lowlevel import HANDLER_RESULT_NOT_YET_HANDLED

@@ -29,12 +29,8 @@ __all__ = ('PendingCall', 'Message', 'MethodCallMessage',
            'MESSAGE_TYPE_METHOD_RETURN', 'MESSAGE_TYPE_ERROR',
            'MESSAGE_TYPE_SIGNAL')
 
-from _dbus_bindings import PendingCall, Message, MethodCallMessage, \
-                           MethodReturnMessage, ErrorMessage, SignalMessage, \
-                           HANDLER_RESULT_HANDLED, \
-                           HANDLER_RESULT_NOT_YET_HANDLED, \
-                           MESSAGE_TYPE_INVALID, \
-                           MESSAGE_TYPE_METHOD_CALL, \
-                           MESSAGE_TYPE_METHOD_RETURN, \
-                           MESSAGE_TYPE_ERROR, \
-                           MESSAGE_TYPE_SIGNAL
+from _dbus_bindings import (
+    ErrorMessage, HANDLER_RESULT_HANDLED, HANDLER_RESULT_NOT_YET_HANDLED,
+    MESSAGE_TYPE_ERROR, MESSAGE_TYPE_INVALID, MESSAGE_TYPE_METHOD_CALL,
+    MESSAGE_TYPE_METHOD_RETURN, MESSAGE_TYPE_SIGNAL, Message,
+    MethodCallMessage, MethodReturnMessage, PendingCall, SignalMessage)

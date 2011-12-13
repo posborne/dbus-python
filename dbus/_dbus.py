@@ -36,13 +36,11 @@ import weakref
 from traceback import print_exc
 
 from dbus.exceptions import DBusException
-from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH,\
-                           BUS_DAEMON_IFACE, UTF8String,\
-                           validate_member_name, validate_interface_name,\
-                           validate_bus_name, validate_object_path,\
-                           BUS_SESSION, BUS_SYSTEM, BUS_STARTER,\
-                           DBUS_START_REPLY_SUCCESS, \
-                           DBUS_START_REPLY_ALREADY_RUNNING
+from _dbus_bindings import (
+    BUS_DAEMON_IFACE, BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_SESSION,
+    BUS_STARTER, BUS_SYSTEM, DBUS_START_REPLY_ALREADY_RUNNING,
+    DBUS_START_REPLY_SUCCESS, UTF8String, validate_bus_name,
+    validate_interface_name, validate_member_name, validate_object_path)
 from dbus.bus import BusConnection
 from dbus.lowlevel import SignalMessage
 

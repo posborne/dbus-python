@@ -33,12 +33,12 @@ import threading
 import traceback
 
 import _dbus_bindings
-from dbus import SessionBus, Signature, Struct, validate_bus_name, \
-                 validate_object_path, INTROSPECTABLE_IFACE, ObjectPath
+from dbus import (
+    INTROSPECTABLE_IFACE, ObjectPath, SessionBus, Signature, Struct,
+    validate_bus_name, validate_object_path)
 from dbus.decorators import method, signal
-from dbus.exceptions import DBusException, \
-                            NameExistsException, \
-                            UnknownMethodException
+from dbus.exceptions import (
+    DBusException, NameExistsException, UnknownMethodException)
 from dbus.lowlevel import ErrorMessage, MethodReturnMessage, MethodCallMessage
 from dbus.proxies import LOCAL_PATH
 

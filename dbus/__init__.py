@@ -78,24 +78,20 @@ except ImportError:
 import dbus.exceptions as exceptions
 import dbus.types as types
 
-from _dbus_bindings import get_default_main_loop, set_default_main_loop,\
-                           validate_interface_name, validate_member_name,\
-                           validate_bus_name, validate_object_path,\
-                           validate_error_name
-from _dbus_bindings import BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE,\
-                           LOCAL_PATH, LOCAL_IFACE, PEER_IFACE,\
-                           INTROSPECTABLE_IFACE, PROPERTIES_IFACE
+from _dbus_bindings import (
+    get_default_main_loop, set_default_main_loop, validate_bus_name,
+    validate_error_name, validate_interface_name, validate_member_name,
+    validate_object_path)
+from _dbus_bindings import (
+    BUS_DAEMON_IFACE, BUS_DAEMON_NAME, BUS_DAEMON_PATH, INTROSPECTABLE_IFACE,
+    LOCAL_IFACE, LOCAL_PATH, PEER_IFACE, PROPERTIES_IFACE)
 
-from dbus.exceptions import MissingErrorHandlerException, \
-                            MissingReplyHandlerException, \
-                            ValidationException, \
-                            IntrospectionParserException, \
-                            UnknownMethodException, \
-                            NameExistsException, \
-                            DBusException
-from _dbus_bindings import ObjectPath, ByteArray, Signature, Byte, Boolean,\
-                           Int16, UInt16, Int32, UInt32, Int64, UInt64,\
-                           Double, String, Array, Struct, Dictionary, \
-                           UTF8String
+from dbus.exceptions import (
+    DBusException, IntrospectionParserException, MissingErrorHandlerException,
+    MissingReplyHandlerException, NameExistsException, UnknownMethodException,
+    ValidationException)
+from _dbus_bindings import (
+    Array, Boolean, Byte, ByteArray, Dictionary, Double, Int16, Int32, Int64,
+    ObjectPath, Signature, String, Struct, UInt16, UInt32, UInt64, UTF8String)
 from dbus._dbus import Bus, SystemBus, SessionBus, StarterBus
 from dbus.proxies import Interface

@@ -27,15 +27,14 @@ import logging
 import threading
 import weakref
 
-from _dbus_bindings import Connection as _Connection, \
-                           LOCAL_PATH, LOCAL_IFACE, \
-                           validate_interface_name, validate_member_name,\
-                           validate_bus_name, validate_object_path,\
-                           validate_error_name, \
-                           UTF8String
+from _dbus_bindings import (
+    Connection as _Connection, LOCAL_IFACE, LOCAL_PATH, UTF8String,
+    validate_bus_name, validate_error_name, validate_interface_name,
+    validate_member_name, validate_object_path)
 from dbus.exceptions import DBusException
-from dbus.lowlevel import ErrorMessage, MethodCallMessage, SignalMessage, \
-                          MethodReturnMessage, HANDLER_RESULT_NOT_YET_HANDLED
+from dbus.lowlevel import (
+    ErrorMessage, HANDLER_RESULT_NOT_YET_HANDLED, MethodCallMessage,
+    MethodReturnMessage, SignalMessage)
 from dbus.proxies import ProxyObject
 
 

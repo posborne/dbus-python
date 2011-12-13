@@ -33,16 +33,18 @@ except ImportError:
 
 import _dbus_bindings
 from dbus._expat_introspect_parser import process_introspection_data
-from dbus.exceptions import MissingReplyHandlerException, MissingErrorHandlerException, IntrospectionParserException, DBusException
+from dbus.exceptions import (
+    DBusException, IntrospectionParserException, MissingErrorHandlerException,
+    MissingReplyHandlerException)
 
 __docformat__ = 'restructuredtext'
 
 
 _logger = logging.getLogger('dbus.proxies')
 
-from _dbus_bindings import LOCAL_PATH, \
-                           BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_DAEMON_IFACE,\
-                           INTROSPECTABLE_IFACE
+from _dbus_bindings import (
+    BUS_DAEMON_IFACE, BUS_DAEMON_NAME, BUS_DAEMON_PATH, INTROSPECTABLE_IFACE,
+    LOCAL_PATH)
 
 
 class _DeferredMethod:
