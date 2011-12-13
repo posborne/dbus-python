@@ -808,8 +808,7 @@ static PyMethodDef Message_tp_methods[] = {
 };
 
 static PyTypeObject MessageType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "dbus.lowlevel.Message",   /*tp_name*/
     sizeof(Message),     /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -850,8 +849,7 @@ static PyTypeObject MessageType = {
 };
 
 static PyTypeObject MethodCallMessageType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "dbus.lowlevel.MethodCallMessage",  /*tp_name*/
     0,                         /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -892,8 +890,7 @@ static PyTypeObject MethodCallMessageType = {
 };
 
 static PyTypeObject MethodReturnMessageType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "dbus.lowlevel.MethodReturnMessage",  /*tp_name*/
     0,                         /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -934,8 +931,7 @@ static PyTypeObject MethodReturnMessageType = {
 };
 
 static PyTypeObject SignalMessageType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "dbus.lowlevel.SignalMessage",  /*tp_name*/
     0,                         /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -976,8 +972,7 @@ static PyTypeObject SignalMessageType = {
 };
 
 static PyTypeObject ErrorMessageType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "dbus.lowlevel.ErrorMessage",  /*tp_name*/
     0,                         /*tp_basicsize*/
     0,                         /*tp_itemsize*/

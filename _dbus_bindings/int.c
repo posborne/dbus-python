@@ -86,8 +86,7 @@ Boolean_tp_repr (PyObject *self)
 }
 
 PyTypeObject DBusPyBoolean_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "dbus.Boolean",
     0,
     0,

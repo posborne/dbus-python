@@ -404,8 +404,7 @@ static void Connection_tp_dealloc(Connection *self)
 /* Connection type object =========================================== */
 
 PyTypeObject DBusPyConnection_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,                      /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "_dbus_bindings.Connection", /*tp_name*/
     sizeof(Connection),     /*tp_basicsize*/
     0,                      /*tp_itemsize*/

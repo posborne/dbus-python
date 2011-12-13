@@ -77,8 +77,7 @@ DBusPyLibDBusConnection_tp_dealloc(Connection *self)
 }
 
 PyTypeObject DBusPyLibDBusConnection_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,                      /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "_dbus_bindings._LibDBusConnection",
     sizeof(DBusPyLibDBusConnection),
     0,                      /*tp_itemsize*/

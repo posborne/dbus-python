@@ -215,8 +215,7 @@ DBusPythonInt_tp_repr(PyObject *self)
 }
 
 PyTypeObject DBusPyIntBase_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "_dbus_bindings._IntBase",
     sizeof(DBusPyIntBase),
     0,
@@ -327,8 +326,7 @@ DBusPythonFloat_tp_repr(PyObject *self)
 }
 
 PyTypeObject DBusPyFloatBase_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "_dbus_bindings._FloatBase",
     sizeof(DBusPyFloatBase),
     0,
@@ -445,8 +443,7 @@ DBusPyStrBase_tp_dealloc(PyObject *self)
 }
 
 PyTypeObject DBusPyStrBase_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "_dbus_bindings._StrBase",
     0,
     0,
@@ -563,8 +560,7 @@ DBusPyLongBase_tp_dealloc(PyObject *self)
 }
 
 PyTypeObject DBusPyLongBase_Type = {
-    PyObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type))
-    0,
+    PyVarObject_HEAD_INIT(DEFERRED_ADDRESS(&PyType_Type), 0)
     "_dbus_bindings._LongBase",
     0,
     0,

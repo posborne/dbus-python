@@ -511,8 +511,7 @@ struct PyMethodDef DBusPyServer_tp_methods[] = {
 };
 
 PyTypeObject DBusPyServer_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,                      /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "_dbus_bindings._Server",/*tp_name*/
     sizeof(Server),         /*tp_basicsize*/
     0,                      /*tp_itemsize*/
