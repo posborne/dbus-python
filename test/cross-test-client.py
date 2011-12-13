@@ -86,7 +86,7 @@ class Client(SignalTestsImpl):
         method = getattr(if_obj, member)
         try:
             real_ret = method(*args)
-        except Exception, e:
+        except Exception as e:
             self.fail_id += 1
             print "%s.%s fail %d" % (interface, member, self.fail_id)
             s = ("report %d: %s.%s%r: raised %r \"%s\""
@@ -97,7 +97,7 @@ class Client(SignalTestsImpl):
             return
         try:
             check_fn(real_ret, check_arg)
-        except Exception, e:
+        except Exception as e:
             self.fail_id += 1
             print "%s.%s fail %d" % (interface, member, self.fail_id)
             s = ("report %d: %s.%s%r: %s"
@@ -122,7 +122,7 @@ class Client(SignalTestsImpl):
                 for i in xrange(len(exp)):
                     try:
                         equals(real_ret[i], exp[i])
-                    except AssertionError, e:
+                    except AssertionError as e:
                         if not isinstance(e.args, tuple):
                             e.args = (e.args,)
                         e.args = e.args + ('(at position %d in sequence)' % i,)
@@ -131,7 +131,7 @@ class Client(SignalTestsImpl):
                 for k in exp:
                     try:
                         equals(real_ret[k], exp[k])
-                    except AssertionError, e:
+                    except AssertionError as e:
                         if not isinstance(e.args, tuple):
                             e.args = (e.args,)
                         e.args = e.args + ('(at key %r in dict)' % k,)

@@ -250,12 +250,12 @@ def _method_reply_return(connection, message, method_name, signature, *retval):
     reply = MethodReturnMessage(message)
     try:
         reply.append(signature=signature, *retval)
-    except Exception, e:
+    except Exception as e:
         logging.basicConfig()
         if signature is None:
             try:
                 signature = reply.guess_signature(retval) + ' (guessed)'
-            except Exception, e:
+            except Exception as e:
                 _logger.error('Unable to guess signature for arguments %r: '
                               '%s: %s', retval, e.__class__, e)
                 raise
@@ -743,7 +743,7 @@ class Object(Interface):
                     retval = (retval,)
 
             _method_reply_return(connection, message, method_name, signature, *retval)
-        except Exception, exception:
+        except Exception as exception:
             # send error reply
             _method_reply_error(connection, message, exception)
 

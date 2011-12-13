@@ -525,7 +525,7 @@ class Connection(_Connection):
             for cb in self.__call_on_disconnection:
                 try:
                     cb(self)
-                except Exception, e:
+                except Exception as e:
                     # basicConfig is a no-op if logging is already configured
                     logging.basicConfig()
                     _logger.error('Exception in handler for Disconnected '
@@ -564,7 +564,7 @@ class Connection(_Connection):
         # Add the arguments to the function
         try:
             message.append(signature=signature, *args)
-        except Exception, e:
+        except Exception as e:
             logging.basicConfig()
             _logger.error('Unable to set arguments %r according to '
                           'signature %r: %s: %s',
@@ -618,7 +618,7 @@ class Connection(_Connection):
         # Add the arguments to the function
         try:
             message.append(signature=signature, *args)
-        except Exception, e:
+        except Exception as e:
             logging.basicConfig()
             _logger.error('Unable to set arguments %r according to '
                           'signature %r: %s: %s',

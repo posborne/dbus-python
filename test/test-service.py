@@ -267,7 +267,7 @@ class TestObject(dbus.service.Object, TestInterface):
                     return_cb(variant)
 
                 return False # do not run again
-        except Exception, e:
+        except Exception as e:
             error_cb(e)
 
     @dbus.service.method(IFACE, in_signature='', out_signature='s', sender_keyword='sender')

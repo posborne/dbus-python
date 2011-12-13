@@ -388,7 +388,7 @@ class ProxyObject(object):
         try:
             try:
                 self._introspect_method_map = process_introspection_data(data)
-            except IntrospectionParserException, e:
+            except IntrospectionParserException as e:
                 self._introspect_error_handler(e)
                 return
 

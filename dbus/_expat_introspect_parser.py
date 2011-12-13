@@ -81,5 +81,5 @@ def process_introspection_data(data):
     """
     try:
         return _Parser().parse(data)
-    except Exception, e:
+    except Exception as e:
         raise IntrospectionParserException('%s: %s' % (e.__class__, e))

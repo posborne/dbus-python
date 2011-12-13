@@ -65,7 +65,7 @@ def main():
     # D-Bus exceptions are mapped to Python exceptions
     try:
         iface.RaiseException()
-    except dbus.DBusException, e:
+    except dbus.DBusException as e:
         print str(e)
 
     # introspection is automatically supported

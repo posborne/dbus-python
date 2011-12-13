@@ -176,7 +176,7 @@ class BusConnection(Connection):
             and bus_name != BUS_DAEMON_NAME):
             try:
                 return self.get_name_owner(bus_name)
-            except DBusException, e:
+            except DBusException as e:
                 if e.get_dbus_name() != _NAME_HAS_NO_OWNER:
                     raise
                 # else it doesn't exist: try to start it

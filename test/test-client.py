@@ -199,7 +199,7 @@ class TestDBusBindings(unittest.TestCase):
                     elif not self.utf8 and isinstance(val, dbus.UTF8String):
                         failures.append('%r should not have been utf8' % val)
                         return
-                except Exception, e:
+                except Exception as e:
                     failures.append("%s:\n%s" % (e.__class__, e))
 
             def error_handler(self, error):
@@ -371,7 +371,7 @@ class TestDBusBindings(unittest.TestCase):
             try:
                 print "requesting %s" % name
                 busname = dbus.service.BusName(name, dbus.SessionBus())
-            except Exception, e:
+            except Exception as e:
                 print "%s:\n%s" % (e.__class__, e)
                 self.assert_(not succeed, 'did not expect registering bus name %s to fail' % name)
             else:
@@ -462,7 +462,7 @@ class TestDBusBindings(unittest.TestCase):
         self.assertRaises(dbus.DBusException, self.iface.AsyncRaise)
         try:
             self.iface.AsyncRaise()
-        except dbus.DBusException, e:
+        except dbus.DBusException as e:
             self.assert_(e.get_dbus_name() ==
                          'org.freedesktop.bugzilla.bug12403',
                          e.get_dbus_name())
@@ -518,7 +518,7 @@ class TestDBusBindings(unittest.TestCase):
 
         try:
             self.iface.RaiseValueError()
-        except Exception, e:
+        except Exception as e:
             self.assert_(isinstance(e, dbus.DBusException), e.__class__)
             self.assert_('.ValueError: Traceback ' in str(e),
                          'Wanted a traceback but got:\n"""%s"""' % str(e))
@@ -527,7 +527,7 @@ class TestDBusBindings(unittest.TestCase):
 
         try:
             self.iface.RaiseDBusExceptionNoTraceback()
-        except Exception, e:
+        except Exception as e:
             self.assert_(isinstance(e, dbus.DBusException), e.__class__)
             self.assertEquals(str(e),
                               'com.example.Networking.ServerError: '
@@ -537,7 +537,7 @@ class TestDBusBindings(unittest.TestCase):
 
         try:
             self.iface.RaiseDBusExceptionWithTraceback()
-        except Exception, e:
+        except Exception as e:
             self.assert_(isinstance(e, dbus.DBusException), e.__class__)
             self.assert_(str(e).startswith('com.example.Misc.RealityFailure: '
                                            'Traceback '),
