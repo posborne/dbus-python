@@ -26,6 +26,13 @@
 #include <Python.h>
 #include <stdint.h>
 
+/* In Python2 >= 2.6 this aliases PyString to PyBytes.  There is no PyString
+ * in Python 3, so this allows the C extension to be compilable in both Python
+ * versions.  Unfortunately though, the aliases header missed one.
+ */
+#include <bytesobject.h>
+#define PyBytes_InternFromString PyString_InternFromString
+
 #include "dbus_bindings-internal.h"
 
 #ifndef DBUS_BINDINGS_TYPES_INTERNAL_H

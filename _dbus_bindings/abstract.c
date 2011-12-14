@@ -95,7 +95,7 @@ dbus_py_variant_level_getattro(PyObject *obj, PyObject *name)
 {
     PyObject *key, *value;
 
-    if (PyString_Check(name)) {
+    if (PyBytes_Check(name)) {
         Py_INCREF(name);
     }
     else if (PyUnicode_Check(name)) {
@@ -109,7 +109,7 @@ dbus_py_variant_level_getattro(PyObject *obj, PyObject *name)
         return NULL;
     }
 
-    if (strcmp(PyString_AS_STRING(name), "variant_level")) {
+    if (strcmp(PyBytes_AS_STRING(name), "variant_level")) {
         value = PyObject_GenericGetAttr(obj, name);
         Py_CLEAR(name);
         return value;
@@ -394,7 +394,7 @@ DBusPythonString_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    self = (PyString_Type.tp_new)(cls, args, NULL);
+    self = (PyBytes_Type.tp_new)(cls, args, NULL);
     if (self) {
         if (!dbus_py_variant_level_set(self, variantness)) {
             Py_CLEAR(self);
@@ -407,7 +407,7 @@ DBusPythonString_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 static PyObject *
 DBusPythonString_tp_repr(PyObject *self)
 {
-    PyObject *parent_repr = (PyString_Type.tp_repr)(self);
+    PyObject *parent_repr = (PyBytes_Type.tp_repr)(self);
     PyObject *vl_obj;
     PyObject *my_repr;
     long variant_level;
@@ -439,7 +439,7 @@ static void
 DBusPyStrBase_tp_dealloc(PyObject *self)
 {
     dbus_py_variant_level_clear(self);
-    (PyString_Type.tp_dealloc)(self);
+    (PyBytes_Type.tp_dealloc)(self);
 }
 
 PyTypeObject DBusPyStrBase_Type = {
@@ -473,7 +473,7 @@ PyTypeObject DBusPyStrBase_Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&PyString_Type),       /* tp_base */
+    DEFERRED_ADDRESS(&PyBytes_Type),        /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -610,13 +610,14 @@ dbus_py_init_abstract(void)
     _dbus_py_variant_levels = PyDict_New();
     if (!_dbus_py_variant_levels) return 0;
 
-    dbus_py__dbus_object_path__const = PyString_InternFromString("__dbus_object_path__");
+    dbus_py__dbus_object_path__const =
+        PyBytes_InternFromString("__dbus_object_path__");
     if (!dbus_py__dbus_object_path__const) return 0;
 
-    dbus_py_variant_level_const = PyString_InternFromString("variant_level");
+    dbus_py_variant_level_const = PyBytes_InternFromString("variant_level");
     if (!dbus_py_variant_level_const) return 0;
 
-    dbus_py_signature_const = PyString_InternFromString("signature");
+    dbus_py_signature_const = PyBytes_InternFromString("signature");
     if (!dbus_py_signature_const) return 0;
 
     DBusPyIntBase_Type.tp_base = &PyInt_Type;
@@ -633,7 +634,7 @@ dbus_py_init_abstract(void)
     if (PyType_Ready(&DBusPyLongBase_Type) < 0) return 0;
     DBusPyLongBase_Type.tp_print = NULL;
 
-    DBusPyStrBase_Type.tp_base = &PyString_Type;
+    DBusPyStrBase_Type.tp_base = &PyBytes_Type;
     if (PyType_Ready(&DBusPyStrBase_Type) < 0) return 0;
     DBusPyStrBase_Type.tp_print = NULL;
 

@@ -166,7 +166,7 @@ Array_tp_init (DBusPyArray *self, PyObject *args, PyObject *kwargs)
     }
 
     if (signature != Py_None) {
-        const char *c_str = PyString_AS_STRING(signature);
+        const char *c_str = PyBytes_AS_STRING(signature);
 
         if (!dbus_signature_validate_single(c_str, NULL)) {
             Py_CLEAR(signature);
@@ -372,7 +372,7 @@ Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
     }
 
     if (signature != Py_None) {
-        const char *c_str = PyString_AS_STRING(signature);
+        const char *c_str = PyBytes_AS_STRING(signature);
 
         switch (c_str[0]) {
             case DBUS_TYPE_BYTE:
@@ -646,7 +646,7 @@ Struct_tp_getattro(PyObject *obj, PyObject *name)
 {
     PyObject *key, *value;
 
-    if (PyString_Check(name)) {
+    if (PyBytes_Check(name)) {
         Py_INCREF(name);
     }
     else if (PyUnicode_Check(name)) {
@@ -660,7 +660,7 @@ Struct_tp_getattro(PyObject *obj, PyObject *name)
         return NULL;
     }
 
-    if (strcmp(PyString_AS_STRING(name), "signature")) {
+    if (strcmp(PyBytes_AS_STRING(name), "signature")) {
         value = dbus_py_variant_level_getattro(obj, name);
         Py_CLEAR(name);
         return value;

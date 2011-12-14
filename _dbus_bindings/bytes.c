@@ -79,12 +79,12 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     /* obj is only a borrowed ref for the moment */
     obj = PyTuple_GetItem(args, 0);
 
-    if (PyString_Check(obj)) {
+    if (PyBytes_Check(obj)) {
         /* string of length 1, we hope */
-        if (PyString_GET_SIZE(obj) != 1) {
+        if (PyBytes_GET_SIZE(obj) != 1) {
             goto bad_arg;
         }
-        obj = PyInt_FromLong((unsigned char)(PyString_AS_STRING(obj)[0]));
+        obj = PyInt_FromLong((unsigned char)(PyBytes_AS_STRING(obj)[0]));
     }
     else if (PyInt_Check(obj)) {
         long i = PyInt_AS_LONG(obj);
@@ -123,7 +123,7 @@ static PyObject *
 Byte_tp_str(PyObject *self)
 {
     unsigned char str[2] = { (unsigned char)PyInt_AS_LONG(self), 0 };
-    return PyString_FromStringAndSize((char *)str, 1);
+    return PyBytes_FromStringAndSize((char *)str, 1);
 }
 
 PyTypeObject DBusPyByte_Type = {

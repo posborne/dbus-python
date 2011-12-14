@@ -143,7 +143,7 @@ get_object_path(PyObject *obj)
     PyObject *magic_attr = PyObject_GetAttr(obj, dbus_py__dbus_object_path__const);
 
     if (magic_attr) {
-        if (PyString_Check(magic_attr)) {
+        if (PyBytes_Check(magic_attr)) {
             return magic_attr;
         }
         else {
@@ -175,11 +175,11 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         *variant_level_ptr = variant_level;
     }
     else if (variant_level > 0) {
-        return PyString_FromString(DBUS_TYPE_VARIANT_AS_STRING);
+        return PyBytes_FromString(DBUS_TYPE_VARIANT_AS_STRING);
     }
 
     if (obj == Py_True || obj == Py_False) {
-      return PyString_FromString(DBUS_TYPE_BOOLEAN_AS_STRING);
+      return PyBytes_FromString(DBUS_TYPE_BOOLEAN_AS_STRING);
     }
 
     magic_attr = get_object_path(obj);
@@ -187,61 +187,61 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         return NULL;
     if (magic_attr != Py_None) {
         Py_CLEAR(magic_attr);
-        return PyString_FromString(DBUS_TYPE_OBJECT_PATH_AS_STRING);
+        return PyBytes_FromString(DBUS_TYPE_OBJECT_PATH_AS_STRING);
     }
     Py_CLEAR(magic_attr);
 
     /* Ordering is important: some of these are subclasses of each other. */
     if (PyInt_Check(obj)) {
         if (DBusPyInt16_Check(obj))
-            return PyString_FromString(DBUS_TYPE_INT16_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_INT16_AS_STRING);
         else if (DBusPyInt32_Check(obj))
-            return PyString_FromString(DBUS_TYPE_INT32_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_INT32_AS_STRING);
         else if (DBusPyByte_Check(obj))
-            return PyString_FromString(DBUS_TYPE_BYTE_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_BYTE_AS_STRING);
         else if (DBusPyUInt16_Check(obj))
-            return PyString_FromString(DBUS_TYPE_UINT16_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_UINT16_AS_STRING);
         else if (DBusPyBoolean_Check(obj))
-            return PyString_FromString(DBUS_TYPE_BOOLEAN_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_BOOLEAN_AS_STRING);
         else
-            return PyString_FromString(DBUS_TYPE_INT32_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_INT32_AS_STRING);
     }
     else if (PyLong_Check(obj)) {
         if (DBusPyInt64_Check(obj))
-            return PyString_FromString(DBUS_TYPE_INT64_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_INT64_AS_STRING);
         else if (DBusPyUInt32_Check(obj))
-            return PyString_FromString(DBUS_TYPE_UINT32_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_UINT32_AS_STRING);
         else if (DBusPyUInt64_Check(obj))
-            return PyString_FromString(DBUS_TYPE_UINT64_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_UINT64_AS_STRING);
         else
-            return PyString_FromString(DBUS_TYPE_INT64_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_INT64_AS_STRING);
     }
     else if (PyUnicode_Check(obj))
-        return PyString_FromString(DBUS_TYPE_STRING_AS_STRING);
+        return PyBytes_FromString(DBUS_TYPE_STRING_AS_STRING);
 #if defined(DBUS_TYPE_UNIX_FD)
     else if (DBusPyUnixFd_Check(obj))
-        return PyString_FromString(DBUS_TYPE_UNIX_FD_AS_STRING);
+        return PyBytes_FromString(DBUS_TYPE_UNIX_FD_AS_STRING);
 #endif
     else if (PyFloat_Check(obj)) {
 #ifdef WITH_DBUS_FLOAT32
         if (DBusPyDouble_Check(obj))
-            return PyString_FromString(DBUS_TYPE_DOUBLE_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_DOUBLE_AS_STRING);
         else if (DBusPyFloat_Check(obj))
-            return PyString_FromString(DBUS_TYPE_FLOAT_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_FLOAT_AS_STRING);
         else
 #endif
-            return PyString_FromString(DBUS_TYPE_DOUBLE_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_DOUBLE_AS_STRING);
     }
-    else if (PyString_Check(obj)) {
+    else if (PyBytes_Check(obj)) {
         if (DBusPyObjectPath_Check(obj))
-            return PyString_FromString(DBUS_TYPE_OBJECT_PATH_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_OBJECT_PATH_AS_STRING);
         else if (DBusPySignature_Check(obj))
-            return PyString_FromString(DBUS_TYPE_SIGNATURE_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_SIGNATURE_AS_STRING);
         else if (DBusPyByteArray_Check(obj))
-            return PyString_FromString(DBUS_TYPE_ARRAY_AS_STRING
-                                       DBUS_TYPE_BYTE_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_ARRAY_AS_STRING
+                                      DBUS_TYPE_BYTE_AS_STRING);
         else
-            return PyString_FromString(DBUS_TYPE_STRING_AS_STRING);
+            return PyBytes_FromString(DBUS_TYPE_STRING_AS_STRING);
     }
     else if (PyTuple_Check(obj)) {
         Py_ssize_t len = PyTuple_GET_SIZE(obj);
@@ -258,12 +258,12 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
             return NULL;
         }
         /* Set the first and last elements of list to be the parentheses */
-        item = PyString_FromString(DBUS_STRUCT_BEGIN_CHAR_AS_STRING);
+        item = PyBytes_FromString(DBUS_STRUCT_BEGIN_CHAR_AS_STRING);
         if (PyList_SetItem(list, 0, item) < 0) {
             Py_CLEAR(list);
             return NULL;
         }
-        item = PyString_FromString(DBUS_STRUCT_END_CHAR_AS_STRING);
+        item = PyBytes_FromString(DBUS_STRUCT_END_CHAR_AS_STRING);
         if (PyList_SetItem(list, len + 1, item) < 0) {
             Py_CLEAR(list);
             return NULL;
@@ -291,7 +291,7 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
             }
             item = NULL;
         }
-        empty_str = PyString_FromString("");
+        empty_str = PyBytes_FromString("");
         if (!empty_str) {
             /* really shouldn't happen */
             Py_CLEAR(list);
@@ -305,10 +305,12 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
     }
     else if (PyList_Check(obj)) {
         PyObject *tmp;
-        PyObject *ret = PyString_FromString(DBUS_TYPE_ARRAY_AS_STRING);
+        PyObject *ret = PyBytes_FromString(DBUS_TYPE_ARRAY_AS_STRING);
         if (!ret) return NULL;
-        if (DBusPyArray_Check(obj) && PyString_Check(((DBusPyArray *)obj)->signature)) {
-            PyString_Concat(&ret, ((DBusPyArray *)obj)->signature);
+        if (DBusPyArray_Check(obj) &&
+            PyBytes_Check(((DBusPyArray *)obj)->signature))
+        {
+            PyBytes_Concat(&ret, ((DBusPyArray *)obj)->signature);
             return ret;
         }
         if (PyList_GET_SIZE(obj) == 0) {
@@ -320,7 +322,7 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         tmp = PyList_GetItem(obj, 0);
         tmp = _signature_string_from_pyobject(tmp, NULL);
         if (!tmp) return NULL;
-        PyString_ConcatAndDel(&ret, tmp);
+        PyBytes_ConcatAndDel(&ret, tmp);
         return ret;
     }
     else if (PyDict_Check(obj)) {
@@ -328,14 +330,16 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         Py_ssize_t pos = 0;
         PyObject *ret = NULL;
 
-        if (DBusPyDict_Check(obj) && PyString_Check(((DBusPyDict *)obj)->signature)) {
-            const char *sig = PyString_AS_STRING(((DBusPyDict *)obj)->signature);
+        if (DBusPyDict_Check(obj) &&
+            PyBytes_Check(((DBusPyDict *)obj)->signature))
+        {
+            const char *sig = PyBytes_AS_STRING(((DBusPyDict *)obj)->signature);
 
-            return PyString_FromFormat((DBUS_TYPE_ARRAY_AS_STRING
-                                        DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
-                                        "%s"
-                                        DBUS_DICT_ENTRY_END_CHAR_AS_STRING),
-                                       sig);
+            return PyBytes_FromFormat((DBUS_TYPE_ARRAY_AS_STRING
+                                       DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
+                                       "%s"
+                                       DBUS_DICT_ENTRY_END_CHAR_AS_STRING),
+                                      sig);
         }
         if (!PyDict_Next(obj, &pos, &key, &value)) {
             /* No items, so fail. Or should we guess "a{vv}"? */
@@ -346,12 +350,12 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
         keysig = _signature_string_from_pyobject(key, NULL);
         valuesig = _signature_string_from_pyobject(value, NULL);
         if (keysig && valuesig) {
-            ret = PyString_FromFormat((DBUS_TYPE_ARRAY_AS_STRING
-                                       DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
-                                       "%s%s"
-                                       DBUS_DICT_ENTRY_END_CHAR_AS_STRING),
-                                      PyString_AS_STRING(keysig),
-                                      PyString_AS_STRING(valuesig));
+            ret = PyBytes_FromFormat((DBUS_TYPE_ARRAY_AS_STRING
+                                      DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING
+                                      "%s%s"
+                                      DBUS_DICT_ENTRY_END_CHAR_AS_STRING),
+                                     PyBytes_AS_STRING(keysig),
+                                     PyBytes_AS_STRING(valuesig));
         }
         Py_CLEAR(keysig);
         Py_CLEAR(valuesig);
@@ -403,7 +407,7 @@ dbus_py_Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
         DBG("%s", "Message_guess_signature: failed");
         return NULL;
     }
-    if (!PyString_Check(tmp) || PyString_GET_SIZE(tmp) < 2) {
+    if (!PyBytes_Check(tmp) || PyBytes_GET_SIZE(tmp) < 2) {
         PyErr_SetString(PyExc_RuntimeError, "Internal error: "
                         "_signature_string_from_pyobject returned "
                         "a bad result");
@@ -411,10 +415,10 @@ dbus_py_Message_guess_signature(PyObject *unused UNUSED, PyObject *args)
         return NULL;
     }
     ret = PyObject_CallFunction((PyObject *)&DBusPySignature_Type, "(s#)",
-                                PyString_AS_STRING(tmp) + 1,
-                                PyString_GET_SIZE(tmp) - 2);
+                                PyBytes_AS_STRING(tmp) + 1,
+                                PyBytes_GET_SIZE(tmp) - 2);
     DBG("Message_guess_signature: returning Signature at %p \"%s\"", ret,
-        ret ? PyString_AS_STRING(ret) : "(NULL)");
+        ret ? PyBytes_AS_STRING(ret) : "(NULL)");
     Py_CLEAR(tmp);
     return ret;
 }
@@ -450,13 +454,13 @@ _message_iter_append_string(DBusMessageIter *appender,
         }
     }
 
-    if (PyString_Check(obj)) {
+    if (PyBytes_Check(obj)) {
         PyObject *unicode;
 
         /* Raise TypeError if the string has embedded NULs */
-        if (PyString_AsStringAndSize(obj, &s, NULL) < 0) return -1;
+        if (PyBytes_AsStringAndSize(obj, &s, NULL) < 0) return -1;
         /* Surely there's a faster stdlib way to validate UTF-8... */
-        unicode = PyUnicode_DecodeUTF8(s, PyString_GET_SIZE(obj), NULL);
+        unicode = PyUnicode_DecodeUTF8(s, PyBytes_GET_SIZE(obj), NULL);
         if (!unicode) {
             PyErr_SetString(PyExc_UnicodeError, "String parameters "
                             "to be sent over D-Bus must be valid UTF-8");
@@ -475,7 +479,7 @@ _message_iter_append_string(DBusMessageIter *appender,
         PyObject *utf8 = PyUnicode_AsUTF8String(obj);
         if (!utf8) return -1;
         /* Raise TypeError if the string has embedded NULs */
-        if (PyString_AsStringAndSize(utf8, &s, NULL) < 0) return -1;
+        if (PyBytes_AsStringAndSize(utf8, &s, NULL) < 0) return -1;
         DBG("Performing actual append: string (from unicode) %s", s);
         if (!dbus_message_iter_append_basic(appender, sig_type, &s)) {
             Py_CLEAR(utf8);
@@ -497,14 +501,14 @@ _message_iter_append_byte(DBusMessageIter *appender, PyObject *obj)
 {
     unsigned char y;
 
-    if (PyString_Check(obj)) {
-        if (PyString_GET_SIZE(obj) != 1) {
+    if (PyBytes_Check(obj)) {
+        if (PyBytes_GET_SIZE(obj) != 1) {
             PyErr_Format(PyExc_ValueError, "Expected a string of "
                          "length 1 byte, but found %d bytes",
-                         (int) PyString_GET_SIZE(obj));
+                         (int) PyBytes_GET_SIZE(obj));
             return -1;
         }
-        y = *(unsigned char *)PyString_AS_STRING(obj);
+        y = *(unsigned char *)PyBytes_AS_STRING(obj);
     }
     else {
         long i = PyInt_AsLong(obj);
@@ -766,12 +770,12 @@ _message_iter_append_string_as_byte_array(DBusMessageIter *appender,
                                           PyObject *obj)
 {
     /* a bit of a faster path for byte arrays that are strings */
-    Py_ssize_t len = PyString_GET_SIZE(obj);
+    Py_ssize_t len = PyBytes_GET_SIZE(obj);
     const char *s;
     DBusMessageIter sub;
     int ret;
 
-    s = PyString_AS_STRING(obj);
+    s = PyBytes_AS_STRING(obj);
     DBG("%s", "Opening ARRAY container");
     if (!dbus_message_iter_open_container(appender, DBUS_TYPE_ARRAY,
                                           DBUS_TYPE_BYTE_AS_STRING, &sub)) {
@@ -810,7 +814,7 @@ _message_iter_append_variant(DBusMessageIter *appender, PyObject *obj)
     obj_sig = _signature_string_from_pyobject(obj, &variant_level);
     if (!obj_sig) return -1;
 
-    obj_sig_str = PyString_AsString(obj_sig);
+    obj_sig_str = PyBytes_AsString(obj_sig);
     if (!obj_sig_str) return -1;
 
     if (variant_level < 1) {
@@ -1028,7 +1032,7 @@ _message_iter_append_pyobject(DBusMessageIter *appender,
           if (sig_type == DBUS_TYPE_DICT_ENTRY)
             ret = _message_iter_append_multi(appender, sig_iter,
                                              DBUS_TYPE_DICT_ENTRY, obj);
-          else if (sig_type == DBUS_TYPE_BYTE && PyString_Check(obj))
+          else if (sig_type == DBUS_TYPE_BYTE && PyBytes_Check(obj))
             ret = _message_iter_append_string_as_byte_array(appender, obj);
           else
             ret = _message_iter_append_multi(appender, sig_iter,
@@ -1105,7 +1109,7 @@ dbus_py_Message_append(Message *self, PyObject *args, PyObject *kwargs)
         DBG("%s", "No signature for message, guessing...");
         signature_obj = dbus_py_Message_guess_signature(NULL, args);
         if (!signature_obj) return NULL;
-        signature = PyString_AS_STRING(signature_obj);
+        signature = PyBytes_AS_STRING(signature_obj);
     }
     /* from here onwards, you have to do a goto rather than returning NULL
     to make sure signature_obj gets freed */

@@ -40,8 +40,9 @@ _object_path_unregister(DBusConnection *conn, void *user_data)
     TRACE(conn_obj);
 
     DBG("Connection at %p unregistering object path %s",
-        conn_obj, PyString_AS_STRING((PyObject *)user_data));
-    tuple = DBusPyConnection_GetObjectPathHandlers((PyObject *)conn_obj, (PyObject *)user_data);
+        conn_obj, PyBytes_AS_STRING((PyObject *)user_data));
+    tuple = DBusPyConnection_GetObjectPathHandlers(
+        (PyObject *)conn_obj, (PyObject *)user_data);
     if (!tuple) goto out;
     if (tuple == Py_None) goto out;
 
@@ -91,9 +92,10 @@ _object_path_message(DBusConnection *conn, DBusMessage *message,
     TRACE(conn_obj);
 
     DBG("Connection at %p messaging object path %s",
-        conn_obj, PyString_AS_STRING((PyObject *)user_data));
+        conn_obj, PyBytes_AS_STRING((PyObject *)user_data));
     DBG_DUMP_MESSAGE(message);
-    tuple = DBusPyConnection_GetObjectPathHandlers((PyObject *)conn_obj, (PyObject *)user_data);
+    tuple = DBusPyConnection_GetObjectPathHandlers(
+        (PyObject *)conn_obj, (PyObject *)user_data);
     if (!tuple || tuple == Py_None) {
         ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
         goto out;
@@ -724,15 +726,15 @@ Connection__register_object_path(Connection *self, PyObject *args,
     mad) to preserve the desirable property that the DBusConnection can
     never strongly reference the Connection, even indirectly.
     */
-    if (PyString_CheckExact(path)) {
+    if (PyBytes_CheckExact(path)) {
         Py_INCREF(path);
     }
     else if (PyUnicode_Check(path)) {
         path = PyUnicode_AsUTF8String(path);
         if (!path) return NULL;
     }
-    else if (PyString_Check(path)) {
-        path = PyString_FromString(PyString_AS_STRING(path));
+    else if (PyBytes_Check(path)) {
+        path = PyBytes_FromString(PyBytes_AS_STRING(path));
         if (!path) return NULL;
     }
     else {
@@ -740,7 +742,7 @@ Connection__register_object_path(Connection *self, PyObject *args,
         return NULL;
     }
 
-    if (!dbus_py_validate_object_path(PyString_AS_STRING(path))) {
+    if (!dbus_py_validate_object_path(PyBytes_AS_STRING(path))) {
         Py_CLEAR(path);
         return NULL;
     }
@@ -756,7 +758,7 @@ Connection__register_object_path(Connection *self, PyObject *args,
     if (callbacks && callbacks != Py_None) {
         PyErr_Format(PyExc_KeyError, "Can't register the object-path "
                      "handler for '%s': there is already a handler",
-                     PyString_AS_STRING(path));
+                     PyBytes_AS_STRING(path));
         Py_CLEAR(tuple);
         Py_CLEAR(path);
         return NULL;
@@ -775,13 +777,13 @@ Connection__register_object_path(Connection *self, PyObject *args,
     Py_BEGIN_ALLOW_THREADS
     if (fallback) {
         ok = dbus_connection_register_fallback(self->conn,
-                                               PyString_AS_STRING(path),
+                                               PyBytes_AS_STRING(path),
                                                &_object_path_vtable,
                                                path);
     }
     else {
         ok = dbus_connection_register_object_path(self->conn,
-                                                  PyString_AS_STRING(path),
+                                                  PyBytes_AS_STRING(path),
                                                   &_object_path_vtable,
                                                   path);
     }
@@ -795,7 +797,7 @@ Connection__register_object_path(Connection *self, PyObject *args,
             memory in libdbus, but tbh we should never get here anyway. */
             Py_BEGIN_ALLOW_THREADS
             ok = dbus_connection_unregister_object_path(self->conn,
-                                                    PyString_AS_STRING(path));
+                                                      PyBytes_AS_STRING(path));
             Py_END_ALLOW_THREADS
             return NULL;
         }
@@ -840,15 +842,15 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
                                      argnames, &path)) return NULL;
 
     /* Take a ref to the path. Same comments as for _register_object_path. */
-    if (PyString_CheckExact(path)) {
+    if (PyBytes_CheckExact(path)) {
         Py_INCREF(path);
     }
     else if (PyUnicode_Check(path)) {
         path = PyUnicode_AsUTF8String(path);
         if (!path) return NULL;
     }
-    else if (PyString_Check(path)) {
-        path = PyString_FromString(PyString_AS_STRING(path));
+    else if (PyBytes_Check(path)) {
+        path = PyBytes_FromString(PyBytes_AS_STRING(path));
         if (!path) return NULL;
     }
     else {
@@ -862,7 +864,7 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
     if (!callbacks || callbacks == Py_None) {
         PyErr_Format(PyExc_KeyError, "Can't unregister the object-path "
                      "handler for '%s': there is no such handler",
-                     PyString_AS_STRING(path));
+                     PyBytes_AS_STRING(path));
         Py_CLEAR(path);
         return NULL;
     }
@@ -898,7 +900,7 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
 
     Py_BEGIN_ALLOW_THREADS
     ok = dbus_connection_unregister_object_path(self->conn,
-                                                PyString_AS_STRING(path));
+                                                PyBytes_AS_STRING(path));
     Py_END_ALLOW_THREADS
 
     if (ok) {
@@ -968,7 +970,7 @@ Connection_list_exported_child_objects (Connection *self, PyObject *args,
         return NULL;
     }
     for (kid_ptr = kids; *kid_ptr; kid_ptr++) {
-        PyObject *tmp = PyString_FromString(*kid_ptr);
+        PyObject *tmp = PyBytes_FromString(*kid_ptr);
 
         if (!tmp) {
             Py_CLEAR(ret);
@@ -988,7 +990,7 @@ Connection_list_exported_child_objects (Connection *self, PyObject *args,
 }
 
     /* dbus_connection_get_object_path_data - not useful to Python,
-     * the object path data is just a PyString containing the path */
+     * the object path data is just a PyBytes containing the path */
     /* dbus_connection_list_registered could be useful, though */
 
 /* dbus_connection_set_change_sigpipe - sets global state */

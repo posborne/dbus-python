@@ -145,10 +145,10 @@ Signature_tp_iter (PyObject *self)
     SignatureIter *iter = PyObject_New(SignatureIter, &SignatureIterType);
     if (!iter) return NULL;
 
-    if (PyString_AS_STRING (self)[0]) {
+    if (PyBytes_AS_STRING (self)[0]) {
         Py_INCREF(self);
         iter->string = self;
-        dbus_signature_iter_init(&(iter->iter), PyString_AS_STRING(self));
+        dbus_signature_iter_init(&(iter->iter), PyBytes_AS_STRING(self));
     }
     else {
         /* this is a null string, make a null iterator */

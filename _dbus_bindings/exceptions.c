@@ -37,7 +37,7 @@ import_exception(void)
         return TRUE;
     }
 
-    name = PyString_FromString("dbus.exceptions");
+    name = PyBytes_FromString("dbus.exceptions");
     if (name == NULL) {
         return FALSE;
     }
@@ -81,7 +81,7 @@ DBusPyException_ConsumeError(DBusError *error)
     }
 
     if (error->name) {
-        PyObject *name = PyString_FromString(error->name);
+        PyObject *name = PyBytes_FromString(error->name);
         int ret;
 
         if (!name)

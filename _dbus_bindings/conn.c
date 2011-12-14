@@ -318,7 +318,7 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
         conn = dbus_connection_ref (wrapper->conn);
     }
-    else if ((address = PyString_AsString(address_or_conn)) != NULL) {
+    else if ((address = PyBytes_AsString(address_or_conn)) != NULL) {
         dbus_error_init(&error);
 
         /* We always open a private connection (at the libdbus level). Sharing

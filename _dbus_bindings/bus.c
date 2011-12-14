@@ -42,7 +42,7 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
     dbus_error_init(&error);
 
-    if (first && PyString_Check(first)) {
+    if (first && PyBytes_Check(first)) {
         dbus_bool_t ret;
 
         /* It's a custom address. First connect to it, then register. */
@@ -142,7 +142,7 @@ DBusPyConnection_GetUniqueName(Connection *self, PyObject *args UNUSED)
         return DBusPyException_SetString("This connection has no unique name "
                                          "yet");
     }
-    return PyString_FromString(name);
+    return PyBytes_FromString(name);
 }
 
 PyObject *

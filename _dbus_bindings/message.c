@@ -415,7 +415,7 @@ Message_get_member(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyString_FromString(c_str);
+    return PyBytes_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_has_member__doc__,
@@ -490,7 +490,7 @@ Message_get_path_decomposed(Message *self, PyObject *unused UNUSED)
         Py_RETURN_NONE;
     }
     for (ptr = paths; *ptr; ptr++) {
-        PyObject *str = PyString_FromString(*ptr);
+        PyObject *str = PyBytes_FromString(*ptr);
 
         if (!str) {
             Py_CLEAR(ret);
@@ -576,7 +576,7 @@ Message_get_sender(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyString_FromString(c_str);
+    return PyBytes_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_has_sender__doc__,
@@ -622,7 +622,7 @@ Message_get_destination(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyString_FromString(c_str);
+    return PyBytes_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_has_destination__doc__,
@@ -667,7 +667,7 @@ Message_get_interface(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyString_FromString(c_str);
+    return PyBytes_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_has_interface__doc__,
@@ -712,7 +712,7 @@ Message_get_error_name(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyString_FromString(c_str);
+    return PyBytes_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_set_error_name__doc__,

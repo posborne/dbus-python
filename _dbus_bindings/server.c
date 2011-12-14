@@ -107,7 +107,7 @@ DBusPyServer_set_auth_mechanisms(Server *self,
             am = PySequence_Fast_GET_ITEM(auth_mechanisms, i);
             /* this supports either str or unicode, raising TypeError
              * on failure */
-            list[i] = PyString_AsString(am);
+            list[i] = PyBytes_AsString(am);
 
             if (!list[i]) {
                 Py_CLEAR(fast_seq);
@@ -466,7 +466,7 @@ Server_get_address(Server *self, PyObject *args UNUSED)
     address = dbus_server_get_address(self->server);
     Py_END_ALLOW_THREADS
 
-    return PyString_FromString(address);
+    return PyBytes_FromString(address);
 }
 
 PyDoc_STRVAR(Server_get_id__doc__,
@@ -483,7 +483,7 @@ Server_get_id(Server *self, PyObject *args UNUSED)
     id = dbus_server_get_id(self->server);
     Py_END_ALLOW_THREADS
 
-    return PyString_FromString(id);
+    return PyBytes_FromString(id);
 }
 
 PyDoc_STRVAR(Server_get_is_connected__doc__,
