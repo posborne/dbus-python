@@ -51,6 +51,31 @@ static inline int type##_CheckExact (PyObject *o) \
     return (Py_TYPE(o) == &type##_Type); \
 }
 
+/* This is a clever little trick to make writing the various object reprs
+ * easier.  It relies on Python's %V format option which consumes two
+ * arguments.  The first is a unicode object which may be NULL, and the second
+ * is a char* which will be used if the first parameter is NULL.
+ *
+ * The issue is that we don't know whether the `parent_repr` at the call site
+ * is a unicode or a bytes (a.k.a. 8-bit string).  Under Python 3, it will
+ * always be a unicode.  Under Python 2 it will *probably* be a bytes/str, but
+ * could potentially be a unicode.  So, we check the type, and if it's a
+ * unicode, we pass that as the first argument, leaving NULL as the second
+ * argument (since it will never be checked).  However, if the object is not a
+ * unicode, it better be a bytes.  In that case, we'll pass NULL as the first
+ * argument so that the second one gets used, and we'll dig the char* out of
+ * the bytes object for that purpose.
+ *
+ * You might think that this would crash if obj is neither a bytes/str or
+ * unicode, and you'd be right *except* that Python doesn't allow any other
+ * types to be returned in the reprs.  Also, since obj will always be the repr
+ * of a built-in type, it will never be anything other than a bytes or a
+ * unicode in any version of Python.  So in practice, this is safe.
+ */
+#define REPRV(obj) \
+    (PyUnicode_Check(obj) ? (obj) : NULL), \
+    (PyUnicode_Check(obj) ? NULL : PyBytes_AS_STRING(obj))
+
 PyMODINIT_FUNC init_dbus_bindings(void);
 
 /* conn.c */

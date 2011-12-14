@@ -75,14 +75,14 @@ Boolean_tp_repr (PyObject *self)
 {
     long variant_level = ((DBusPyIntBase *)self)->variant_level;
     if (variant_level > 0) {
-        return PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                   Py_TYPE(self)->tp_name,
-                                   PyInt_AsLong(self) ? "True" : "False",
-                                   variant_level);
+        return PyUnicode_FromFormat("%s(%s, variant_level=%ld)",
+                                    Py_TYPE(self)->tp_name,
+                                    PyInt_AsLong(self) ? "True" : "False",
+                                    variant_level);
     }
-    return PyString_FromFormat("%s(%s)",
-                               Py_TYPE(self)->tp_name,
-                               PyInt_AsLong(self) ? "True" : "False");
+    return PyUnicode_FromFormat("%s(%s)",
+                                Py_TYPE(self)->tp_name,
+                                PyInt_AsLong(self) ? "True" : "False");
 }
 
 PyTypeObject DBusPyBoolean_Type = {

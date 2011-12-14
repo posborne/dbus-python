@@ -200,14 +200,14 @@ DBusPythonInt_tp_repr(PyObject *self)
 
     if (!parent_repr) return NULL;
     if (variant_level > 0) {
-        my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                      Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      variant_level);
+        my_repr = PyUnicode_FromFormat("%s(%V, variant_level=%ld)",
+                                       Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr),
+                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s)", Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr));
+        my_repr = PyUnicode_FromFormat("%s(%V)", Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr));
     }
     /* whether my_repr is NULL or not: */
     Py_CLEAR(parent_repr);
@@ -311,14 +311,14 @@ DBusPythonFloat_tp_repr(PyObject *self)
 
     if (!parent_repr) return NULL;
     if (variant_level > 0) {
-        my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                      Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      variant_level);
+        my_repr = PyUnicode_FromFormat("%s(%V, variant_level=%ld)",
+                                       Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr),
+                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s)", Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr));
+        my_repr = PyUnicode_FromFormat("%s(%V)", Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr));
     }
     /* whether my_repr is NULL or not: */
     Py_CLEAR(parent_repr);
@@ -421,14 +421,14 @@ DBusPythonString_tp_repr(PyObject *self)
     variant_level = PyInt_AsLong(vl_obj);
     Py_CLEAR(vl_obj);
     if (variant_level > 0) {
-        my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                      Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      variant_level);
+        my_repr = PyUnicode_FromFormat("%s(%V, variant_level=%ld)",
+                                       Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr),
+                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s)", Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr));
+        my_repr = PyUnicode_FromFormat("%s(%V)", Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr));
     }
     /* whether my_repr is NULL or not: */
     Py_CLEAR(parent_repr);
@@ -538,14 +538,14 @@ DBusPythonLong_tp_repr(PyObject *self)
     variant_level = PyInt_AsLong(vl_obj);
     Py_CLEAR(vl_obj);
     if (variant_level) {
-        my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                      Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      variant_level);
+        my_repr = PyUnicode_FromFormat("%s(%V, variant_level=%ld)",
+                                       Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr),
+                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s)", Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr));
+        my_repr = PyUnicode_FromFormat("%s(%V)", Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr));
     }
     /* whether my_repr is NULL or not: */
     Py_CLEAR(parent_repr);

@@ -273,14 +273,14 @@ String_tp_repr(PyObject *self)
         return NULL;
     }
     if (((DBusPyString *)self)->variant_level > 0) {
-        my_repr = PyString_FromFormat("%s(%s, variant_level=%ld)",
-                                      Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      ((DBusPyString *)self)->variant_level);
+        my_repr = PyUnicode_FromFormat("%s(%V, variant_level=%ld)",
+                                       Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr),
+                                       ((DBusPyString *)self)->variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s)", Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr));
+        my_repr = PyUnicode_FromFormat("%s(%V)", Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr));
     }
     /* whether my_repr is NULL or not: */
     Py_CLEAR(parent_repr);

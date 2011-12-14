@@ -92,18 +92,18 @@ Array_tp_repr(DBusPyArray *self)
     if (!parent_repr) goto finally;
     if (!sig_repr) goto finally;
     if (variant_level > 0) {
-        my_repr = PyString_FromFormat("%s(%s, signature=%s, "
-                                      "variant_level=%ld)",
-                                      Py_TYPE(&self->super)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      PyString_AS_STRING(sig_repr),
-                                      variant_level);
+        my_repr = PyUnicode_FromFormat("%s(%V, signature=%V, "
+                                       "variant_level=%ld)",
+                                       Py_TYPE(&self->super)->tp_name,
+                                       REPRV(parent_repr),
+                                       REPRV(sig_repr),
+                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s, signature=%s)",
-                                      Py_TYPE(&self->super)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      PyString_AS_STRING(sig_repr));
+        my_repr = PyUnicode_FromFormat("%s(%V, signature=%V)",
+                                       Py_TYPE(&self->super)->tp_name,
+                                       REPRV(parent_repr),
+                                       REPRV(sig_repr));
     }
 finally:
     Py_CLEAR(parent_repr);
@@ -299,18 +299,18 @@ Dict_tp_repr(DBusPyDict *self)
     if (!parent_repr) goto finally;
     if (!sig_repr) goto finally;
     if (variant_level > 0) {
-        my_repr = PyString_FromFormat("%s(%s, signature=%s, "
-                                      "variant_level=%ld)",
-                                      Py_TYPE(&self->super)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      PyString_AS_STRING(sig_repr),
-                                      variant_level);
+        my_repr = PyUnicode_FromFormat("%s(%V, signature=%V, "
+                                       "variant_level=%ld)",
+                                       Py_TYPE(&self->super)->tp_name,
+                                       REPRV(parent_repr),
+                                       REPRV(sig_repr),
+                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s, signature=%s)",
-                                      Py_TYPE(&self->super)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      PyString_AS_STRING(sig_repr));
+        my_repr = PyUnicode_FromFormat("%s(%V, signature=%V)",
+                                       Py_TYPE(&self->super)->tp_name,
+                                       REPRV(parent_repr),
+                                       REPRV(sig_repr));
     }
 finally:
     Py_CLEAR(parent_repr);
@@ -521,18 +521,18 @@ Struct_tp_repr(PyObject *self)
     if (!sig_repr) goto finally;
     variant_level = dbus_py_variant_level_get(self);
     if (variant_level > 0) {
-        my_repr = PyString_FromFormat("%s(%s, signature=%s, "
-                                      "variant_level=%ld)",
-                                      Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      PyString_AS_STRING(sig_repr),
-                                      variant_level);
+        my_repr = PyUnicode_FromFormat("%s(%V, signature=%V, "
+                                       "variant_level=%ld)",
+                                       Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr),
+                                       REPRV(sig_repr),
+                                       variant_level);
     }
     else {
-        my_repr = PyString_FromFormat("%s(%s, signature=%s)",
-                                      Py_TYPE(self)->tp_name,
-                                      PyString_AS_STRING(parent_repr),
-                                      PyString_AS_STRING(sig_repr));
+        my_repr = PyUnicode_FromFormat("%s(%V, signature=%V)",
+                                       Py_TYPE(self)->tp_name,
+                                       REPRV(parent_repr),
+                                       REPRV(sig_repr));
     }
 
 finally:
