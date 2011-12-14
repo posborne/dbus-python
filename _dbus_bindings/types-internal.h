@@ -33,6 +33,9 @@
 #include <bytesobject.h>
 #define PyBytes_InternFromString PyString_InternFromString
 
+/* In Python 2.x, we need this to define the type of PyLongObject */
+#include <longintrepr.h>
+
 #include "dbus_bindings-internal.h"
 
 #ifndef DBUS_BINDINGS_TYPES_INTERNAL_H

@@ -33,8 +33,8 @@ PyObject *dbus_py_empty_tuple = NULL;
 
 int
 dbus_py_immutable_setattro(PyObject *obj UNUSED,
-                        PyObject *name UNUSED,
-                        PyObject *value UNUSED)
+                           PyObject *name UNUSED,
+                           PyObject *value UNUSED)
 {
     PyErr_SetString(PyExc_AttributeError, "Object is immutable");
     return -1;

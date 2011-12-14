@@ -55,49 +55,81 @@ typedef struct {
     int fd;
 } UnixFdObject;
 
+/* Return values:
+ * -2 - the long value overflows an int
+ * -1 - Python failed producing a long (or in Python 2 an int)
+ *  0 - success
+ *  1 - arg is not a long (or in Python 2 an int)
+ *
+ * Or to summarize:
+ * status  < 0 - an error occurred, and a Python exception is set.
+ * status == 0 - all is okay, output argument *fd is set.
+ * status  > 0 - try something else
+ */
+static int
+make_fd(PyObject *arg, int *fd)
+{
+    long fd_arg;
+
+    if (PyLong_Check(arg) || PyInt_Check(arg)) {
+        fd_arg = PyLong_AsLong(arg);
+        if (fd_arg == -1 && PyErr_Occurred()) {
+            return -1;
+        }
+    }
+    else {
+        return 1;
+    }
+    /* Check for int overflow. */
+    if (fd_arg < INT_MIN || fd_arg > INT_MAX) {
+        PyErr_Format(PyExc_ValueError, "int is outside fd range");
+        return -2;
+    }
+    *fd = (int)fd_arg;
+    return 0;
+}
+
 static PyObject *
 UnixFd_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs UNUSED)
 {
     UnixFdObject *self = NULL;
     PyObject *arg;
-    PyObject *fdnumber;
-    int fd_original, fd;
+    int status, fd, fd_original = -1;
 
-    if (! PyArg_ParseTuple(args, "O", &arg, NULL)) {
+    if (!PyArg_ParseTuple(args, "O", &arg, NULL)) {
         return NULL;
     }
 
-    if (PyInt_Check(arg)) {
-        fd_original = PyInt_AsLong(arg);
-        fd = dup(fd_original);
-        if (fd < 0) {
-            PyErr_Format(PyExc_ValueError, "Invalid file descriptor");
-            return NULL;
-        }
+    status = make_fd(arg, &fd_original);
+    if (status < 0)
+        return NULL;
 
-    } else if (PyObject_HasAttrString(arg, "fileno")) {
-        fdnumber = PyObject_CallMethod(arg, "fileno", NULL);
-        if (! fdnumber) {
-            PyErr_Format(PyExc_ValueError, "Argument's fileno() method "
-                                            "is not callable");
+    if (status > 0) {
+        if (PyObject_HasAttrString(arg, "fileno")) {
+            PyObject *fd_number = PyObject_CallMethod(arg, "fileno", NULL);
+            if (!fd_number)
+                return NULL;
+            status = make_fd(fd_number, &fd_original);
+            Py_CLEAR(fd_number);
+            if (status < 0)
+                return NULL;
+            if (status > 0) {
+                PyErr_Format(PyExc_ValueError, "Argument's fileno() method "
+                             "returned a non-int value");
+                return NULL;
+            }
+            /* fd_original is all good. */
+        }
+        else {
+            PyErr_Format(PyExc_ValueError, "Argument is not int and does not "
+                         "implement fileno() method");
             return NULL;
         }
-        if (! PyInt_Check(fdnumber)) {
-            PyErr_Format(PyExc_ValueError, "Argument's fileno() method "
-                                            "returned a non-int value");
-            return NULL;
-        }
-        fd_original = PyInt_AsLong(fdnumber);
-        Py_DECREF(fdnumber);
-        fd = dup(fd_original);
-        if (fd < 0) {
-            PyErr_Format(PyExc_ValueError, "Invalid file descriptor from fileno()");
-            return NULL;
-        }
-
-    } else {
-        PyErr_Format(PyExc_ValueError, "Argument is not int and does not "
-                                       "implement fileno() method");
+    }
+    assert(fd_original >= 0);
+    fd = dup(fd_original);
+    if (fd < 0) {
+        PyErr_Format(PyExc_ValueError, "Invalid file descriptor");
         return NULL;
     }
 
@@ -106,8 +138,7 @@ UnixFd_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs UNUSED)
         return NULL;
 
     self->fd = fd;
-
-    return (PyObject *) self;
+    return (PyObject *)self;
 }
 
 static void

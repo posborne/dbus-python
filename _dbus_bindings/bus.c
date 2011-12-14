@@ -62,7 +62,7 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
         return (PyObject *)self;
     }
-    else if (!first || PyInt_Check(first)) {
+    else if (!first || PyLong_Check(first) || PyInt_Check(first)) {
         long type;
         PyObject *libdbusconn;
         PyObject *new_args;
@@ -73,7 +73,9 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         DBUS_BUS_SESSION. */
 
         if (first) {
-            type = PyInt_AsLong(first);
+            type = PyLong_AsLong(first);
+            if (type == -1 && PyErr_Occurred())
+                return NULL;
 
             if (type != DBUS_BUS_SESSION && type != DBUS_BUS_SYSTEM
                 && type != DBUS_BUS_STARTER) {

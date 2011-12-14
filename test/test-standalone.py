@@ -29,8 +29,6 @@ run in isolation.
 import sys
 import os
 import unittest
-import time
-from traceback import print_exc
 
 builddir = os.path.normpath(os.environ["DBUS_TOP_BUILDDIR"])
 pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
@@ -80,7 +78,10 @@ class TestTypes(unittest.TestCase):
         self.assertEquals(x, ('a','b','c'))
 
     def test_Byte(self):
-        self.assertEquals(types.Byte('x', variant_level=2), types.Byte(ord('x')))
+        self.assertEquals(types.Byte('x', variant_level=2), 
+                          types.Byte(ord('x')))
+        self.assertEquals(types.Byte(1), 1)
+        self.assertEquals(types.Byte(1L), 1)
 
     def test_ByteArray(self):
         self.assertEquals(types.ByteArray(''), '')

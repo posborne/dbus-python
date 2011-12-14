@@ -564,7 +564,7 @@ Connection_get_unix_fd (Connection *self, PyObject *unused UNUSED)
     ok = dbus_connection_get_unix_fd (self->conn, &fd);
     Py_END_ALLOW_THREADS
     if (!ok) Py_RETURN_NONE;
-    return PyInt_FromLong(fd);
+    return PyLong_FromLong(fd);
 }
 
 PyDoc_STRVAR(Connection_get_peer_unix_user__doc__,

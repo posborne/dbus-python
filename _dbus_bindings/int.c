@@ -73,16 +73,21 @@ Boolean_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 static PyObject *
 Boolean_tp_repr (PyObject *self)
 {
+    int is_true = PyObject_IsTrue(self);
     long variant_level = ((DBusPyIntBase *)self)->variant_level;
+
+    if (is_true == -1)
+        return NULL;
+
     if (variant_level > 0) {
         return PyUnicode_FromFormat("%s(%s, variant_level=%ld)",
                                     Py_TYPE(self)->tp_name,
-                                    PyInt_AsLong(self) ? "True" : "False",
+                                    is_true ? "True" : "False",
                                     variant_level);
     }
     return PyUnicode_FromFormat("%s(%s)",
                                 Py_TYPE(self)->tp_name,
-                                PyInt_AsLong(self) ? "True" : "False");
+                                is_true ? "True" : "False");
 }
 
 PyTypeObject DBusPyBoolean_Type = {
@@ -152,14 +157,16 @@ PyDoc_STRVAR(Int16_tp_doc,
 dbus_int16_t
 dbus_py_int16_range_check(PyObject *obj)
 {
-    long i = PyInt_AsLong (obj);
-    if (i == -1 && PyErr_Occurred ()) return -1;
+    long i = PyLong_AsLong(obj);
+    if (i == -1 && PyErr_Occurred())
+        return -1;
+
     if (i < -0x8000 || i > 0x7fff) {
         PyErr_Format(PyExc_OverflowError, "Value %d out of range for Int16",
                      (int)i);
         return -1;
     }
-    return i;
+    return (dbus_int16_t)i;
 }
 
 static PyObject *
@@ -240,14 +247,16 @@ PyDoc_STRVAR(UInt16_tp_doc,
 dbus_uint16_t
 dbus_py_uint16_range_check(PyObject *obj)
 {
-    long i = PyInt_AsLong(obj);
-    if (i == -1 && PyErr_Occurred()) return (dbus_uint16_t)(-1);
+    long i = PyLong_AsLong(obj);
+    if (i == -1 && PyErr_Occurred())
+        return (dbus_uint16_t)(-1);
+
     if (i < 0 || i > 0xffff) {
         PyErr_Format(PyExc_OverflowError, "Value %d out of range for UInt16",
                      (int)i);
         return (dbus_uint16_t)(-1);
     }
-    return i;
+    return (dbus_uint16_t)i;
 }
 
 static PyObject *
@@ -329,14 +338,16 @@ PyDoc_STRVAR(Int32_tp_doc,
 dbus_int32_t
 dbus_py_int32_range_check(PyObject *obj)
 {
-    long i = PyInt_AsLong(obj);
-    if (i == -1 && PyErr_Occurred()) return -1;
+    long i = PyLong_AsLong(obj);
+    if (i == -1 && PyErr_Occurred())
+        return -1;
+
     if (i < INT32_MIN || i > INT32_MAX) {
         PyErr_Format(PyExc_OverflowError, "Value %d out of range for Int32",
                      (int)i);
         return -1;
     }
-    return i;
+    return (dbus_int32_t)i;
 }
 
 static PyObject *

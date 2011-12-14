@@ -76,7 +76,9 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    /* obj is only a borrowed ref for the moment */
+    /* obj is a borrowed reference.  It gets turned into an owned reference on
+     * the good-path of the if-statements below.
+     */
     obj = PyTuple_GetItem(args, 0);
 
     if (PyBytes_Check(obj)) {
@@ -84,13 +86,19 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         if (PyBytes_GET_SIZE(obj) != 1) {
             goto bad_arg;
         }
-        obj = PyInt_FromLong((unsigned char)(PyBytes_AS_STRING(obj)[0]));
+        obj = PyLong_FromLong((unsigned char)(PyBytes_AS_STRING(obj)[0]));
+        if (!obj)
+            goto bad_arg;
     }
-    else if (PyInt_Check(obj)) {
-        long i = PyInt_AS_LONG(obj);
+    else if (PyLong_Check(obj) || PyInt_Check(obj)) {
+        long i = PyLong_AsLong(obj);
+
+        if (i == -1 && PyErr_Occurred())
+            goto bad_arg;
 
         if (Py_TYPE(obj) == cls &&
-            ((DBusPyIntBase *)obj)->variant_level == variantness) {
+            ((DBusPyIntBase *)obj)->variant_level == variantness)
+        {
             Py_INCREF(obj);
             return obj;
         }
@@ -102,9 +110,9 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         goto bad_arg;
     }
 
-    tuple = Py_BuildValue("(O)", obj);
+    /* The tuple steals the reference to obj. */
+    tuple = Py_BuildValue("(N)", obj);
     if (!tuple) return NULL;
-    Py_CLEAR(obj);
 
     obj = DBusPyIntBase_Type.tp_new(cls, tuple, kwargs);
     Py_CLEAR(tuple);
@@ -122,7 +130,17 @@ bad_range:
 static PyObject *
 Byte_tp_str(PyObject *self)
 {
-    unsigned char str[2] = { (unsigned char)PyInt_AS_LONG(self), 0 };
+    long i = PyLong_AsLong(self);
+    unsigned char str[2] = { 0, 0 };
+
+    if (i == -1 && PyErr_Occurred())
+        return NULL;
+    if (i < 0 || i > 255) {
+        PyErr_SetString(PyExc_RuntimeError, "Integer outside range 0-255");
+        return NULL;
+    }
+
+    str[0] = (unsigned char)i;
     return PyBytes_FromStringAndSize((char *)str, 1);
 }
 

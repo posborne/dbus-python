@@ -515,7 +515,7 @@ _message_iter_append_byte(DBusMessageIter *appender, PyObject *obj)
         y = *(unsigned char *)PyBytes_AS_STRING(obj);
     }
     else {
-        long i = PyInt_AsLong(obj);
+        long i = PyLong_AsLong(obj);
 
         if (i == -1 && PyErr_Occurred()) return -1;
         if (i < 0 || i > 0xff) {
@@ -550,12 +550,23 @@ static int
 _message_iter_append_unixfd(DBusMessageIter *appender, PyObject *obj)
 {
     int fd;
+    long original_fd;
 
-    if (PyInt_Check(obj)) {
-        fd = PyInt_AsLong(obj);
-    } else if (PyObject_IsInstance(obj, (PyObject*) &DBusPyUnixFd_Type)) {
+    if (PyLong_Check(obj) || PyInt_Check(obj)) {
+        original_fd = PyLong_AsLong(obj);
+        if (original_fd == -1 && PyErr_Occurred())
+            return -1;
+        if (original_fd < INT_MIN || original_fd > INT_MAX) {
+            PyErr_Format(PyExc_ValueError, "out of int range: %ld",
+                         original_fd);
+            return -1;
+        }
+        fd = (int)original_fd;
+    }
+    else if (PyObject_IsInstance(obj, (PyObject*) &DBusPyUnixFd_Type)) {
         fd = dbus_py_unix_fd_get_fd(obj);
-    } else {
+    }
+    else {
         return -1;
     }
 

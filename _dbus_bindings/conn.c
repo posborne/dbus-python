@@ -99,7 +99,7 @@ DBusPyConnection_HandleMessage(Connection *conn,
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
     }
     else {
-        long i = PyInt_AsLong(obj);
+        long i = PyLong_AsLong(obj);
         DBG("%p: handler %p returned %ld", conn, callable, i);
         Py_CLEAR(obj);
         if (i == -1 && PyErr_Occurred()) {

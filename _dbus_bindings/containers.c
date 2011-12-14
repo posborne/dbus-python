@@ -127,11 +127,12 @@ Array_tp_new (PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         variant_level = PyDict_GetItem(kwargs, dbus_py_variant_level_const);
     }
     if (variant_level) {
-        self->variant_level = PyInt_AsLong(variant_level);
-        if (PyErr_Occurred()) {
+        long new_variant_level = PyLong_AsLong(variant_level);
+        if (new_variant_level == -1 && PyErr_Occurred()) {
             Py_CLEAR(self);
             return NULL;
         }
+        self->variant_level = new_variant_level;
     }
     return (PyObject *)self;
 }
@@ -334,11 +335,13 @@ Dict_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         variant_level = PyDict_GetItem(kwargs, dbus_py_variant_level_const);
     }
     if (variant_level) {
-        self->variant_level = PyInt_AsLong(variant_level);
-        if (PyErr_Occurred()) {
+        long new_variant_level = PyLong_AsLong(variant_level);
+
+        if (new_variant_level == -1 && PyErr_Occurred()) {
             Py_CLEAR(self);
             return NULL;
         }
+        self->variant_level = new_variant_level;
     }
     return (PyObject *)self;
 }

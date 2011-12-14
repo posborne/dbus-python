@@ -341,7 +341,7 @@ static PyObject *
 Message_get_type(Message *self, PyObject *unused UNUSED)
 {
     if (!self->msg) return DBusPy_RaiseUnusableMessage();
-    return PyInt_FromLong(dbus_message_get_type(self->msg));
+    return PyLong_FromLong(dbus_message_get_type(self->msg));
 }
 
 PyDoc_STRVAR(Message_get_serial__doc__,
