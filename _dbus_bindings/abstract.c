@@ -44,17 +44,33 @@ dbus_py_variant_level_get(PyObject *obj)
 {
     PyObject *vl_obj;
     PyObject *key = PyLong_FromVoidPtr(obj);
+    long variant_level;
 
     if (!key) {
-        return 0;
+        return -1;
     }
 
     vl_obj = PyDict_GetItem(_dbus_py_variant_levels, key);
     Py_CLEAR(key);
 
-    if (!vl_obj)
+    if (!vl_obj) {
+        /* PyDict_GetItem() does not set an exception when the key is missing.
+         * In our case, it just means that there was no entry in the variant
+         * dictionary for this object.  Semantically, this is equivalent to a
+         * variant level of 0.
+         */
         return 0;
-    return PyInt_AsLong(vl_obj);
+    }
+    variant_level = PyInt_AsLong(vl_obj);
+    if (variant_level == -1 && PyErr_Occurred()) {
+        /* variant_level < 0 can never be inserted into the dictionary; see
+         * dbus_py_variant_level_set() below.  The semantics of setting
+         * variant_level < 0 is to delete it from the dictionary.
+         */
+        return -1;
+    }
+    assert(variant_level >= 0);
+    return variant_level;
 }
 
 dbus_bool_t

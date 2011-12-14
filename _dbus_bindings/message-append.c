@@ -171,6 +171,10 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
 {
     PyObject *magic_attr;
     long variant_level = get_variant_level(obj);
+
+    if (variant_level < 0)
+        return NULL;
+
     if (variant_level_ptr) {
         *variant_level_ptr = variant_level;
     }

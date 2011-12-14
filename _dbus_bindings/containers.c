@@ -519,7 +519,11 @@ Struct_tp_repr(PyObject *self)
     if (!sig) sig = Py_None;
     sig_repr = PyObject_Repr(sig);
     if (!sig_repr) goto finally;
+
     variant_level = dbus_py_variant_level_get(self);
+    if (variant_level < 0)
+        goto finally;
+    
     if (variant_level > 0) {
         my_repr = PyUnicode_FromFormat("%s(%V, signature=%V, "
                                        "variant_level=%ld)",
