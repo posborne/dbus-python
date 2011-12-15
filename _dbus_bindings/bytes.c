@@ -32,9 +32,9 @@
 #include "types-internal.h"
 
 #ifdef PY3
-#define DBUS_BYTES_BASE DBusPyLongBase_Type
+#define DBUS_BYTES_BASE (DBusPyLongBase_Type)
 #else
-#define DBUS_BYTES_BASE DBusPyIntBase_Type
+#define DBUS_BYTES_BASE (DBusPyIntBase_Type)
 #endif
 
 PyDoc_STRVAR(Byte_tp_doc,
@@ -217,9 +217,9 @@ PyTypeObject DBusPyByte_Type = {
 };
 
 #ifdef PY3
-#define DBUS_BYTEARRAY_BASE DBusPyBytesBase_Type
+#define DBUS_BYTEARRAY_BASE (DBusPyBytesBase_Type)
 #else
-#define DBUS_BYTEARRAY_BASE DBusPyStrBase_Type
+#define DBUS_BYTEARRAY_BASE (DBusPyStrBase_Type)
 #endif
 
 PyDoc_STRVAR(ByteArray_tp_doc,

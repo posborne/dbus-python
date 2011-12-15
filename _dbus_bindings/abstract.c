@@ -517,9 +517,9 @@ PyTypeObject DBusPyBytesBase_Type = {
 /* Support code for str subclasses ================================== */
 
 #ifdef PY3
-#define DBUS_STRING_BASE PyUnicode_Type
+#define DBUS_STRING_BASE (PyUnicode_Type)
 #else
-#define DBUS_STRING_BASE PyBytes_Type
+#define DBUS_STRING_BASE (PyBytes_Type)
 #endif
 
 PyDoc_STRVAR(DBusPythonString_tp_doc,\
@@ -769,12 +769,12 @@ PyObject *dbus_py_signature_const = NULL;
 PyObject *dbus_py__dbus_object_path__const = NULL;
 
 #ifdef PY3
-#define INTERN PyUnicode_InternFromString
+#define INTERN (PyUnicode_InternFromString)
 #else
 /* Neither Python 2.6 nor 2.7 define the expected PyBytes_InternFromString
  * alias in bytesobject.h.
  */
-#define INTERN PyString_InternFromString
+#define INTERN (PyString_InternFromString)
 #endif
 
 dbus_bool_t
