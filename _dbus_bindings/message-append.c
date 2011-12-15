@@ -587,35 +587,21 @@ _message_iter_append_byte(DBusMessageIter *appender, PyObject *obj)
 
     if (PyBytes_Check(obj)) {
         if (PyBytes_GET_SIZE(obj) != 1) {
-            PyErr_Format(PyExc_ValueError, "Expected a string of "
-                         "length 1 byte, but found %d bytes",
-                         (int) PyBytes_GET_SIZE(obj));
+            PyErr_Format(PyExc_ValueError,
+                         "Expected a length-1 bytes but found %d bytes",
+                         (int)PyBytes_GET_SIZE(obj));
             return -1;
         }
         y = *(unsigned char *)PyBytes_AS_STRING(obj);
-    }
-    else if (PyUnicode_Check(obj)) {
-        PyObject *obj_as_bytes = PyUnicode_AsUTF8String(obj);
-
-        if (!obj_as_bytes)
-            return -1;
-        if (PyBytes_GET_SIZE(obj_as_bytes) != 1) {
-            PyErr_Format(PyExc_ValueError, "Expected a string of "
-                         "length 1 byte, but found %d bytes",
-                         (int)PyBytes_GET_SIZE(obj_as_bytes));
-            Py_CLEAR(obj_as_bytes);
-            return -1;
-        }
-        y = *(unsigned char *)PyBytes_AS_STRING(obj_as_bytes);
-        Py_CLEAR(obj_as_bytes);
     }
     else {
         long i = PyLong_AsLong(obj);
 
         if (i == -1 && PyErr_Occurred()) return -1;
         if (i < 0 || i > 0xff) {
-            PyErr_Format(PyExc_ValueError, "%d outside range for a "
-                         "byte value", (int)i);
+            PyErr_Format(PyExc_ValueError,
+                         "%d outside range for a byte value",
+                         (int)i);
             return -1;
         }
         y = i;

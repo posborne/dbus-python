@@ -1,7 +1,7 @@
-__all__ = ('ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
+__all__ = ['ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
            'Int16', 'UInt16', 'Int32', 'UInt32', 'Int64', 'UInt64',
            'Double', 'String', 'Array', 'Struct', 'Dictionary',
-           'UTF8String', 'UnixFd')
+           'UnixFd']
 
 from _dbus_bindings import (
     Array, Boolean, Byte, ByteArray, Dictionary, Double, Int16, Int32, Int64,
@@ -11,3 +11,4 @@ from _dbus_bindings import (
 from dbus._compat import is_py2
 if is_py2:
     from _dbus_bindings import UTF8String
+    __all__.append('UTF8String')
