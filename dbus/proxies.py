@@ -23,7 +23,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import sys
 import logging
 
 try:
@@ -45,6 +44,7 @@ _logger = logging.getLogger('dbus.proxies')
 from _dbus_bindings import (
     BUS_DAEMON_IFACE, BUS_DAEMON_NAME, BUS_DAEMON_PATH, INTROSPECTABLE_IFACE,
     LOCAL_PATH)
+from dbus._compat import is_py2
 
 
 class _DeferredMethod:
@@ -59,7 +59,7 @@ class _DeferredMethod:
         self._block = block
 
     def __call__(self, *args, **keywords):
-        if (keywords.has_key('reply_handler') or
+        if ('reply_handler' in keywords or
             keywords.get('ignore_reply', False)):
             # defer the async call til introspection finishes
             self._append(self._proxy_method, args, keywords)
@@ -226,7 +226,7 @@ class ProxyObject(object):
         if kwargs:
             raise TypeError('ProxyObject.__init__ does not take these '
                             'keyword arguments: %s'
-                            % ', '.join(kwargs.iterkeys()))
+                            % ', '.join(kwargs.keys()))
 
         if follow_name_owner_changes:
             # we don't get the signals unless the Bus has a main loop
@@ -369,13 +369,15 @@ class ProxyObject(object):
                                       **keywords)
 
     def _Introspect(self):
+        kwargs = {}
+        if is_py2:
+            kwargs['utf8_strings'] = True
         return self._bus.call_async(self._named_service,
                                     self.__dbus_object_path__,
                                     INTROSPECTABLE_IFACE, 'Introspect', '', (),
                                     self._introspect_reply_handler,
                                     self._introspect_error_handler,
-                                    utf8_strings=True,
-                                    require_main_loop=False)
+                                    require_main_loop=False, **kwargs)
 
     def _introspect_execute_queue(self):
         # FIXME: potential to flood the bus

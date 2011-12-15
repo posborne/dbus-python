@@ -34,9 +34,7 @@ to export objects or claim well-known names.
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import os
-
-__all__ = (
+__all__ = [
            # from _dbus
            'Bus', 'SystemBus', 'SessionBus', 'StarterBus',
 
@@ -56,7 +54,7 @@ __all__ = (
 
            'ObjectPath', 'ByteArray', 'Signature', 'Byte', 'Boolean',
            'Int16', 'UInt16', 'Int32', 'UInt32', 'Int64', 'UInt64',
-           'Double', 'String', 'Array', 'Struct', 'Dictionary', 'UTF8String',
+           'Double', 'String', 'Array', 'Struct', 'Dictionary',
 
            # from exceptions
            'DBusException',
@@ -66,7 +64,12 @@ __all__ = (
 
            # submodules
            'service', 'mainloop', 'lowlevel'
-           )
+           ]
+
+from dbus._compat import is_py2
+if is_py2:
+    __all__.append('UTF8String')
+
 __docformat__ = 'restructuredtext'
 
 try:
@@ -92,6 +95,10 @@ from dbus.exceptions import (
     ValidationException)
 from _dbus_bindings import (
     Array, Boolean, Byte, ByteArray, Dictionary, Double, Int16, Int32, Int64,
-    ObjectPath, Signature, String, Struct, UInt16, UInt32, UInt64, UTF8String)
+    ObjectPath, Signature, String, Struct, UInt16, UInt32, UInt64)
+
+if is_py2:
+    from _dbus_bindings import UTF8String
+
 from dbus._dbus import Bus, SystemBus, SessionBus, StarterBus
 from dbus.proxies import Interface

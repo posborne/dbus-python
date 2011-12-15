@@ -234,11 +234,29 @@ static PyMethodDef module_functions[] = {
 };
 
 PyMODINIT_FUNC
+#ifdef PY3
+PyInit__dbus_bindings(void)
+#else
 init_dbus_bindings(void)
+#endif
 {
-    PyObject *this_module, *c_api;
+    PyObject *this_module = NULL, *c_api;
     static const int API_count = DBUS_BINDINGS_API_COUNT;
     static _dbus_py_func_ptr dbus_bindings_API[DBUS_BINDINGS_API_COUNT];
+
+#ifdef PY3
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "_dbus_bindings",       /* m_name */
+        module_doc,             /* m_doc */
+        -1,                     /* m_size */
+        module_functions,       /* m_methods */
+        NULL,                   /* m_reload */
+        NULL,                   /* m_traverse */
+        NULL,                   /* m_clear */
+        NULL                    /* m_free */
+    };
+#endif
 
     dbus_bindings_API[0] = (_dbus_py_func_ptr)&API_count;
     dbus_bindings_API[1] = (_dbus_py_func_ptr)DBusPyConnection_BorrowDBusConnection;
@@ -246,68 +264,78 @@ init_dbus_bindings(void)
 
     default_main_loop = NULL;
 
-    if (!dbus_py_init_generic()) return;
-    if (!dbus_py_init_abstract()) return;
-    if (!dbus_py_init_signature()) return;
-    if (!dbus_py_init_int_types()) return;
-    if (!dbus_py_init_unixfd_type()) return;
-    if (!dbus_py_init_string_types()) return;
-    if (!dbus_py_init_float_types()) return;
-    if (!dbus_py_init_container_types()) return;
-    if (!dbus_py_init_byte_types()) return;
-    if (!dbus_py_init_message_types()) return;
-    if (!dbus_py_init_pending_call()) return;
-    if (!dbus_py_init_mainloop()) return;
-    if (!dbus_py_init_libdbus_conn_types()) return;
-    if (!dbus_py_init_conn_types()) return;
-    if (!dbus_py_init_server_types()) return;
+    if (!dbus_py_init_generic()) goto init_error;
+    if (!dbus_py_init_abstract()) goto init_error;
+    if (!dbus_py_init_signature()) goto init_error;
+    if (!dbus_py_init_int_types()) goto init_error;
+    if (!dbus_py_init_unixfd_type()) goto init_error;
+    if (!dbus_py_init_string_types()) goto init_error;
+    if (!dbus_py_init_float_types()) goto init_error;
+    if (!dbus_py_init_container_types()) goto init_error;
+    if (!dbus_py_init_byte_types()) goto init_error;
+    if (!dbus_py_init_message_types()) goto init_error;
+    if (!dbus_py_init_pending_call()) goto init_error;
+    if (!dbus_py_init_mainloop()) goto init_error;
+    if (!dbus_py_init_libdbus_conn_types()) goto init_error;
+    if (!dbus_py_init_conn_types()) goto init_error;
+    if (!dbus_py_init_server_types()) goto init_error;
 
-    this_module = Py_InitModule3("_dbus_bindings", module_functions, module_doc);
-    if (!this_module) return;
+#ifdef PY3
+    this_module = PyModule_Create(&moduledef);
+#else
+    this_module = Py_InitModule3("_dbus_bindings",
+                                 module_functions, module_doc);
+#endif
+    if (!this_module) goto init_error;
 
-    if (!dbus_py_insert_abstract_types(this_module)) return;
-    if (!dbus_py_insert_signature(this_module)) return;
-    if (!dbus_py_insert_int_types(this_module)) return;
-    if (!dbus_py_insert_unixfd_type(this_module)) return;
-    if (!dbus_py_insert_string_types(this_module)) return;
-    if (!dbus_py_insert_float_types(this_module)) return;
-    if (!dbus_py_insert_container_types(this_module)) return;
-    if (!dbus_py_insert_byte_types(this_module)) return;
-    if (!dbus_py_insert_message_types(this_module)) return;
-    if (!dbus_py_insert_pending_call(this_module)) return;
-    if (!dbus_py_insert_mainloop_types(this_module)) return;
-    if (!dbus_py_insert_libdbus_conn_types(this_module)) return;
-    if (!dbus_py_insert_conn_types(this_module)) return;
-    if (!dbus_py_insert_server_types(this_module)) return;
+    if (!dbus_py_insert_abstract_types(this_module)) goto init_error;
+    if (!dbus_py_insert_signature(this_module)) goto init_error;
+    if (!dbus_py_insert_int_types(this_module)) goto init_error;
+    if (!dbus_py_insert_unixfd_type(this_module)) goto init_error;
+    if (!dbus_py_insert_string_types(this_module)) goto init_error;
+    if (!dbus_py_insert_float_types(this_module)) goto init_error;
+    if (!dbus_py_insert_container_types(this_module)) goto init_error;
+    if (!dbus_py_insert_byte_types(this_module)) goto init_error;
+    if (!dbus_py_insert_message_types(this_module)) goto init_error;
+    if (!dbus_py_insert_pending_call(this_module)) goto init_error;
+    if (!dbus_py_insert_mainloop_types(this_module)) goto init_error;
+    if (!dbus_py_insert_libdbus_conn_types(this_module)) goto init_error;
+    if (!dbus_py_insert_conn_types(this_module)) goto init_error;
+    if (!dbus_py_insert_server_types(this_module)) goto init_error;
 
     if (PyModule_AddStringConstant(this_module, "BUS_DAEMON_NAME",
-                                   DBUS_SERVICE_DBUS) < 0) return;
+                                   DBUS_SERVICE_DBUS) < 0) goto init_error;
     if (PyModule_AddStringConstant(this_module, "BUS_DAEMON_PATH",
-                                   DBUS_PATH_DBUS) < 0) return;
+                                   DBUS_PATH_DBUS) < 0) goto init_error;
     if (PyModule_AddStringConstant(this_module, "BUS_DAEMON_IFACE",
-                                   DBUS_INTERFACE_DBUS) < 0) return;
+                                   DBUS_INTERFACE_DBUS) < 0) goto init_error;
     if (PyModule_AddStringConstant(this_module, "LOCAL_PATH",
-                                   DBUS_PATH_LOCAL) < 0) return;
+                                   DBUS_PATH_LOCAL) < 0) goto init_error;
     if (PyModule_AddStringConstant(this_module, "LOCAL_IFACE",
-                                   DBUS_INTERFACE_LOCAL) < 0) return;
+                                   DBUS_INTERFACE_LOCAL) < 0) goto init_error;
     if (PyModule_AddStringConstant(this_module, "INTROSPECTABLE_IFACE",
-                                   DBUS_INTERFACE_INTROSPECTABLE) < 0) return;
+                                   DBUS_INTERFACE_INTROSPECTABLE) < 0)
+        goto init_error;
     if (PyModule_AddStringConstant(this_module, "PEER_IFACE",
-                                   DBUS_INTERFACE_PEER) < 0) return;
+                                   DBUS_INTERFACE_PEER) < 0) goto init_error;
     if (PyModule_AddStringConstant(this_module, "PROPERTIES_IFACE",
-                                   DBUS_INTERFACE_PROPERTIES) < 0) return;
+                                   DBUS_INTERFACE_PROPERTIES) < 0)
+        goto init_error;
     if (PyModule_AddStringConstant(this_module,
                 "DBUS_INTROSPECT_1_0_XML_PUBLIC_IDENTIFIER",
-                DBUS_INTROSPECT_1_0_XML_PUBLIC_IDENTIFIER) < 0) return;
+                DBUS_INTROSPECT_1_0_XML_PUBLIC_IDENTIFIER) < 0)
+        goto init_error;
     if (PyModule_AddStringConstant(this_module,
                 "DBUS_INTROSPECT_1_0_XML_SYSTEM_IDENTIFIER",
-                DBUS_INTROSPECT_1_0_XML_SYSTEM_IDENTIFIER) < 0) return;
+                DBUS_INTROSPECT_1_0_XML_SYSTEM_IDENTIFIER) < 0)
+        goto init_error;
     if (PyModule_AddStringConstant(this_module,
                 "DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE",
-                DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE) < 0) return;
+                DBUS_INTROSPECT_1_0_XML_DOCTYPE_DECL_NODE) < 0)
+        goto init_error;
 
 #define ADD_CONST_VAL(x, v) \
-    if (PyModule_AddIntConstant(this_module, x, v) < 0) return;
+    if (PyModule_AddIntConstant(this_module, x, v) < 0) goto init_error;
 #define ADD_CONST_PREFIXED(x) ADD_CONST_VAL(#x, DBUS_##x)
 #define ADD_CONST(x) ADD_CONST_VAL(#x, x)
 
@@ -372,19 +400,34 @@ init_dbus_bindings(void)
     ADD_CONST_PREFIXED(WATCH_ERROR)
 
     if (PyModule_AddStringConstant(this_module, "__docformat__",
-                                   "restructuredtext") < 0) return;
+                                   "restructuredtext") < 0) goto init_error;
 
     if (PyModule_AddStringConstant(this_module, "__version__",
-                                   PACKAGE_VERSION) < 0) return;
+                                   PACKAGE_VERSION) < 0) goto init_error;
 
     if (PyModule_AddIntConstant(this_module, "_python_version",
-                                PY_VERSION_HEX) < 0) return;
+                                PY_VERSION_HEX) < 0) goto init_error;
 
+#ifdef PY3
+    c_api = PyCapsule_New((void *)dbus_bindings_API,
+                          PYDBUS_CAPSULE_NAME, NULL);
+#else
     c_api = PyCObject_FromVoidPtr ((void *)dbus_bindings_API, NULL);
+#endif
     if (!c_api) {
-        return;
+        goto init_error;
     }
     PyModule_AddObject(this_module, "_C_API", c_api);
+
+#ifdef PY3
+    return this_module;
+  init_error:
+    Py_CLEAR(this_module);
+    return NULL;
+#else
+  init_error:
+    return;
+#endif
 }
 
 /* vim:set ft=c cino< sw=4 sts=4 et: */

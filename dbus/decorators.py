@@ -33,14 +33,15 @@ import inspect
 from dbus import validate_interface_name, Signature, validate_member_name
 from dbus.lowlevel import SignalMessage
 from dbus.exceptions import DBusException
+from dbus._compat import is_py2
 
 
 def method(dbus_interface, in_signature=None, out_signature=None,
-        async_callbacks=None,
-        sender_keyword=None, path_keyword=None, destination_keyword=None,
-        message_keyword=None, connection_keyword=None,
-        utf8_strings=False, byte_arrays=False,
-        rel_path_keyword=None):
+           async_callbacks=None,
+           sender_keyword=None, path_keyword=None, destination_keyword=None,
+           message_keyword=None, connection_keyword=None,
+           byte_arrays=False,
+           rel_path_keyword=None, **kwargs):
     """Factory for decorators used to mark methods of a `dbus.service.Object`
     to be exported on the D-Bus.
 
@@ -198,8 +199,12 @@ def method(dbus_interface, in_signature=None, out_signature=None,
         func._dbus_message_keyword = message_keyword
         func._dbus_connection_keyword = connection_keyword
         func._dbus_args = args
-        func._dbus_get_args_options = {'byte_arrays': byte_arrays,
-                                       'utf8_strings': utf8_strings}
+        func._dbus_get_args_options = dict(byte_arrays=byte_arrays)
+        if is_py2:
+            func._dbus_get_args_options['utf8_strings'] = kwargs.get(
+                'utf8_strings', False)
+        elif 'utf8_strings' in kwargs:
+            raise TypeError("unexpected keyword argument 'utf8_strings'")
         return func
 
     return decorator

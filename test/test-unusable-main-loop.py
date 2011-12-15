@@ -22,6 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+from __future__ import print_function
 import dbus
 
 from dbus_py_test import UnusableMainLoop
@@ -30,8 +31,8 @@ def main():
     UnusableMainLoop(set_as_default=True)
     try:
         bus = dbus.SessionBus()
-    except ValueError, e:
-        print "Correctly got ValueError from UnusableMainLoop"
+    except ValueError as e:
+        print("Correctly got ValueError from UnusableMainLoop")
     else:
         raise AssertionError("Expected ValueError from UnusableMainLoop")
 

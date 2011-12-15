@@ -299,7 +299,6 @@ static PyObject *
 Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
     DBusConnection *conn;
-    const char *address;
     PyObject *address_or_conn;
     DBusError error;
     PyObject *self, *mainloop = NULL;
@@ -318,7 +317,9 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
         conn = dbus_connection_ref (wrapper->conn);
     }
-    else if ((address = PyBytes_AsString(address_or_conn)) != NULL) {
+    else if (PyBytes_Check(address_or_conn)) {
+        const char *address = PyBytes_AS_STRING(address_or_conn);
+
         dbus_error_init(&error);
 
         /* We always open a private connection (at the libdbus level). Sharing
@@ -332,7 +333,30 @@ Connection_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
             return NULL;
         }
     }
+    else if (PyUnicode_Check(address_or_conn)) {
+        PyObject *address_as_bytes = PyUnicode_AsUTF8String(address_or_conn);
+        const char *address;
+
+        if (!address_as_bytes)
+            return NULL;
+        address = PyBytes_AS_STRING(address_as_bytes);
+
+        dbus_error_init(&error);
+
+        /* We always open a private connection (at the libdbus level). Sharing
+         * is done in Python, to keep things simple. */
+        Py_BEGIN_ALLOW_THREADS
+        conn = dbus_connection_open_private(address, &error);
+        Py_END_ALLOW_THREADS
+
+        Py_CLEAR(address_as_bytes);
+        if (!conn) {
+            DBusPyException_ConsumeError(&error);
+            return NULL;
+        }
+    }
     else {
+        PyErr_SetString(PyExc_TypeError, "connection or str expected");
         return NULL;
     }
 
@@ -425,7 +449,11 @@ PyTypeObject DBusPyConnection_Type = {
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
+#ifdef PY3
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_WEAKREFS | Py_TPFLAGS_BASETYPE,
+#endif
     Connection_tp_doc,      /*tp_doc*/
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/

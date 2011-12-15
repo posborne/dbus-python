@@ -167,15 +167,42 @@ Array_tp_init (DBusPyArray *self, PyObject *args, PyObject *kwargs)
     }
 
     if (signature != Py_None) {
-        const char *c_str = PyBytes_AS_STRING(signature);
+        const char *c_str;
+        PyObject *signature_as_bytes;
+
+        if (
+#ifdef PY3
+            !PyUnicode_Check(signature)
+#else
+            !PyBytes_Check(signature)
+#endif
+            )
+        {
+            PyErr_SetString(PyExc_TypeError, "str expected");
+            Py_CLEAR(signature);
+            return -1;
+        }
+#ifdef PY3
+        if (!(signature_as_bytes = PyUnicode_AsUTF8String(signature))) {
+            Py_CLEAR(signature);
+            return -1;
+        }
+#else
+        signature_as_bytes = signature;
+        Py_INCREF(signature_as_bytes);
+#endif
+
+        c_str = PyBytes_AS_STRING(signature_as_bytes);
 
         if (!dbus_signature_validate_single(c_str, NULL)) {
             Py_CLEAR(signature);
+            Py_CLEAR(signature_as_bytes);
             PyErr_SetString(PyExc_ValueError,
                             "There must be exactly one complete type in "
                             "an Array's signature parameter");
             return -1;
         }
+        Py_CLEAR(signature_as_bytes);
     }
 
     tuple = Py_BuildValue("(O)", obj);
@@ -375,8 +402,25 @@ Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
     }
 
     if (signature != Py_None) {
-        const char *c_str = PyBytes_AS_STRING(signature);
+        const char *c_str;
+        PyObject *signature_as_bytes;
 
+        if (!NATIVESTR_CHECK(signature)) {
+            PyErr_SetString(PyExc_TypeError, "str expected");
+            Py_CLEAR(signature);
+            return -1;
+        }
+#ifdef PY3
+        if (!(signature_as_bytes = PyUnicode_AsUTF8String(signature))) {
+            Py_CLEAR(signature);
+            return -1;
+        }
+#else
+        signature_as_bytes = signature;
+        Py_INCREF(signature_as_bytes);
+#endif
+
+        c_str = PyBytes_AS_STRING(signature_as_bytes);
         switch (c_str[0]) {
             case DBUS_TYPE_BYTE:
             case DBUS_TYPE_BOOLEAN:
@@ -399,6 +443,7 @@ Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
                 break;
             default:
                 Py_CLEAR(signature);
+                Py_CLEAR(signature_as_bytes);
                 PyErr_SetString(PyExc_ValueError,
                                 "The key type in a Dictionary's signature "
                                 "must be a primitive type");
@@ -407,11 +452,13 @@ Dict_tp_init(DBusPyDict *self, PyObject *args, PyObject *kwargs)
 
         if (!dbus_signature_validate_single(c_str + 1, NULL)) {
             Py_CLEAR(signature);
+            Py_CLEAR(signature_as_bytes);
             PyErr_SetString(PyExc_ValueError,
                             "There must be exactly two complete types in "
                             "a Dictionary's signature parameter");
             return -1;
         }
+        Py_CLEAR(signature_as_bytes);
     }
 
     tuple = Py_BuildValue("(O)", obj);
@@ -526,7 +573,7 @@ Struct_tp_repr(PyObject *self)
     variant_level = dbus_py_variant_level_get(self);
     if (variant_level < 0)
         goto finally;
-    
+
     if (variant_level > 0) {
         my_repr = PyUnicode_FromFormat("%s(%V, signature=%V, "
                                        "variant_level=%ld)",
@@ -653,6 +700,10 @@ Struct_tp_getattro(PyObject *obj, PyObject *name)
 {
     PyObject *key, *value;
 
+#ifdef PY3
+    if (PyUnicode_CompareWithASCIIString(name, "signature"))
+        return dbus_py_variant_level_getattro(obj, name);
+#else
     if (PyBytes_Check(name)) {
         Py_INCREF(name);
     }
@@ -672,8 +723,8 @@ Struct_tp_getattro(PyObject *obj, PyObject *name)
         Py_CLEAR(name);
         return value;
     }
-
     Py_CLEAR(name);
+#endif  /* PY3 */
 
     key = PyLong_FromVoidPtr(obj);
 

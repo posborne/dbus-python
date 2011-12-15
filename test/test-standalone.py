@@ -26,6 +26,8 @@ run in isolation.
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+from __future__ import unicode_literals
+
 import sys
 import os
 import unittest
@@ -36,6 +38,15 @@ pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
 import _dbus_bindings
 import dbus
 import dbus.types as types
+from dbus._compat import is_py2, is_py3
+
+if is_py3:
+    def make_long(n):
+        return n
+else:
+    def make_long(n):
+        return long(n)
+
 
 # Check that we're using the right versions
 if not dbus.__file__.startswith(pydir):
@@ -55,86 +66,102 @@ assert _dbus_bindings.__version__ == os.environ['DBUS_PYTHON_VERSION'], \
 class TestTypes(unittest.TestCase):
 
     def test_Dictionary(self):
-        self.assertEquals(types.Dictionary({'foo':'bar'}), {'foo':'bar'})
-        self.assertEquals(types.Dictionary({}, variant_level=2), {})
-        self.assertEquals(types.Dictionary({}, variant_level=2).variant_level, 2)
+        self.assertEqual(types.Dictionary({'foo':'bar'}), {'foo':'bar'})
+        self.assertEqual(types.Dictionary({}, variant_level=2), {})
+        self.assertEqual(types.Dictionary({}, variant_level=2).variant_level, 2)
 
     def test_Array(self):
-        self.assertEquals(types.Array(['foo','bar']), ['foo','bar'])
-        self.assertEquals(types.Array([], variant_level=2), [])
-        self.assertEquals(types.Array([], variant_level=2).variant_level, 2)
+        self.assertEqual(types.Array(['foo','bar']), ['foo','bar'])
+        self.assertEqual(types.Array([], variant_level=2), [])
+        self.assertEqual(types.Array([], variant_level=2).variant_level, 2)
 
     def test_Double(self):
-        self.assertEquals(types.Double(0.0), 0.0)
-        self.assertEquals(types.Double(0.125, variant_level=2), 0.125)
-        self.assertEquals(types.Double(0.125, variant_level=2).variant_level, 2)
+        self.assertEqual(types.Double(0.0), 0.0)
+        self.assertEqual(types.Double(0.125, variant_level=2), 0.125)
+        self.assertEqual(types.Double(0.125, variant_level=2).variant_level, 2)
 
     def test_Struct(self):
         x = types.Struct(('',))
-        self.assertEquals(x.variant_level, 0)
-        self.assertEquals(x, ('',))
+        self.assertEqual(x.variant_level, 0)
+        self.assertEqual(x, ('',))
         x = types.Struct('abc', variant_level=42)
-        self.assertEquals(x.variant_level, 42)
-        self.assertEquals(x, ('a','b','c'))
+        self.assertEqual(x.variant_level, 42)
+        self.assertEqual(x, ('a','b','c'))
 
     def test_Byte(self):
-        self.assertEquals(types.Byte('x', variant_level=2), 
+        self.assertEqual(types.Byte('x', variant_level=2), 
                           types.Byte(ord('x')))
-        self.assertEquals(types.Byte(1), 1)
-        self.assertEquals(types.Byte(1L), 1)
+        self.assertEqual(types.Byte(1), 1)
+        self.assertEqual(types.Byte(make_long(1)), 1)
+
+    def test_Byte_from_unicode(self):
+        self.assertRaises(TypeError, types.Byte, '\x12xxxxxxxxxxxxx')
+        self.assertEqual(types.Byte('\x12'), ord(b'\x12'))
 
     def test_ByteArray(self):
-        self.assertEquals(types.ByteArray(''), '')
+        self.assertEqual(types.ByteArray(b''), b'')
 
     def test_object_path_attr(self):
         class MyObject(object):
             __dbus_object_path__ = '/foo'
         from _dbus_bindings import SignalMessage
-        self.assertEquals(SignalMessage.guess_signature(MyObject()), 'o')
+        self.assertEqual(SignalMessage.guess_signature(MyObject()), 'o')
 
     def test_integers(self):
+        subclasses = [int]
+        if is_py2:
+            subclasses.append(long)
+        subclasses = tuple(subclasses)
         # This is an API guarantee. Note that exactly which of these types
         # are ints and which of them are longs is *not* guaranteed.
         for cls in (types.Int16, types.UInt16, types.Int32, types.UInt32,
             types.Int64, types.UInt64):
-            self.assert_(issubclass(cls, (int, long)))
-            self.assert_(isinstance(cls(0), (int, long)))
-            self.assertEquals(cls(0), 0)
-            self.assertEquals(cls(23, variant_level=1), 23)
-            self.assertEquals(cls(23, variant_level=1).variant_level, 1)
+            self.assertTrue(issubclass(cls, subclasses))
+            self.assertTrue(isinstance(cls(0), subclasses))
+            self.assertEqual(cls(0), 0)
+            self.assertEqual(cls(23, variant_level=1), 23)
+            self.assertEqual(cls(23, variant_level=1).variant_level, 1)
 
     def test_integer_limits_16(self):
-        self.assertEquals(types.Int16(0x7fff), 0x7fff)
-        self.assertEquals(types.Int16(-0x8000), -0x8000)
-        self.assertEquals(types.UInt16(0xffff), 0xffff)
+        self.assertEqual(types.Int16(0x7fff), 0x7fff)
+        self.assertEqual(types.Int16(-0x8000), -0x8000)
+        self.assertEqual(types.UInt16(0xffff), 0xffff)
         self.assertRaises(Exception, types.Int16, 0x8000)
         self.assertRaises(Exception, types.Int16, -0x8001)
         self.assertRaises(Exception, types.UInt16, 0x10000)
 
     def test_integer_limits_32(self):
-        self.assertEquals(types.Int32(0x7fffffff), 0x7fffffff)
-        self.assertEquals(types.Int32(-0x80000000L), -0x80000000L)
-        self.assertEquals(types.UInt32(0xffffffffL), 0xffffffffL)
-        self.assertRaises(Exception, types.Int32, 0x80000000L)
-        self.assertRaises(Exception, types.Int32, -0x80000001L)
-        self.assertRaises(Exception, types.UInt32, 0x100000000L)
+        self.assertEqual(types.Int32(0x7fffffff), 0x7fffffff)
+        self.assertEqual(types.Int32(make_long(-0x80000000)), 
+                         make_long(-0x80000000))
+        self.assertEqual(types.UInt32(make_long(0xffffffff)), 
+                         make_long(0xffffffff))
+        self.assertRaises(Exception, types.Int32, make_long(0x80000000))
+        self.assertRaises(Exception, types.Int32, make_long(-0x80000001))
+        self.assertRaises(Exception, types.UInt32, make_long(0x100000000))
 
     def test_integer_limits_64(self):
-        self.assertEquals(types.Int64(0x7fffffffffffffffL), 0x7fffffffffffffffL)
-        self.assertEquals(types.Int64(-0x8000000000000000L), -0x8000000000000000L)
-        self.assertEquals(types.UInt64(0xffffffffffffffffL), 0xffffffffffffffffL)
-        self.assertRaises(Exception, types.Int16, 0x8000000000000000L)
-        self.assertRaises(Exception, types.Int16, -0x8000000000000001L)
-        self.assertRaises(Exception, types.UInt16, 0x10000000000000000L)
+        self.assertEqual(types.Int64(make_long(0x7fffffffffffffff)), 
+                         make_long(0x7fffffffffffffff))
+        self.assertEqual(types.Int64(make_long(-0x8000000000000000)), 
+                         make_long(-0x8000000000000000))
+        self.assertEqual(types.UInt64(make_long(0xffffffffffffffff)), 
+                         make_long(0xffffffffffffffff))
+        self.assertRaises(Exception, types.Int16, 
+                          make_long(0x8000000000000000))
+        self.assertRaises(Exception, types.Int16, 
+                          make_long(-0x8000000000000001))
+        self.assertRaises(Exception, types.UInt16, 
+                          make_long(0x10000000000000000))
 
     def test_Signature(self):
         self.assertRaises(Exception, types.Signature, 'a')
-        self.assertEquals(types.Signature('ab', variant_level=23), 'ab')
-        self.assert_(isinstance(types.Signature('ab'), str))
-        self.assertEquals(tuple(types.Signature('ab(xt)a{sv}')),
-                          ('ab', '(xt)', 'a{sv}'))
-        self.assert_(isinstance(tuple(types.Signature('ab'))[0],
-                                types.Signature))
+        self.assertEqual(types.Signature('ab', variant_level=23), 'ab')
+        self.assertTrue(isinstance(types.Signature('ab'), str))
+        self.assertEqual(tuple(types.Signature('ab(xt)a{sv}')),
+                         ('ab', '(xt)', 'a{sv}'))
+        self.assertTrue(isinstance(tuple(types.Signature('ab'))[0],
+                                   types.Signature))
 
 
 class TestMessageMarshalling(unittest.TestCase):
@@ -159,7 +186,7 @@ class TestMessageMarshalling(unittest.TestCase):
                                  'should fail')
 
     def test_append(self):
-        aeq = self.assertEquals
+        aeq = self.assertEqual
         from _dbus_bindings import SignalMessage
         s = SignalMessage('/', 'foo.bar', 'baz')
         s.append([types.Byte(1)], signature='ay')
@@ -171,22 +198,21 @@ class TestMessageMarshalling(unittest.TestCase):
         aeq(s.get_args_list(), [[]])
 
     def test_append_ByteArray(self):
-        aeq = self.assertEquals
+        aeq = self.assertEqual
         from _dbus_bindings import SignalMessage
         s = SignalMessage('/', 'foo.bar', 'baz')
-        s.append(types.ByteArray('ab'), signature='ay')
+        s.append(types.ByteArray(b'ab'), signature='ay')
         aeq(s.get_args_list(), [[types.Byte('a'), types.Byte('b')]])
         s = SignalMessage('/', 'foo.bar', 'baz')
-        s.append(types.ByteArray('ab'), signature='av')
+        s.append(types.ByteArray(b'ab'), signature='av')
         aeq(s.get_args_list(), [[types.Byte('a'), types.Byte('b')]])
         s = SignalMessage('/', 'foo.bar', 'baz')
-        s.append(types.ByteArray(''), signature='ay')
+        s.append(types.ByteArray(b''), signature='ay')
         aeq(s.get_args_list(), [[]])
-        aeq(s.get_args_list(byte_arrays=True), [types.ByteArray('')])
+        aeq(s.get_args_list(byte_arrays=True), [types.ByteArray(b'')])
 
     def test_append_Variant(self):
-        a = self.assert_
-        aeq = self.assertEquals
+        aeq = self.assertEqual
         from _dbus_bindings import SignalMessage
         s = SignalMessage('/', 'foo.bar', 'baz')
         s.append(types.Int32(1, variant_level=0),
@@ -206,7 +232,7 @@ class TestMessageMarshalling(unittest.TestCase):
         aeq(args[2].signature, 'v')
 
     def test_guess_signature(self):
-        aeq = self.assertEquals
+        aeq = self.assertEqual
         from _dbus_bindings import Message
         aeq(Message.guess_signature(('a','b')), '(ss)')
         aeq(Message.guess_signature('a','b'), 'ss')
@@ -214,13 +240,20 @@ class TestMessageMarshalling(unittest.TestCase):
         aeq(Message.guess_signature(('a',)), '(s)')
         aeq(Message.guess_signature('abc'), 's')
         aeq(Message.guess_signature(types.Int32(123)), 'i')
-        aeq(Message.guess_signature(types.ByteArray('abc')), 'ay')
+        aeq(Message.guess_signature(types.ByteArray(b'abc')), 'ay')
         aeq(Message.guess_signature(('a',)), '(s)')
         aeq(Message.guess_signature(['a']), 'as')
         aeq(Message.guess_signature({'a':'b'}), 'a{ss}')
 
+    def test_guess_signature_python_ints(self):
+        aeq = self.assertEqual
+        from _dbus_bindings import Message
+        aeq(Message.guess_signature(7), 'i')
+        if is_py2:
+            aeq(Message.guess_signature(make_long(7)), 'x')
+
     def test_guess_signature_dbus_types(self):
-        aeq = self.assertEquals
+        aeq = self.assertEqual
         from _dbus_bindings import Message
         gs = Message.guess_signature
         aeq(gs(types.Dictionary({'a':'b'})), 'a{ss}')
@@ -230,12 +263,12 @@ class TestMessageMarshalling(unittest.TestCase):
         aeq(gs(types.Array([types.Int32(1)], signature='u')), 'au')
 
     def test_get_args_options(self):
-        aeq = self.assertEquals
+        aeq = self.assertEqual
         s = _dbus_bindings.SignalMessage('/', 'foo.bar', 'baz')
         s.append('b', 'bytes', -1, 1, 'str', 'var', signature='yayiusv')
         aeq(s.get_args_list(), [ord('b'),
                                 [ord('b'),ord('y'),ord('t'),ord('e'), ord('s')],
-                                -1, 1, u'str', u'var'])
+                                -1, 1, 'str', 'var'])
         byte, bytes, int32, uint32, string, variant = s.get_args_list()
         aeq(byte.__class__, types.Byte)
         aeq(bytes.__class__, types.Array)
@@ -251,24 +284,32 @@ class TestMessageMarshalling(unittest.TestCase):
                 byte_arrays=True)
         aeq(byte.__class__, types.Byte)
         aeq(bytes.__class__, types.ByteArray)
-        aeq(bytes, 'bytes')
-        aeq(bytes[0].__class__, str)
+        aeq(bytes, b'bytes')
+        if is_py3:
+            aeq(bytes[0].__class__, int)
+        else:
+            aeq(bytes[0].__class__, str)
         aeq(int32.__class__, types.Int32)
         aeq(uint32.__class__, types.UInt32)
         aeq(string.__class__, types.String)
         aeq(variant.__class__, types.String)
         aeq(variant.variant_level, 1)
 
+        kwargs = {}
+        if is_py2:
+            kwargs['utf8_strings'] = True
         byte, bytes, int32, uint32, string, variant = s.get_args_list(
-            utf8_strings=True)
+            **kwargs)
         aeq(byte.__class__, types.Byte)
         aeq(bytes.__class__, types.Array)
         aeq(bytes[0].__class__, types.Byte)
         aeq(int32.__class__, types.Int32)
         aeq(uint32.__class__, types.UInt32)
-        aeq(string.__class__, types.UTF8String)
+        if is_py2:
+            aeq(string.__class__, types.UTF8String)
         aeq(string, 'str')
-        aeq(variant.__class__, types.UTF8String)
+        if is_py2:
+            aeq(variant.__class__, types.UTF8String)
         aeq(variant.variant_level, 1)
         aeq(variant, 'var')
 
@@ -279,7 +320,7 @@ class TestMessageMarshalling(unittest.TestCase):
         s = SignalMessage('/', 'foo.bar', 'baz')
         s.append(MyObject(), signature='o')
         s.append(MyObject())
-        self.assertEquals(s.get_args_list(), ['/foo', '/foo'])
+        self.assertEqual(s.get_args_list(), ['/foo', '/foo'])
 
     def test_struct(self):
         from _dbus_bindings import SignalMessage
@@ -302,4 +343,8 @@ class TestMessageMarshalling(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    # Python 2.6 doesn't accept a `verbosity` keyword.
+    kwargs = {}
+    if sys.version_info[:2] >= (2, 7):
+        kwargs['verbosity'] = 2
+    unittest.main(**kwargs)

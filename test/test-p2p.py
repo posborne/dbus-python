@@ -24,21 +24,19 @@
 # DEALINGS IN THE SOFTWARE.
 
 
-import sys
 import os
 import unittest
-import time
 import logging
-import weakref
 
 builddir = os.path.normpath(os.environ["DBUS_TOP_BUILDDIR"])
 pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
 
 import dbus
-import _dbus_bindings
-import gobject
 import dbus.glib
 import dbus.service
+
+from dbus._compat import is_py2
+from gi.repository import GObject as gobject
 
 
 logging.basicConfig()
@@ -58,11 +56,15 @@ class TestDBusBindings(unittest.TestCase):
         # using dbus.bus.BusConnection!
         conn = dbus.connection.Connection(
                 os.environ['DBUS_SESSION_BUS_ADDRESS'])
+        kwargs = {}
+        if is_py2:
+            kwargs['utf8_strings'] = True
         unique = conn.call_blocking('org.freedesktop.DBus',
                                     '/org/freedesktop/DBus',
                                     'org.freedesktop.DBus', 'Hello',
-                                    '', (), utf8_strings=True)
-        self.assert_(unique.__class__ == dbus.UTF8String, repr(unique))
+                                    '', (), **kwargs)
+        if is_py2:
+            self.assert_(unique.__class__ == dbus.UTF8String, repr(unique))
         self.assert_(unique.startswith(':'), unique)
         conn.set_unique_name(unique)
         return conn, unique
@@ -81,9 +83,12 @@ class TestDBusBindings(unittest.TestCase):
 
     def testSetUniqueName(self):
         conn, unique = self.get_conn_and_unique()
+        kwargs = {}
+        if is_py2:
+            kwargs['utf8_strings'] = True
         ret = conn.call_blocking(NAME, OBJECT, IFACE,
                                  'MethodExtraInfoKeywords', '', (),
-                                 utf8_strings=True)
+                                 **kwargs)
         self.assertEquals(ret, (unique, OBJECT, NAME,
                                 'dbus.lowlevel.MethodCallMessage'))
 

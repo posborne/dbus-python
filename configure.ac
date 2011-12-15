@@ -50,7 +50,7 @@ AM_PATH_PYTHON([2.6])
 
 AM_CHECK_PYTHON_HEADERS(,[AC_MSG_ERROR(could not find Python headers)])
 
-PLATFORM=`$PYTHON -c "from distutils import util; print util.get_platform()"`
+PLATFORM=`$PYTHON -c "from __future__ import print_function; from distutils import util; print(util.get_platform())"`
 AC_SUBST(PLATFORM)
 
 AC_ARG_VAR([PYTHON_LIBS], [LDFLAGS for Python, overriding output of python2.x-config --ldflags, e.g. "-L/opt/misc/lib -lpython2.7"])

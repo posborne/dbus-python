@@ -23,7 +23,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import sys
 import os
 import logging
 from time import sleep
@@ -38,10 +37,11 @@ if not dbus.__file__.startswith(pydir):
 
 import dbus.service
 import dbus.glib
-import gobject
 import random
 
 from dbus.gobject_service import ExportedGObject
+from gi.repository import GObject as gobject
+from dbus._compat import is_py2
 
 
 logging.basicConfig(filename=builddir + '/test/test-service.log', filemode='w')
@@ -140,7 +140,10 @@ class TestObject(dbus.service.Object, TestInterface):
         assert isinstance(foo, unicode), (foo, foo.__class__.__mro__)
         return foo
 
-    @dbus.service.method(IFACE, in_signature='s', out_signature='s', utf8_strings=True)
+    kwargs = {}
+    if is_py2:
+        kwargs['utf8_strings'] = True
+    @dbus.service.method(IFACE, in_signature='s', out_signature='s', **kwargs)
     def AcceptUTF8String(self, foo):
         assert isinstance(foo, str), (foo, foo.__class__.__mro__)
         return foo

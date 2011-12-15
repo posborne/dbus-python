@@ -42,7 +42,14 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
     dbus_error_init(&error);
 
-    if (first && PyBytes_Check(first)) {
+    if (first &&
+#ifdef PY3
+        PyUnicode_Check(first)
+#else
+        PyBytes_Check(first)
+#endif
+        )
+    {
         dbus_bool_t ret;
 
         /* It's a custom address. First connect to it, then register. */
@@ -62,7 +69,12 @@ DBusPyConnection_NewForBus(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 
         return (PyObject *)self;
     }
-    else if (!first || PyLong_Check(first) || PyInt_Check(first)) {
+    else if (!first || PyLong_Check(first)
+#ifndef PY3
+             || PyInt_Check(first)
+#endif
+        )
+    {
         long type;
         PyObject *libdbusconn;
         PyObject *new_args;
@@ -144,7 +156,11 @@ DBusPyConnection_GetUniqueName(Connection *self, PyObject *args UNUSED)
         return DBusPyException_SetString("This connection has no unique name "
                                          "yet");
     }
+#ifdef PY3
+    return PyUnicode_FromString(name);
+#else
     return PyBytes_FromString(name);
+#endif
 }
 
 PyObject *

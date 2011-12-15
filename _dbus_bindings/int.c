@@ -25,6 +25,12 @@
 
 #include "types-internal.h"
 
+#ifdef PY3
+#define INTBASE (DBusPyLongBase_Type)
+#else
+#define INTBASE (DBusPyIntBase_Type)
+#endif
+
 /* Specific types =================================================== */
 
 /* Boolean, a subclass of DBusPythonInt ============================= */
@@ -65,16 +71,22 @@ Boolean_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     }
     tuple = Py_BuildValue("(i)", PyObject_IsTrue(value) ? 1 : 0);
     if (!tuple) return NULL;
-    self = (DBusPyIntBase_Type.tp_new)(cls, tuple, kwargs);
+    self = (INTBASE.tp_new)(cls, tuple, kwargs);
     Py_CLEAR(tuple);
     return self;
 }
 
 static PyObject *
-Boolean_tp_repr (PyObject *self)
+Boolean_tp_repr(PyObject *self)
 {
     int is_true = PyObject_IsTrue(self);
+#ifdef PY3
+    long variant_level = dbus_py_variant_level_get(self);
+    if (variant_level < 0)
+        return NULL;
+#else
     long variant_level = ((DBusPyIntBase *)self)->variant_level;
+#endif
 
     if (is_true == -1)
         return NULL;
@@ -121,7 +133,7 @@ PyTypeObject DBusPyBoolean_Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyIntBase_Type),  /* tp_base */
+    DEFERRED_ADDRESS(&INTBASE),             /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -172,7 +184,7 @@ dbus_py_int16_range_check(PyObject *obj)
 static PyObject *
 Int16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
+    PyObject *self = (INTBASE.tp_new)(cls, args, kwargs);
     if (self && dbus_py_int16_range_check(self) == -1 && PyErr_Occurred()) {
         Py_CLEAR(self);
         return NULL;
@@ -211,7 +223,7 @@ PyTypeObject DBusPyInt16_Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyIntBase_Type),  /* tp_base */
+    DEFERRED_ADDRESS(&INTBASE),             /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -262,9 +274,10 @@ dbus_py_uint16_range_check(PyObject *obj)
 static PyObject *
 UInt16_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
+    PyObject *self = (INTBASE.tp_new)(cls, args, kwargs);
     if (self && dbus_py_uint16_range_check(self) == (dbus_uint16_t)(-1)
-        && PyErr_Occurred()) {
+        && PyErr_Occurred())
+    {
         Py_CLEAR (self);
         return NULL;
     }
@@ -302,7 +315,7 @@ PyTypeObject DBusPyUInt16_Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyIntBase_Type),   /* tp_base */
+    DEFERRED_ADDRESS(&INTBASE),             /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -353,7 +366,7 @@ dbus_py_int32_range_check(PyObject *obj)
 static PyObject *
 Int32_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 {
-    PyObject *self = (DBusPyIntBase_Type.tp_new)(cls, args, kwargs);
+    PyObject *self = (INTBASE.tp_new)(cls, args, kwargs);
     if (self && dbus_py_int32_range_check(self) == -1 && PyErr_Occurred()) {
         Py_CLEAR(self);
         return NULL;
@@ -392,7 +405,7 @@ PyTypeObject DBusPyInt32_Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBusPyIntBase_Type),   /* tp_base */
+    DEFERRED_ADDRESS(&INTBASE),             /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -722,17 +735,17 @@ PyTypeObject DBusPyUInt64_Type = {
 dbus_bool_t
 dbus_py_init_int_types(void)
 {
-    DBusPyInt16_Type.tp_base = &DBusPyIntBase_Type;
+    DBusPyInt16_Type.tp_base = &INTBASE;
     if (PyType_Ready(&DBusPyInt16_Type) < 0) return 0;
     /* disable the tp_print copied from PyInt_Type, so tp_repr gets called as
     desired */
     DBusPyInt16_Type.tp_print = NULL;
 
-    DBusPyUInt16_Type.tp_base = &DBusPyIntBase_Type;
+    DBusPyUInt16_Type.tp_base = &INTBASE;
     if (PyType_Ready(&DBusPyUInt16_Type) < 0) return 0;
     DBusPyUInt16_Type.tp_print = NULL;
 
-    DBusPyInt32_Type.tp_base = &DBusPyIntBase_Type;
+    DBusPyInt32_Type.tp_base = &INTBASE;
     if (PyType_Ready(&DBusPyInt32_Type) < 0) return 0;
     DBusPyInt32_Type.tp_print = NULL;
 
@@ -749,6 +762,11 @@ dbus_py_init_int_types(void)
     if (PyType_Ready(&DBusPyUInt64_Type) < 0) return 0;
     DBusPyUInt64_Type.tp_print = NULL;
 #endif
+
+    DBusPyBoolean_Type.tp_base = &INTBASE;
+    if (PyType_Ready(&DBusPyBoolean_Type) < 0) return 0;
+    DBusPyBoolean_Type.tp_print = NULL;
+
     return 1;
 }
 

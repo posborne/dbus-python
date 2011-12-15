@@ -20,18 +20,20 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+from __future__ import print_function
 import logging
 
-import gobject
+from gi.repository import GObject as gobject
 
 import dbus.glib
 from dbus import SessionBus
 from dbus.service import BusName
+from dbus._compat import is_py2
 
-from crosstest import CROSS_TEST_PATH, CROSS_TEST_BUS_NAME, \
-                      INTERFACE_SINGLE_TESTS, INTERFACE_TESTS,\
-                      INTERFACE_CALLBACK_TESTS, INTERFACE_SIGNAL_TESTS,\
-                      SignalTestsImpl
+from crosstest import (
+    CROSS_TEST_BUS_NAME, CROSS_TEST_PATH, INTERFACE_CALLBACK_TESTS,
+    INTERFACE_SIGNAL_TESTS, INTERFACE_SINGLE_TESTS, INTERFACE_TESTS,
+    SignalTestsImpl)
 
 
 logging.basicConfig()
@@ -41,7 +43,7 @@ logger = logging.getLogger('cross-test-server')
 
 class VerboseSet(set):
     def add(self, thing):
-        print '%s ok' % thing
+        print('%s ok' % thing)
         set.add(self, thing)
 
 
@@ -218,11 +220,15 @@ class TestsImpl(dbus.service.Object):
         return x
 
 
-    @dbus.service.method(INTERFACE_TESTS, 'a{ss}', 'a{sas}', utf8_strings=True)
+    kwargs = {}
+    if is_py2:
+        kwargs['utf8_strings'] = True
+
+    @dbus.service.method(INTERFACE_TESTS, 'a{ss}', 'a{sas}', **kwargs)
     def InvertMapping(self, input):
         tested_things.add(INTERFACE_TESTS + '.InvertMapping')
         output = dbus.Dictionary({})
-        for k, v in input.iteritems():
+        for k, v in input.items():
             output.setdefault(v, []).append(k)
         return output
 
@@ -261,8 +267,9 @@ class TestsImpl(dbus.service.Object):
         tested_things.add(INTERFACE_TESTS + '.Invert')
         return not input
 
-    @dbus.service.method(INTERFACE_TESTS, 'st', '', utf8_strings=True,
-                         connection_keyword='conn')
+    @dbus.service.method(INTERFACE_TESTS, 'st', '',
+                         connection_keyword='conn',
+                         **kwargs)
     def Trigger(self, object, parameter, conn=None):
         assert isinstance(object, str)
         logger.info('method/signal: client wants me to emit Triggered(%r) from %r', parameter, object)
@@ -286,7 +293,7 @@ class TestsImpl(dbus.service.Object):
         tested_things.add(INTERFACE_TESTS + '.Exit')
         for x in testable_things:
             if x not in tested_things:
-                print '%s untested' % x
+                print('%s untested' % x)
         logger.info('will quit when idle')
         gobject.idle_add(self._exit_fn)
 
@@ -309,6 +316,9 @@ if __name__ == '__main__':
     loop = gobject.MainLoop()
     obj = Server(bus_name, CROSS_TEST_PATH, loop.quit)
     objects[CROSS_TEST_PATH] = obj
+    kwargs = {}
+    if is_py2:
+        kwargs['utf8_strings'] = True
     bus.add_signal_receiver(obj.triggered_by_client,
                             signal_name='Trigger',
                             dbus_interface=INTERFACE_SIGNAL_TESTS,
@@ -316,7 +326,7 @@ if __name__ == '__main__':
                             path=None,
                             sender_keyword='sender',
                             path_keyword='sender_path',
-                            utf8_strings=True)
+                            **kwargs)
 
     logger.info("running...")
     loop.run()

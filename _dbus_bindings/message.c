@@ -69,6 +69,30 @@ Message_tp_new(PyTypeObject *type,
     return (PyObject *)self;
 }
 
+static PyObject *
+MethodCallMessage_tp_repr(PyObject *self)
+{
+    DBusMessage *msg = ((Message *)self)->msg;
+    const char *destination = dbus_message_get_destination(msg);
+    const char *path = dbus_message_get_path(msg);
+    const char *interface = dbus_message_get_interface(msg);
+    const char *member = dbus_message_get_member(msg);
+
+    if (!path)
+        path = "n/a";
+    if (!interface)
+        interface = "n/a";
+    if (!member)
+        member = "n/a";
+    if (!destination)
+        destination = "n/a";
+
+    return PyUnicode_FromFormat(
+        "<%s path: %s, iface: %s, member: %s dest: %s>",
+        Py_TYPE(self)->tp_name,
+        path, interface, member, destination);
+}
+
 PyDoc_STRVAR(MethodCallMessage_tp_doc, "A method-call message.\n"
 "\n"
 "Constructor::\n"
@@ -167,6 +191,26 @@ SignalMessage_tp_init(Message *self, PyObject *args, PyObject *kwargs)
         return -1;
     }
     return 0;
+}
+
+static PyObject *
+SignalMessage_tp_repr(PyObject *self)
+{
+    DBusMessage *msg = ((Message *)self)->msg;
+    const char *path = dbus_message_get_path(msg);
+    const char *interface = dbus_message_get_interface(msg);
+    const char *member = dbus_message_get_member(msg);
+
+    if (!path)
+        path = "n/a";
+    if (!interface)
+        interface = "n/a";
+    if (!member)
+        member = "n/a";
+
+    return PyUnicode_FromFormat("<%s path: %s, int: %s, member: %s>",
+                                Py_TYPE(self)->tp_name,
+                                path, interface, member);
 }
 
 PyDoc_STRVAR(ErrorMessage_tp_doc, "An error message.\n\n"
@@ -415,7 +459,7 @@ Message_get_member(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyBytes_FromString(c_str);
+    return PyUnicode_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_has_member__doc__,
@@ -490,7 +534,7 @@ Message_get_path_decomposed(Message *self, PyObject *unused UNUSED)
         Py_RETURN_NONE;
     }
     for (ptr = paths; *ptr; ptr++) {
-        PyObject *str = PyBytes_FromString(*ptr);
+        PyObject *str = PyUnicode_FromString(*ptr);
 
         if (!str) {
             Py_CLEAR(ret);
@@ -576,7 +620,7 @@ Message_get_sender(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyBytes_FromString(c_str);
+    return PyUnicode_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_has_sender__doc__,
@@ -622,7 +666,7 @@ Message_get_destination(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyBytes_FromString(c_str);
+    return PyUnicode_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_has_destination__doc__,
@@ -667,7 +711,7 @@ Message_get_interface(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyBytes_FromString(c_str);
+    return PyUnicode_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_has_interface__doc__,
@@ -712,7 +756,7 @@ Message_get_error_name(Message *self, PyObject *unused UNUSED)
     if (!c_str) {
         Py_RETURN_NONE;
     }
-    return PyBytes_FromString(c_str);
+    return PyUnicode_FromString(c_str);
 }
 
 PyDoc_STRVAR(Message_set_error_name__doc__,
@@ -858,7 +902,7 @@ static PyTypeObject MethodCallMessageType = {
     0,                         /*tp_getattr*/
     0,                         /*tp_setattr*/
     0,                         /*tp_compare*/
-    0,                         /*tp_repr*/
+    MethodCallMessage_tp_repr, /*tp_repr*/
     0,                         /*tp_as_number*/
     0,                         /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/
@@ -940,7 +984,7 @@ static PyTypeObject SignalMessageType = {
     0,                         /*tp_getattr*/
     0,                         /*tp_setattr*/
     0,                         /*tp_compare*/
-    0,                         /*tp_repr*/
+    SignalMessage_tp_repr,     /*tp_repr*/
     0,                         /*tp_as_number*/
     0,                         /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/

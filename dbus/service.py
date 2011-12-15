@@ -28,9 +28,9 @@ __docformat__ = 'restructuredtext'
 
 import sys
 import logging
-import operator
 import threading
 import traceback
+from collections import Sequence
 
 import _dbus_bindings
 from dbus import (
@@ -41,6 +41,7 @@ from dbus.exceptions import (
     DBusException, NameExistsException, UnknownMethodException)
 from dbus.lowlevel import ErrorMessage, MethodReturnMessage, MethodCallMessage
 from dbus.proxies import LOCAL_PATH
+from dbus._compat import is_py2
 
 
 _logger = logging.getLogger('dbus.service')
@@ -56,9 +57,13 @@ class _VariantSignature(object):
         """Return self."""
         return self
 
-    def next(self):
+    def __next__(self):
         """Return 'v' whenever called."""
         return 'v'
+
+    if is_py2:
+        next = __next__
+
 
 class BusName(object):
     """A base class for exporting your own Named Services across the Bus.
@@ -305,7 +310,7 @@ class InterfaceType(type):
         for b in bases:
             base_name = b.__module__ + '.' + b.__name__
             if getattr(b, '_dbus_class_table', False):
-                for (interface, method_table) in class_table[base_name].iteritems():
+                for (interface, method_table) in class_table[base_name].items():
                     our_method_table = interface_table.setdefault(interface, {})
                     our_method_table.update(method_table)
 
@@ -365,8 +370,11 @@ class InterfaceType(type):
 
         return reflection_data
 
-class Interface(object):
-    __metaclass__ = InterfaceType
+
+# Define Interface as an instance of the metaclass InterfaceType, in a way
+# that is compatible across both Python 2 and Python 3.
+Interface = InterfaceType('Interface', (object,), {})
+
 
 #: A unique object used as the value of Object._object_path and
 #: Object._connection if it's actually in more than one place
@@ -719,8 +727,9 @@ class Object(Interface):
                 elif len(signature_tuple) == 1:
                     retval = (retval,)
                 else:
-                    if operator.isSequenceType(retval):
-                        # multi-value signature, multi-value return... proceed unchanged
+                    if isinstance(retval, Sequence):
+                        # multi-value signature, multi-value return... proceed
+                        # unchanged
                         pass
                     else:
                         raise TypeError('%s has multiple output values in signature %s but did not return a sequence' %
@@ -754,7 +763,7 @@ class Object(Interface):
         reflection_data += '<node name="%s">\n' % object_path
 
         interfaces = self._dbus_class_table[self.__class__.__module__ + '.' + self.__class__.__name__]
-        for (name, funcs) in interfaces.iteritems():
+        for (name, funcs) in interfaces.items():
             reflection_data += '  <interface name="%s">\n' % (name)
 
             for func in funcs.values():

@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import sys
+from __future__ import print_function
 import os
 import unittest
 import time
@@ -35,9 +35,11 @@ pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
 
 import dbus
 import _dbus_bindings
-import gobject
 import dbus.glib
 import dbus.service
+
+from dbus._compat import is_py2, is_py3
+from gi.repository import GObject as gobject
 
 
 logging.basicConfig()
@@ -52,8 +54,8 @@ if not _dbus_bindings.__file__.startswith(builddir):
 
 test_types_vals = [1, 12323231, 3.14159265, 99999999.99,
                  "dude", "123", "What is all the fuss about?", "gob@gob.com",
-                 u'\\u310c\\u310e\\u3114', u'\\u0413\\u0414\\u0415',
-                 u'\\u2200software \\u2203crack', u'\\xf4\\xe5\\xe8',
+                 '\\u310c\\u310e\\u3114', '\\u0413\\u0414\\u0415',
+                 '\\u2200software \\u2203crack', '\\xf4\\xe5\\xe8',
                  [1,2,3], ["how", "are", "you"], [1.23,2.3], [1], ["Hello"],
                  (1,2,3), (1,), (1,"2",3), ("2", "what"), ("you", 1.2),
                  {1:"a", 2:"b"}, {"a":1, "b":2}, #{"a":(1,"B")},
@@ -76,14 +78,14 @@ class TestDBusBindings(unittest.TestCase):
         self.iface = dbus.Interface(self.remote_object, IFACE)
 
     def testGObject(self):
-        print "Testing ExportedGObject... ",
+        print("Testing ExportedGObject... ", end='')
         remote_gobject = self.bus.get_object(NAME, OBJECT + '/GObject')
         iface = dbus.Interface(remote_gobject, IFACE)
-        print "introspection, ",
+        print("introspection, ", end='')
         remote_gobject.Introspect(dbus_interface=dbus.INTROSPECTABLE_IFACE)
-        print "method call, ",
+        print("method call, ", end='')
         self.assertEquals(iface.Echo('123'), '123')
-        print "... OK"
+        print("... OK")
 
     def testWeakRefs(self):
         # regression test for Sugar crash caused by smcv getting weak refs
@@ -96,8 +98,10 @@ class TestDBusBindings(unittest.TestCase):
 
     def testInterfaceKeyword(self):
         #test dbus_interface parameter
-        print self.remote_object.Echo("dbus_interface on Proxy test Passed", dbus_interface = IFACE)
-        print self.iface.Echo("dbus_interface on Interface test Passed", dbus_interface = IFACE)
+        print(self.remote_object.Echo("dbus_interface on Proxy test Passed", 
+                                      dbus_interface = IFACE))
+        print(self.iface.Echo("dbus_interface on Interface test Passed", 
+                              dbus_interface = IFACE))
         self.assert_(True)
 
     def testGetDBusMethod(self):
@@ -109,16 +113,21 @@ class TestDBusBindings(unittest.TestCase):
         self.assertEquals(self.iface.AcceptListOfByte('\1\2\3', byte_arrays=True), '\1\2\3')
         self.assertEquals(self.iface.AcceptByteArray('\1\2\3'), [1,2,3])
         self.assertEquals(self.iface.AcceptByteArray('\1\2\3', byte_arrays=True), '\1\2\3')
-        self.assert_(isinstance(self.iface.AcceptUTF8String('abc'), unicode))
-        self.assert_(isinstance(self.iface.AcceptUTF8String('abc', utf8_strings=True), str))
+        if is_py2:
+            self.assert_(isinstance(self.iface.AcceptUTF8String('abc'), unicode))
+            self.assert_(isinstance(self.iface.AcceptUTF8String('abc', utf8_strings=True), str))
         self.assert_(isinstance(self.iface.AcceptUnicodeString('abc'), unicode))
-        self.assert_(isinstance(self.iface.AcceptUnicodeString('abc', utf8_strings=True), str))
+        kwargs = {}
+        if is_py2:
+            kwargs['utf8_strings'] = True
+        self.assert_(isinstance(self.iface.AcceptUnicodeString('abc', **kwargs), str))
 
     def testIntrospection(self):
         #test introspection
-        print "\n********* Introspection Test ************"
-        print self.remote_object.Introspect(dbus_interface="org.freedesktop.DBus.Introspectable")
-        print "Introspection test passed"
+        print("\n********* Introspection Test ************")
+        print(self.remote_object.Introspect(
+            dbus_interface="org.freedesktop.DBus.Introspectable"))
+        print("Introspection test passed")
         self.assert_(True)
 
     def testMultiPathIntrospection(self):
@@ -134,16 +143,16 @@ class TestDBusBindings(unittest.TestCase):
 
     def testPythonTypes(self):
         #test sending python types and getting them back
-        print "\n********* Testing Python Types ***********"
+        print("\n********* Testing Python Types ***********")
                  
         for send_val in test_types_vals:
-            print "Testing %s"% str(send_val)
+            print("Testing %s"% str(send_val))
             recv_val = self.iface.Echo(send_val)
             self.assertEquals(send_val, recv_val)
             self.assertEquals(recv_val.variant_level, 1)
 
     def testMethodExtraInfoKeywords(self):
-        print "Testing MethodExtraInfoKeywords..."
+        print("Testing MethodExtraInfoKeywords...")
         sender, path, destination, message_cls = self.iface.MethodExtraInfoKeywords()
         self.assert_(sender.startswith(':'))
         self.assertEquals(path, '/org/freedesktop/DBus/TestSuitePythonObject')
@@ -154,7 +163,9 @@ class TestDBusBindings(unittest.TestCase):
         self.assertEquals(message_cls, 'dbus.lowlevel.MethodCallMessage')
 
     def testUtf8StringsSync(self):
-        send_val = u'foo'
+        if is_py3:
+            return
+        send_val = 'foo'
         recv_val = self.iface.Echo(send_val, utf8_strings=True)
         self.assert_(isinstance(recv_val, str))
         self.assert_(isinstance(recv_val, dbus.UTF8String))
@@ -163,28 +174,31 @@ class TestDBusBindings(unittest.TestCase):
         self.assert_(isinstance(recv_val, dbus.String))
 
     def testBenchmarkIntrospect(self):
-        print "\n********* Benchmark Introspect ************"
+        print("\n********* Benchmark Introspect ************")
         a = time.time()
-        print a
-        print self.iface.GetComplexArray()
+        print(a)
+        print(self.iface.GetComplexArray())
         b = time.time()
-        print b
-        print "Delta: %f" % (b - a)
+        print(b)
+        print("Delta: %f" % (b - a))
         self.assert_(True)
 
     def testAsyncCalls(self):
         #test sending python types and getting them back async
-        print "\n********* Testing Async Calls ***********"
+        print("\n********* Testing Async Calls ***********")
 
         failures = []
         main_loop = gobject.MainLoop()
 
         class async_check:
-            def __init__(self, test_controler, expected_result, do_exit, utf8):
+            def __init__(self, test_controler, expected_result, do_exit, **kwargs):
                 self.expected_result = expected_result
                 self.do_exit = do_exit
-                self.utf8 = utf8
                 self.test_controler = test_controler
+                if is_py2:
+                    self.utf8 = kwargs['utf8']
+                elif 'utf8' in kwargs:
+                    raise TypeError("unexpected keyword argument 'utf8'")
 
             def callback(self, val):
                 try:
@@ -193,17 +207,18 @@ class TestDBusBindings(unittest.TestCase):
 
                     self.test_controler.assertEquals(val, self.expected_result)
                     self.test_controler.assertEquals(val.variant_level, 1)
-                    if self.utf8 and not isinstance(val, dbus.UTF8String):
-                        failures.append('%r should have been utf8 but was not' % val)
-                        return
-                    elif not self.utf8 and isinstance(val, dbus.UTF8String):
-                        failures.append('%r should not have been utf8' % val)
-                        return
+                    if is_py2:
+                        if self.utf8 and not isinstance(val, dbus.UTF8String):
+                            failures.append('%r should have been utf8 but was not' % val)
+                            return
+                        elif not self.utf8 and isinstance(val, dbus.UTF8String):
+                            failures.append('%r should not have been utf8' % val)
+                            return
                 except Exception as e:
                     failures.append("%s:\n%s" % (e.__class__, e))
 
             def error_handler(self, error):
-                print error
+                print(error)
                 if self.do_exit:
                     main_loop.quit()
 
@@ -211,20 +226,24 @@ class TestDBusBindings(unittest.TestCase):
         
         last_type = test_types_vals[-1]
         for send_val in test_types_vals:
-            print "Testing %s" % str(send_val)
-            utf8 = (send_val == 'gob@gob.com')
+            print("Testing %s" % str(send_val))
+            kwargs = {}
+            if is_py2:
+                utf8 = (send_val == 'gob@gob.com')
+                kwargs['utf8'] = utf8
+                kwargs['utf8_strings'] = utf8
             check = async_check(self, send_val, last_type == send_val,
-                                utf8)
+                                **kwargs)
             recv_val = self.iface.Echo(send_val,
                                        reply_handler=check.callback,
                                        error_handler=check.error_handler,
-                                       utf8_strings=utf8)
+                                       **kwargs)
         main_loop.run()
         if failures:
             self.assert_(False, failures)
 
     def testStrictMarshalling(self):
-        print "\n********* Testing strict return & signal marshalling ***********"
+        print("\n********* Testing strict return & signal marshalling ***********")
 
         # these values are the same as in the server, and the
         # methods should only succeed when they are called with
@@ -242,17 +261,17 @@ class TestDBusBindings(unittest.TestCase):
                 ]
 
         for (method, signal, success_values, return_values) in methods:
-            print "\nTrying correct behaviour of", method._method_name
+            print("\nTrying correct behaviour of", method._method_name)
             for value in range(len(values)):
                 try:
                     ret = method(value)
                 except Exception, e:
-                    print "%s(%r) raised %s: %s" % (method._method_name, values[value], e.__class__, e)
+                    print("%s(%r) raised %s: %s" % (method._method_name, values[value], e.__class__, e))
 
                     # should fail if it tried to marshal the wrong type
                     self.assert_(value not in success_values, "%s should succeed when we ask it to return %r\n%s\n%s" % (method._method_name, values[value], e.__class__, e))
                 else:
-                    print "%s(%r) returned %r" % (method._method_name, values[value], ret)
+                    print("%s(%r) returned %r" % (method._method_name, values[value], ret))
 
                     # should only succeed if it's the right return type
                     self.assert_(value in success_values, "%s should fail when we ask it to return %r" % (method._method_name, values[value]))
@@ -261,54 +280,54 @@ class TestDBusBindings(unittest.TestCase):
                     returns = map(lambda n: values[n], return_values)
                     self.assert_(ret in returns, "%s should return one of %r but it returned %r instead" % (method._method_name, returns, ret))
 
-            print "\nTrying correct emission of", signal
+            print("\nTrying correct emission of", signal)
             for value in range(len(values)):
                 try:
                     self.iface.EmitSignal(signal, value)
                 except Exception, e:
-                    print "EmitSignal(%s, %r) raised %s" % (signal, values[value], e.__class__)
+                    print("EmitSignal(%s, %r) raised %s" % (signal, values[value], e.__class__))
 
                     # should fail if it tried to marshal the wrong type
                     self.assert_(value not in success_values, "EmitSignal(%s) should succeed when we ask it to return %r\n%s\n%s" % (signal, values[value], e.__class__, e))
                 else:
-                    print "EmitSignal(%s, %r) appeared to succeed" % (signal, values[value])
+                    print("EmitSignal(%s, %r) appeared to succeed" % (signal, values[value]))
 
                     # should only succeed if it's the right return type
                     self.assert_(value in success_values, "EmitSignal(%s) should fail when we ask it to return %r" % (signal, values[value]))
 
                     # FIXME: wait for the signal here
 
-        print
+        print()
 
     def testInheritance(self):
-        print "\n********* Testing inheritance from dbus.method.Interface ***********"
+        print("\n********* Testing inheritance from dbus.method.Interface ***********")
         ret = self.iface.CheckInheritance()
-        print "CheckInheritance returned %s" % ret
+        print("CheckInheritance returned %s" % ret)
         self.assert_(ret, "overriding CheckInheritance from TestInterface failed")
 
     def testAsyncMethods(self):
-        print "\n********* Testing asynchronous method implementation *******"
+        print("\n********* Testing asynchronous method implementation *******")
         for async in (True, False):
             for fail in (True, False):
                 try:
                     val = ('a', 1, False, [1,2], {1:2})
-                    print "calling AsynchronousMethod with %s %s %s" % (async, fail, val)
+                    print("calling AsynchronousMethod with %s %s %s" % (async, fail, val))
                     ret = self.iface.AsynchronousMethod(async, fail, val)
                 except Exception, e:
                     self.assert_(fail, '%s: %s' % (e.__class__, e))
-                    print "Expected failure: %s: %s" % (e.__class__, e)
+                    print("Expected failure: %s: %s" % (e.__class__, e))
                 else:
                     self.assert_(not fail, 'Expected failure but succeeded?!')
                     self.assertEquals(val, ret)
                     self.assertEquals(1, ret.variant_level)
 
     def testBusInstanceCaching(self):
-        print "\n********* Testing dbus.Bus instance sharing *********"
+        print("\n********* Testing dbus.Bus instance sharing *********")
 
         # unfortunately we can't test the system bus here
         # but the codepaths are the same
         for (cls, type, func) in ((dbus.SessionBus, dbus.Bus.TYPE_SESSION, dbus.Bus.get_session), (dbus.StarterBus, dbus.Bus.TYPE_STARTER, dbus.Bus.get_starter)):
-            print "\nTesting %s:" % cls.__name__
+            print("\nTesting %s:" % cls.__name__)
 
             share_cls = cls()
             share_type = dbus.Bus(bus_type=type)
@@ -318,24 +337,24 @@ class TestDBusBindings(unittest.TestCase):
             private_type = dbus.Bus(bus_type=type, private=True)
             private_func = func(private=True)
 
-            print " - checking shared instances are the same..."
+            print(" - checking shared instances are the same...")
             self.assert_(share_cls == share_type, '%s should equal %s' % (share_cls, share_type))
             self.assert_(share_type == share_func, '%s should equal %s' % (share_type, share_func))
 
-            print " - checking private instances are distinct from the shared instance..."
+            print(" - checking private instances are distinct from the shared instance...")
             self.assert_(share_cls != private_cls, '%s should not equal %s' % (share_cls, private_cls))
             self.assert_(share_type != private_type, '%s should not equal %s' % (share_type, private_type))
             self.assert_(share_func != private_func, '%s should not equal %s' % (share_func, private_func))
 
-            print " - checking private instances are distinct from each other..."
+            print(" - checking private instances are distinct from each other...")
             self.assert_(private_cls != private_type, '%s should not equal %s' % (private_cls, private_type))
             self.assert_(private_type != private_func, '%s should not equal %s' % (private_type, private_func))
             self.assert_(private_func != private_cls, '%s should not equal %s' % (private_func, private_cls))
 
     def testSenderName(self):
-        print '\n******** Testing sender name keyword ********'
+        print('\n******** Testing sender name keyword ********')
         myself = self.iface.WhoAmI()
-        print "I am", myself
+        print("I am", myself)
 
     def testBusGetNameOwner(self):
         ret = self.bus.get_name_owner(NAME)
@@ -354,7 +373,7 @@ class TestDBusBindings(unittest.TestCase):
         self.assert_(not self.bus.name_has_owner('badger.mushroom.snake'))
 
     def testBusNameCreation(self):
-        print '\n******** Testing BusName creation ********'
+        print('\n******** Testing BusName creation ********')
         test = [('org.freedesktop.DBus.Python.TestName', True),
                 ('org.freedesktop.DBus.Python.TestName', True),
                 ('org.freedesktop.DBus.Python.InvalidName&^*%$', False)]
@@ -369,23 +388,23 @@ class TestDBusBindings(unittest.TestCase):
         names = {}
         for (name, succeed) in test:
             try:
-                print "requesting %s" % name
+                print("requesting %s" % name)
                 busname = dbus.service.BusName(name, dbus.SessionBus())
             except Exception as e:
-                print "%s:\n%s" % (e.__class__, e)
+                print("%s:\n%s" % (e.__class__, e))
                 self.assert_(not succeed, 'did not expect registering bus name %s to fail' % name)
             else:
-                print busname
+                print(busname)
                 self.assert_(succeed, 'expected registering bus name %s to fail'% name)
                 if name in names:
                     self.assert_(names[name] == busname, 'got a new instance for same name %s' % name)
-                    print "instance of %s re-used, good!" % name
+                    print("instance of %s re-used, good!" % name)
                 else:
                     names[name] = busname
 
                 del busname
 
-            print
+            print()
 
         del names
 

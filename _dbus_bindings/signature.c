@@ -55,14 +55,14 @@ PyDoc_STRVAR(Signature_tp_doc,
 
 typedef struct {
     PyObject_HEAD
-    PyObject *string;
+    PyObject *bytes;
     DBusSignatureIter iter;
 } SignatureIter;
 
 static void
 SignatureIter_tp_dealloc (SignatureIter *self)
 {
-    Py_CLEAR(self->string);
+    Py_CLEAR(self->bytes);
     PyObject_Del(self);
 }
 
@@ -73,7 +73,7 @@ SignatureIter_tp_iternext (SignatureIter *self)
     PyObject *obj;
 
     /* Stop immediately if finished or not correctly initialized */
-    if (!self->string) return NULL;
+    if (!self->bytes) return NULL;
 
     sig = dbus_signature_iter_get_signature(&(self->iter));
     if (!sig) return PyErr_NoMemory();
@@ -83,7 +83,7 @@ SignatureIter_tp_iternext (SignatureIter *self)
 
     if (!dbus_signature_iter_next(&(self->iter))) {
         /* mark object as having been finished with */
-        Py_CLEAR(self->string);
+        Py_CLEAR(self->bytes);
     }
 
     return obj;
@@ -140,19 +140,33 @@ static PyTypeObject SignatureIterType = {
 };
 
 static PyObject *
-Signature_tp_iter (PyObject *self)
+Signature_tp_iter(PyObject *self)
 {
     SignatureIter *iter = PyObject_New(SignatureIter, &SignatureIterType);
+    PyObject *self_as_bytes;
+
     if (!iter) return NULL;
 
-    if (PyBytes_AS_STRING (self)[0]) {
-        Py_INCREF(self);
-        iter->string = self;
-        dbus_signature_iter_init(&(iter->iter), PyBytes_AS_STRING(self));
+#ifdef PY3
+    self_as_bytes = PyUnicode_AsUTF8String(self);
+    if (!self_as_bytes) {
+        Py_CLEAR(iter);
+        return NULL;
+    }
+#else
+    self_as_bytes = self;
+    Py_INCREF(self_as_bytes);
+#endif
+
+    if (PyBytes_GET_SIZE(self_as_bytes) > 0) {
+        iter->bytes = self_as_bytes;
+        dbus_signature_iter_init(&(iter->iter),
+                                 PyBytes_AS_STRING(self_as_bytes));
     }
     else {
         /* this is a null string, make a null iterator */
-        iter->string = NULL;
+        iter->bytes = NULL;
+        Py_CLEAR(self_as_bytes);
     }
     return (PyObject *)iter;
 }

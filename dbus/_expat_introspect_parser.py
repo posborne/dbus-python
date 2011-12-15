@@ -23,7 +23,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xml.parsers.expat import ExpatError, ParserCreate
+from xml.parsers.expat import ParserCreate
 from dbus.exceptions import IntrospectionParserException
 
 class _Parser(object):

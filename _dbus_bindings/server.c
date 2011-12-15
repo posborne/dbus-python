@@ -85,7 +85,7 @@ static dbus_bool_t
 DBusPyServer_set_auth_mechanisms(Server *self,
                                  PyObject *auth_mechanisms)
 {
-    PyObject *fast_seq;
+    PyObject *fast_seq = NULL, *references = NULL;
     Py_ssize_t length;
     Py_ssize_t i;
 
@@ -101,18 +101,29 @@ DBusPyServer_set_auth_mechanisms(Server *self,
     {
         const char *list[length + 1];
 
+        if (!(references = PyTuple_New(length)))
+            goto error;
+
         for (i = 0; i < length; ++i) {
-            PyObject *am;
+            PyObject *am, *am_as_bytes;
 
             am = PySequence_Fast_GET_ITEM(auth_mechanisms, i);
-            /* this supports either str or unicode, raising TypeError
-             * on failure */
-            list[i] = PyBytes_AsString(am);
+            if (!am) goto error;
 
-            if (!list[i]) {
-                Py_CLEAR(fast_seq);
-                return FALSE;
+            if (PyUnicode_Check(am)) {
+                am_as_bytes = PyUnicode_AsUTF8String(am);
+                if (!am_as_bytes)
+                    goto error;
             }
+            else {
+                am_as_bytes = am;
+                Py_INCREF(am_as_bytes);
+            }
+            list[i] = PyBytes_AsString(am_as_bytes);
+            if (!list[i])
+                goto error;
+
+            PyTuple_SET_ITEM(references, i, am_as_bytes);
         }
 
         list[length] = NULL;
@@ -123,7 +134,12 @@ DBusPyServer_set_auth_mechanisms(Server *self,
     }
 
     Py_CLEAR(fast_seq);
+    Py_CLEAR(references);
     return TRUE;
+  error:
+    Py_CLEAR(fast_seq);
+    Py_CLEAR(references);
+    return FALSE;
 }
 
 /* Return a new reference to a Python Server or subclass corresponding
@@ -466,7 +482,7 @@ Server_get_address(Server *self, PyObject *args UNUSED)
     address = dbus_server_get_address(self->server);
     Py_END_ALLOW_THREADS
 
-    return PyBytes_FromString(address);
+    return PyUnicode_FromString(address);
 }
 
 PyDoc_STRVAR(Server_get_id__doc__,
@@ -483,7 +499,7 @@ Server_get_id(Server *self, PyObject *args UNUSED)
     id = dbus_server_get_id(self->server);
     Py_END_ALLOW_THREADS
 
-    return PyBytes_FromString(id);
+    return PyUnicode_FromString(id);
 }
 
 PyDoc_STRVAR(Server_get_is_connected__doc__,
@@ -535,7 +551,11 @@ PyTypeObject DBusPyServer_Type = {
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
+#ifdef PY3
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+#else
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_WEAKREFS | Py_TPFLAGS_BASETYPE,
+#endif
     Server_tp_doc,          /*tp_doc*/
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/

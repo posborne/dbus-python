@@ -30,19 +30,18 @@ from __future__ import generators
 __all__ = ('Bus', 'SystemBus', 'SessionBus', 'StarterBus')
 __docformat__ = 'reStructuredText'
 
-import os
-import sys
-import weakref
-from traceback import print_exc
-
 from dbus.exceptions import DBusException
 from _dbus_bindings import (
     BUS_DAEMON_IFACE, BUS_DAEMON_NAME, BUS_DAEMON_PATH, BUS_SESSION,
     BUS_STARTER, BUS_SYSTEM, DBUS_START_REPLY_ALREADY_RUNNING,
-    DBUS_START_REPLY_SUCCESS, UTF8String, validate_bus_name,
+    DBUS_START_REPLY_SUCCESS, validate_bus_name,
     validate_interface_name, validate_member_name, validate_object_path)
 from dbus.bus import BusConnection
 from dbus.lowlevel import SignalMessage
+from dbus._compat import is_py2
+
+if is_py2:
+    from _dbus_bindings import UTF8String
 
 
 class Bus(BusConnection):

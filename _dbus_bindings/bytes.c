@@ -31,6 +31,12 @@
 #include "dbus_bindings-internal.h"
 #include "types-internal.h"
 
+#ifdef PY3
+#define DBUS_BYTES_BASE DBusPyLongBase_Type
+#else
+#define DBUS_BYTES_BASE DBusPyIntBase_Type
+#endif
+
 PyDoc_STRVAR(Byte_tp_doc,
 "An unsigned byte: a subtype of int, with range restricted to [0, 255].\n"
 "\n"
@@ -90,15 +96,40 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         if (!obj)
             goto bad_arg;
     }
-    else if (PyLong_Check(obj) || PyInt_Check(obj)) {
+    else if (PyUnicode_Check(obj)) {
+        PyObject *obj_as_bytes = PyUnicode_AsUTF8String(obj);
+        if (!obj_as_bytes)
+            return NULL;
+        if (PyBytes_GET_SIZE(obj_as_bytes) != 1) {
+            Py_CLEAR(obj_as_bytes);
+            goto bad_arg;
+        }
+        obj = PyLong_FromLong(
+            (unsigned char)PyBytes_AS_STRING(obj_as_bytes)[0]);
+        Py_CLEAR(obj_as_bytes);
+        if (!obj)
+            goto bad_arg;
+    }
+    else if (PyLong_Check(obj)
+#ifndef PY3
+             || PyInt_Check(obj)
+#endif
+        )
+    {
         long i = PyLong_AsLong(obj);
+        long my_variant_level;
 
         if (i == -1 && PyErr_Occurred())
             goto bad_arg;
 
-        if (Py_TYPE(obj) == cls &&
-            ((DBusPyIntBase *)obj)->variant_level == variantness)
-        {
+#ifdef PY3
+        my_variant_level = dbus_py_variant_level_get(obj);
+        if (my_variant_level < 0)
+            return NULL;
+#else
+        my_variant_level = ((DBusPyIntBase *)obj)->variant_level;
+#endif
+        if (Py_TYPE(obj) == cls && my_variant_level == variantness) {
             Py_INCREF(obj);
             return obj;
         }
@@ -114,12 +145,12 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     tuple = Py_BuildValue("(N)", obj);
     if (!tuple) return NULL;
 
-    obj = DBusPyIntBase_Type.tp_new(cls, tuple, kwargs);
+    obj = DBUS_BYTES_BASE.tp_new(cls, tuple, kwargs);
     Py_CLEAR(tuple);
     return obj;
 
 bad_arg:
-    PyErr_SetString(PyExc_TypeError, "Expected a string of length 1, "
+    PyErr_SetString(PyExc_TypeError, "Expected a bytes or str of length 1, "
                     "or an int in the range 0-255");
     return NULL;
 bad_range:
@@ -141,7 +172,7 @@ Byte_tp_str(PyObject *self)
     }
 
     str[0] = (unsigned char)i;
-    return PyBytes_FromStringAndSize((char *)str, 1);
+    return PyUnicode_FromStringAndSize((char *)str, 1);
 }
 
 PyTypeObject DBusPyByte_Type = {
@@ -175,7 +206,7 @@ PyTypeObject DBusPyByte_Type = {
         0,                                      /* tp_methods */
         0,                                      /* tp_members */
         0,                                      /* tp_getset */
-        DEFERRED_ADDRESS(&PyInt_Type),          /* tp_base */
+        DEFERRED_ADDRESS(&DBUS_BYTES_BASE),     /* tp_base */
         0,                                      /* tp_dict */
         0,                                      /* tp_descr_get */
         0,                                      /* tp_descr_set */
@@ -184,6 +215,12 @@ PyTypeObject DBusPyByte_Type = {
         0,                                      /* tp_alloc */
         Byte_new,                               /* tp_new */
 };
+
+#ifdef PY3
+#define DBUS_BYTEARRAY_BASE DBusPyBytesBase_Type
+#else
+#define DBUS_BYTEARRAY_BASE DBusPyStrBase_Type
+#endif
 
 PyDoc_STRVAR(ByteArray_tp_doc,
 "ByteArray is a subtype of str which can be used when you want an\n"
@@ -241,7 +278,7 @@ PyTypeObject DBusPyByteArray_Type = {
         0,                                      /* tp_methods */
         0,                                      /* tp_members */
         0,                                      /* tp_getset */
-        DEFERRED_ADDRESS(&DBusPyStrBase_Type),  /* tp_base */
+        DEFERRED_ADDRESS(&DBUS_BYTEARRAY_BASE), /* tp_base */
         0,                                      /* tp_dict */
         0,                                      /* tp_descr_get */
         0,                                      /* tp_descr_set */
@@ -254,11 +291,11 @@ PyTypeObject DBusPyByteArray_Type = {
 dbus_bool_t
 dbus_py_init_byte_types(void)
 {
-    DBusPyByte_Type.tp_base = &DBusPyIntBase_Type;
+    DBusPyByte_Type.tp_base = &DBUS_BYTES_BASE;
     if (PyType_Ready(&DBusPyByte_Type) < 0) return 0;
     DBusPyByte_Type.tp_print = NULL;
 
-    DBusPyByteArray_Type.tp_base = &DBusPyStrBase_Type;
+    DBusPyByteArray_Type.tp_base = &DBUS_BYTEARRAY_BASE;
     if (PyType_Ready(&DBusPyByteArray_Type) < 0) return 0;
     DBusPyByteArray_Type.tp_print = NULL;
 

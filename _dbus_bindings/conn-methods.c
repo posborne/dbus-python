@@ -704,6 +704,7 @@ Connection__register_object_path(Connection *self, PyObject *args,
 {
     dbus_bool_t ok;
     int fallback = 0;
+    char *path_bytes;
     PyObject *callbacks, *path, *tuple, *on_message, *on_unregister = Py_None;
     static char *argnames[] = {"path", "on_message", "on_unregister",
                                "fallback", NULL};
@@ -738,11 +739,13 @@ Connection__register_object_path(Connection *self, PyObject *args,
         if (!path) return NULL;
     }
     else {
-        PyErr_SetString(PyExc_TypeError, "path must be a str or unicode object");
+        PyErr_SetString(PyExc_TypeError,
+                        "path must be a str, bytes, or unicode object");
         return NULL;
     }
 
-    if (!dbus_py_validate_object_path(PyBytes_AS_STRING(path))) {
+    path_bytes = PyBytes_AS_STRING(path);
+    if (!dbus_py_validate_object_path(path_bytes)) {
         Py_CLEAR(path);
         return NULL;
     }
@@ -758,7 +761,7 @@ Connection__register_object_path(Connection *self, PyObject *args,
     if (callbacks && callbacks != Py_None) {
         PyErr_Format(PyExc_KeyError, "Can't register the object-path "
                      "handler for '%s': there is already a handler",
-                     PyBytes_AS_STRING(path));
+                     path_bytes);
         Py_CLEAR(tuple);
         Py_CLEAR(path);
         return NULL;
@@ -777,13 +780,13 @@ Connection__register_object_path(Connection *self, PyObject *args,
     Py_BEGIN_ALLOW_THREADS
     if (fallback) {
         ok = dbus_connection_register_fallback(self->conn,
-                                               PyBytes_AS_STRING(path),
+                                               path_bytes,
                                                &_object_path_vtable,
                                                path);
     }
     else {
         ok = dbus_connection_register_object_path(self->conn,
-                                                  PyBytes_AS_STRING(path),
+                                                  path_bytes,
                                                   &_object_path_vtable,
                                                   path);
     }
@@ -797,7 +800,7 @@ Connection__register_object_path(Connection *self, PyObject *args,
             memory in libdbus, but tbh we should never get here anyway. */
             Py_BEGIN_ALLOW_THREADS
             ok = dbus_connection_unregister_object_path(self->conn,
-                                                      PyBytes_AS_STRING(path));
+                                                        path_bytes);
             Py_END_ALLOW_THREADS
             return NULL;
         }
@@ -831,6 +834,7 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
                                    PyObject *kwargs)
 {
     dbus_bool_t ok;
+    char *path_bytes;
     PyObject *path;
     PyObject *callbacks;
     static char *argnames[] = {"path", NULL};
@@ -854,9 +858,12 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
         if (!path) return NULL;
     }
     else {
-        PyErr_SetString(PyExc_TypeError, "path must be a str or unicode object");
+        PyErr_SetString(PyExc_TypeError,
+                        "path must be a str, bytes, or unicode object");
         return NULL;
     }
+
+    path_bytes = PyBytes_AS_STRING(path);
 
     /* Guard against unregistering a handler that doesn't, in fact, exist,
     or whose unregistration is already in progress. */
@@ -864,7 +871,7 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
     if (!callbacks || callbacks == Py_None) {
         PyErr_Format(PyExc_KeyError, "Can't unregister the object-path "
                      "handler for '%s': there is no such handler",
-                     PyBytes_AS_STRING(path));
+                     path_bytes);
         Py_CLEAR(path);
         return NULL;
     }
@@ -899,8 +906,7 @@ Connection__unregister_object_path(Connection *self, PyObject *args,
     */
 
     Py_BEGIN_ALLOW_THREADS
-    ok = dbus_connection_unregister_object_path(self->conn,
-                                                PyBytes_AS_STRING(path));
+    ok = dbus_connection_unregister_object_path(self->conn, path_bytes);
     Py_END_ALLOW_THREADS
 
     if (ok) {
@@ -970,7 +976,11 @@ Connection_list_exported_child_objects (Connection *self, PyObject *args,
         return NULL;
     }
     for (kid_ptr = kids; *kid_ptr; kid_ptr++) {
+#ifdef PY3
+        PyObject *tmp = PyUnicode_FromString(*kid_ptr);
+#else
         PyObject *tmp = PyBytes_FromString(*kid_ptr);
+#endif
 
         if (!tmp) {
             Py_CLEAR(ret);

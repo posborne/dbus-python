@@ -76,7 +76,19 @@ static inline int type##_CheckExact (PyObject *o) \
     (PyUnicode_Check(obj) ? (obj) : NULL), \
     (PyUnicode_Check(obj) ? NULL : PyBytes_AS_STRING(obj))
 
+#ifdef PY3
+#define NATIVESTR_CHECK(obj) (PyUnicode_Check(obj))
+#define NATIVESTR_FROMSTR(obj) (PyUnicode_FromString(obj))
+#else
+#define NATIVESTR_CHECK(obj) (PyBytes_Check(obj))
+#define NATIVESTR_FROMSTR(obj) (PyBytes_FromString(obj))
+#endif
+
+#ifdef PY3
+PyMODINIT_FUNC PyInit__dbus_bindings(void);
+#else
 PyMODINIT_FUNC init_dbus_bindings(void);
+#endif
 
 /* conn.c */
 extern PyTypeObject DBusPyConnection_Type;
@@ -114,9 +126,12 @@ DEFINE_CHECK(DBusPyStruct)
 extern PyTypeObject DBusPyByte_Type, DBusPyByteArray_Type;
 DEFINE_CHECK(DBusPyByteArray)
 DEFINE_CHECK(DBusPyByte)
-extern PyTypeObject DBusPyUTF8String_Type, DBusPyString_Type;
-DEFINE_CHECK(DBusPyUTF8String)
+extern PyTypeObject DBusPyString_Type;
 DEFINE_CHECK(DBusPyString)
+#ifndef PY3
+extern PyTypeObject DBusPyUTF8String_Type;
+DEFINE_CHECK(DBusPyUTF8String)
+#endif
 extern PyTypeObject DBusPyDouble_Type;
 DEFINE_CHECK(DBusPyDouble)
 extern PyTypeObject DBusPyInt16_Type, DBusPyUInt16_Type;
@@ -226,11 +241,13 @@ void _dbus_py_dbg_exc(void);
 void _dbus_py_whereami(void);
 void _dbus_py_dbg_dump_message(DBusMessage *);
 
-#   define TRACE(self) do { fprintf(stderr, "TRACE: <%s at %p> in %s, " \
-                                    "%d refs\n", \
-                                    Py_TYPE(self)->tp_name, \
-                                    self, __func__, \
-                                    self->ob_refcnt); } while (0)
+#   define TRACE(self) do { \
+    fprintf(stderr, "TRACE: <%s at %p> in %s, "                 \
+            "%d refs\n",                                        \
+            self ? Py_TYPE(self)->tp_name : NULL,               \
+            self, __func__,                                     \
+            self ? (int)Py_REFCNT(self) : 0);                   \
+    } while (0)
 #   define DBG(format, ...) fprintf(stderr, "DEBUG: " format "\n",\
                                     __VA_ARGS__)
 #   define DBG_EXC(format, ...) do {DBG(format, __VA_ARGS__); \
