@@ -28,17 +28,18 @@ import threading
 import weakref
 
 from _dbus_bindings import (
-    Connection as _Connection, LOCAL_IFACE, LOCAL_PATH,
-    validate_bus_name, validate_error_name, validate_interface_name,
-    validate_member_name, validate_object_path)
+    Connection as _Connection, LOCAL_IFACE, LOCAL_PATH, validate_bus_name,
+    validate_interface_name, validate_member_name, validate_object_path)
 from dbus.exceptions import DBusException
 from dbus.lowlevel import (
     ErrorMessage, HANDLER_RESULT_NOT_YET_HANDLED, MethodCallMessage,
     MethodReturnMessage, SignalMessage)
 from dbus.proxies import ProxyObject
-from dbus._compat import is_py2
+from dbus._compat import is_py2, is_py3
 
-if is_py2:
+if is_py3:
+    from _dbus_bindings import String
+else:
     from _dbus_bindings import UTF8String
 
 
@@ -185,14 +186,13 @@ class SignalMatch(object):
         if self._int_args_match is not None:
             # extracting args with utf8_strings and byte_arrays is less work
             kwargs = dict(byte_arrays=True)
+            arg_type = (String if is_py3 else UTF8String)
             if is_py2:
                 kwargs['utf8_strings'] = True
             args = message.get_args_list(**kwargs)
             for index, value in self._int_args_match.items():
                 if (index >= len(args)
-                    or (not isinstance(args[index], UTF8String)
-                        if is_py2
-                        else False)
+                    or not isinstance(args[index], arg_type)
                     or args[index] != value):
                     return False
 
@@ -540,7 +540,7 @@ class Connection(_Connection):
             for cb in self.__call_on_disconnection:
                 try:
                     cb(self)
-                except Exception as e:
+                except Exception:
                     # basicConfig is a no-op if logging is already configured
                     logging.basicConfig()
                     _logger.error('Exception in handler for Disconnected '

@@ -344,6 +344,25 @@ class TestMessageMarshalling(unittest.TestCase):
                                  'should fail')
 
 
+class TestMatching(unittest.TestCase):
+    def setUp(self):
+        from _dbus_bindings import SignalMessage
+        from dbus.connection import SignalMatch
+        self._message = SignalMessage('/', 'a.b', 'c')
+        class FakeConn(object): pass
+        def ignore_cb(*args, **kws): pass
+        self._match = SignalMatch(FakeConn(), None, '/', None, None, 
+                                  ignore_cb, arg0='/')
+
+    def test_string_match(self):
+        self._message.append('/', signature='s')
+        self.assertTrue(self._match.maybe_handle_message(self._message))
+
+    def test_object_path_no_match(self):
+        self._message.append('/', signature='o')
+        self.assertFalse(self._match.maybe_handle_message(self._message))
+
+
 if __name__ == '__main__':
     # Python 2.6 doesn't accept a `verbosity` keyword.
     kwargs = {}
