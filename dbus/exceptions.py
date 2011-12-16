@@ -27,6 +27,7 @@ __all__ = ('DBusException', 'MissingErrorHandlerException',
            'IntrospectionParserException', 'UnknownMethodException',
            'NameExistsException')
 
+
 class DBusException(Exception):
 
     include_traceback = False
@@ -57,7 +58,9 @@ class DBusException(Exception):
 
     def get_dbus_message(self):
         s = Exception.__str__(self)
-        return s.decode('utf-8', 'replace')
+        if isinstance(s, bytes):
+            return s.decode('utf-8', 'replace')
+        return s
 
     def get_dbus_name(self):
         return self._dbus_error_name
