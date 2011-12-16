@@ -265,7 +265,7 @@ class TestDBusBindings(unittest.TestCase):
             for value in range(len(values)):
                 try:
                     ret = method(value)
-                except Exception, e:
+                except Exception as e:
                     print("%s(%r) raised %s: %s" % (method._method_name, values[value], e.__class__, e))
 
                     # should fail if it tried to marshal the wrong type
@@ -284,7 +284,7 @@ class TestDBusBindings(unittest.TestCase):
             for value in range(len(values)):
                 try:
                     self.iface.EmitSignal(signal, value)
-                except Exception, e:
+                except Exception as e:
                     print("EmitSignal(%s, %r) raised %s" % (signal, values[value], e.__class__))
 
                     # should fail if it tried to marshal the wrong type
@@ -313,7 +313,7 @@ class TestDBusBindings(unittest.TestCase):
                     val = ('a', 1, False, [1,2], {1:2})
                     print("calling AsynchronousMethod with %s %s %s" % (async, fail, val))
                     ret = self.iface.AsynchronousMethod(async, fail, val)
-                except Exception, e:
+                except Exception as e:
                     self.assert_(fail, '%s: %s' % (e.__class__, e))
                     print("Expected failure: %s: %s" % (e.__class__, e))
                 else:

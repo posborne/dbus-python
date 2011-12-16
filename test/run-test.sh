@@ -112,13 +112,13 @@ else
   echo "  - cross-test server reported no untested functions"
 fi
 
-# echo "running test-client.py"
-# $PYTHON "$DBUS_TOP_SRCDIR"/test/test-client.py || die "test-client.py failed"
-# echo "running test-signals.py"
-# $PYTHON "$DBUS_TOP_SRCDIR"/test/test-signals.py || die "test-signals.py failed"
+echo "running test-client.py"
+$PYTHON "$DBUS_TOP_SRCDIR"/test/test-client.py || die "test-client.py failed"
+echo "running test-signals.py"
+$PYTHON "$DBUS_TOP_SRCDIR"/test/test-signals.py || die "test-signals.py failed"
 
-# echo "running test-p2p.py"
-# $PYTHON "$DBUS_TOP_SRCDIR"/test/test-p2p.py || die "... failed"
+echo "running test-p2p.py"
+$PYTHON "$DBUS_TOP_SRCDIR"/test/test-p2p.py || die "... failed"
 
 rm -f "$DBUS_TOP_BUILDDIR"/test/test-service.log
 rm -f "$DBUS_TOP_BUILDDIR"/test/cross-client.log
