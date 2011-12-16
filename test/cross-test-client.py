@@ -283,7 +283,8 @@ class Client(SignalTestsImpl):
             self.assert_method_eq(INTERFACE_TESTS, '\xa9', 'IdentityString', i)
 
         if have_signatures:
-            #self.assert_method_eq(INTERFACE_TESTS, Byte(0x42), 'IdentityByte', '\x42')
+            self.assert_method_eq(INTERFACE_TESTS, Byte(0x42), 
+                                  'IdentityByte', b'\x42')
             self.assert_method_eq(INTERFACE_TESTS, True, 'IdentityBool', 42)
             self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityInt16', 42)
             self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityUInt16', 42)
