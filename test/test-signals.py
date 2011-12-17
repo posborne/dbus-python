@@ -34,9 +34,9 @@ pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
 
 import dbus
 import _dbus_bindings
-import gobject
 import dbus.glib
 import dbus.service
+from gi.repository import GObject as gobject
 
 
 logging.basicConfig()

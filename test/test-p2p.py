@@ -64,22 +64,22 @@ class TestDBusBindings(unittest.TestCase):
                                     'org.freedesktop.DBus', 'Hello',
                                     '', (), **kwargs)
         if is_py2:
-            self.assert_(unique.__class__ == dbus.UTF8String, repr(unique))
-        self.assert_(unique.startswith(':'), unique)
+            self.assertTrue(unique.__class__ == dbus.UTF8String, repr(unique))
+        self.assertTrue(unique.startswith(':'), unique)
         conn.set_unique_name(unique)
         return conn, unique
 
     def testCall(self):
         conn, unique = self.get_conn_and_unique()
         ret = conn.call_blocking(NAME, OBJECT, IFACE, 'Echo', 'v', ('V',))
-        self.assertEquals(ret, 'V')
+        self.assertEqual(ret, 'V')
 
     def testCallThroughProxy(self):
         conn, unique = self.get_conn_and_unique()
         proxy = conn.get_object(NAME, OBJECT)
         iface = dbus.Interface(proxy, IFACE)
         ret = iface.Echo('V')
-        self.assertEquals(ret, 'V')
+        self.assertEqual(ret, 'V')
 
     def testSetUniqueName(self):
         conn, unique = self.get_conn_and_unique()
@@ -89,7 +89,7 @@ class TestDBusBindings(unittest.TestCase):
         ret = conn.call_blocking(NAME, OBJECT, IFACE,
                                  'MethodExtraInfoKeywords', '', (),
                                  **kwargs)
-        self.assertEquals(ret, (unique, OBJECT, NAME,
+        self.assertEqual(ret, (unique, OBJECT, NAME,
                                 'dbus.lowlevel.MethodCallMessage'))
 
 
