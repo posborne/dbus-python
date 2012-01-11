@@ -37,6 +37,7 @@ pydir = os.path.normpath(os.environ["DBUS_TOP_SRCDIR"])
 
 import _dbus_bindings
 import dbus
+import dbus.lowlevel as lowlevel
 import dbus.types as types
 from dbus._compat import is_py2, is_py3
 
@@ -167,6 +168,59 @@ class TestTypes(unittest.TestCase):
 
 
 class TestMessageMarshalling(unittest.TestCase):
+
+    def test_path(self):
+        s = lowlevel.SignalMessage('/a/b/c', 'foo.bar', 'baz')
+        self.assertEqual(s.get_path(), types.ObjectPath('/a/b/c'))
+        self.assertEqual(type(s.get_path()), types.ObjectPath)
+        self.assertEqual(s.get_path_decomposed(), ['a', 'b', 'c'])
+        # this is true in both major versions: it's a bytestring in
+        # Python 2 and a Unicode string in Python 3
+        self.assertEqual(type(s.get_path_decomposed()[0]), str)
+        self.assertTrue(s.has_path('/a/b/c'))
+        self.assertFalse(s.has_path('/a/b'))
+        self.assertFalse(s.has_path('/a/b/c/d'))
+
+        s = lowlevel.SignalMessage('/', 'foo.bar', 'baz')
+        self.assertEqual(s.get_path(), types.ObjectPath('/'))
+        self.assertEqual(s.get_path().__class__, types.ObjectPath)
+        self.assertEqual(s.get_path_decomposed(), [])
+        self.assertTrue(s.has_path('/'))
+        self.assertFalse(s.has_path(None))
+
+    def test_sender(self):
+        s = lowlevel.SignalMessage('/a/b/c', 'foo.bar', 'baz')
+        self.assertEqual(s.get_sender(), None)
+        self.assertFalse(s.has_sender(':1.23'))
+        s.set_sender(':1.23')
+        self.assertEqual(s.get_sender(), ':1.23')
+        # bytestring in Python 2, Unicode string in Python 3
+        self.assertEqual(type(s.get_sender()), str)
+        self.assertTrue(s.has_sender(':1.23'))
+
+    def test_destination(self):
+        s = lowlevel.SignalMessage('/a/b/c', 'foo.bar', 'baz')
+        self.assertEqual(s.get_destination(), None)
+        self.assertFalse(s.has_destination(':1.23'))
+        s.set_destination(':1.23')
+        self.assertEqual(s.get_destination(), ':1.23')
+        # bytestring in Python 2, Unicode string in Python 3
+        self.assertEqual(type(s.get_destination()), str)
+        self.assertTrue(s.has_destination(':1.23'))
+
+    def test_interface(self):
+        s = lowlevel.SignalMessage('/a/b/c', 'foo.bar', 'baz')
+        self.assertEqual(s.get_interface(), 'foo.bar')
+        # bytestring in Python 2, Unicode string in Python 3
+        self.assertEqual(type(s.get_interface()), str)
+        self.assertTrue(s.has_interface('foo.bar'))
+
+    def test_member(self):
+        s = lowlevel.SignalMessage('/a/b/c', 'foo.bar', 'baz')
+        self.assertEqual(s.get_member(), 'baz')
+        # bytestring in Python 2, Unicode string in Python 3
+        self.assertEqual(type(s.get_member()), str)
+        self.assertTrue(s.has_member('baz'))
 
     def test_count(self):
         from _dbus_bindings import SignalMessage
