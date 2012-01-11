@@ -595,6 +595,7 @@ _message_iter_append_byte(DBusMessageIter *appender, PyObject *obj)
         y = *(unsigned char *)PyBytes_AS_STRING(obj);
     }
     else {
+        /* on Python 2 this accepts either int or long */
         long i = PyLong_AsLong(obj);
 
         if (i == -1 && PyErr_Occurred()) return -1;
@@ -633,12 +634,9 @@ _message_iter_append_unixfd(DBusMessageIter *appender, PyObject *obj)
     int fd;
     long original_fd;
 
-    if (PyLong_Check(obj)
-#ifndef PY3
-        || PyInt_Check(obj)
-#endif
-        )
+    if (INTORLONG_CHECK(obj))
     {
+        /* on Python 2 this accepts either int or long */
         original_fd = PyLong_AsLong(obj);
         if (original_fd == -1 && PyErr_Occurred())
             return -1;

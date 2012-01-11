@@ -96,12 +96,8 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         if (!obj)
             goto bad_arg;
     }
-    else if (PyLong_Check(obj)
-#ifndef PY3
-             || PyInt_Check(obj)
-#endif
-        )
-    {
+    else if (INTORLONG_CHECK(obj)) {
+        /* on Python 2 this accepts either int or long */
         long i = PyLong_AsLong(obj);
         long my_variant_level;
 
