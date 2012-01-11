@@ -294,13 +294,13 @@ class Client(SignalTestsImpl):
             self.assert_method_eq(INTERFACE_TESTS, 42, 'IdentityUInt64', 42)
             self.assert_method_eq(INTERFACE_TESTS, 42.0, 'IdentityDouble', 42)
 
-        self.assert_method_eq(INTERFACE_TESTS, [Byte('\x01', variant_level=1),
-                                                Byte('\x02', variant_level=1),
-                                                Byte('\x03', variant_level=1)],
+        self.assert_method_eq(INTERFACE_TESTS, [Byte(b'\x01', variant_level=1),
+                                                Byte(b'\x02', variant_level=1),
+                                                Byte(b'\x03', variant_level=1)],
                                                'IdentityArray',
-                                               Array([Byte('\x01'),
-                                                      Byte('\x02'),
-                                                      Byte('\x03')],
+                                               Array([Byte(b'\x01'),
+                                                      Byte(b'\x02'),
+                                                      Byte(b'\x03')],
                                                      signature='v'))
 
         self.assert_method_eq(INTERFACE_TESTS, [Int32(1, variant_level=1),
@@ -321,9 +321,9 @@ class Client(SignalTestsImpl):
                                                      signature='v'))
 
         if have_signatures:
-            self.assert_method_eq(INTERFACE_TESTS, [Byte('\x01', variant_level=1),
-                                                    Byte('\x02', variant_level=1),
-                                                    Byte('\x03', variant_level=1)],
+            self.assert_method_eq(INTERFACE_TESTS, [Byte(b'\x01', variant_level=1),
+                                                    Byte(b'\x02', variant_level=1),
+                                                    Byte(b'\x03', variant_level=1)],
                                                    'IdentityArray',
                                                    ByteArray(b'\x01\x02\x03'))
             self.assert_method_eq(INTERFACE_TESTS, [Int32(1, variant_level=1),

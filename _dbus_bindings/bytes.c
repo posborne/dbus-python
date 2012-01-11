@@ -96,20 +96,6 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         if (!obj)
             goto bad_arg;
     }
-    else if (PyUnicode_Check(obj)) {
-        PyObject *obj_as_bytes = PyUnicode_AsUTF8String(obj);
-        if (!obj_as_bytes)
-            return NULL;
-        if (PyBytes_GET_SIZE(obj_as_bytes) != 1) {
-            Py_CLEAR(obj_as_bytes);
-            goto bad_arg;
-        }
-        obj = PyLong_FromLong(
-            (unsigned char)PyBytes_AS_STRING(obj_as_bytes)[0]);
-        Py_CLEAR(obj_as_bytes);
-        if (!obj)
-            goto bad_arg;
-    }
     else if (PyLong_Check(obj)
 #ifndef PY3
              || PyInt_Check(obj)

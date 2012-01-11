@@ -39,22 +39,22 @@ unchanged.  There are a few changes you'll notice in Python 2 though::
    simplifies the implementation and cross-compatibility with Python 3.
  - Some values which were ints are now longs.  Primarily, this affects the
    type of the `variant_level` attributes.
- - `dbus.Byte` can be constructed from a 1-character str or unicode object.
  - Some exception strings have changed.
  - `MethodCallMessage` and `SignalMessage` objects have better reprs now.
 
 What do you need to do to port that to Python 3?  Here are the user visible
 changes you should be aware of.  Python 3.2 is the minimal required version::
 
- - `ByteArray`s must be initialized with bytes objects, not unicodes.  Use
-   `b''` literals in the constructor.  This also works in Python 2, where
+ - `ByteArray` objects must be initialized with bytes objects, not unicodes.
+   Use `b''` literals in the constructor.  This also works in Python 2, where
    bytes objects are aliases for 8-bit strings.
+ - `Byte` objects must be initialized with either a length-1 bytes object
+   (again, use `b''` literals to be compatible with either Python 2 or 3)
+   or an integer.
  - byte signatures (i.e. `y` type codes) must be passed either a length-1
-   bytes object or an integer.  unicodes are not allowed.
+   bytes object or an integer. unicodes (str in Python 3) are not allowed.
  - `ByteArray` is now a subclass of `bytes`, where in Python 2 it is a
    subclass of `str`.
- - `dbus.Byte` can be constructed from a 1-character byte or str object, or an
-   integer.
  - `dbus.UTF8String` is gone, use `dbus.String`.  Also `utf8_string` arguments
    are no longer allowed.
  - All longs are now ints, since Python 3 has only a single int type.  This

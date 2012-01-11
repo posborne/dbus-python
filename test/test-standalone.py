@@ -89,14 +89,16 @@ class TestTypes(unittest.TestCase):
         self.assertEqual(x, ('a','b','c'))
 
     def test_Byte(self):
-        self.assertEqual(types.Byte('x', variant_level=2), 
+        self.assertEqual(types.Byte(b'x', variant_level=2),
                           types.Byte(ord('x')))
         self.assertEqual(types.Byte(1), 1)
         self.assertEqual(types.Byte(make_long(1)), 1)
-
-    def test_Byte_from_unicode(self):
+        self.assertRaises(Exception, lambda: types.Byte(b'ab'))
         self.assertRaises(TypeError, types.Byte, '\x12xxxxxxxxxxxxx')
-        self.assertEqual(types.Byte('\x12'), ord(b'\x12'))
+
+        # Byte from a unicode object: what would that even mean?
+        self.assertRaises(Exception,
+                lambda: types.Byte(b'a'.decode('latin-1')))
 
     def test_ByteArray(self):
         self.assertEqual(types.ByteArray(b''), b'')
@@ -197,15 +199,37 @@ class TestMessageMarshalling(unittest.TestCase):
         s.append([], signature='ay')
         aeq(s.get_args_list(), [[]])
 
+    def test_append_Byte(self):
+        aeq = self.assertEqual
+        from _dbus_bindings import SignalMessage
+
+        s = SignalMessage('/', 'foo.bar', 'baz')
+        s.append(0xFE, signature='y')
+        aeq(s.get_args_list(), [types.Byte(0xFE)])
+
+        s = SignalMessage('/', 'foo.bar', 'baz')
+        s.append(b'\xfe', signature='y')
+        aeq(s.get_args_list(), [types.Byte(0xFE)])
+
+        # appending a unicode object (including str in Python 3)
+        # is not allowed
+        s = SignalMessage('/', 'foo.bar', 'baz')
+        self.assertRaises(Exception,
+                lambda: s.append('a'.decode('latin-1'), signature='y'))
+
+        s = SignalMessage('/', 'foo.bar', 'baz')
+        self.assertRaises(Exception,
+                lambda: s.append(b'ab', signature='y'))
+
     def test_append_ByteArray(self):
         aeq = self.assertEqual
         from _dbus_bindings import SignalMessage
         s = SignalMessage('/', 'foo.bar', 'baz')
         s.append(types.ByteArray(b'ab'), signature='ay')
-        aeq(s.get_args_list(), [[types.Byte('a'), types.Byte('b')]])
+        aeq(s.get_args_list(), [[types.Byte(b'a'), types.Byte(b'b')]])
         s = SignalMessage('/', 'foo.bar', 'baz')
         s.append(types.ByteArray(b'ab'), signature='av')
-        aeq(s.get_args_list(), [[types.Byte('a'), types.Byte('b')]])
+        aeq(s.get_args_list(), [[types.Byte(b'a'), types.Byte(b'b')]])
         s = SignalMessage('/', 'foo.bar', 'baz')
         s.append(types.ByteArray(b''), signature='ay')
         aeq(s.get_args_list(), [[]])
@@ -217,7 +241,7 @@ class TestMessageMarshalling(unittest.TestCase):
         s = SignalMessage('/', 'foo.bar', 'baz')
         s.append(types.Int32(1, variant_level=0),
                  types.String('a', variant_level=42),
-                 types.Array([types.Byte('a', variant_level=1),
+                 types.Array([types.Byte(b'a', variant_level=1),
                               types.UInt32(123, variant_level=1)],
                              signature='v'),
                  signature='vvv')
