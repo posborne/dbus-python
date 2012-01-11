@@ -32,9 +32,9 @@
 #include "types-internal.h"
 
 #ifdef PY3
-#define DBUS_BYTES_BASE (DBusPyLongBase_Type)
+#define DBUS_PY_BYTE_BASE (DBusPyLongBase_Type)
 #else
-#define DBUS_BYTES_BASE (DBusPyIntBase_Type)
+#define DBUS_PY_BYTE_BASE (DBusPyIntBase_Type)
 #endif
 
 PyDoc_STRVAR(Byte_tp_doc,
@@ -145,7 +145,7 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
     tuple = Py_BuildValue("(N)", obj);
     if (!tuple) return NULL;
 
-    obj = DBUS_BYTES_BASE.tp_new(cls, tuple, kwargs);
+    obj = DBUS_PY_BYTE_BASE.tp_new(cls, tuple, kwargs);
     Py_CLEAR(tuple);
     return obj;
 
@@ -206,7 +206,7 @@ PyTypeObject DBusPyByte_Type = {
         0,                                      /* tp_methods */
         0,                                      /* tp_members */
         0,                                      /* tp_getset */
-        DEFERRED_ADDRESS(&DBUS_BYTES_BASE),     /* tp_base */
+        DEFERRED_ADDRESS(&DBUS_PY_BYTE_BASE),   /* tp_base */
         0,                                      /* tp_dict */
         0,                                      /* tp_descr_get */
         0,                                      /* tp_descr_set */
@@ -217,9 +217,9 @@ PyTypeObject DBusPyByte_Type = {
 };
 
 #ifdef PY3
-#define DBUS_BYTEARRAY_BASE (DBusPyBytesBase_Type)
+#define DBUS_PY_BYTEARRAY_BASE (DBusPyBytesBase_Type)
 #else
-#define DBUS_BYTEARRAY_BASE (DBusPyStrBase_Type)
+#define DBUS_PY_BYTEARRAY_BASE (DBusPyStrBase_Type)
 #endif
 
 PyDoc_STRVAR(ByteArray_tp_doc,
@@ -278,7 +278,7 @@ PyTypeObject DBusPyByteArray_Type = {
         0,                                      /* tp_methods */
         0,                                      /* tp_members */
         0,                                      /* tp_getset */
-        DEFERRED_ADDRESS(&DBUS_BYTEARRAY_BASE), /* tp_base */
+        DEFERRED_ADDRESS(&DBUS_PY_BYTEARRAY_BASE), /* tp_base */
         0,                                      /* tp_dict */
         0,                                      /* tp_descr_get */
         0,                                      /* tp_descr_set */
@@ -291,11 +291,11 @@ PyTypeObject DBusPyByteArray_Type = {
 dbus_bool_t
 dbus_py_init_byte_types(void)
 {
-    DBusPyByte_Type.tp_base = &DBUS_BYTES_BASE;
+    DBusPyByte_Type.tp_base = &DBUS_PY_BYTE_BASE;
     if (PyType_Ready(&DBusPyByte_Type) < 0) return 0;
     DBusPyByte_Type.tp_print = NULL;
 
-    DBusPyByteArray_Type.tp_base = &DBUS_BYTEARRAY_BASE;
+    DBusPyByteArray_Type.tp_base = &DBUS_PY_BYTEARRAY_BASE;
     if (PyType_Ready(&DBusPyByteArray_Type) < 0) return 0;
     DBusPyByteArray_Type.tp_print = NULL;
 
