@@ -516,12 +516,6 @@ PyTypeObject DBusPyBytesBase_Type = {
 
 /* Support code for str subclasses ================================== */
 
-#ifdef PY3
-#define DBUS_STRING_BASE (PyUnicode_Type)
-#else
-#define DBUS_STRING_BASE (PyBytes_Type)
-#endif
-
 PyDoc_STRVAR(DBusPythonString_tp_doc,\
 "Base class for str subclasses with a ``variant_level`` attribute.\n"
 "Do not rely on the existence of this class outside dbus-python.\n"
@@ -548,7 +542,7 @@ DBusPythonString_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    self = (DBUS_STRING_BASE.tp_new)(cls, args, NULL);
+    self = (NATIVESTR_TYPE.tp_new)(cls, args, NULL);
     if (self) {
         if (!dbus_py_variant_level_set(self, variantness)) {
             Py_CLEAR(self);
@@ -561,7 +555,7 @@ DBusPythonString_tp_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
 static PyObject *
 DBusPythonString_tp_repr(PyObject *self)
 {
-    PyObject *parent_repr = (DBUS_STRING_BASE.tp_repr)(self);
+    PyObject *parent_repr = (NATIVESTR_TYPE.tp_repr)(self);
     PyObject *vl_obj;
     PyObject *my_repr;
     long variant_level;
@@ -598,7 +592,7 @@ static void
 DBusPyStrBase_tp_dealloc(PyObject *self)
 {
     dbus_py_variant_level_clear(self);
-    (DBUS_STRING_BASE.tp_dealloc)(self);
+    (NATIVESTR_TYPE.tp_dealloc)(self);
 }
 
 PyTypeObject DBusPyStrBase_Type = {
@@ -632,7 +626,7 @@ PyTypeObject DBusPyStrBase_Type = {
     0,                                      /* tp_methods */
     0,                                      /* tp_members */
     0,                                      /* tp_getset */
-    DEFERRED_ADDRESS(&DBUS_STRING_BASE),    /* tp_base */
+    DEFERRED_ADDRESS(&NATIVESTR_TYPE),      /* tp_base */
     0,                                      /* tp_dict */
     0,                                      /* tp_descr_get */
     0,                                      /* tp_descr_set */
@@ -812,7 +806,7 @@ dbus_py_init_abstract(void)
     if (PyType_Ready(&DBusPyLongBase_Type) < 0) return 0;
     DBusPyLongBase_Type.tp_print = NULL;
 
-    DBusPyStrBase_Type.tp_base = &DBUS_STRING_BASE;
+    DBusPyStrBase_Type.tp_base = &NATIVESTR_TYPE;
     if (PyType_Ready(&DBusPyStrBase_Type) < 0) return 0;
     DBusPyStrBase_Type.tp_print = NULL;
 

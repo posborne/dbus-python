@@ -77,9 +77,11 @@ static inline int type##_CheckExact (PyObject *o) \
     (PyUnicode_Check(obj) ? NULL : PyBytes_AS_STRING(obj))
 
 #ifdef PY3
+#define NATIVESTR_TYPE (PyUnicode_Type)
 #define NATIVESTR_CHECK(obj) (PyUnicode_Check(obj))
 #define NATIVESTR_FROMSTR(obj) (PyUnicode_FromString(obj))
 #else
+#define NATIVESTR_TYPE (PyBytes_Type)
 #define NATIVESTR_CHECK(obj) (PyBytes_Check(obj))
 #define NATIVESTR_FROMSTR(obj) (PyBytes_FromString(obj))
 #endif
