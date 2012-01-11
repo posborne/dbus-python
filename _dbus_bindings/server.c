@@ -482,7 +482,7 @@ Server_get_address(Server *self, PyObject *args UNUSED)
     address = dbus_server_get_address(self->server);
     Py_END_ALLOW_THREADS
 
-    return PyUnicode_FromString(address);
+    return NATIVESTR_FROMSTR(address);
 }
 
 PyDoc_STRVAR(Server_get_id__doc__,
@@ -499,7 +499,7 @@ Server_get_id(Server *self, PyObject *args UNUSED)
     id = dbus_server_get_id(self->server);
     Py_END_ALLOW_THREADS
 
-    return PyUnicode_FromString(id);
+    return NATIVESTR_FROMSTR(id);
 }
 
 PyDoc_STRVAR(Server_get_is_connected__doc__,

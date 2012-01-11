@@ -156,11 +156,7 @@ DBusPyConnection_GetUniqueName(Connection *self, PyObject *args UNUSED)
         return DBusPyException_SetString("This connection has no unique name "
                                          "yet");
     }
-#ifdef PY3
-    return PyUnicode_FromString(name);
-#else
-    return PyBytes_FromString(name);
-#endif
+    return NATIVESTR_FROMSTR(name);
 }
 
 PyObject *

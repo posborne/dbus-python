@@ -976,11 +976,7 @@ Connection_list_exported_child_objects (Connection *self, PyObject *args,
         return NULL;
     }
     for (kid_ptr = kids; *kid_ptr; kid_ptr++) {
-#ifdef PY3
-        PyObject *tmp = PyUnicode_FromString(*kid_ptr);
-#else
-        PyObject *tmp = PyBytes_FromString(*kid_ptr);
-#endif
+        PyObject *tmp = NATIVESTR_FROMSTR(*kid_ptr);
 
         if (!tmp) {
             Py_CLEAR(ret);
