@@ -217,7 +217,7 @@ _message_iter_get_pyobject(DBusMessageIter *iter,
     if (variant_level > 0 && type != DBUS_TYPE_VARIANT) {
         PyObject *variant_level_int;
 
-        variant_level_int = PyLong_FromLong(variant_level);
+        variant_level_int = NATIVEINT_FROMLONG(variant_level);
         if (!variant_level_int) {
             return NULL;
         }

@@ -15,9 +15,6 @@ API changes:
 
 * The repr() of every dbus-python object is now unicode.
 
-* Some values which were ints (mainly variant_level attributes)
-  are now longs under Python 2.
-
 * The Python 3 API is not the same as the Python 2 API; see PY3PORT.rst
   for details.
 

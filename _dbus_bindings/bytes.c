@@ -92,7 +92,7 @@ Byte_new(PyTypeObject *cls, PyObject *args, PyObject *kwargs)
         if (PyBytes_GET_SIZE(obj) != 1) {
             goto bad_arg;
         }
-        obj = PyLong_FromLong((unsigned char)(PyBytes_AS_STRING(obj)[0]));
+        obj = NATIVEINT_FROMLONG((unsigned char)(PyBytes_AS_STRING(obj)[0]));
         if (!obj)
             goto bad_arg;
     }
@@ -147,7 +147,7 @@ bad_range:
 static PyObject *
 Byte_tp_str(PyObject *self)
 {
-    long i = PyLong_AsLong(self);
+    long i = NATIVEINT_ASLONG(self);
     unsigned char str[2] = { 0, 0 };
 
     if (i == -1 && PyErr_Occurred())

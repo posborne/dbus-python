@@ -37,8 +37,6 @@ unchanged.  There are a few changes you'll notice in Python 2 though:
  - The minimum supported Python 2 version is 2.6.
  - All object reprs are unicodes.  This change was made because it greatly
    simplifies the implementation and cross-compatibility with Python 3.
- - Some values which were ints are now longs.  Primarily, this affects the
-   type of the `variant_level` attributes.
  - Some exception strings have changed.
  - `MethodCallMessage` and `SignalMessage` objects have better reprs now.
 

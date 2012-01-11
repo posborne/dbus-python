@@ -61,7 +61,7 @@ dbus_py_variant_level_get(PyObject *obj)
          */
         return 0;
     }
-    variant_level = PyLong_AsLong(vl_obj);
+    variant_level = NATIVEINT_ASLONG(vl_obj);
     if (variant_level == -1 && PyErr_Occurred()) {
         /* variant_level < 0 can never be inserted into the dictionary; see
          * dbus_py_variant_level_set() below.  The semantics of setting
@@ -92,7 +92,7 @@ dbus_py_variant_level_set(PyObject *obj, long variant_level)
         }
     }
     else {
-        PyObject *vl_obj = PyLong_FromLong(variant_level);
+        PyObject *vl_obj = NATIVEINT_FROMLONG(variant_level);
         if (!vl_obj) {
             Py_CLEAR(key);
             return FALSE;
@@ -148,7 +148,7 @@ dbus_py_variant_level_getattro(PyObject *obj, PyObject *name)
     Py_CLEAR(key);
 
     if (!value)
-        return PyLong_FromLong(0);
+        return NATIVEINT_FROMLONG(0);
     Py_INCREF(value);
     return value;
 }
@@ -444,7 +444,7 @@ DBusPythonBytes_tp_repr(PyObject *self)
         Py_CLEAR(parent_repr);
         return NULL;
     }
-    variant_level = PyLong_AsLong(vl_obj);
+    variant_level = NATIVEINT_ASLONG(vl_obj);
     Py_CLEAR(vl_obj);
     if (variant_level == -1 && PyErr_Occurred()) {
         Py_CLEAR(parent_repr);
@@ -566,7 +566,7 @@ DBusPythonString_tp_repr(PyObject *self)
         Py_CLEAR(parent_repr);
         return NULL;
     }
-    variant_level = PyLong_AsLong(vl_obj);
+    variant_level = NATIVEINT_ASLONG(vl_obj);
     Py_CLEAR(vl_obj);
     if (variant_level == -1 && PyErr_Occurred()) {
         Py_CLEAR(parent_repr);
@@ -688,7 +688,7 @@ DBusPythonLong_tp_repr(PyObject *self)
         Py_CLEAR(parent_repr);
         return NULL;
     }
-    variant_level = PyLong_AsLong(vl_obj);
+    variant_level = NATIVEINT_ASLONG(vl_obj);
     Py_CLEAR(vl_obj);
     if (variant_level < 0 && PyErr_Occurred()) {
         Py_CLEAR(parent_repr);
