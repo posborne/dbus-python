@@ -5,12 +5,28 @@ Dependencies:
 
 * libdbus 1.4 or later is now required.
 
-* Python 2.6 or later is now required.
+* Python 2.6 or later is now required. If Python 3 is used, it must be
+  version 3.2 or later.
 
 API changes:
 
 * dbus_bindings, which was never meant to be public API and has been
   deprecated for nearly 5 years, has finally been removed.
+
+* The repr() of every dbus-python object is now unicode.
+
+* Some values which were ints (mainly variant_level attributes)
+  are now longs under Python 2.
+
+* The Python 3 API is not the same as the Python 2 API; see PY3PORT.rst
+  for details.
+
+Enhancements:
+
+* Python 3 compatibility (fd.o #26420, Barry Warsaw)
+
+* MethodCallMessage and SignalMessage now have a more useful repr()
+  (Barry Warsaw)
 
 Fixes:
 
@@ -20,8 +36,6 @@ Fixes:
 * If libdbus somehow gives us invalid UTF-8, don't crash (Barry Warsaw)
 
 * Fix rst2html failure in non-UTF-8 locales (Alexandre Rostovtsev)
-
-* Start to port to Python 3 compatibility (Barry Warsaw)
 
 D-Bus Python Bindings 0.84.0 (2011-05-25)
 =========================================

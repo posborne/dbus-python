@@ -32,7 +32,7 @@ User visible changes
 
 You've got some dbus-python code that works great in Python 2.  This branch
 should generally allow your existing Python 2 code to continue to work
-unchanged.  There are a few changes you'll notice in Python 2 though::
+unchanged.  There are a few changes you'll notice in Python 2 though:
 
  - The minimum supported Python 2 version is 2.6.
  - All object reprs are unicodes.  This change was made because it greatly
@@ -43,7 +43,8 @@ unchanged.  There are a few changes you'll notice in Python 2 though::
  - `MethodCallMessage` and `SignalMessage` objects have better reprs now.
 
 What do you need to do to port that to Python 3?  Here are the user visible
-changes you should be aware of.  Python 3.2 is the minimal required version::
+changes you should be aware of, relative to Python 2.  Python 3.2 is the
+minimal required version:
 
  - `ByteArray` objects must be initialized with bytes objects, not unicodes.
    Use `b''` literals in the constructor.  This also works in Python 2, where
@@ -60,8 +61,6 @@ changes you should be aware of.  Python 3.2 is the minimal required version::
  - All longs are now ints, since Python 3 has only a single int type.  This
    also means that the class hierarchy for the dbus numeric types has changed
    (all derive from int in Python 3).
- - Some exception strings have changed.
- - `MethodCallMessage` and `SignalMessage` objects have better reprs now.
 
 
 Bytes vs. Strings
@@ -165,7 +164,7 @@ Python level compatibility
 `from dbus import _is_py3` gives you a flag to check if you must do something
 different in Python 3.  In general I use this flag to support both versions in
 one set of sources, which seems better than trying to use 2to3.  It's not part
-of the dbus-python public API, so you may not need it.
+of the dbus-python public API, so you must not use it in third-party projects.
 
 
 Miscellaneous
