@@ -200,6 +200,7 @@ SignalMessage_tp_repr(PyObject *self)
     const char *path = dbus_message_get_path(msg);
     const char *interface = dbus_message_get_interface(msg);
     const char *member = dbus_message_get_member(msg);
+    const char *destination = dbus_message_get_destination(msg);
 
     if (!path)
         path = "n/a";
@@ -207,10 +208,12 @@ SignalMessage_tp_repr(PyObject *self)
         interface = "n/a";
     if (!member)
         member = "n/a";
+    if (!destination)
+        destination = "(broadcast)";
 
-    return PyUnicode_FromFormat("<%s path: %s, int: %s, member: %s>",
+    return PyUnicode_FromFormat("<%s path: %s, iface: %s, member: %s, dest: %s>",
                                 Py_TYPE(self)->tp_name,
-                                path, interface, member);
+                                path, interface, member, destination);
 }
 
 PyDoc_STRVAR(ErrorMessage_tp_doc, "An error message.\n\n"
