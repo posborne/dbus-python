@@ -172,14 +172,6 @@ TP_COMPILER_WARNINGS([CFLAGS_WARNINGS], [test] dbus_python_released [= 0],
 JH_ADD_CFLAG([-std=c9x])
 JH_ADD_CFLAG([-fno-strict-aliasing])
 
-AC_ARG_ENABLE(Werror,
-AC_HELP_STRING([--enable-Werror],
-               [Treat warnings as errors, if the compiler supports it]),
-enable_Werror=$enableval, enable_Werror=no)
-if test "x$enable_Werror" = xyes; then
-  JH_ADD_CFLAG([-Werror])
-fi
-
 CFLAGS="$CFLAGS $CFLAGS_WARNINGS"
 
 ifelse(dbus_python_released, 1,
