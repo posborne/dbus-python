@@ -8,6 +8,9 @@ Dependencies:
 * Python 2.6 or later is now required. If Python 3 is used, it must be
   version 3.2 or later.
 
+* GNU make (or, at your own risk, another make with the GNU $(patsubst)
+  extension) is now required.
+
 API changes:
 
 * dbus_bindings, which was never meant to be public API and has been

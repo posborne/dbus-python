@@ -67,8 +67,16 @@ dist-hook:
 		fi; \
 	fi
 
-TXT_RSTDOCS = doc/tutorial.txt doc/API_CHANGES.txt doc/HACKING.txt
-RSTDOCS = README NEWS TODO
+TXT_RSTDOCS = \
+	doc/tutorial.txt \
+	doc/API_CHANGES.txt \
+	doc/HACKING.txt \
+	doc/PY3PORT.txt \
+	$(NULL)
+RSTDOCS = \
+	README \
+	NEWS \
+	TODO
 dist_doc_DATA = $(TXT_RSTDOCS) $(RSTDOCS)
 
 maintainer-upload:
@@ -84,8 +92,8 @@ _maintainer-update-htmldocs: $(HTML_TXT_RSTDOCS) $(HTML_RSTDOCS)
 	$(RSTDOCS) $(HTML_RSTDOCS) \
 	dbus.freedesktop.org:/srv/dbus.freedesktop.org/www/doc/dbus-python/
 
-HTML_TXT_RSTDOCS = doc/tutorial.html doc/API_CHANGES.html doc/HACKING.html
-HTML_RSTDOCS = README.html NEWS.html TODO.html
+HTML_TXT_RSTDOCS = $(patsubst %.txt,%.html,$(TXT_RSTDOCS))
+HTML_RSTDOCS = $(patsubst %,%.html,$(RSTDOCS))
 nodist_doc_DATA = $(HTML_TXT_RSTDOCS) $(HTML_RSTDOCS)
 
 CLEANFILES += $(nodist_doc_DATA)
