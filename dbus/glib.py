@@ -35,7 +35,17 @@ equivalent code::
 __docformat__ = 'restructuredtext'
 
 from dbus.mainloop.glib import DBusGMainLoop, threads_init
+from warnings import warn as _warn
 
 init_threads = threads_init
 
 DBusGMainLoop(set_as_default=True)
+
+_warn(DeprecationWarning("""\
+Importing dbus.glib to use the GLib main loop with dbus-python is deprecated.
+Instead, use this sequence:
+
+    from dbus.mainloop.glib import DBusGMainLoop
+
+    DBusGMainLoop(set_as_default=True)
+"""), DeprecationWarning, stacklevel=2)
