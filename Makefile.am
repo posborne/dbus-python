@@ -20,6 +20,7 @@ EXTRA_DIST = \
 nobase_python_PYTHON = \
     dbus/bus.py \
     dbus/connection.py \
+    dbus/_compat.py \
     dbus/_dbus.py \
     dbus/_version.py \
     dbus/decorators.py \
