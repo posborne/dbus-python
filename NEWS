@@ -1,5 +1,7 @@
-D-Bus Python Bindings 0.84.1 (UNRELEASED)
-=========================================
+D-Bus Python Bindings 1.0.0 (UNRELEASED)
+========================================
+
+The "never trust a .0 release?" release.
 
 Dependencies:
 
