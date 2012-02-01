@@ -90,7 +90,7 @@ maintainer-update-website: _maintainer-update-apidocs \
 if ENABLE_DOCS
 _maintainer-update-htmldocs: $(HTML_TXT_RSTDOCS) $(HTML_RSTDOCS)
 	rsync -rtvzPp --chmod=Dg+s,ug+rwX,o=rX doc \
-	$(RSTDOCS) $(HTML_RSTDOCS) \
+	$(patsubst %,$(srcdir)/%,$(RSTDOCS)) $(HTML_RSTDOCS) \
 	dbus.freedesktop.org:/srv/dbus.freedesktop.org/www/doc/dbus-python/
 
 HTML_TXT_RSTDOCS = $(patsubst %.txt,%.html,$(TXT_RSTDOCS))
