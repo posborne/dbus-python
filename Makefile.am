@@ -77,7 +77,7 @@ TXT_RSTDOCS = \
 RSTDOCS = \
 	README \
 	NEWS \
-	TODO
+	$(NULL)
 dist_doc_DATA = $(TXT_RSTDOCS) $(RSTDOCS)
 
 maintainer-upload:
