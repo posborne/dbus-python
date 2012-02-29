@@ -4,7 +4,7 @@
 <busconfig>
   <!-- Our well-known bus type, don't change this -->
   <type>session</type>
-  <listen>unix:tmpdir=@abs_top_builddir@/test</listen>
+  <listen>unix:tmpdir=/tmp</listen>
 
   <servicedir>@abs_top_builddir@/test</servicedir>
 
