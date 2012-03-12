@@ -98,9 +98,11 @@ dbus_py_variant_level_set(PyObject *obj, long variant_level)
             return FALSE;
         }
         if (PyDict_SetItem(_dbus_py_variant_levels, key, vl_obj) < 0) {
+            Py_CLEAR(vl_obj);
             Py_CLEAR(key);
             return FALSE;
         }
+        Py_CLEAR(vl_obj);
     }
     Py_CLEAR(key);
     return TRUE;
