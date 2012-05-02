@@ -22,7 +22,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import gobject
+from warnings import warn as _warn
+_warn(DeprecationWarning("""\
+dbus.gobject_service is deprecated, and is not available under Python 3.
+
+Porting from gobject (PyGObject 2) to gi.repository.GObject (PyGObject 3),
+and using dbus.gi_service instead of dbus.gobject_service, is recommended.
+"""), DeprecationWarning, stacklevel=2)
+
+if 'gi' in sys.modules:
+    # this worked in dbus-python 1.0, so preserve the functionality
+    from gi.repository import GObject as gobject
+else:
+    # this worked in dbus-python < 1.0
+    import gobject
+
 import dbus.service
 
 class ExportedGObjectType(gobject.GObjectMeta, dbus.service.InterfaceType):
