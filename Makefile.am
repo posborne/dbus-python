@@ -26,8 +26,8 @@ nobase_python_PYTHON = \
     dbus/decorators.py \
     dbus/exceptions.py \
     dbus/_expat_introspect_parser.py \
+    dbus/gi_service.py \
     dbus/glib.py \
-    dbus/gobject_service.py \
     dbus/__init__.py \
     dbus/lowlevel.py \
     dbus/mainloop/__init__.py \

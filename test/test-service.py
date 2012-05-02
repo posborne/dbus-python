@@ -39,8 +39,8 @@ import dbus.service
 import dbus.glib
 import random
 
-from dbus.gobject_service import ExportedGObject
-from gi.repository import GObject as gobject
+from dbus.gi_service import ExportedGObject
+from gi.repository import GObject
 from dbus._compat import is_py2, is_py3
 
 
@@ -263,7 +263,7 @@ class TestObject(dbus.service.Object, TestInterface):
     def AsynchronousMethod(self, async, fail, variant, return_cb, error_cb):
         try:
             if async:
-                gobject.timeout_add(500, self.AsynchronousMethod, False, fail, 
+                GObject.timeout_add(500, self.AsynchronousMethod, False, fail,
                                     variant, return_cb, error_cb)
                 return
             else:
@@ -310,7 +310,7 @@ class TestObject(dbus.service.Object, TestInterface):
         def return_from_async_wait():
             return_cb()
             return False
-        gobject.timeout_add(500, return_from_async_wait)
+        GObject.timeout_add(500, return_from_async_wait)
 
     @dbus.service.method(IFACE, in_signature='', out_signature='')
     def RaiseValueError(self):
@@ -356,7 +356,7 @@ def main():
     logger.info('making Fallback')
     fallback_object = Fallback(session_bus)
     logger.info('creating mainloop')
-    loop = gobject.MainLoop()
+    loop = GObject.MainLoop()
     logger.info('running')
     loop.run()
     logger.info('done')

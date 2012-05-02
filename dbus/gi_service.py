@@ -1,4 +1,4 @@
-"""Support code for implementing D-Bus services via GObjects."""
+"""Support code for implementing D-Bus services via PyGI."""
 
 # Copyright (C) 2007 Collabora Ltd. <http://www.collabora.co.uk/>
 #
@@ -24,7 +24,7 @@
 
 __all__ = ['ExportedGObject']
 
-from gi.repository import GObject as gobject
+from gi.repository import GObject
 import dbus.service
 
 # The odd syntax used here is required so that the code is compatible with
@@ -37,12 +37,12 @@ import dbus.service
 # `ExportedGObjectType` as its metaclass, which is sufficient to make it work
 # correctly.
 
-class ExportedGObjectType(gobject.GObjectMeta, dbus.service.InterfaceType):
+class ExportedGObjectType(GObject.GObjectMeta, dbus.service.InterfaceType):
     """A metaclass which inherits from both GObjectMeta and
     `dbus.service.InterfaceType`. Used as the metaclass for `ExportedGObject`.
     """
     def __init__(cls, name, bases, dct):
-        gobject.GObjectMeta.__init__(cls, name, bases, dct)
+        GObject.GObjectMeta.__init__(cls, name, bases, dct)
         dbus.service.InterfaceType.__init__(cls, name, bases, dct)
 
 
@@ -68,7 +68,7 @@ def ExportedGObject__init__(self, conn=None, object_path=None, **kwargs):
 
     if gobject_properties is not None:
         kwargs.update(gobject_properties)
-    gobject.GObject.__init__(self, **kwargs)
+    GObject.GObject.__init__(self, **kwargs)
     dbus.service.Object.__init__(self, conn=conn,
                                  object_path=object_path,
                                  bus_name=bus_name)
@@ -77,7 +77,7 @@ ExportedGObject__doc__ = 'A GObject which is exported on the D-Bus.'
 
 ExportedGObject = ExportedGObjectType(
     'ExportedGObject',
-    (gobject.GObject, dbus.service.Object),
+    (GObject.GObject, dbus.service.Object),
     {'__init__': ExportedGObject__init__,
      '__doc__': ExportedGObject__doc__,
      })
