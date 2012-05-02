@@ -16,8 +16,8 @@ else
     AC_MSG_RESULT($PYTHON_INCLUDES)
   else
     AC_MSG_RESULT([failed, will try another way])
-    py_prefix=`$PYTHON -c "import sys; print sys.prefix"`
-    py_exec_prefix=`$PYTHON -c "import sys; print sys.exec_prefix"`
+    py_prefix=`$PYTHON -c "import sys; print(sys.prefix)"`
+    py_exec_prefix=`$PYTHON -c "import sys; print(sys.exec_prefix)"`
     AC_MSG_CHECKING(for Python headers in $py_prefix and $py_exec_prefix)
     PYTHON_INCLUDES="-I${py_prefix}/include/python${PYTHON_VERSION}"
     if test "$py_prefix" != "$py_exec_prefix"; then
