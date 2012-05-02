@@ -37,6 +37,12 @@ nobase_python_PYTHON = \
     dbus/service.py \
     dbus/types.py
 
+if !HAVE_PYTHON_3
+nobase_python_PYTHON += \
+    dbus/gobject_service.py \
+    $(NULL)
+endif
+
 check_py_sources = $(nobase_python_PYTHON)
 include $(top_srcdir)/tools/check-coding-style.mk
 
