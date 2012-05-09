@@ -22,6 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import sys
 from warnings import warn as _warn
 _warn(DeprecationWarning("""\
 dbus.gobject_service is deprecated, and is not available under Python 3.

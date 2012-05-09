@@ -1,3 +1,35 @@
+D-Bus Python Bindings 1.1.0 (2012-05-09)
+========================================
+
+The “eaten by spiders” release.
+
+Deprecations:
+
+• dbus.gobject_service is deprecated. Use dbus.gi_service and PyGI in new code.
+
+API changes:
+
+• dbus.gobject_service works in legacy PyGObject 2 applications again,
+  like it did before 1.0. The down side is that it doesn't work in all PyGI
+  applications any more, unlike 1.0. In PyGI applications, depend on
+  dbus-python >= 1.1 and use dbus.gi_service instead - its API is the same.
+  (fd.o #48904, Debian #670516)
+
+• dbus.gobject_service has been removed from Python 3 builds altogether.
+
+Enhancements:
+
+• Use DBusBasicValue from libdbus 1.5, if available, rather than reinventing it
+
+Fixes:
+
+• Put sockets for the regression tests in /tmp, not the builddir, fixing
+  test failures in a really long builddir (fd.o #46747)
+
+• Fix a reference leak in dbus_py_variant_level_set (fd.o #47108)
+
+• Modify AM_CHECK_PYTHON_HEADERS so the "another way" works with Python 3
+
 D-Bus Python Bindings 1.0.0 (2012-01-24)
 ========================================
 
@@ -22,6 +54,9 @@ API changes:
 
 * The Python 3 API is not the same as the Python 2 API; see PY3PORT.rst
   for details.
+
+• dbus.gobject_service uses PyGI, not PyGObject. (This was not meant to be
+  an incompatible change, but unfortunately, it was. It was reverted in 1.1.0.)
 
 Enhancements:
 
