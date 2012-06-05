@@ -322,6 +322,8 @@ class TestMessageMarshalling(unittest.TestCase):
         aeq(Message.guess_signature(('a',)), '(s)')
         aeq(Message.guess_signature(['a']), 'as')
         aeq(Message.guess_signature({'a':'b'}), 'a{ss}')
+        aeq(Message.guess_signature(types.ObjectPath('/')), 'o')
+        aeq(Message.guess_signature(types.Signature('x')), 'g')
 
     def test_guess_signature_python_ints(self):
         aeq = self.assertEqual

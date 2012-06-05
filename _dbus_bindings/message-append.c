@@ -249,8 +249,16 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
             return NATIVESTR_FROMSTR(DBUS_TYPE_INT64_AS_STRING);
     }
 #endif  /* PY3 */
-    else if (PyUnicode_Check(obj))
-        return NATIVESTR_FROMSTR(DBUS_TYPE_STRING_AS_STRING);
+    else if (PyUnicode_Check(obj)) {
+        /* Object paths and signatures are unicode subtypes in Python 3
+         * (the first two cases will never be true in Python 2) */
+        if (DBusPyObjectPath_Check(obj))
+            return NATIVESTR_FROMSTR(DBUS_TYPE_OBJECT_PATH_AS_STRING);
+        else if (DBusPySignature_Check(obj))
+            return NATIVESTR_FROMSTR(DBUS_TYPE_SIGNATURE_AS_STRING);
+        else
+            return NATIVESTR_FROMSTR(DBUS_TYPE_STRING_AS_STRING);
+    }
 #if defined(DBUS_TYPE_UNIX_FD)
     else if (DBusPyUnixFd_Check(obj))
         return NATIVESTR_FROMSTR(DBUS_TYPE_UNIX_FD_AS_STRING);
@@ -266,6 +274,8 @@ _signature_string_from_pyobject(PyObject *obj, long *variant_level_ptr)
             return NATIVESTR_FROMSTR(DBUS_TYPE_DOUBLE_AS_STRING);
     }
     else if (PyBytes_Check(obj)) {
+        /* Object paths and signatures are bytes subtypes in Python 2
+         * (the first two cases will never be true in Python 3) */
         if (DBusPyObjectPath_Check(obj))
             return NATIVESTR_FROMSTR(DBUS_TYPE_OBJECT_PATH_AS_STRING);
         else if (DBusPySignature_Check(obj))
