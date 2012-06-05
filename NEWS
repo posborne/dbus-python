@@ -1,7 +1,12 @@
 D-Bus Python Bindings 1.1.1 (UNRELEASED)
 ========================================
 
-...
+Fixes:
+
+• Under Python 3, in the absence of introspection or signature='...',
+  pass dbus.ObjectPath or dbus.Signature arguments with the obvious
+  signature 'o' or 'g', not 's'. This previously only worked in Python 2.
+  (fd.o #50740)
 
 D-Bus Python Bindings 1.1.0 (2012-05-09)
 ========================================
