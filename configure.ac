@@ -158,9 +158,13 @@ PKG_CHECK_MODULES(DBUS, [dbus-1 >= 1.4])
 PKG_CHECK_MODULES(DBUS_GLIB, [dbus-glib-1 >= 0.70])
 
 dbuspy_save_CFLAGS="$CFLAGS"
+dbuspy_save_LIBS="$LIBS"
 CFLAGS="$CFLAGS $DBUS_CFLAGS"
+LIBS="$CFLAGS $DBUS_LIBS"
 AC_CHECK_TYPES([DBusBasicValue], [], [], [#include <dbus/dbus.h>])
+AC_CHECK_FUNCS([dbus_validate_utf8])
 CFLAGS="$dbuspy_save_CFLAGS"
+LIBS="$dbuspy_save_LIBS"
 
 TP_COMPILER_WARNINGS([CFLAGS_WARNINGS], [test] dbus_python_released [= 0],
   [all \

@@ -531,6 +531,7 @@ _message_iter_append_string(DBusMessageIter *appender,
                             dbus_bool_t allow_object_path_attr)
 {
     char *s;
+    PyObject *utf8;
 
     if (sig_type == DBUS_TYPE_OBJECT_PATH && allow_object_path_attr) {
         PyObject *object_path = get_object_path (obj);
@@ -550,44 +551,87 @@ _message_iter_append_string(DBusMessageIter *appender,
     }
 
     if (PyBytes_Check(obj)) {
-        PyObject *unicode;
-
-        /* Raise TypeError if the string has embedded NULs */
-        if (PyBytes_AsStringAndSize(obj, &s, NULL) < 0) return -1;
-        /* Surely there's a faster stdlib way to validate UTF-8... */
-        unicode = PyUnicode_DecodeUTF8(s, PyBytes_GET_SIZE(obj), NULL);
-        if (!unicode) {
-            PyErr_SetString(PyExc_UnicodeError, "String parameters "
-                            "to be sent over D-Bus must be valid UTF-8");
-            return -1;
-        }
-        Py_CLEAR(unicode);
-
-        DBG("Performing actual append: string %s", s);
-        if (!dbus_message_iter_append_basic(appender, sig_type,
-                                            &s)) {
-            PyErr_NoMemory();
-            return -1;
-        }
+        utf8 = obj;
+        Py_INCREF(obj);
     }
     else if (PyUnicode_Check(obj)) {
-        PyObject *utf8 = PyUnicode_AsUTF8String(obj);
+        utf8 = PyUnicode_AsUTF8String(obj);
         if (!utf8) return -1;
-        /* Raise TypeError if the string has embedded NULs */
-        if (PyBytes_AsStringAndSize(utf8, &s, NULL) < 0) return -1;
-        DBG("Performing actual append: string (from unicode) %s", s);
-        if (!dbus_message_iter_append_basic(appender, sig_type, &s)) {
-            Py_CLEAR(utf8);
-            PyErr_NoMemory();
-            return -1;
-        }
-        Py_CLEAR(utf8);
     }
     else {
         PyErr_SetString(PyExc_TypeError,
                         "Expected a string or unicode object");
         return -1;
     }
+
+    /* Raise TypeError if the string has embedded NULs */
+    if (PyBytes_AsStringAndSize(utf8, &s, NULL) < 0)
+        return -1;
+
+    /* Validate UTF-8, strictly */
+#ifdef HAVE_DBUS_VALIDATE_UTF8
+    if (!dbus_validate_utf8(s, NULL)) {
+        PyErr_SetString(PyExc_UnicodeError, "String parameters "
+                        "to be sent over D-Bus must be valid UTF-8 "
+                        "with no noncharacter code points");
+        return -1;
+    }
+#else
+    {
+        PyObject *back_to_unicode;
+        PyObject *utf32;
+        Py_ssize_t i;
+
+        /* This checks for syntactically valid UTF-8, but does not check
+         * for noncharacters (U+nFFFE, U+nFFFF for any n, or U+FDD0..U+FDEF).
+         */
+        back_to_unicode = PyUnicode_DecodeUTF8(s, PyBytes_GET_SIZE(utf8),
+                                               "strict");
+
+        if (!back_to_unicode) {
+            return -1;
+        }
+
+        utf32 = PyUnicode_AsUTF32String(back_to_unicode);
+        Py_CLEAR(back_to_unicode);
+
+        if (!utf32) {
+            return -1;
+        }
+
+        for (i = 0; i < PyBytes_GET_SIZE(utf32) / 4; i++) {
+            dbus_uint32_t *p;
+
+            p = (dbus_uint32_t *) (PyBytes_AS_STRING(utf32)) + i;
+
+            if (/* noncharacters U+nFFFE, U+nFFFF */
+                (*p & 0xFFFF) == 0xFFFE ||
+                (*p & 0xFFFF) == 0xFFFF ||
+                /* noncharacters U+FDD0..U+FDEF */
+                (*p >= 0xFDD0 && *p <= 0xFDEF) ||
+                /* surrogates U+D800..U+DBFF (low), U+DC00..U+DFFF (high) */
+                (*p >= 0xD800 && *p <= 0xDFFF) ||
+                (*p >= 0x110000)) {
+                Py_CLEAR(utf32);
+                PyErr_SetString(PyExc_UnicodeError, "String parameters "
+                                "to be sent over D-Bus must be valid UTF-8 "
+                                "with no noncharacter code points");
+                return -1;
+            }
+        }
+
+        Py_CLEAR(utf32);
+    }
+#endif
+
+    DBG("Performing actual append: string (from unicode) %s", s);
+    if (!dbus_message_iter_append_basic(appender, sig_type, &s)) {
+        Py_CLEAR(utf8);
+        PyErr_NoMemory();
+        return -1;
+    }
+
+    Py_CLEAR(utf8);
     return 0;
 }
 

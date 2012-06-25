@@ -1,7 +1,15 @@
 D-Bus Python Bindings 1.1.1 (UNRELEASED)
 ========================================
 
+Dependencies:
+
+* libdbus 1.6 or later is now recommended. It is not strictly required yet.
+
 Fixes:
+
+• Validate UTF-8 according to the rules libdbus uses, falling back to our
+  own (inefficient) implementation if not compiled against dbus >= 1.6
+  (fd.o #40817)
 
 • Under Python 3, in the absence of introspection or signature='...',
   pass dbus.ObjectPath or dbus.Signature arguments with the obvious

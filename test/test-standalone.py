@@ -423,6 +423,64 @@ class TestMessageMarshalling(unittest.TestCase):
             raise AssertionError('Appending too many things in a struct '
                                  'should fail')
 
+    def test_utf8(self):
+        from _dbus_bindings import SignalMessage
+        if is_py3:
+            def utf8(*xs):
+                return bytes(xs)
+            def uni(x):
+                return chr(x)
+        else:
+            def utf8(*xs):
+                return str('').join(map(chr, xs))
+            def uni(x):
+                return unichr(x)
+        for bad in [
+                uni(0xD800),
+                utf8(0xed, 0xa0, 0x80),
+                uni(0xFDD0),
+                utf8(0xef, 0xb7, 0x90),
+                uni(0xFDD7),
+                utf8(0xef, 0xb7, 0x97),
+                uni(0xFDEF),
+                utf8(0xef, 0xb7, 0xaf),
+                uni(0xFFFE),
+                utf8(0xef, 0xbf, 0xbe),
+                uni(0xFFFF),
+                utf8(0xef, 0xbf, 0xbf),
+                uni(0x0001FFFE),
+                utf8(0xf0, 0x9f, 0xbf, 0xbe),
+                uni(0x0001FFFF),
+                utf8(0xf0, 0x9f, 0xbf, 0xbf),
+                uni(0x0007FFFE),
+                utf8(0xf1, 0xbf, 0xbf, 0xbe),
+                uni(0x0007FFFF),
+                utf8(0xf1, 0xbf, 0xbf, 0xbf),
+                uni(0x0010FFFE),
+                utf8(0xf4, 0x8f, 0xbf, 0xbe),
+                uni(0x0010FFFF),
+                utf8(0xf4, 0x8f, 0xbf, 0xbf),
+                ]:
+            s = SignalMessage('/', 'foo.bar', 'baz')
+            try:
+                s.append(bad, signature='s')
+            except UnicodeError:
+                pass
+            else:
+                raise AssertionError('Appending %r should fail' % bad)
+        for good in [
+                uni(0xfdcf),
+                uni(0xfdf0),
+                uni(0xfeff),
+                uni(0x0001feff),
+                uni(0x00020000),
+                uni(0x0007feff),
+                uni(0x00080000),
+                uni(0x0010feff),
+                ]:
+            s = SignalMessage('/', 'foo.bar', 'baz')
+            s.append(good, signature='s')
+            s.append(good.encode('utf-8'), signature='s')
 
 class TestMatching(unittest.TestCase):
     def setUp(self):
@@ -441,7 +499,6 @@ class TestMatching(unittest.TestCase):
     def test_object_path_no_match(self):
         self._message.append('/', signature='o')
         self.assertFalse(self._match.maybe_handle_message(self._message))
-
 
 if __name__ == '__main__':
     # Python 2.6 doesn't accept a `verbosity` keyword.
