@@ -88,9 +88,9 @@ $PYTHON "$DBUS_TOP_SRCDIR"/test/test-unusable-main-loop.py || die "... failed"
 
 echo "running cross-test (for better diagnostics use mjj29's dbus-test)"
 
-${MAKE:-make} -s cross-test-server > "$DBUS_TOP_BUILDDIR"/test/cross-server.log&
+$PYTHON "$DBUS_TOP_SRCDIR"/test/cross-test-server.py > "$DBUS_TOP_BUILDDIR"/test/cross-server.log&
 sleep 1
-${MAKE:-make} -s cross-test-client > "$DBUS_TOP_BUILDDIR"/test/cross-client.log
+$PYTHON "$DBUS_TOP_SRCDIR"/test/cross-test-client.py > "$DBUS_TOP_BUILDDIR"/test/cross-client.log
 
 if grep . "$DBUS_TOP_BUILDDIR"/test/cross-client.log >/dev/null; then
   :     # OK
