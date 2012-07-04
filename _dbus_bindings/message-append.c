@@ -962,6 +962,7 @@ _message_iter_append_variant(DBusMessageIter *appender, PyObject *obj)
     int ret;
     long variant_level;
     dbus_bool_t dummy;
+    DBusMessageIter *variant_iters = NULL;
 
     /* Separate the object into the contained object, and the number of
      * variants it's wrapped in. */
@@ -987,9 +988,16 @@ _message_iter_append_variant(DBusMessageIter *appender, PyObject *obj)
 
     dbus_signature_iter_init(&obj_sig_iter, obj_sig_str);
 
-    { /* scope for variant_iters */
-        DBusMessageIter variant_iters[variant_level];
+    {
         long i;
+
+        variant_iters = calloc (variant_level, sizeof (DBusMessageIter));
+
+        if (!variant_iters) {
+            PyErr_NoMemory();
+            ret = -1;
+            goto out;
+        }
 
         for (i = 0; i < variant_level; i++) {
             DBusMessageIter *child = &variant_iters[i];
@@ -1038,10 +1046,12 @@ _message_iter_append_variant(DBusMessageIter *appender, PyObject *obj)
                 goto out;
             }
         }
-
     }
 
 out:
+    if (variant_iters != NULL)
+        free (variant_iters);
+
     Py_CLEAR(obj_sig);
     return ret;
 }

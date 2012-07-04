@@ -88,6 +88,9 @@ DBusPyServer_set_auth_mechanisms(Server *self,
     PyObject *fast_seq = NULL, *references = NULL;
     Py_ssize_t length;
     Py_ssize_t i;
+    /* a mutable array of constant strings */
+    const char **list = NULL;
+    dbus_bool_t ret = FALSE;
 
     fast_seq = PySequence_Fast(auth_mechanisms,
             "Expecting sequence for auth_mechanisms parameter");
@@ -99,21 +102,27 @@ DBusPyServer_set_auth_mechanisms(Server *self,
 
     /* scope for list */
     {
-        const char *list[length + 1];
+        list = calloc (length + 1, sizeof (char *));
+
+        if (!list) {
+            PyErr_NoMemory();
+            goto finally;
+        }
 
         if (!(references = PyTuple_New(length)))
-            goto error;
+            goto finally;
 
         for (i = 0; i < length; ++i) {
             PyObject *am, *am_as_bytes;
 
             am = PySequence_Fast_GET_ITEM(auth_mechanisms, i);
-            if (!am) goto error;
+            if (!am)
+                goto finally;
 
             if (PyUnicode_Check(am)) {
                 am_as_bytes = PyUnicode_AsUTF8String(am);
                 if (!am_as_bytes)
-                    goto error;
+                    goto finally;
             }
             else {
                 am_as_bytes = am;
@@ -121,7 +130,7 @@ DBusPyServer_set_auth_mechanisms(Server *self,
             }
             list[i] = PyBytes_AsString(am_as_bytes);
             if (!list[i])
-                goto error;
+                goto finally;
 
             PyTuple_SET_ITEM(references, i, am_as_bytes);
         }
@@ -133,13 +142,14 @@ DBusPyServer_set_auth_mechanisms(Server *self,
         Py_END_ALLOW_THREADS
     }
 
+    ret = TRUE;
+
+finally:
+    if (list)
+        free (list);
     Py_CLEAR(fast_seq);
     Py_CLEAR(references);
-    return TRUE;
-  error:
-    Py_CLEAR(fast_seq);
-    Py_CLEAR(references);
-    return FALSE;
+    return ret;
 }
 
 /* Return a new reference to a Python Server or subclass corresponding
