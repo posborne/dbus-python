@@ -7,6 +7,20 @@ AM_LDFLAGS = -module -avoid-version \
 
 libadd = $(DBUS_LIBS)
 
+if WINDOWS
+# Win32 DLLs can't have undefined symbols (so this needs explicit linking
+# against the Python DLL), and Python expects extensions to be *.pyd
+# instead of *.dll
+AM_LDFLAGS += \
+	-no-undefined \
+	-shrext ".pyd" \
+	$(NULL)
+
+libadd += \
+	$(PYTHON_LIBS) \
+	$(NULL)
+endif
+
 _dbus_bindings_la_LIBADD = $(libadd)
 _dbus_bindings_la_SOURCES = \
 			    abstract.c \

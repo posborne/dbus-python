@@ -36,6 +36,19 @@ AM_INIT_AUTOMAKE([1.9 -Wno-portability])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
+# mingw32, mingw-w64 are native Windows; for our purposes, Cygwin isn't
+AC_MSG_CHECKING([for native Windows host])
+case "$host" in
+	(*-*-mingw*)
+		windows=yes
+		;;
+	(*)
+		windows=no
+		;;
+esac
+AC_MSG_RESULT([$windows])
+AM_CONDITIONAL([WINDOWS], [test "x$windows" = xyes])
+
 AC_DISABLE_STATIC
 
 dnl XXXX hack to kill off all the libtool tags ...
