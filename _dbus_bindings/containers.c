@@ -26,8 +26,6 @@
 #include <Python.h>
 #include <structmember.h>
 
-#include <stdint.h>
-
 #include "dbus_bindings-internal.h"
 #include "types-internal.h"
 

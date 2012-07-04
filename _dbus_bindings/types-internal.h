@@ -24,7 +24,6 @@
  */
 
 #include <Python.h>
-#include <stdint.h>
 
 /* In Python2 >= 2.6 this aliases PyString to PyBytes.  There is no PyString
  * in Python 3, so this allows the C extension to be compilable in both Python
