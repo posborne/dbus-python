@@ -100,47 +100,44 @@ DBusPyServer_set_auth_mechanisms(Server *self,
 
     length = PySequence_Fast_GET_SIZE(fast_seq);
 
-    /* scope for list */
-    {
-        list = calloc (length + 1, sizeof (char *));
+    list = calloc (length + 1, sizeof (char *));
 
-        if (!list) {
-            PyErr_NoMemory();
-            goto finally;
-        }
-
-        if (!(references = PyTuple_New(length)))
-            goto finally;
-
-        for (i = 0; i < length; ++i) {
-            PyObject *am, *am_as_bytes;
-
-            am = PySequence_Fast_GET_ITEM(auth_mechanisms, i);
-            if (!am)
-                goto finally;
-
-            if (PyUnicode_Check(am)) {
-                am_as_bytes = PyUnicode_AsUTF8String(am);
-                if (!am_as_bytes)
-                    goto finally;
-            }
-            else {
-                am_as_bytes = am;
-                Py_INCREF(am_as_bytes);
-            }
-            list[i] = PyBytes_AsString(am_as_bytes);
-            if (!list[i])
-                goto finally;
-
-            PyTuple_SET_ITEM(references, i, am_as_bytes);
-        }
-
-        list[length] = NULL;
-
-        Py_BEGIN_ALLOW_THREADS
-        dbus_server_set_auth_mechanisms(self->server, list);
-        Py_END_ALLOW_THREADS
+    if (!list) {
+        PyErr_NoMemory();
+        goto finally;
     }
+
+    if (!(references = PyTuple_New(length)))
+        goto finally;
+
+    for (i = 0; i < length; ++i) {
+        PyObject *am, *am_as_bytes;
+
+        am = PySequence_Fast_GET_ITEM(auth_mechanisms, i);
+        if (!am)
+            goto finally;
+
+        if (PyUnicode_Check(am)) {
+            am_as_bytes = PyUnicode_AsUTF8String(am);
+            if (!am_as_bytes)
+                goto finally;
+        }
+        else {
+            am_as_bytes = am;
+            Py_INCREF(am_as_bytes);
+        }
+        list[i] = PyBytes_AsString(am_as_bytes);
+        if (!list[i])
+            goto finally;
+
+        PyTuple_SET_ITEM(references, i, am_as_bytes);
+    }
+
+    list[length] = NULL;
+
+    Py_BEGIN_ALLOW_THREADS
+    dbus_server_set_auth_mechanisms(self->server, list);
+    Py_END_ALLOW_THREADS
 
     ret = TRUE;
 
