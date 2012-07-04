@@ -4,6 +4,12 @@ AM_CPPFLAGS = -I$(top_srcdir)/include $(DBUS_CFLAGS) $(DBUS_GLIB_CFLAGS) \
 	      $(PYTHON_INCLUDES)
 AM_LDFLAGS = -module -avoid-version \
 	     -export-symbols-regex \(PyInit__\|init_\)dbus_glib_bindings \
-	     $(DBUS_LIBS) $(DBUS_GLIB_LIBS)
+	     $(NULL)
 
+libadd = \
+	$(DBUS_LIBS) \
+	$(DBUS_GLIB_LIBS) \
+	$(NULL)
+
+_dbus_glib_bindings_la_LIBADD = $(libadd)
 _dbus_glib_bindings_la_SOURCES = module.c
