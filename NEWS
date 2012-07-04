@@ -1,3 +1,15 @@
+D-Bus Python Bindings 1.1.2 (UNRELEASED)
+========================================
+
+The "compile like it's 1998" release.
+
+• Avoid variable-length arrays, because MSVC++ is still stuck in 1998
+  (based on patches from Christoph Höger, fd.o #51725)
+
+• Remove unnecessary uses of stdint.h (fd.o #51725)
+
+• Add support for Unix compilers not supporting 'inline', for completeness
+
 D-Bus Python Bindings 1.1.1 (2012-06-25)
 ========================================
 
@@ -5,7 +17,7 @@ The "Lemonade Sky" release.
 
 Dependencies:
 
-* libdbus 1.6 or later is now recommended. It is not strictly required yet.
+• libdbus 1.6 or later is now recommended. It is not strictly required yet.
 
 Fixes:
 
