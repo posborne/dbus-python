@@ -67,6 +67,12 @@ echo "DBUS_TOP_BUILDDIR=$DBUS_TOP_BUILDDIR"
 echo "PYTHONPATH=$PYTHONPATH"
 echo "PYTHON=$PYTHON"
 
+# the exceptions handling test is version specific
+PYMAJOR=$($PYTHON -c 'import sys;print(sys.version_info[0])')
+PYTEST=test-exception-py$PYMAJOR.py
+echo "running $PYTEST"
+$PYTHON "$DBUS_TOP_SRCDIR"/test/$PYTEST || die "$PYTEST failed"
+
 echo "running test-standalone.py"
 $PYTHON "$DBUS_TOP_SRCDIR"/test/test-standalone.py || die "test-standalone.py failed"
 

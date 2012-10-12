@@ -27,6 +27,8 @@ __all__ = ('DBusException', 'MissingErrorHandlerException',
            'IntrospectionParserException', 'UnknownMethodException',
            'NameExistsException')
 
+from dbus._compat import is_py3
+
 
 class DBusException(Exception):
 
@@ -49,15 +51,32 @@ class DBusException(Exception):
                             % ', '.join(kwargs.keys()))
         Exception.__init__(self, *args)
 
-    def __str__(self):
+    def __unicode_for_py2(self):
+        """Return a unicode error"""
+        s = Exception.__unicode__(self)
+        if self._dbus_error_name is not None:
+            return '%s: %s' % (self._dbus_error_name, s)
+        else:
+            return s
+
+    def __str_for_py3(self):
+        """Return a str error"""
         s = Exception.__str__(self)
         if self._dbus_error_name is not None:
             return '%s: %s' % (self._dbus_error_name, s)
         else:
             return s
 
+    if is_py3:
+        __str__ = __str_for_py3
+    else:
+        __unicode__ = __unicode_for_py2
+
     def get_dbus_message(self):
-        s = Exception.__str__(self)
+        if is_py3:
+            s = Exception.__str__(self)
+        else:
+            s = Exception.__unicode__(self)
         if isinstance(s, bytes):
             return s.decode('utf-8', 'replace')
         return s
