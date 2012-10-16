@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import sys
 import unittest
 
 import dbus
@@ -34,9 +35,13 @@ class DBusExceptionTestCase(unittest.TestCase):
 
     def test_dbus_exception_convert_str_fail(self):
         """Test that a non-ascii Exception fails to convert to str"""
-        with self.assertRaises(ValueError):
-            e = dbus.exceptions.DBusException(u"bä")
-            print str(e)
+        if sys.getdefaultencoding() == 'ascii':
+            with self.assertRaises(UnicodeEncodeError):
+                e = dbus.exceptions.DBusException(u"bä")
+                print str(e)
+        else:
+            self.skipTest("you're using a weird non-ascii "
+                    "sys.getdefaultencoding()")
 
     def test_dbus_exception_convert_unicode(self):
         """Test that converting a DBusEception to unicode works"""
