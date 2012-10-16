@@ -563,6 +563,8 @@ class TestDBusBindings(unittest.TestCase):
             self.iface.RaiseDBusExceptionNoTraceback()
         except Exception as e:
             self.assertTrue(isinstance(e, dbus.DBusException), e.__class__)
+            self.assertEqual(e.get_dbus_name(),
+                    'com.example.Networking.ServerError')
             self.assertEqual(str(e),
                               'com.example.Networking.ServerError: '
                               'Server not responding')
@@ -573,6 +575,8 @@ class TestDBusBindings(unittest.TestCase):
             self.iface.RaiseDBusExceptionWithTraceback()
         except Exception as e:
             self.assertTrue(isinstance(e, dbus.DBusException), e.__class__)
+            self.assertEqual(e.get_dbus_name(),
+                    'com.example.Misc.RealityFailure')
             self.assertTrue(str(e).startswith('com.example.Misc.RealityFailure: '
                                            'Traceback '),
                          'Wanted a traceback but got:\n%s' % str(e))
