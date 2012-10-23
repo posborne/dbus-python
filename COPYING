@@ -1,5 +1,6 @@
 As of version 0.82.4, dbus-python is released under the following permissive
-non-copyleft license (the same one used for D-Bus core):
+non-copyleft license (the same one that was proposed for D-Bus core but
+wasn't achieved):
 
 	Permission is hereby granted, free of charge, to any person
 	obtaining a copy of this software and associated documentation
