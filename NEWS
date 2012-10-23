@@ -3,6 +3,13 @@ D-Bus Python Bindings 1.1.2 (UNRELEASED)
 
 The "compile like it's 1998" release.
 
+• Support DBusException('something with non—ASCII') under Python 2
+  (Michael Vogt, smcv; fd.o #55899)
+
+• Correct some misleading wording in COPYING which was written under the
+  assumption that libdbus could actually be relicensed to MIT/X11
+  (Thiago Macieira)
+
 • Avoid variable-length arrays, because MSVC++ is still stuck in 1998
   (based on patches from Christoph Höger, fd.o #51725)
 
