@@ -3,6 +3,12 @@ D-Bus Python Bindings 1.1.2 (UNRELEASED)
 
 The "compile like it's 1998" release.
 
+Dependencies:
+
+• libdbus 1.6 or later is now required.
+
+Fixes:
+
 • Support DBusException('something with non—ASCII') under Python 2
   (Michael Vogt, smcv; fd.o #55899)
 

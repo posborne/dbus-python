@@ -30,23 +30,4 @@
 #include "config.h"
 #include "dbus_bindings-internal.h"
 
-#ifndef HAVE_DBUSBASICVALUE
-typedef union {
-    dbus_bool_t bool_val;
-    double dbl;
-    dbus_uint16_t u16;
-    dbus_int16_t i16;
-    dbus_uint32_t u32;
-    dbus_int32_t i32;
-#if defined(DBUS_HAVE_INT64) && defined(HAVE_LONG_LONG)
-    dbus_uint64_t u64;
-    dbus_int64_t i64;
-#endif
-    const char *str;
-    unsigned char byt;
-    float f;
-    int fd;
-} DBusBasicValue;
-#endif
-
 #endif
