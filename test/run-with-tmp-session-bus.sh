@@ -47,6 +47,8 @@ trap 'die "Received SIGINT"' SIGINT
 
 CONFIG_FILE="$DBUS_TOP_BUILDDIR"/test/tmp-session-bus.conf
 
+unset DBUS_STARTER_ADDRESS
+unset DBUS_STARTER_BUS_TYPE
 unset DBUS_SESSION_BUS_ADDRESS
 unset DBUS_SESSION_BUS_PID
 
