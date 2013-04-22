@@ -23,6 +23,9 @@ Fixes:
 
 • Add support for Unix compilers not supporting 'inline', for completeness
 
+• Use GObject.__class__ instead of GObjectMeta, which can no longer be
+  imported from gi.repository.GObject in pygobject 3.8
+
 D-Bus Python Bindings 1.1.1 (2012-06-25)
 ========================================
 

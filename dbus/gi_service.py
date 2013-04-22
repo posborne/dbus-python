@@ -37,12 +37,12 @@ import dbus.service
 # `ExportedGObjectType` as its metaclass, which is sufficient to make it work
 # correctly.
 
-class ExportedGObjectType(GObject.GObjectMeta, dbus.service.InterfaceType):
+class ExportedGObjectType(GObject.GObject.__class__, dbus.service.InterfaceType):
     """A metaclass which inherits from both GObjectMeta and
     `dbus.service.InterfaceType`. Used as the metaclass for `ExportedGObject`.
     """
     def __init__(cls, name, bases, dct):
-        GObject.GObjectMeta.__init__(cls, name, bases, dct)
+        GObject.GObject.__class__.__init__(cls, name, bases, dct)
         dbus.service.InterfaceType.__init__(cls, name, bases, dct)
 
 
