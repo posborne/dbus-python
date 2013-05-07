@@ -29,7 +29,7 @@ AC_DEFINE(DBUS_PYTHON_MICRO_VERSION, dbus_python_micro_version, [dbus-python mic
 AC_SUBST(DBUS_PYTHON_MICRO_VERSION, dbus_python_micro_version)
 
 AC_CONFIG_SRCDIR([_dbus_bindings/module.c])
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 
 AM_INIT_AUTOMAKE([1.9 -Wno-portability])
 
