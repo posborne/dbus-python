@@ -1,4 +1,4 @@
-D-Bus Python Bindings 1.1.2 (UNRELEASED)
+D-Bus Python Bindings 1.2.0 (2013-05-07)
 ========================================
 
 The "compile like it's 1998" release.
@@ -6,6 +6,12 @@ The "compile like it's 1998" release.
 Dependencies:
 
 • libdbus 1.6 or later is now required.
+
+Enhancements:
+
+• Unicode Corrigendum 9: when used with a suitable version of libdbus
+  (1.6.10 or later, or 1.7.2 or later), noncharacters in strings are
+  now accepted
 
 Fixes:
 
@@ -25,6 +31,8 @@ Fixes:
 
 • Use GObject.__class__ instead of GObjectMeta, which can no longer be
   imported from gi.repository.GObject in pygobject 3.8
+
+• Fix autoreconfiscation on Automake 1.13 (Marko Lindqvist, fd.o #59006)
 
 D-Bus Python Bindings 1.1.1 (2012-06-25)
 ========================================
