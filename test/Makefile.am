@@ -8,6 +8,8 @@ EXTRA_DIST = \
 	     run-test.sh \
 	     run-with-tmp-session-bus.sh \
 	     test-client.py \
+	     test-exception-py2.py \
+	     test-exception-py3.py \
 	     test-p2p.py \
 	     test-service.py \
 	     test-signals.py \
