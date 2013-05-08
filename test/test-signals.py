@@ -36,8 +36,11 @@ import dbus
 import _dbus_bindings
 import dbus.glib
 import dbus.service
-from gi.repository import GObject as gobject
 
+try:
+    from gi.repository import GObject as gobject
+except ImportError:
+    raise SystemExit(77)
 
 logging.basicConfig()
 logging.getLogger().setLevel(1)

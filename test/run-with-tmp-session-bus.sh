@@ -63,7 +63,19 @@ echo "Started bus pid $DBUS_SESSION_BUS_PID at $DBUS_SESSION_BUS_ADDRESS" >&2
 
 # Execute wrapped script
 echo "Running: $WRAPPED_SCRIPT $*" >&2
-"$WRAPPED_SCRIPT" "$@" || die "script \"$WRAPPED_SCRIPT\" failed"
+"$WRAPPED_SCRIPT" "$@"
+e=$?
+
+case "$e" in
+    (77)
+        echo "script \"$WRAPPED_SCRIPT\" skipped" >&2
+        ;;
+    (0)
+        ;;
+    (*)
+        die "script \"$WRAPPED_SCRIPT\" failed"
+	;;
+esac
 
 kill -TERM "$DBUS_SESSION_BUS_PID" \
     || die "Message bus vanished! should not have happened" \

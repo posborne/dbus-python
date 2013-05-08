@@ -39,7 +39,11 @@ import dbus.glib
 import dbus.service
 
 from dbus._compat import is_py2, is_py3
-from gi.repository import GObject as gobject
+
+try:
+    from gi.repository import GObject as gobject
+except ImportError:
+    raise SystemExit(77)
 
 
 logging.basicConfig()

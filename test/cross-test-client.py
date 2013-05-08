@@ -23,7 +23,10 @@
 from __future__ import print_function, unicode_literals
 import logging
 
-from gi.repository import GObject as gobject
+try:
+    from gi.repository import GObject as gobject
+except ImportError:
+    raise SystemExit(77)
 
 from dbus import (
     Array, Boolean, Byte, ByteArray, Double, Int16, Int32, Int64,
