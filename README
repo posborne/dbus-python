@@ -4,6 +4,19 @@ dbus-python_: Python bindings for D-Bus
 
 .. _dbus-python: http://www.freedesktop.org/wiki/Software/DBusBindings#python
 
+About this Fork
+===============
+
+This fork includes changes to the library to add a setup.py so it can be
+installed via pip (allowing the version to be controlled, etc.).  This
+can be done by doing the following (under Ubuntu/Debian)::
+
+    $ sudo apt-get build-dep python-dbujs
+    $ pip install -U git+https://github.com/posborne/dbus-python.git
+
+There is not currently a package on PyPI as we would like to make one last
+push at including these changes in upstream.
+
 Usage
 =====
 
