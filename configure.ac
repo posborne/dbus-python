@@ -78,7 +78,7 @@ if test "${PYTHON_LIBS+set}" = set; then
   AC_MSG_NOTICE([PYTHON_LIBS overridden to: $PYTHON_LIBS])
 else
   AC_MSG_CHECKING([for Python library linker flags])
-  PYTHON_LIBS=`$PYTHON-config --ldflags`
+  PYTHON_LIBS=`$PYTHON_CONFIG --ldflags`
   AC_MSG_RESULT([$PYTHON_LIBS])
 fi
 
